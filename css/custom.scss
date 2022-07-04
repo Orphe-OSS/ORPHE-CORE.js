@@ -1,0 +1,56 @@
+//テーマカラーの設定
+$primary: #45e6e6;
+$secondary: #232323;
+$success: #45e6e6;
+$info: #ff6040;
+$warning: #ff6040;
+$danger: #ff6040;
+$light: #FFFFFF;
+$dark: #1c1c1c;
+
+//リンクの文字色
+$link-color: $primary;
+
+//bodyの背景、文字色
+$body-bg: $light;
+$body-color: $light;
+
+//input-groupのaddonの背景色
+$input-group-addon-bg: $secondary;
+
+//アラートの背景、ボーダー、文字の色 テーマカラーとの差
+$alert-bg-scale: -80%;
+$alert-border-scale: -70%;
+$alert-color-scale: 40%;
+
+//フォントファミリーの設定
+$font-family-sans-serif: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+$font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !default;
+
+//基本のフォントサイズの設定 1rem = 16px
+$font-size-base: 1rem;
+
+//行間の設定
+$line-height-base: 1.5;
+$line-height-sm: 1.25;
+$line-height-lg: 2;
+
+//見出しフォントの太さ
+$headings-font-weight: 500;
+
+//ボーダーの太さ
+$border-width: 1px;
+
+//ボーダーの色
+$border-color: $light ;
+//角丸の設定 true=有効 false=無効
+$enable-rounded: true;
+
+//角丸の大きさの設定
+$border-radius: 4px;
+$border-radius-sm: .2rem;
+$border-radius-lg: .3rem;
+$border-radius-pill: 50rem;
+
+
+@import "../scss/bootstrap";

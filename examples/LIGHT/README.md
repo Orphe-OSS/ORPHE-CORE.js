@@ -3,6 +3,9 @@
 ## Overview
 ORPHE.js LIGHT enables a user to control light emmitance on your ORPHE Core Module. 
 
+## DEMO
+if you have a ORPHE CORE, why not try [DEMO](https://orphe-oss.github.io/ORPHE.js/examples/LIGHT/) now ? 
+
 ## Issues
 LED Brightness control does not work.
 

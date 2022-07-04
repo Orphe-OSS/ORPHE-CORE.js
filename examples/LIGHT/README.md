@@ -12,7 +12,7 @@ LED Brightness control does not work.
   * OS
     * macOS, windows, linux, android
   * ORPHE CORE
-    * 2.0, 3.0
+    * 2.0
 
 ## License & Requirements
 |  | lisence | link | option | 

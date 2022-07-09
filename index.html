@@ -32,11 +32,67 @@
   </div>
 
   <div class="container-sm mt-4">
-    <h3 class="mt-4">Abstract</h3>
+    <h3 class="mt-4"> <i class="bi bi-card-text"></i> Abstract</h3>
     <p>This page contains information on how to hack the ORPHE CORE module with js, along with basic information on BLE
       and
       sample code.</p>
     <p>Happy hacking for ORPHE CORE module on javascript.</p>
+
+
+    <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with ORPHE-CORE.js</h3>
+    <section class="ms-4 mb-4">
+      Get started by including ORPHE-CORE.js Javascript via CDN without the need for any build steps.
+
+      <ol>
+        <li>Create a new index.html file in your project root. </li>
+        <div class="bg-secondary">
+          <code class="prettyprint lang-html" data-lang="html">
+
+          &lt;!doctype html&gt;<br>
+          &lt;html lang=&quot;en&quot;&gt;<br>
+            &lt;head&gt;<br>
+              &lt;meta charset=&quot;utf-8&quot;&gt;<br>
+              &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;<br>
+              &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;<br>
+            &lt;/head&gt;<br>
+            &lt;body&gt;<br>
+              &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;<br>
+              &lt;button onclick=&quot;ble.begin();&quot;&gt;connect&lt;/button&gt;<br>
+              &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"&quot; <br>
+              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;<br>
+              &lt;script&gt;<br>
+              var ble = new Orphe(0);<br>
+            window.onload = function () {<br>
+              // ORPHE CORE Init<br>
+              ble.setup(['DEVICE_INFORMATION']);<br>
+              }<br>
+              &lt;/script&gt;<br>
+              &lt;/body&gt;<br>
+          &lt;/html&gt;<br>
+         </code>
+        </div>
+        <li>Check the index.html on your browser via local live server, such as Live Server, php -S localhost:8000,
+          etc. Then click connect button and connect ORPHE CORE Module (CR-2).
+        </li>
+        <li>
+          You will see light emitting on your ORPHE CORE Module.
+        </li>
+      </ol>
+
+
+    </section>
+
+    <h3 class="mt-4">CDN Link</h3>
+    <section class="ms-4">
+      As reference, here is ORPHE-CORE.js CDN file.
+      <!-- Target -->
+      <div class="input-group mb-3">
+        <button class="btn btn-outline-primary" type="button" onclick="copyInputValue()"> <i
+            class="bi bi-clipboard"></i></button>
+        <input type="text" class="form-control bg-secondary" id="cdn"
+          value='<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous" type="text/javascript"></script>'>
+      </div>
+    </section>
 
 
     <h3 class="mt-4"><i class="bi bi-bluetooth"></i> BLE Specification and examples </h3>
@@ -107,7 +163,7 @@
           </li>
         </ul>
       </ul>
-      <h5>ble.read('DEVICE INFORMATION')</h5>
+      <h5>ble.read(' DEVICE INFORMATION')</h5>
       <table class="table table-sm table-dark table-striped table-hover">
         <thead>
           <tr>
@@ -197,7 +253,15 @@
   <script src="./js/bootstrap.bundle.min.js"
     integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
     crossorigin="anonymous"></script>
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?skin=sunburst"></script>
 
+  <script>
+    function copyInputValue() {
+      let dom = document.querySelector('#cdn');
+      dom.select();
+      document.execCommand("copy");
+    }
+  </script>
 </body>
 
 </html>

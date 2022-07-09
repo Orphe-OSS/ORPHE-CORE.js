@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ORPHE CORE JS DEMO</title>
+</head>
+
+<body>
+    <h1>Hello, ORPHE!</h1>
+    <button onclick="ble.begin();">connect</button>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js""
+crossorigin=" anonymous"></script>
+    <script>
+        var ble = new Orphe(0);
+        window.onload = function () {
+            // ORPHE CORE Init
+            ble.setup(['DEVICE_INFORMATION']);
+        }
+    </script>
+</body>
+
+</html>

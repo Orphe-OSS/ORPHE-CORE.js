@@ -365,7 +365,7 @@ Orphe.prototype.onRead = function (data, uuid) {
     for (let i = 9; i <= 19; i++) {
       this.array_device_information.setUint8(i, 0);
     }
-    document.querySelector(`#slider${this.id}`).value = this.array_device_information.getUint8(2);
+    //document.querySelector(`#slider${this.id}`).value = this.array_device_information.getUint8(2);
 
     // 最初はLEDの発光パターンを1にしておく
     const senddata = new Uint8Array([0x02, 1, 0]);

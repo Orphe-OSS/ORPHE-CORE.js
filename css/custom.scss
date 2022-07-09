@@ -24,19 +24,26 @@ $alert-border-scale: -70%;
 $alert-color-scale: 40%;
 
 //フォントファミリーの設定
-$font-family-sans-serif: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+//$font-family-sans-serif: "Roboto", "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+$font-family-sans-serif: 'Roboto', sans-serif;
 $font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !default;
 
 //基本のフォントサイズの設定 1rem = 16px
 $font-size-base: 1rem;
+
+$font-letter-spacing: 1.1rem;
 
 //行間の設定
 $line-height-base: 1.5;
 $line-height-sm: 1.25;
 $line-height-lg: 2;
 
+//ベースフォントの太さ
+$font-weight-base: 300;
+
 //見出しフォントの太さ
-$headings-font-weight: 500;
+$headings-font-weight: 300;
+
 
 //ボーダーの太さ
 $border-width: 1px;

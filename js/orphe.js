@@ -1,35 +1,26 @@
 /*
 ============================================================
-ORPHE.js is derived from BlueJelly.js
+ORPHE.js
+2022(C) Tetsuaki BABA
+
+ORPHE.js based on BlueJelly.js
 ============================================================
-BlueJelly.js
-============================================================
-Web Bluetooth API Wrapper Library
-
-Copyright 2017-2020 JellyWare Inc.
-https://jellyware.jp/
-
-GitHub
-https://github.com/electricbaka/bluejelly
-This software is released under the MIT License.
-
-Web Bluetooth API
-https://webbluetoothcg.github.io/web-bluetooth/
 */
 
 //--------------------------------------------------
 //Orphe constructor
 //--------------------------------------------------
-var Orphe = function () {
+var Orphe = function (_num) {
   this.bluetoothDevice = null;
   this.dataCharacteristic = null;
   this.hashUUID = {};
   this.hashUUID_lastConnected;
+  this.id = _num;
 
   //callBack
   this.onScan = function (deviceName) { console.log("onScan"); };
   this.onConnectGATT = function (uuid) { console.log("onConnectGATT"); };
-  this.onRead = function (data, uuid) { console.log("onRead"); };
+  // this.onRead = function (data, uuid) { console.log("onRead"); };
   this.onWrite = function (uuid) { console.log("onWrite"); };
   this.onStartNotify = function (uuid) { console.log("onStartNotify"); };
   this.onStopNotify = function (uuid) { console.log("onStopNotify"); };
@@ -38,8 +29,6 @@ var Orphe = function () {
   this.onReset = function () { console.log("onReset"); };
   this.onError = function (error) { console.log("onError"); };
 }
-
-
 //--------------------------------------------------
 //setUUID
 //--------------------------------------------------
@@ -49,6 +38,48 @@ Orphe.prototype.setUUID = function (name, serviceUUID, characteristicUUID) {
   this.hashUUID[name] = { 'serviceUUID': serviceUUID, 'characteristicUUID': characteristicUUID };
 }
 
+
+//--------------------
+// Orphe
+//--------------------
+Object.defineProperty(Orphe, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
+Object.defineProperty(Orphe, 'ORPHE_DEVICE_INFORMATION', { value: "24354f22-1c46-430e-a4ab-a1eeabbcdfc0", writable: true });
+
+Object.defineProperty(Orphe, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
+Object.defineProperty(Orphe, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
+Object.defineProperty(Orphe, 'ORPHE_REALTIME_ANALYSIS', { value: "adb7eb5a-ac8a-4f95-907b-45db4a71b45a", writable: false });
+Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
+
+Orphe.prototype.setup = function (names) {
+  console.log(names);
+  for (const name of names) {
+    if (name == 'DEVICE_INFORMATION') {
+      this.setUUID(name, Orphe.ORPHE_INFORMATION, Orphe.ORPHE_DEVICE_INFORMATION);
+    }
+    else if (name == 'SENSOR_VALUES') {
+      this.setUUID(name, Orphe.ORPHE_OTHER_SERVICE, Orphe.ORPHE_SENSOR_VALUES);
+    }
+    else if (name == 'STEP_ANALYSIS') {
+      this.setUUID(name, Orphe.ORPHE_OTHER_SERVICE, Orphe.ORPHE_STEP_ANALYSIS);
+    }
+  }
+}
+
+Orphe.prototype.begin = function () {
+  this.read('DEVICE_INFORMATION');
+}
+Orphe.prototype.stop = function () {
+  this.reset();
+}
+
+Orphe.prototype.setLED = function (on_off, pattern) {
+  const data = new Uint8Array([0x02, on_off, pattern]);
+  this.write('DEVICE_INFORMATION', data);
+}
+Orphe.prototype.setLEDBrightness = function (value) {
+  this.array_device_information.setUint8(2, value);
+  this.write('DEVICE_INFORMATION', this.array_device_information);
+}
 
 //--------------------------------------------------
 //scan
@@ -288,14 +319,57 @@ Orphe.prototype.reset = function () {
   this.onReset();
 }
 
+Orphe.prototype.array_device_information = new DataView(new ArrayBuffer(20));
 
-//--------------------
-// Orphe
-//--------------------
-Object.defineProperty(Orphe, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
-Object.defineProperty(Orphe, 'ORPHE_DEVICE_INFORMATION', { value: "24354f22-1c46-430e-a4ab-a1eeabbcdfc0", writable: true });
 
-Object.defineProperty(Orphe, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
-Object.defineProperty(Orphe, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
-Object.defineProperty(Orphe, 'ORPHE_REALTIME_ANALYSIS', { value: "adb7eb5a-ac8a-4f95-907b-45db4a71b45a", writable: false });
-Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
+
+
+
+Orphe.prototype.onRead = function (data, uuid) {
+
+  if (uuid == 'DEVICE_INFORMATION') {
+    /*
+    read pay load
+                0: バッテリー残量
+                1: 左右
+                2: 記録モード
+                3: 自動ラン記録
+                4: LEDの明るさ
+                5: モーターの強さ
+                6: ログの単位時間(上位)
+                7: ログの単位時間(下位)
+                8: 加速度レンジ
+                9: ジャイロレンジ
+                --------------
+                write pay load
+                0: ヘッダー1
+                1: 左右
+                2: LEDの明るさ
+                3: モーターの強さ
+                4: 自動ラン記録On,Off
+                5: ログの単位時間(上位)
+                6: ログの単位時間(下位)
+                7: 加速度レンジ
+                8: ジャイロレンジ
+                9-19: 0
+    */
+    this.array_device_information.setUint8(0, 1);
+    this.array_device_information.setUint8(1, data.getUint8(1));
+    this.array_device_information.setUint8(2, data.getUint8(4));
+    this.array_device_information.setUint8(3, data.getUint8(5));
+    this.array_device_information.setUint8(4, data.getUint8(3));
+    this.array_device_information.setUint8(5, data.getUint8(6));
+    this.array_device_information.setUint8(6, data.getUint8(7));
+    this.array_device_information.setUint8(7, data.getUint8(8));
+    this.array_device_information.setUint8(8, data.getUint8(9));
+    for (let i = 9; i <= 19; i++) {
+      this.array_device_information.setUint8(i, 0);
+    }
+    document.querySelector(`#slider${this.id}`).value = this.array_device_information.getUint8(2);
+
+    // 最初はLEDの発光パターンを1にしておく
+    const senddata = new Uint8Array([0x02, 1, 0]);
+    this.write('DEVICE_INFORMATION', senddata);
+  }
+
+}

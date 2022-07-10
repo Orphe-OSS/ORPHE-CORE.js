@@ -32,11 +32,12 @@
   </div>
 
   <div class="container-sm mt-4">
+    <img class="img-fluid" src="./images/ORPHE_TRACK_scene_08.jpeg">
     <h3 class="mt-4"> <i class="bi bi-card-text"></i> Abstract</h3>
     <p>This page contains information on how to hack the ORPHE CORE module with js, along with basic information on BLE
       and
       sample code.</p>
-    <p>Happy hacking for ORPHE CORE module on javascript.</p>
+    <p>Happy hacking with ORPHE CORE Module and javascript.</p>
 
 
     <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with ORPHE-CORE.js</h3>
@@ -52,13 +53,12 @@
           &lt;html lang=&quot;en&quot;&gt;<br>
             &lt;head&gt;<br>
               &lt;meta charset=&quot;utf-8&quot;&gt;<br>
-              &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;<br>
               &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;<br>
             &lt;/head&gt;<br>
             &lt;body&gt;<br>
               &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;<br>
               &lt;button onclick=&quot;ble.begin();&quot;&gt;connect&lt;/button&gt;<br>
-              &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"&quot; <br>
+              &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js&quot; <br>
               crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;<br>
               &lt;script&gt;<br>
               var ble = new Orphe(0);<br>
@@ -75,7 +75,11 @@
           etc. Then click connect button and connect ORPHE CORE Module (CR-2).
         </li>
         <li>
-          You will see light emitting on your ORPHE CORE Module.
+          You will see light emitting on your ORPHE CORE Module like a below video.
+        </li>
+        <li>
+          You can check test program behavior on <a href="./test.html" target="_blank">test page</a>
+          <video src="./images/light_emmittance.mp4" class="img-fluid" loop controls></video>
         </li>
       </ol>
 
@@ -148,7 +152,7 @@
       the acceleration sensor and gyro sensor.
 
       <ul>
-        <li>Examples</li>
+        <li><span class="bg-warning">Examples</span></li>
         <ul>
           <li>INFORMATION: shows device information [ DEMO ][ github ]</li>
           <li>LIGHT: Controls

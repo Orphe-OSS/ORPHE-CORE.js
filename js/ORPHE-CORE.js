@@ -322,9 +322,6 @@ Orphe.prototype.reset = function () {
 Orphe.prototype.array_device_information = new DataView(new ArrayBuffer(20));
 
 
-
-
-
 Orphe.prototype.onRead = function (data, uuid) {
 
   if (uuid == 'DEVICE_INFORMATION') {

@@ -86,12 +86,12 @@
 
     </section>
 
-    <h3 class="mt-4">CDN Link</h3>
+    <h3 class="mt-4"><i class="bi bi-link-45deg"></i> CDN Link</h3>
     <section class="ms-4">
       As reference, here is ORPHE-CORE.js CDN file.
       <!-- Target -->
       <div class="input-group mb-3">
-        <button class="btn btn-outline-primary" type="button" onclick="copyInputValue()"> <i
+        <button class="btn btn-outline-primary" type="button" id="button_copy_cdn" onclick="copyInputValue()"> <i
             class="bi bi-clipboard"></i></button>
         <input type="text" class="form-control bg-secondary" id="cdn"
           value='<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous" type="text/javascript"></script>'>
@@ -264,6 +264,21 @@
       let dom = document.querySelector('#cdn');
       dom.select();
       document.execCommand("copy");
+      dom.classList.remove('bg-secondary')
+      dom.classList.add('bg-primary')
+      let v_prev = dom.value;
+      document.querySelector('#button_copy_cdn').innerHTML = "COPIED";
+      //dom.value = 'COPIED!!' + v_prev;
+      setTimeout(function () {
+        //console.log(dom);
+        dom.classList.remove('bg-primary')
+        dom.classList.add('bg-secondary')
+        //dom.value = v_prev;
+        dom.blur();
+        document.querySelector('#button_copy_cdn').innerHTML = '<i class="bi bi-clipboard"></i>';
+
+      }, 1000, dom)
+      //test
     }
   </script>
 </body>

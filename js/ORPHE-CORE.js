@@ -65,8 +65,13 @@ Orphe.prototype.setup = function (names) {
   }
 }
 
-Orphe.prototype.begin = function () {
-  this.read('DEVICE_INFORMATION');
+Orphe.prototype.begin = async function () {
+  return new Promise(resolve => {
+    this.read('DEVICE_INFORMATION').then(() => {
+      resolve();
+    });
+
+  });
 }
 Orphe.prototype.stop = function () {
   this.reset();
@@ -319,11 +324,14 @@ Orphe.prototype.reset = function () {
   this.onReset();
 }
 
+// device information用の配列
 Orphe.prototype.array_device_information = new DataView(new ArrayBuffer(20));
+Orphe.prototype.device_information;
 
-
+// Readコールバック
 Orphe.prototype.onRead = function (data, uuid) {
 
+  // デバイス情報Readの場合
   if (uuid == 'DEVICE_INFORMATION') {
     /*
     read pay load
@@ -362,9 +370,18 @@ Orphe.prototype.onRead = function (data, uuid) {
     for (let i = 9; i <= 19; i++) {
       this.array_device_information.setUint8(i, 0);
     }
-    //document.querySelector(`#slider${this.id}`).value = this.array_device_information.getUint8(2);
-
-    // 最初はLEDの発光パターンを1にしておく
+    this.device_information = {
+      battery: data.getUint8(0),
+      lr: data.getUint8(1),
+      rec_mode: data.getUint8(2),
+      rec_auto_run: data.getUint8(3),
+      led_brightness: data.getUint8(4),
+      range: {
+        acc: data.getUint8(8),
+        gyro: data.getUint8(9)
+      }
+    }
+    // デバイスインフォメーションを取得したら確認の為LEDの発光パターンを1にしておく
     const senddata = new Uint8Array([0x02, 1, 0]);
     this.write('DEVICE_INFORMATION', senddata);
   }

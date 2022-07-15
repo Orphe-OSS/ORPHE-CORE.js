@@ -154,7 +154,14 @@
       <ul>
         <li><span class="bg-warning">Examples</span></li>
         <ul>
-          <li>INFORMATION: shows device information [ DEMO ][ github ]</li>
+          <li>INFORMATION: shows device information [
+            <a href="https://orphe-oss.github.io/ORPHE-CORE.js/examples/INFORMATION" target="_blank">
+              DEMO</a>
+            ][
+            <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/INFORMATION"
+              target="_blank">source</a>
+            ]
+          </li>
           <li>LIGHT: Controls
             LEDs on ORPHE CORE.
             [
@@ -162,74 +169,12 @@
             </a>
             ]
             [
-            <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/LIGHT" target="_blank">github</a>
+            <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/LIGHT" target="_blank">source</a>
             ]
           </li>
         </ul>
       </ul>
-      <h5>ble.read(' DEVICE INFORMATION')</h5>
-      <table class="table table-sm table-dark table-striped table-hover">
-        <thead>
-          <tr>
-            <th scope="col">byte order</th>
-            <th scope="col">name</th>
-            <th scope="col">abstract</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>0</td>
-            <td>Battery Status</td>
-            <td>0:low, 1:normal, 2:high</td>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td>Left or Right</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>Run Record Status</td>
-            <td>stop:0, recording:1, paused:2</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>Auto Run Record setting</td>
-            <td>off:0, on:1</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>Brightness of LED</td>
-            <td>0-255</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>--</td>
-            <td>--</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>--</td>
-            <td>--</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td>--</td>
-            <td>--</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td>range of acc</td>
-            <td>0:2[g], 1:4[g], 3:8[g], 4:16[g]</td>
-          </tr>
-          <tr>
-            <td>9</td>
-            <td>range of gyro</td>
-            <td>0: 250[deg/s], 1: 500[deg/s], 2: 1000[deg/s], 3: 2000[deg/s]</td>
-          </tr>
-
-
-        </tbody>
+      </tbody>
       </table>
 
 
@@ -260,6 +205,8 @@
   <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?skin=sunburst"></script>
 
   <script>
+
+
     function copyInputValue() {
       let dom = document.querySelector('#cdn');
       dom.select();

@@ -1,15 +1,14 @@
-/*
-============================================================
-ORPHE.js
-2022(C) Tetsuaki BABA
-
-ORPHE.js based on BlueJelly.js
+/**
+ORPHE.js is javascript library for ORPHE CORE Module, which is inspired by BlueJelly.js
+@author Tetsuaki BABA
+@see https://orphe.io/
 ============================================================
 */
 
-//--------------------------------------------------
-//Orphe constructor
-//--------------------------------------------------
+/**
+ * Orphe Constructor
+ * @param {number} _num specifies id of your ORPHE CORE Module
+ */
 var Orphe = function (_num) {
   this.bluetoothDevice = null;
   this.dataCharacteristic = null;
@@ -29,9 +28,12 @@ var Orphe = function (_num) {
   this.onReset = function () { console.log("onReset"); };
   this.onError = function (error) { console.log("onError"); };
 }
-//--------------------------------------------------
-//setUUID
-//--------------------------------------------------
+/**
+ * setup UUID with predefined name
+ * @param {string} name 
+ * @param {string} serviceUUID 
+ * @param {string} characteristicUUID 
+ */
 Orphe.prototype.setUUID = function (name, serviceUUID, characteristicUUID) {
   console.log('Execute : setUUID');
   console.log(this.hashUUID);
@@ -39,9 +41,6 @@ Orphe.prototype.setUUID = function (name, serviceUUID, characteristicUUID) {
 }
 
 
-//--------------------
-// Orphe
-//--------------------
 Object.defineProperty(Orphe, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
 Object.defineProperty(Orphe, 'ORPHE_DEVICE_INFORMATION', { value: "24354f22-1c46-430e-a4ab-a1eeabbcdfc0", writable: true });
 
@@ -50,6 +49,10 @@ Object.defineProperty(Orphe, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205
 Object.defineProperty(Orphe, 'ORPHE_REALTIME_ANALYSIS', { value: "adb7eb5a-ac8a-4f95-907b-45db4a71b45a", writable: false });
 Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
 
+/**
+ * setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
+ * @param {string[]} names 
+ */
 Orphe.prototype.setup = function (names) {
   console.log(names);
   for (const name of names) {
@@ -65,6 +68,10 @@ Orphe.prototype.setup = function (names) {
   }
 }
 
+/**
+ * 
+ * @returns resolve()
+ */
 Orphe.prototype.begin = async function () {
   return new Promise(resolve => {
     this.read('DEVICE_INFORMATION').then(() => {

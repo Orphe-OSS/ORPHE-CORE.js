@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@petamoriken/float16": "^3.6.5",
+    "jsdoc": "^3.6.10"
+  }
+}

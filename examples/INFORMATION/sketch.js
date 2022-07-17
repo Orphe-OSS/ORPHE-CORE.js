@@ -13,20 +13,25 @@ async function toggleConnect(dom) {
     console.log("toggleConnect(): ", dom.value);
     // ble
     if (dom.checked) {
-        // 初めてつなぐ時はbegin()。beginはawait対応にしといた
+        // 初めてつなぐ時はbegin()。beginはawait対応にしといたので、接続後に次の行に移行する
         await ble.begin();
+
+        // Get Device Informationボタンをアクティブにする
         document.querySelector('button').disabled = false;
     }
     else {
         // 解除
         ble.stop();
+
+        // Get Device Informationボタンを非アクティブにする
         document.querySelector('button').disabled = true;
     }
 }
 
 function getDeviceInformation() {
-    ble.read('DEVICE_INFORMATION').then(() => {
-        console.log(ble.device_information)
+    ble.read('DEVICE_INFORMATION').then(function (/*ret*/) {
+        //console.log("getDeviceInformation();", ret);
+        //console.log(ble.device_information)
         document.querySelector('#td_battery').innerText = ble.device_information.battery;
         document.querySelector('#td_lr').innerText = ble.device_information.lr;
         document.querySelector('#td_rec_mode').innerText = ble.device_information.rec_mode;

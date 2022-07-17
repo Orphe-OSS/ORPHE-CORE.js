@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>orphe.js</title>
+  <title>ORPHE-CORE.js Document</title>
 
   <link href="./css/custom.css" rel="stylesheet">
   <link href="./css/orphe_custom.css" rel="stylesheet">
@@ -15,13 +15,14 @@
 <body class="bg-dark">
 
   <div class="container-sm mt-2">
-    <nav class="navbar fixed-top navbar-light bg-base position-relative">
+    <nav class="navbar fixed-top navbar-light bg-base position-relative navbar-expand-lg">
       <span class="position-absolute top-25 end-0 badge bg-base border-light p-1" style="font-size:0.7em;">document:
         Version
         0.1</span>
+
       <div class="container-fluid">
         <span class="navbar-brand mb-0 h1">
-          <a class="navbar-brand" href="#">
+          <a class="navbar-brand" href="/">
             <img src="./images/orphe.svg" alt="" height="24" class="d-inline-block align-text-top">
           </a>
         </span>
@@ -89,34 +90,27 @@
       </ol>
 
 
-      <h4 class="mt-4">Running a LIGHT example with VSCode</h4>
-      To run /ORPHE-CORE.js/examples in a local environment, we recommend using VSCode. Please refer to the following
-      video.
-      <div class="mt-2" style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
-          src="https://www.loom.com/embed/a8e47e14c80045449bd6e0dd72dac2ba" frameborder="0" webkitallowfullscreen
-          mozallowfullscreen allowfullscreen
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
-
-      </pre>
     </section>
 
     <h3 class="mt-4"><i class="bi bi-link-45deg"></i> CDN Link</h3>
     <section class="ms-4">
       As reference, here is ORPHE-CORE.js CDN file.
-      <!-- Target -->
-      <div class="input-group mb-3">
-        <button class="btn btn-outline-primary" type="button" id="button_copy_cdn" onclick="copyInputValue()"> <i
-            class="bi bi-clipboard"></i></button>
+
+      <div class="input-group mb-3 mt-2">
+        <button class="btn btn-outline-primary" type="button" id="button_copy_cdn"
+          onclick="copyInputValue(this, '#cdn')"> <i class="bi bi-clipboard"></i></button>
         <input type="text" class="form-control bg-secondary" id="cdn"
           value='<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous" type="text/javascript"></script>'>
       </div>
     </section>
 
 
-    <h3 class="mt-4"><i class="bi bi-bluetooth"></i> BLE Specification and examples </h3>
+    <h3 class="mt-4"><i class="bi bi-bluetooth"></i> Examples </h3>
     <section class="ms-4">
-      The following is a list of BLE Advertising by ORPHE CORE Module. Not all advertisements are listed in this page.
+      We have prepared several examples using ORPHE-CORE.js. All examples are located under the /ORPHE-CORE.js/examples
+      directory.
+      <!-- The following is a list of BLE Advertising by ORPHE CORE Module. Not all advertisements are listed in this page.
       <table class="table table-dark table-striped table-hover">
         <thead>
           <tr>
@@ -156,65 +150,74 @@
             <td>4EB776DC-CF99-4AF7-B2D3-AD0F791A79DD</td>
           </tr>
         </tbody>
-      </table>
+      </table> -->
 
-      <h3 class="mt-4">ORPHE Information</h3>
-      Service for device configuration and status acquisition
+      <ul class="mt-4">
+        <li><span class="bg-warning">INFORMATION</span>: shows device information [
+          <a href="./examples/INFORMATION" target="_blank">
+            DEMO</a>
+          ][
+          <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/INFORMATION" target="_blank">source</a>
+          ]
+          [ Glitch.com ]
+        </li>
+        <li><span class="bg-warning">LIGHT</span>: Controls
+          LEDs on ORPHE CORE.
+          [
+          <a href="./examples/LIGHT/" target="_blank">DEMO
+          </a>
+          ]
+          [
+          <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/LIGHT" target="_blank">source</a>
+          ]
+          [ Glitch.com ]
+        </li>
 
-      <section class="ms-2">
-        <h4 class="mt-4">Device Information</h4>
+        <li><span class="bg-warning">VIEW</span>: viewer for step analysis/sensor values [
+          <a href="./examples/VIEW" target="_blank">
+            DEMO</a>
+          ][
+          <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/VIEW" target="_blank">source</a>
+          ]
+          [ Glitch.com ]
+        </li>
+      </ul>
+      <div class="row">
+        <div class="col-md-6">
+          <h4 class="mt-4">with VSCode (local)</h4>
 
-        The system acquires information such as remaining battery capacity, left and right side information, etc., and
-        sets
-        the acceleration sensor and gyro sensor.
+          <div class="mt-2" style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
+              src="https://www.loom.com/embed/a8e47e14c80045449bd6e0dd72dac2ba" frameborder="0" webkitallowfullscreen
+              mozallowfullscreen allowfullscreen
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+          </div>
+          </pre>
 
-        <ul>
-          <li><span class="bg-warning">Examples</span></li>
-          <ul>
-            <li>INFORMATION: shows device information [
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/examples/INFORMATION" target="_blank">
-                DEMO</a>
-              ][
-              <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/INFORMATION"
-                target="_blank">source</a>
-              ]
-            </li>
-            <li>LIGHT: Controls
-              LEDs on ORPHE CORE.
-              [
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/examples/LIGHT/" target="_blank">DEMO
-              </a>
-              ]
-              [
-              <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/LIGHT" target="_blank">source</a>
-              ]
-            </li>
-          </ul>
-        </ul>
-      </section>
-      </tbody>
-      </table>
+          <div class="mt-2 input-group mb-3">
+            <button class="btn btn-outline-primary" type="button" id="button_copy_clone"
+              onclick="copyInputValue(this, '#input_clone')"> <i class="bi bi-clipboard"></i></button>
+            <input type="text" class="form-control bg-secondary" id="input_clone"
+              value='git clone https://orphe-oss.github.io/ORPHE-CORE.js.git' crossorigin="anonymous"
+              type="text/javascript"></script>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <h4 class="mt-4">with Glitch.com (online)</h4>
+          <img class="img-fluid" src="https://placehold.jp/30/ff6040/ffffff/640x360.png?text=getting+ready">
+        </div>
+      </div>
 
+    </section>
 
+    <h3 class="mt-4"><i class="bi bi-link-45deg"></i> API</h3>
+    <section class="ms-4">
+      <a href="./api_doc/" target="_blank">API Documentation</a>
+    </section>
 
-      <h3 class="mt-4">Other Service</h3>
-      Service for obtaining user gait information and sensor values
-
-      <section class="ms-2">
-        <h4 class="mt-4">Step Analysis</h4>
-        Transmits quaternion and microdisplacement at 50 Hz, and transmits step count and gait information at each step.
-
-        <h4 class="mt-4">Sensor Values</h4>
-        Transmits motion data, such as quaternion, acc and gyro at 50 Hz.
-      </section>
-  </div>
-
-  </section>
-
-  <hr>
-  <footer class="text-center small">
-    2022 &copy; Tetsuaki BABA
-  </footer>
+    <hr>
+    <footer class="text-center small">
+      2022 &copy; Tetsuaki BABA
+    </footer>
   </div>
 
 
@@ -226,14 +229,15 @@
   <script>
 
 
-    function copyInputValue() {
-      let dom = document.querySelector('#cdn');
+    function copyInputValue(button_dom, id) {
+      console.log(id);
+      let dom = document.querySelector(id);
       dom.select();
       document.execCommand("copy");
       dom.classList.remove('bg-secondary')
       dom.classList.add('bg-primary')
       let v_prev = dom.value;
-      document.querySelector('#button_copy_cdn').innerHTML = "COPIED";
+      button_dom.innerHTML = "COPIED";
       //dom.value = 'COPIED!!' + v_prev;
       setTimeout(function () {
         //console.log(dom);
@@ -241,7 +245,7 @@
         dom.classList.add('bg-secondary')
         //dom.value = v_prev;
         dom.blur();
-        document.querySelector('#button_copy_cdn').innerHTML = '<i class="bi bi-clipboard"></i>';
+        button_dom.innerHTML = '<i class="bi bi-clipboard"></i>';
 
       }, 1000, dom)
       //test

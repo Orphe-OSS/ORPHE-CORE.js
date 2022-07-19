@@ -74,7 +74,7 @@ var bles = [new Orphe(0), new Orphe(1)];
 window.onload = function () {
     for (ble of bles) {
         ble.setup([
-            'DEVICE_INFORMATION',
+            'DEVICE_INFORMATION', // device informationはデフォで必ずいれておく
             'SENSOR_VALUES',
             'STEP_ANALYSIS'
         ]);

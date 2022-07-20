@@ -106,7 +106,7 @@
     </section>
 
 
-    <h3 class="mt-4"><i class="bi bi-bluetooth"></i> Examples </h3>
+    <h3 class="mt-4"><i class="bi bi-code"></i> Examples </h3>
     <section class="ms-4">
       We have prepared several examples using ORPHE-CORE.js. All examples are located under the /ORPHE-CORE.js/examples
       directory.
@@ -159,7 +159,6 @@
           ][
           <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/INFORMATION" target="_blank">source</a>
           ]
-          [ Glitch.com ]
         </li>
         <li><span class="bg-warning">LIGHT</span>: Controls
           LEDs on ORPHE CORE.
@@ -170,7 +169,6 @@
           [
           <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/LIGHT" target="_blank">source</a>
           ]
-          [ Glitch.com ]
         </li>
 
         <li><span class="bg-warning">VIEW</span>: viewer for step analysis/sensor values [
@@ -179,12 +177,11 @@
           ][
           <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/VIEW" target="_blank">source</a>
           ]
-          [ Glitch.com ]
         </li>
       </ul>
       <div class="row">
+        <h4 class="mt-4">Play LIGHT example with VSCode</h4>
         <div class="col-md-6">
-          <h4 class="mt-4">with VSCode (local)</h4>
 
           <div class="mt-2" style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
               src="https://www.loom.com/embed/a8e47e14c80045449bd6e0dd72dac2ba" frameborder="0" webkitallowfullscreen
@@ -193,20 +190,46 @@
           </div>
           </pre>
 
-          <div class="mt-2 input-group mb-3">
-            <button class="btn btn-outline-primary" type="button" id="button_copy_clone"
-              onclick="copyInputValue(this, '#input_clone')"> <i class="bi bi-clipboard"></i></button>
-            <input type="text" class="form-control bg-secondary" id="input_clone"
-              value='git clone https://orphe-oss.github.io/ORPHE-CORE.js.git' crossorigin="anonymous"
-              type="text/javascript"></script>
-          </div>
+
         </div>
         <div class="col-md-6">
-          <h4 class="mt-4">with Glitch.com (online)</h4>
-          <img class="img-fluid" src="https://placehold.jp/30/ff6040/ffffff/640x360.png?text=getting+ready">
+          <ol>
+            <li>Create a directory, test or something like that.</li>
+            <li>Open "test" directory with VSCode</li>
+            <li>Open Terminal on VSCode</li>
+            <li>type "git clone https://orphe-oss.github.io/ORPHE-CORE.js.git" on the terminal.
+              <div class="mt-2 input-group mb-3">
+                <button class="btn btn-outline-primary" type="button" id="button_copy_clone"
+                  onclick="copyInputValue(this, '#input_clone')"> <i class="bi bi-clipboard"></i></button>
+                <input type="text" class="form-control bg-secondary" id="input_clone"
+                  value='git clone https://orphe-oss.github.io/ORPHE-CORE.js.git' crossorigin="anonymous"
+                  type="text/javascript"></script>
+              </div>
+            </li>
+            <li>Open ORPHE-CORE.js/examples/LIGHT/index.html via VSCode explorer.</li>
+            <li>Install "live server" extension</li>
+            <li>Click "Go Live" button at the bottom of VSCode window</li>
+          </ol>
         </div>
       </div>
 
+    </section>
+
+    <h3 class="mt-4"><i class="bi bi-star"></i> Starter Templates </h3>
+    <section class="ms-4">
+      Although we have provided an ORPHE-like example in the Examples section, it would be better to have a more simpler
+      example if users want to create their own applications using ORPHE-CORE. In this section, as Starter Templates, we
+      provide a very simple working example without css. All starter templates are located under the
+      /ORPHE-CORE.js/starter-templates/ directory.
+      <ul>
+        <li><span class="bg-warning">QUATERNION</span>: get [w, x, y, z] quaternion data. [ DEMO ] [ Source ]</li>
+        <li><span class="bg-warning">EULER</span>: get [x, y, z] euler angles. [ DEMO ] [ Source ]</li>
+        <li><span class="bg-warning">ACCELEROMETER</span>: get [x,y,z] accelerometer data. [ DEMO ] [ Source ]</li>
+        <li><span class="bg-warning">GYRO</span> [ DEMO ] [ Source ]</li>
+        <li><span class="bg-warning">GAIT</span> [ DEMO ] [ Source ]</li>
+        <li><span class="bg-warning">STRIDE</span> [ DEMO ] [ Source ]</li>
+        <li><span class="bg-warning">PRONATION</span> [ DEMO ] [ Source ]</li>
+      </ul>
     </section>
 
     <h3 class="mt-4"><i class="bi bi-link-45deg"></i> API</h3>

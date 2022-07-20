@@ -413,6 +413,7 @@ Orphe.prototype.acc = {
  * @param {string} uuid 
  */
 Orphe.prototype.onRead = function (data, uuid) {
+  //  console.log(uuid, data.byteLength, data.getUint8(0));
 
   // デバイス情報Readの場合
   if (uuid == 'DEVICE_INFORMATION') {
@@ -469,7 +470,7 @@ Orphe.prototype.onRead = function (data, uuid) {
     this.write('DEVICE_INFORMATION', senddata);
   }
   else if (uuid == 'STEP_ANALYSIS') {
-    const buffer = new ArrayBuffer(2 * 7);
+    const buffer = new ArrayBuffer(20);
     const view = new DataView(buffer);
 
     const {
@@ -517,19 +518,16 @@ Orphe.prototype.onRead = function (data, uuid) {
     }
     // Quat and delta
     else if (data.getUint8(1) == 4) {
-      for (let i = 0; i < buffer.byteLength; i++) {
-        view.setUint8(i, data.getUint8(6 + i));
-      }
       this.quat = {
-        w: getFloat16(view, 0),
-        x: getFloat16(view, 2),
-        y: getFloat16(view, 4),
-        z: getFloat16(view, 6)
+        w: getFloat16(data, 6),
+        x: getFloat16(data, 8),
+        y: getFloat16(data, 10),
+        z: getFloat16(data, 12)
       }
       this.delta = {
-        x: getFloat16(view, 8),
-        y: getFloat16(view, 10),
-        z: getFloat16(view, 12)
+        x: getFloat16(data, 14),
+        y: getFloat16(data, 16),
+        z: getFloat16(data, 18)
       }
 
       let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
@@ -549,30 +547,44 @@ Orphe.prototype.onRead = function (data, uuid) {
     }
   }
   else if (uuid == 'SENSOR_VALUES') {
-    const buffer = new ArrayBuffer(2 * 10);
-    const view = new DataView(buffer);
-    for (let i = 0; i < buffer.byteLength; i++) {
-      view.setUint8(i, data.getUint8(8 + i));
-    }
+    if (data.getUint8(0) == 50) {
+      this.quat = {
+        w: data.getInt16(8) / 16384,
+        x: data.getInt16(10) / 16384,
+        y: data.getInt16(12) / 16384,
+        z: data.getInt16(14) / 16384
+      }
+      this.gyro = {
+        x: data.getInt16(16) / 16384,
+        y: data.getInt16(18) / 16384,
+        z: data.getInt16(20) / 16384
+      }
+      this.acc = {
+        x: data.getInt16(22) / 16384,
+        y: data.getInt16(24) / 16384,
+        z: data.getInt16(26) / 16384
+      }
 
-    this.quat = {
-      w: view.getInt16(0) / 16384,
-      x: view.getInt16(2) / 16384,
-      y: view.getInt16(4) / 16384,
-      z: view.getInt16(6) / 16384
     }
-    this.gyro = {
-      x: view.getInt16(8) / 16384,
-      y: view.getInt16(10) / 16384,
-      z: view.getInt16(12) / 16384
-    }
-    this.acc = {
-      x: view.getInt16(14) / 16384,
-      y: view.getInt16(16) / 16384,
-      z: view.getInt16(18) / 16384
-    }
+    else if (data.getUint8(0) == 40) {
 
-
+      this.quat = {
+        w: data.getInt16(1) / 16384,
+        x: data.getInt16(3) / 16384,
+        y: data.getInt16(5) / 16384,
+        z: data.getInt16(7) / 16384
+      }
+      this.gyro = {
+        x: data.getInt8(9) / 127,
+        y: data.getInt8(10) / 127,
+        z: data.getInt8(11) / 127
+      }
+      this.acc = {
+        x: data.getInt8(14) / 127,
+        y: data.getInt8(15) / 127,
+        z: data.getInt8(16) / 127
+      }
+    }
     this.gotQuat(this.quat);
     this.gotGyro(this.gyro);
     this.gotAcc(this.acc);

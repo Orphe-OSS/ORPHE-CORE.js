@@ -597,31 +597,31 @@ Orphe.prototype.onRead = function (data, uuid) {
 }
 
 Orphe.prototype.gotQuat = function (quat) {
-  console.log('prototype.gotQuat');
+  //console.log('prototype.gotQuat');
 }
 
 Orphe.prototype.gotGyro = function (gyro) {
-  console.log('prototype.gotGyro');
+  //console.log('prototype.gotGyro');
 }
 
 Orphe.prototype.gotAcc = function (acc) {
-  console.log('prototype.gotAcc');
+  //console.log('prototype.gotAcc');
 }
 
 Orphe.prototype.gotDelta = function (delta) {
-  console.log('prototype.gotDelta');
+  //console.log('prototype.gotDelta');
 }
 
 Orphe.prototype.gotEuler = function (euler) {
-  console.log('prototype.gotEuler');
+  //console.log('prototype.gotEuler');
 }
 
 Orphe.prototype.gotGait = function (gait) {
-  console.log('prototype.gotGait');
+  //console.log('prototype.gotGait');
 }
 Orphe.prototype.gotStride = function (stride) {
-  console.log('prototype.gotStride');
+  //console.log('prototype.gotStride');
 }
 Orphe.prototype.gotPronation = function (pronation) {
-  console.log('prototype.gotPronation');
+  //console.log('prototype.gotPronation');
 }

@@ -53,7 +53,7 @@ Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7
  * @param {string[]} names DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
  */
 Orphe.prototype.setup = function (names) {
-  this.names = names;
+
   for (const name of names) {
     if (name == 'DEVICE_INFORMATION') {
       this.setUUID(name, Orphe.ORPHE_INFORMATION, Orphe.ORPHE_DEVICE_INFORMATION);
@@ -73,21 +73,19 @@ Orphe.prototype.setup = function (names) {
  * @async
  * @return {Promise<string>} 
  */
-Orphe.prototype.begin = async function () {
+Orphe.prototype.begin = async function (name = 'DEVICE_INFORMATION') {
   return new Promise(resolve => {
-
-    for (let name of this.names) {
-      if (name = 'DEVICE_INFORMATION') {
-        this.read(name).then(() => {
-          resolve("done begin()");
-        });
-      }
-      else {
-        this.startNotify(name).then(() => {
-          resolve("done begin()");
-        })
-      }
+    if (name == 'DEVICE_INFORMATION') {
+      this.read(name).then(() => {
+        resolve("done begin() with DEVICE_INFORAMTION read()");
+      });
     }
+    else {
+      this.startNotify(name).then(() => {
+        resolve(`done begin() with ${name} startNotify()`);
+      })
+    }
+
 
   });
 }
@@ -611,34 +609,64 @@ Orphe.prototype.onRead = function (data, uuid) {
 
 /**
  * 
- * @param {object} quat {x,y,z}
+ * @param {Object} quat {w, x,y,z}
  */
 Orphe.prototype.gotQuat = function (quat) {
   //console.log('prototype.gotQuat');
 }
 
+/**
+ * 
+ * @param {Object} gyro {x,y,z}
+ */
 Orphe.prototype.gotGyro = function (gyro) {
   //console.log('prototype.gotGyro');
 }
 
+/**
+ * 
+ * @param {Object} acc {x,y,z}
+ */
 Orphe.prototype.gotAcc = function (acc) {
   //console.log('prototype.gotAcc');
 }
 
+/**
+ * 
+ * @param {Object} delta {x,y,z}
+ */
 Orphe.prototype.gotDelta = function (delta) {
   //console.log('prototype.gotDelta');
 }
 
+/**
+ * 
+ * @param {Object} euler {pitch, roll, yaw}
+ */
 Orphe.prototype.gotEuler = function (euler) {
   //console.log('prototype.gotEuler');
 }
 
+/**
+ * 
+ * @param {Object} gait {type, direction, calorie, distance}
+ */
 Orphe.prototype.gotGait = function (gait) {
   //console.log('prototype.gotGait');
 }
+
+/**
+ * 
+ * @param {Object} stride {foot_angle, x,y,z}
+ */
 Orphe.prototype.gotStride = function (stride) {
   //console.log('prototype.gotStride');
 }
+
+/**
+ * 
+ * @param {Object} pronation {landing_impact, x,y,z}
+ */
 Orphe.prototype.gotPronation = function (pronation) {
   //console.log('prototype.gotPronation');
 }

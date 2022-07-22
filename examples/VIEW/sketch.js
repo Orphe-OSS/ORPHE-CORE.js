@@ -168,7 +168,7 @@ function toggleConnect(dom) {
     }
     else {
         const kind = document.querySelector(`#char${id}`).value;
-        bles[id].startNotify(kind);
+        bles[id].begin(kind);
     }
 }
 

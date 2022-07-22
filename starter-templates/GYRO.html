@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>orphe.js</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <h1>GYRO</h1>
+    <button onclick="ble.startNotify('SENSOR_VALUES');">connect</button>
+    <br>
+    <ul>
+        <li id="x"></li>
+        <li id="y"></li>
+        <li id="z"></li>
+    </ul>
+
+
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script>
+        var ble = new Orphe(0);
+        window.onload = function () {
+            // ORPHE CORE Init
+            ble.setup(['DEVICE_INFORMATION', 'STEP_ANALYSIS', 'SENSOR_VALUES']);
+            ble.gotGyro = function (gyro) {
+                document.querySelector('#x').innerHTML = gyro.x;
+                document.querySelector('#y').innerHTML = gyro.y;
+                document.querySelector('#z').innerHTML = gyro.z;
+            }
+        }
+    </script>
+</body>
+
+</html>

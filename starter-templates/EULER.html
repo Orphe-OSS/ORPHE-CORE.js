@@ -9,7 +9,7 @@
 
 <body>
     <h1>EULER</h1>
-    <button onclick="ble.startNotify('STEP_ANALYSIS');">connect</button>
+    <button onclick="ble.begin('STEP_ANALYSIS');">connect</button>
     <br>
     <ul>
         <li id="pitch"></li>
@@ -18,13 +18,15 @@
     </ul>
 
 
-    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"
-        type="text/javascript"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"
+        type="text/javascript"></script> -->
     <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js" crossorigin="anonymous"
         type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js" crossorigin="anonymous"
         type="text/javascript"></script>
+    <script src="../js/ORPHE-CORE.js"></script>
     <script>
+
         var ble = new Orphe(0);
         window.onload = function () {
             // ORPHE CORE Init

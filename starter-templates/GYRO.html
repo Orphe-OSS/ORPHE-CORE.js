@@ -9,7 +9,7 @@
 
 <body>
     <h1>GYRO</h1>
-    <button onclick="ble.startNotify('SENSOR_VALUES');">connect</button>
+    <button onclick="ble.begin('SENSOR_VALUES');">connect</button>
     <br>
     <ul>
         <li id="x"></li>
@@ -18,8 +18,9 @@
     </ul>
 
 
-    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"
-        type="text/javascript"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"
+        type="text/javascript"></script> -->
+    <script src="../js/ORPHE-CORE.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js" crossorigin="anonymous"
         type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js" crossorigin="anonymous"

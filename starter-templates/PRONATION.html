@@ -8,14 +8,14 @@
 </head>
 
 <body>
-    <h1>GAIT</h1>
+    <h1>PRONATION</h1>
     <button onclick="ble.begin('STEP_ANALYSIS');">connect</button>
     <br>
     <ul>
-        <li id="type"></li>
-        <li id="gait"></li>
-        <li id="calorie"></li>
-        <li id="distance"></li>
+        <li id="landing_impact"></li>
+        <li id="x"></li>
+        <li id="y"></li>
+        <li id="z"></li>
     </ul>
 
 
@@ -31,11 +31,11 @@
         window.onload = function () {
             // ORPHE CORE Init
             ble.setup(['DEVICE_INFORMATION', 'STEP_ANALYSIS', 'SENSOR_VALUES']);
-            ble.gotGait = function (gait) {
-                document.querySelector('#type').innerHTML = gait.type;
-                document.querySelector('#gait').innerHTML = gait.direction;
-                document.querySelector('#calorie').innerHTML = gait.calorie;
-                document.querySelector('#distance').innerHTML = gait.distance;
+            ble.gotPronation = function (pronation) {
+                document.querySelector('#landing_impact').innerHTML = pronation.landing_impact;
+                document.querySelector('#x').innerHTML = pronation.x;
+                document.querySelector('#y').innerHTML = pronation.y;
+                document.querySelector('#z').innerHTML = pronation.z;
             }
         }
     </script>

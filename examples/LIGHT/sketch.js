@@ -7,7 +7,7 @@ const bles = [new Orphe(0), new Orphe(1)];
 window.onload = function () {
     // ORPHE COREの初期セットアップ
     for (ble of bles) {
-        ble.setup(['DEVICE_INFORMATION']);
+        ble.setup();
     }
 }
 

@@ -376,18 +376,21 @@ Orphe.prototype.device_information;
  * associative array for gait data
  */
 Orphe.prototype.gait = {
+  steps: 0,
   type: 0,
   direction: 0,
   calorie: 0,
   distance: 0
 };
 Orphe.prototype.stride = {
+  steps: 0,
   foot_angle: 0,
   x: 0,
   y: 0,
   z: 0
 };
 Orphe.prototype.pronation = {
+  steps: 0,
   landing_impact: 0,
   x: 0,
   y: 0,
@@ -424,8 +427,8 @@ Orphe.prototype.acc = {
  * @param {string} uuid 
  */
 Orphe.prototype.onRead = function (data, uuid) {
-  //  console.log(uuid, data.byteLength, data.getUint8(0));
 
+  //  console.log(uuid, data.byteLength, data.getUint8(0));
   // デバイス情報Readの場合
   if (uuid == 'DEVICE_INFORMATION') {
     /*
@@ -481,6 +484,7 @@ Orphe.prototype.onRead = function (data, uuid) {
     this.write('DEVICE_INFORMATION', senddata);
   }
   else if (uuid == 'STEP_ANALYSIS') {
+
     const buffer = new ArrayBuffer(20);
     const view = new DataView(buffer);
 
@@ -491,8 +495,9 @@ Orphe.prototype.onRead = function (data, uuid) {
     } = float16;
 
 
+
     // Gait Overview
-    if (data.getUint8(1) == 0) {
+    if (data.getUint8(1) == 0 && data.getUint16(2) > this.gait.steps) {
       const steps = data.getUint16(2);
       let type = data.getUint8(4);
       type = type & 0b00000011;
@@ -505,22 +510,26 @@ Orphe.prototype.onRead = function (data, uuid) {
       this.gait.direction = direction;
       this.gait.calorie = calorie;
       this.gait.distance = dist;
+      this.gait.steps = data.getUint16(2);
       this.gotGait(this.gait);
     }
     // Stride
-    else if (data.getUint8(1) == 1) {
+    else if (data.getUint8(1) == 1 && data.getUint16(2) > this.stride.steps) {
+      console.log(uuid);
       this.stride.foot_angle = data.getFloat32(4);
       this.stride.x = data.getFloat32(8);
       this.stride.y = data.getFloat32(12);
       this.stride.z = data.getFloat32(16);
+      this.stride.steps = data.getUint16(2);
       this.gotStride(this.stride);
     }
     // Pronation
-    else if (data.getUint8(1) == 2) {
+    else if (data.getUint8(1) == 2 && data.getUint16(2) > this.pronation.steps) {
       this.pronation.landing_impact = data.getFloat32(4);
       this.pronation.x = data.getFloat32(8);
       this.pronation.y = data.getFloat32(12);
       this.pronation.z = data.getFloat32(16);
+      this.pronation.steps = data.getUint16(2);
       this.gotPronation(this.pronation);
     }
     // Stride Attitude -- Not implemented

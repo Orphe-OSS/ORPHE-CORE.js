@@ -9,10 +9,9 @@
 
 <body>
     <h1>PRONATION</h1>
-    <button onclick="ble.begin('STEP_ANALYSIS');">connect</button>
+    <button onclick="ble.begin();">connect</button>
     <br>
     <ul>
-        <li id="landing_impact"></li>
         <li id="x"></li>
         <li id="y"></li>
         <li id="z"></li>
@@ -30,9 +29,8 @@
         var ble = new Orphe(0);
         window.onload = function () {
             // ORPHE CORE Init
-            ble.setup(['DEVICE_INFORMATION', 'STEP_ANALYSIS', 'SENSOR_VALUES']);
+            ble.setup();
             ble.gotPronation = function (pronation) {
-                document.querySelector('#landing_impact').innerHTML = pronation.landing_impact;
                 document.querySelector('#x').innerHTML = pronation.x;
                 document.querySelector('#y').innerHTML = pronation.y;
                 document.querySelector('#z').innerHTML = pronation.z;

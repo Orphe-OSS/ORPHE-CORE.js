@@ -9,7 +9,7 @@
 
 <body>
     <h1>LIGHT</h1>
-    <button onclick="ble.begin('DEVICE_INFORMATION');">connect</button>
+    <button onclick="ble.begin();">connect</button>
 
     <button onclick="ble.setLED(1,0);">0</button>
     <button onclick="ble.setLED(1,1);">1</button>
@@ -30,7 +30,7 @@
         var ble = new Orphe(0);
         window.onload = function () {
             // ORPHE CORE Init
-            ble.setup(['DEVICE_INFORMATION']);
+            ble.setup();
         }
     </script>
 </body>

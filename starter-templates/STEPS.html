@@ -8,14 +8,11 @@
 </head>
 
 <body>
-    <h1>GAIT</h1>
-    <button onclick="ble.begin('STEP_ANALYSIS');">connect</button>
+    <h1>Number of STEPS</h1>
+    <button onclick="ble.begin();">connect</button>
     <br>
     <ul>
-        <li id="type"></li>
-        <li id="gait"></li>
-        <li id="calorie"></li>
-        <li id="distance"></li>
+        <li id="steps_number"></li>
     </ul>
 
 
@@ -30,12 +27,9 @@
         var ble = new Orphe(0);
         window.onload = function () {
             // ORPHE CORE Init
-            ble.setup(['DEVICE_INFORMATION', 'STEP_ANALYSIS', 'SENSOR_VALUES']);
-            ble.gotGait = function (gait) {
-                document.querySelector('#type').innerHTML = gait.type;
-                document.querySelector('#gait').innerHTML = gait.direction;
-                document.querySelector('#calorie').innerHTML = gait.calorie;
-                document.querySelector('#distance').innerHTML = gait.distance;
+            ble.setup();
+            ble.gotStepsNumber = function (steps_number) {
+                document.querySelector('#steps_number').innerHTML = steps_number.value;
             }
         }
     </script>

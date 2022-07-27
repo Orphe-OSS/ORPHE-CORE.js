@@ -73,11 +73,7 @@ var bles = [new Orphe(0), new Orphe(1)];
 //--------------------------------------------------
 window.onload = function () {
     for (ble of bles) {
-        ble.setup([
-            'DEVICE_INFORMATION', // device informationはデフォで必ずいれておく
-            'SENSOR_VALUES',
-            'STEP_ANALYSIS'
-        ]);
+        ble.setup();
 
         ble.onConnectGATT = function (uuid) {
             console.log('> connected GATT!');
@@ -127,16 +123,21 @@ window.onload = function () {
             document.querySelector(`#gait${this.id}_z`).innerHTML = gait.distance.toFixed(3);
         }
         ble.gotStride = function (stride) {
-            document.querySelector(`#stride${this.id}_w`).innerHTML = stride.foot_angle.toFixed(3);
+
             document.querySelector(`#stride${this.id}_x`).innerHTML = stride.x.toFixed(3);
             document.querySelector(`#stride${this.id}_y`).innerHTML = stride.y.toFixed(3);
             document.querySelector(`#stride${this.id}_z`).innerHTML = stride.z.toFixed(3);
         }
+        ble.gotFootAngle = function (foot_angle) {
+            document.querySelector(`#stride${this.id}_w`).innerHTML = foot_angle.value.toFixed(3);
+        }
         ble.gotPronation = function (pronation) {
-            document.querySelector(`#pronation${this.id}_w`).innerHTML = pronation.landing_impact.toFixed(3);
             document.querySelector(`#pronation${this.id}_x`).innerHTML = pronation.x.toFixed(3);
             document.querySelector(`#pronation${this.id}_y`).innerHTML = pronation.y.toFixed(3);
             document.querySelector(`#pronation${this.id}_z`).innerHTML = pronation.z.toFixed(3);
+        }
+        ble.gotLandingImpact = function (landing_impact) {
+            document.querySelector(`#pronation${this.id}_w`).innerHTML = landing_impact.value.toFixed(3);
         }
 
         ble.onStartNotify = function (uuid) {

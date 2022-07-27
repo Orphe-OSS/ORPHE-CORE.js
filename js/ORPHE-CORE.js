@@ -52,8 +52,8 @@ Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7
  * setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
  * @param {string[]} names DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
  */
-Orphe.prototype.setup = function (names) {
-
+Orphe.prototype.setup = function (names = ['DEVICE_INFORMATION', 'STEP_ANALYSIS', 'SENSOR_VALUES']) {
+  console.log(names);
   for (const name of names) {
     if (name == 'DEVICE_INFORMATION') {
       this.setUUID(name, Orphe.ORPHE_INFORMATION, Orphe.ORPHE_DEVICE_INFORMATION);
@@ -73,22 +73,26 @@ Orphe.prototype.setup = function (names) {
  * @async
  * @return {Promise<string>} 
  */
-Orphe.prototype.begin = async function (name = 'DEVICE_INFORMATION') {
+Orphe.prototype.begin = async function (str_type = 'ANALYSIS') {
   return new Promise(resolve => {
-    if (name == 'DEVICE_INFORMATION') {
-      this.read(name).then(() => {
-        resolve("done begin() with DEVICE_INFORAMTION read()");
-      });
-    }
-    else {
-      this.startNotify(name).then(() => {
-        resolve(`done begin() with ${name} startNotify()`);
-      })
-    }
-
-
+    this.read('DEVICE_INFORMATION').then(() => {
+      if (str_type == "ANALYSIS") {
+        this.startNotify('STEP_ANALYSIS').then(() => {
+          console.log("analysis---")
+          resolve("done begin(); ANALYSIS");
+        });
+      }
+      else if (str_type == "RAW") {
+        this.startNotify('SENSOR_VALUES').then(() => {
+          console.log("raw---")
+          resolve("done begin(); RAW");
+        });
+      }
+    });
   });
 }
+
+
 
 
 
@@ -142,9 +146,9 @@ Orphe.prototype.requestDevice = function (uuid) {
     ORPHE core module name: CR-2, CR-3
     */
     filters: [
-      //{ services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833'] },
+      { services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833'] },
       //{ services: [0x1802, 0x1803] },
-      //{ services: ['c48e6067-5295-48d3-8d5c-0395f61792b1'] },
+      { services: ['c48e6067-5295-48d3-8d5c-0395f61792b1'] },
       //{ name: 'CR-2' },
       { namePrefix: 'CR-' }
     ],
@@ -512,6 +516,11 @@ Orphe.prototype.onRead = function (data, uuid) {
       this.gait.distance = dist;
       this.gait.steps = data.getUint16(2);
       this.gotGait(this.gait);
+      this.gotType({ value: this.gait.type });
+      this.gotDistance({ value: this.gait.distance });
+      this.gotDirection({ value: this.gait.direction });
+      this.gotCalorie({ value: this.gait.calorie });
+      this.gotStepsNumber({ value: this.gait.steps });
     }
     // Stride
     else if (data.getUint8(1) == 1 && data.getUint16(2) > this.stride.steps) {
@@ -521,7 +530,13 @@ Orphe.prototype.onRead = function (data, uuid) {
       this.stride.y = data.getFloat32(12);
       this.stride.z = data.getFloat32(16);
       this.stride.steps = data.getUint16(2);
-      this.gotStride(this.stride);
+      this.gotFootAngle({ value: this.stride.foot_angle });
+      this.gotStride({
+        x: this.stride.x,
+        y: this.stride.y,
+        z: this.stride.z
+      });
+      this.gotStepsNumber({ value: this.stride.steps });
     }
     // Pronation
     else if (data.getUint8(1) == 2 && data.getUint16(2) > this.pronation.steps) {
@@ -530,7 +545,13 @@ Orphe.prototype.onRead = function (data, uuid) {
       this.pronation.y = data.getFloat32(12);
       this.pronation.z = data.getFloat32(16);
       this.pronation.steps = data.getUint16(2);
-      this.gotPronation(this.pronation);
+      this.gotPronation({
+        x: this.pronation.x,
+        y: this.pronation.y,
+        z: this.pronation.z
+      });
+      this.gotLandingImpact({ value: this.pronation.landing_impact })
+      this.gotStepsNumber({ value: this.pronation.steps });
     }
     // Stride Attitude -- Not implemented
     else if (data.getUint8(1) == 3) {
@@ -666,16 +687,64 @@ Orphe.prototype.gotGait = function (gait) {
 
 /**
  * 
- * @param {Object} stride {foot_angle, x,y,z}
+ * @param {Object} type {value} 0:none, 1:walk, 2:run, 3:stand
  */
-Orphe.prototype.gotStride = function (stride) {
-  //console.log('prototype.gotStride');
+Orphe.prototype.gotType = function (type) {
 }
 
 /**
  * 
- * @param {Object} pronation {landing_impact, x,y,z}
+ * @param {Object} direction {value} 0:none, 1:foward, 2:backward, 3:inside, 4:outside
+ */
+Orphe.prototype.gotDirection = function (direction) {
+}
+
+/**
+ * 
+ * @param {Object} calorie {value}
+ */
+Orphe.prototype.gotCalorie = function (calorie) {
+}
+
+/**
+ * 
+ * @param {Object} distance {value}
+ */
+Orphe.prototype.gotDistance = function (distance) {
+}
+
+/**
+ * 
+ * @param {Object} stride {x,y,z}
+ */
+Orphe.prototype.gotStride = function (stride) {
+}
+
+/**
+ * 
+ * @param {Object} foot_angle {value}
+ */
+Orphe.prototype.gotFootAngle = function (foot_angle) {
+}
+
+/**
+ * 
+ * @param {Object} pronation {x,y,z}
  */
 Orphe.prototype.gotPronation = function (pronation) {
-  //console.log('prototype.gotPronation');
+}
+
+
+/**
+ * 
+ * @param {Object} landing_impact {value}
+ */
+Orphe.prototype.gotLandingImpact = function (landing_impact) {
+}
+
+/**
+ * 
+ * @param {Object} steps_number {value}
+ */
+Orphe.prototype.gotStepsNumber = function (steps_number) {
 }

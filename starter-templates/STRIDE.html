@@ -9,10 +9,9 @@
 
 <body>
     <h1>STRIDE</h1>
-    <button onclick="ble.begin('STEP_ANALYSIS');">connect</button>
+    <button onclick="ble.begin();">connect</button>
     <br>
     <ul>
-        <li id="foot_angle"></li>
         <li id="x"></li>
         <li id="y"></li>
         <li id="z"></li>
@@ -30,13 +29,14 @@
         var ble = new Orphe(0);
         window.onload = function () {
             // ORPHE CORE Init
-            ble.setup(['DEVICE_INFORMATION', 'STEP_ANALYSIS', 'SENSOR_VALUES']);
+            ble.setup();
             ble.gotStride = function (stride) {
-                document.querySelector('#foot_angle').innerHTML = stride.foot_angle;
                 document.querySelector('#x').innerHTML = stride.x;
                 document.querySelector('#y').innerHTML = stride.y;
                 document.querySelector('#z').innerHTML = stride.z;
+                console.log(stride);
             }
+
         }
     </script>
 </body>

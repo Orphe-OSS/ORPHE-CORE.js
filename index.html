@@ -34,32 +34,49 @@
 
   <div class="container-sm mt-4">
     <img class="img-fluid" src="./images/ORPHE_TRACK_scene_08.jpeg">
-    <h3 class="mt-4"> <i class="bi bi-card-text"></i> Abstract</h3>
+    <h2 class="mt-4"> <i class="bi bi-card-text"></i> ORPHE-CORE.js</h2>
     <p>This page contains information on how to hack the ORPHE CORE module with js, along with basic information on BLE
-      and
-      sample code.</p>
+      and sample code. ORPHE-CORE.js uses BLE, so please be sure to check its compatibility with a CHROME browser. The
+      environment that has been tested in this document is ,
+      <span class="bg-warning">Chrome browser on macOS, Windows, Linux and Android.</span>
+    </p>
     <p>Happy hacking with ORPHE CORE Module and javascript.</p>
 
 
     <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with p5.js
     </h3>
     <section class="ms-4 mb-4">
-      <figure class="text-start">
-        <p>If you want to try ORPHE CORE JS very quickly, open the link below in your chrome browser and use p5.js.</p>
-        <ul>
-          <li><a href="https://editor.p5js.org/tetsuakibaba/sketches/qQPilLD-i" target="_blank">P5.js Quick Start with
-              ORPHE-CORE.js</a></li>
-        </ul>
+      <div class="row">
+        <div class="col-md">
+          <figure class="text-start">
+            <p>If you want to try ORPHE CORE JS very quickly, open the link below in your chrome browser and use p5.js.
+              Please be sure to remember that you will need to allow pop-up windows when you run the program for the
+              first
+              time.</p>
+            <ul>
+              <li><a href="https://editor.p5js.org/tetsuakibaba/sketches/qQPilLD-i" target="_blank">P5.js Quick Start
+                  with
+                  ORPHE-CORE.js</a></li>
+            </ul>
 
-        <p>p5.js is a JavaScript library for creative coding, with a focus on making coding accessible and inclusive
-          for artists, designers, educators, beginners, and anyone else! p5.js is free and open-source because we
-          believe software, and the tools to learn it, should be accessible to everyone.</p>
-        <figcaption class="blockquote-footer text-end">
-          from top page <cite title="Source Title">https://p5js.org/</cite>
-        </figcaption>
-      </figure>
-
-
+            <p class="ms-4">p5.js is a JavaScript library for creative coding, with a focus on making coding accessible
+              and
+              inclusive
+              for artists, designers, educators, beginners, and anyone else! p5.js is free and open-source because we
+              believe software, and the tools to learn it, should be accessible to everyone.</p>
+            <figcaption class="blockquote-footer text-end">
+              from top page <cite title="Source Title">https://p5js.org/</cite>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="col-md">
+          <div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
+              src="https://www.loom.com/embed/2b58363a0282477a901299290c5516a1" frameborder="0" webkitallowfullscreen
+              mozallowfullscreen allowfullscreen
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+          </div>
+        </div>
+      </div>
     </section>
 
 
@@ -266,20 +283,20 @@
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/LvUXsj0WT" target="_blank">p5.js</a> ]
         </li>
         </li>
-        <li><span class="bg-warning">GAIT</span>: {type, direction, calorie, distance} [
-          <a href="./starter-templates/GAIT.html" target="_blank">DEMO</a> ] [
-          <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/starter-templates/GAIT.html"
+        <li><span class="bg-warning">STEPS</span>: {value} number of steps [
+          <a href="./starter-templates/STEPS.html" target="_blank">DEMO</a> ] [
+          <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/starter-templates/STEPS.html"
             target="_blank">Source</a> ]
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/fTR9Jj0kC" target="_blank">p5.js</a> ]
         </li>
-        <li><span class="bg-warning">STRIDE</span>: {foot_angle, x,y,z}
+        <li><span class="bg-warning">STRIDE</span>: {x,y,z}
           [
           <a href="./starter-templates/STRIDE.html" target="_blank">DEMO</a> ] [
           <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/starter-templates/STRIDE.html"
             target="_blank">Source</a> ]
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/PbW-apAGP" target="_blank">p5.js</a> ]
         </li>
-        <li><span class="bg-warning">PRONATION</span>: {landing_impact, x,y,z}
+        <li><span class="bg-warning">PRONATION</span>: {x,y,z}
           [
           <a href="./starter-templates/PRONATION.html" target="_blank">DEMO</a> ] [
           <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/starter-templates/PRONATION.html"
@@ -318,10 +335,38 @@
 
     </section>
 
+
     <h3 class="mt-4"><i class="bi bi-book"></i> API</h3>
     <section class="ms-4">
+      Here is a ORPHE class API reference which is generated by jsdoc.
       <li><a href="./api_doc/" target="_blank">API Reference for ORPHE-CORE.js</a></li>
     </section>
+
+
+    <h2 class="mt-4"><img height="30em" src="images/electron_logo.svg"> Electron</h2>
+    <section class="ms-4">
+      <p>
+        Using the previous contents, you already have easy and speedy access to the ORPHE CORE module. Still not
+        enough?
+        In this section, we will use Electron to make the ORPHE CORE module even more fun.
+      </p>
+
+      <p class="ms-4">
+        Electron is a framework for building desktop applications using JavaScript, HTML, and CSS. By embedding Chromium
+        and Node.js into its binary, Electron allows you to maintain one JavaScript codebase and create cross-platform
+        apps that work on Windows, macOS, and Linux — no native development experience required.
+      </p>
+      <figcaption class="blockquote-footer text-end">
+        What is Electron? <cite title="Source Title">https://www.electronjs.org/docs/latest/</cite>
+      </figcaption>
+
+      <h3>
+        Getting Started
+      </h3>
+
+    </section>
+
+
 
     <hr>
     <footer class="text-center small">

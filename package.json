@@ -2,5 +2,11 @@
   "dependencies": {
     "@petamoriken/float16": "^3.6.5",
     "jsdoc": "^3.6.10"
+  },
+  "devDependencies": {
+    "clean-jsdoc-theme": "^4.1.6"
+  },
+  "scripts": {
+    "generate-docs": "jsdoc --configure jsdoc.json --verbose"
   }
 }

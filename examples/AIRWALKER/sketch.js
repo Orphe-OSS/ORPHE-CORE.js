@@ -525,7 +525,7 @@ window.onload = function () {
           let month = today.getMonth() + 1;
           let date = today.getDate();
 
-          let hours = 9 - today.getHours();
+          let hours = today.getHours() - 9;
           let minutes = today.getMinutes();
           let seconds = today.getSeconds();
           document.querySelector('#td_time').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;

@@ -47,6 +47,10 @@ var opts = {
 
 
 async function saveWorkout() {
+  let user = getParam('user');
+  if (user == null) user = '';
+  let key = `${user}_air_walker`;
+
   let steps = document.querySelector('#td_steps').innerText;
   let calories = document.querySelector('#td_calories').innerText;
   let distance = document.querySelector('#td_distance').innerText;
@@ -63,13 +67,13 @@ async function saveWorkout() {
 
 
   // クッキーにない
-  if (!localStorage.getItem('air_walker')) {
+  if (!localStorage.getItem(key)) {
     let json = JSON.stringify(data);
-    localStorage.setItem('air_walker', json);
+    localStorage.setItem(key, json);
   }
   // クッキーにある場合
   else {
-    let saved_data = JSON.parse(localStorage.getItem('air_walker'));
+    let saved_data = JSON.parse(localStorage.getItem(key));
 
     // timeが同じものがあれば数値を加算
     // そうでなければ既存に追加
@@ -77,20 +81,34 @@ async function saveWorkout() {
 
     console.log('saved_data', saved_data);
     let json = JSON.stringify(saved_data);
-    localStorage.setItem('air_walker', json);
+    localStorage.setItem(key, json);
 
   }
-  console.log(localStorage.getItem('air_walker'));
+  console.log(localStorage.getItem(key));
   initHistory();
 }
 
 function initHistory() {
+  let user = getParam('user');
+  if (user == null) user = '';
+  let key = `${user}_air_walker`;
+
+
+  // まだユーザリストが保存されていなければ
+  if (!localStorage.getItem('users')) {
+    let users = [user];
+    localStorage.setItem('users', users);
+  }
+  else {
+
+  }
+
   // クッキーにない
-  if (!localStorage.getItem('air_walker')) {
+  if (!localStorage.getItem(key)) {
   }
   // クッキーにある場合
   else {
-    let saved_data = JSON.parse(localStorage.getItem('air_walker'));
+    let saved_data = JSON.parse(localStorage.getItem(key));
     document.querySelector('#tbody_history').innerHTML = '';
     //console.log(saved_data);
     for (key in saved_data) {
@@ -131,6 +149,21 @@ function initHistory() {
   }
 }
 
+/**
+ * Get the URL parameter value
+ * https://www-creators.com/archives/4463
+ * @param  name {string} パラメータのキー文字列
+ * @return  url {url} 対象のURL文字列（任意）
+ */
+function getParam(name, url) {
+  if (!url) url = window.location.href;
+  name = name.replace(/[\[\]]/g, "\\$&");
+  var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+    results = regex.exec(url);
+  if (!results) return null;
+  if (!results[2]) return '';
+  return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
 
 
 

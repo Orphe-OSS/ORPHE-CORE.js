@@ -514,7 +514,7 @@ window.onload = function () {
       let distance_max = Math.max.apply(null, input);
       if (
         distance > distance_max * 0.85 &&
-        millis() - steps_count_timestamp > 500
+        millis() - steps_count_timestamp > 250
       ) {
         if (is_active) {
           steps++;

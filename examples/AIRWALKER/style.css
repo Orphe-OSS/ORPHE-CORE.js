@@ -36,3 +36,9 @@ canvas#gauge_ave {
   width: 100% !important;
   height: auto !important;
 }
+
+.td-workout,
+.th-workout {
+  text-align: center;
+  width: 25%;
+}

@@ -9,44 +9,9 @@ var ble = new Orphe(0);
 
 var is_active = false;
 var chart;
-var chart_today;
-var target;
 var gauge;
-var opts = {
-  angle: 0.22, // The span of the gauge arc
-  lineWidth: 0.2, // The line thickness
-  radiusScale: 1.0, // Relative radius
-  pointer: {
-    length: 0.59, // // Relative to gauge radius
-    strokeWidth: 0.035, // The thickness
-    color: '#000000' // Fill color
-  },
-  limitMax: true,     // If false, max value increases automatically if value > maxValue
-  limitMin: true,     // If true, the min value of the gauge will be fixed
-  colorStart: '#6FADCF',   // Colors
-  colorStop: '#8FC0DA',    // just experiment with them
-  strokeColor: '#E0E0E0',  // to see which ones work best for you
-  generateGradient: true,
-  highDpiSupport: true,     // High resolution support
-  // renderTicks is Optional
-  renderTicks: {
-    divisions: 4,
-    divWidth: 1.1,
-    divLength: 0.73,
-    divColor: '#333333',
-    subDivisions: 3,
-    subLength: 0.5,
-    subWidth: 0.6,
-    subColor: '#666666'
-  },
-  staticZones: [
-    { strokeStyle: "#FF1818", min: 0, max: 1.0 },
-    { strokeStyle: "#74C150", min: 1.0, max: 5.0 }, // Red from 100 to 130
-  ],
-};
 
-
-async function saveWorkout() {
+async function saveWorkout(time_now) {
   let user = getParam('user');
   if (user == null) user = '';
   let key = `${user}_air_walker`;
@@ -54,14 +19,15 @@ async function saveWorkout() {
   let steps = document.querySelector('#td_steps').innerText;
   let calories = document.querySelector('#td_calories').innerText;
   let distance = document.querySelector('#td_distance').innerText;
-  let time = document.querySelector('#td_time').innerText;
+  let time = time_now;
   let date = document.querySelector('#td_date').innerText;
+  document.querySelector('#td_date').setAttribute('value', time_now);
   var data = {
     [date]: {
       steps: steps,
       calories: calories,
       distance: distance,
-      time: time
+      time: time_now
     }
   }
 
@@ -75,24 +41,20 @@ async function saveWorkout() {
   else {
     let saved_data = JSON.parse(localStorage.getItem(key));
 
-    // timeが同じものがあれば数値を加算
+    // dateが同じものがあれば数値を加算
     // そうでなければ既存に追加
     saved_data[date] = data[date];
 
     console.log('saved_data', saved_data);
     let json = JSON.stringify(saved_data);
     localStorage.setItem(key, json);
-
   }
-  console.log(localStorage.getItem(key));
-  initHistory();
 }
 
-function initHistory() {
+function loadHistory() {
   let user = getParam('user');
   if (user == null) user = '';
   let key = `${user}_air_walker`;
-
 
   // まだユーザリストが保存されていなければ
   if (!localStorage.getItem('users')) {
@@ -120,16 +82,27 @@ function initHistory() {
       td.innerText = key;
       tr.appendChild(td);
       let td_steps = document.createElement('td');
+      td_steps.classList = 'td-workout';
       td_steps.innerText = saved_data[key].steps;
       tr.appendChild(td_steps);
       let td_calories = document.createElement('td');
+      td_calories.classList = 'td-workout';
       td_calories.innerText = saved_data[key].calories;
       tr.appendChild(td_calories);
       let td_distance = document.createElement('td');
+      td_distance.classList = 'td-workout';
       td_distance.innerText = saved_data[key].distance;
       tr.appendChild(td_distance);
       let td_time = document.createElement('td');
-      td_time.innerText = saved_data[key].time;
+      td_time.classList = 'td-workout';
+
+      let time_now = new Date(saved_data[key].time);
+      let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
+      let minutes = parseInt((time_now / (1000 * 60)) % 60);
+      let seconds = parseInt((time_now / 1000) % 60)
+      let t_str = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
+      td_time.innerText = t_str;
+
       tr.appendChild(td_time);
 
       // 今日と同じ日付があれば今日の分のテーブルを更新する
@@ -143,274 +116,62 @@ function initHistory() {
         document.querySelector('#td_distance').innerText = saved_data[key].distance;
         document.querySelector('#p_distance').innerText = saved_data[key].distance;
 
-        document.querySelector('#td_time').innerText = saved_data[key].time;
+        timestamp.offset = parseInt(saved_data[key].time);
+        let time_now = timestamp.getElaspedTime();;
+        let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
+        let minutes = parseInt((time_now / (1000 * 60)) % 60);
+        let seconds = parseInt((time_now / 1000) % 60)
+        document.querySelector('#td_time').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
       }
     }
   }
 }
 
-/**
- * Get the URL parameter value
- * https://www-creators.com/archives/4463
- * @param  name {string} パラメータのキー文字列
- * @return  url {url} 対象のURL文字列（任意）
- */
-function getParam(name, url) {
-  if (!url) url = window.location.href;
-  name = name.replace(/[\[\]]/g, "\\$&");
-  var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-    results = regex.exec(url);
-  if (!results) return null;
-  if (!results[2]) return '';
-  return decodeURIComponent(results[2].replace(/\+/g, " "));
+function resetParameters(dom_id, value) {
+  document.querySelector(dom_id).value = value;
+  saveParameters();
 }
+function saveParameters() {
+  let user = getParam('user');
+  if (user == null) user = '';
+  let key = `${user}_air_walker_params`;
+  let save_data = {
+    threshold: document.querySelector('#threshold').value,
+    interval: document.querySelector('#interval').value,
+    cal_per_step: document.querySelector('#cal_per_step').value,
+    km_per_step: document.querySelector('#km_per_step').value
+  }
+  let json = JSON.stringify(save_data);
+  localStorage.setItem(key, json);
+}
+function loadParameters() {
+  let user = getParam('user');
+  if (user == null) user = '';
+  let key = `${user}_air_walker_params`;
 
+  if (localStorage.getItem(key)) {
+    let loaded_data = JSON.parse(localStorage.getItem(key));
+    document.querySelector('#threshold').value = loaded_data.threshold;
+    document.querySelector('#interval').value = loaded_data.interval;
+    document.querySelector('#cal_per_step').value = loaded_data.cal_per_step;
+    document.querySelector('#km_per_step').value = loaded_data.km_per_step;
+  }
 
+}
 
 
 function getCalorie(steps) {
   // 5677, 811
-  let cal_per_step = 811 / 5677;
+  //let cal_per_step = 811 / 5677;
+  let cal_per_step = document.querySelector('#cal_per_step').value;
   return cal_per_step * steps;
 }
 function getDistance(steps) {
   // 5752, 20.5
-  let dist_per_step = 20.5 / 5752;
+  //let dist_per_step = 20.5 / 5752;
+  let dist_per_step = document.querySelector('#km_per_step').value;
   return dist_per_step * steps;
 }
-
-var s_time = new Date();
-function millis() {
-  var e_time = new Date();
-  var diff = e_time.getTime() - s_time.getTime();
-  //console.log("経過時間(ミリ秒):", diff);
-  return diff;
-}
-
-const data_today = [
-  {
-    labels: ['steps/cycle'],
-    datasets: [
-      {
-        label: "Number of Steps or Cycles",
-        pointRadius: 1.0,
-        data: [0],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(255, 159, 64, 0.2)',
-          'rgba(255, 205, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(153, 102, 255, 0.2)',
-          'rgba(201, 203, 207, 0.2)'
-        ],
-        borderColor: [
-          'rgb(255, 99, 132)',
-          'rgb(255, 159, 64)',
-          'rgb(255, 205, 86)',
-          'rgb(75, 192, 192)',
-          'rgb(54, 162, 235)',
-          'rgb(153, 102, 255)',
-          'rgb(201, 203, 207)'
-        ],
-        borderWidth: 1
-      }
-    ]
-  },
-  {
-    labels: ['calories'],
-    datasets: [
-      {
-        label: "Calories",
-        pointRadius: 1.0,
-        data: [0],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(255, 159, 64, 0.2)',
-          'rgba(255, 205, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(153, 102, 255, 0.2)',
-          'rgba(201, 203, 207, 0.2)'
-        ],
-        borderColor: [
-          'rgb(255, 99, 132)',
-          'rgb(255, 159, 64)',
-          'rgb(255, 205, 86)',
-          'rgb(75, 192, 192)',
-          'rgb(54, 162, 235)',
-          'rgb(153, 102, 255)',
-          'rgb(201, 203, 207)'
-        ],
-        borderWidth: 1
-      }
-    ]
-  }
-];
-
-const data = [
-  {
-    labels: [],
-    datasets: [
-      {
-        label: "Acc X",
-        backgroundColor: "rgb(255, 96, 64)",
-        borderColor: "rgb(255, 96, 64)",
-        pointRadius: 1.0,
-        data: [],
-      },
-      {
-        label: "Acc Y",
-        backgroundColor: "rgb(69,230, 230)",
-        borderColor: "rgb(69,230,230)",
-        pointRadius: 1.0,
-        data: [],
-      },
-      {
-        label: "Acc Z",
-        backgroundColor: "rgb(96,255,64)",
-        borderColor: "rgb(96,255,64)",
-        pointRadius: 1.0,
-        data: [],
-      },
-      {
-        label: "composite Acc",
-        backgroundColor: "rgb(28,28,28)",
-        borderColor: "rgb(28,28,28)",
-        pointRadius: 1.0,
-        data: [],
-      },
-      {
-        label: "max",
-        backgroundColor: "rgb(200,200,200)",
-        borderColor: "rgb(200,200,200)",
-        pointRadius: 1.0,
-        data: [],
-      },
-    ],
-  },
-  {
-    labels: [],
-    datasets: [
-      {
-        label: "delta Acc X",
-        backgroundColor: "rgb(255, 96, 64)",
-        borderColor: "rgb(255, 96, 64)",
-        pointRadius: 1.0,
-        data: [],
-      },
-      {
-        label: "delta Acc Y",
-        backgroundColor: "rgb(69,230, 230)",
-        borderColor: "rgb(69,230,230)",
-        pointRadius: 1.0,
-        data: [],
-      },
-      {
-        label: "delta Acc Z",
-        backgroundColor: "rgb(96,255,64)",
-        borderColor: "rgb(96,255,64)",
-        pointRadius: 1.0,
-        data: [],
-      },
-      {
-        label: "composite delta Acc",
-        backgroundColor: "rgb(28,28,28)",
-        borderColor: "rgb(28,28,28)",
-        pointRadius: 1.0,
-        data: [],
-      },
-    ],
-  },
-  {
-    labels: [],
-    datasets: [
-      {
-        label: "FFT composite Acc",
-        backgroundColor: "rgb(28, 28, 28)",
-        borderColor: "rgb(28, 28, 28)",
-        pointRadius: 1.0,
-        data: [],
-      },
-    ],
-  },
-];
-
-const config = {
-  acc: {
-    type: "line",
-    data: data[0],
-    options: {
-      animation: false,
-      scales: {
-        y: {
-          min: -0.5,
-          max: 0.5,
-        },
-      },
-    },
-  },
-  delta_acc: {
-    type: "line",
-    data: data[1],
-    options: {
-      animation: false,
-      scales: {
-        y: {
-          min: -0.2,
-          max: 0.2,
-        },
-      },
-    },
-  },
-  fft: {
-    type: "line",
-    data: data[2],
-    options: {
-      animation: false,
-      scales: {
-        y: {
-          min: 0.0,
-          max: 10.0,
-        },
-      },
-    },
-  },
-  today: {
-    steps: {
-      type: "bar",
-      data: data_today[0],
-      options: {
-        //animation: false,
-        scales: {
-          y: {
-            beginAtZero: true
-          },
-        },
-      },
-    },
-    calories: {
-      type: "bar",
-      data: data_today[1],
-      options: {
-        //animation: false,
-        scales: {
-          y: {
-            beginAtZero: true
-          },
-        },
-      },
-    },
-  },
-};
-
-var average = function (array) {
-  var result = 0, index = 0;
-  for (index in array) {
-    result = result + array[index];
-  }
-  return result / array.length;
-};
 
 var acc_count = 0;
 var acc_prev = {
@@ -421,7 +182,7 @@ var acc_prev = {
 var steps = 0;
 var steps_count_timestamp = 0;
 window.onload = function () {
-  target = document.getElementById('gauge'); // your canvas element
+  let target = document.getElementById('gauge'); // your canvas element
   gauge = new Gauge(target).setOptions(opts); // create sexy gauge!
   gauge.maxValue = 5.0; // set max gauge value
   //gauge.limitMax = 5;
@@ -512,24 +273,25 @@ window.onload = function () {
         input.shift();
       }
       let distance_max = Math.max.apply(null, input);
+      let threshold = document.querySelector('#threshold').value / 100;
+      let interval = document.querySelector('#interval').value;
       if (
-        distance > distance_max * 0.85 &&
-        millis() - steps_count_timestamp > 500
+        distance > distance_max * threshold &&
+        timestamp.getElaspedTime() - steps_count_timestamp > interval
       ) {
         if (is_active) {
           steps++;
-          steps_count_timestamp = millis();
+          steps_count_timestamp = timestamp.getElaspedTime();
           ble.gotStepsNumber(steps);
-          let today = new Date(new Date() - timestamp.start);
-          let year = today.getFullYear();
-          let month = today.getMonth() + 1;
-          let date = today.getDate();
 
-          let hours = today.getHours() - 9;
-          let minutes = today.getMinutes();
-          let seconds = today.getSeconds();
+          let time_now = timestamp.getElaspedTime();;
+          let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
+          let minutes = parseInt((time_now / (1000 * 60)) % 60);
+          let seconds = parseInt((time_now / 1000) % 60)
+          console.log("steps", hours, minutes, seconds);
+          // Workout テーブルの更新
           document.querySelector('#td_time').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
-          saveWorkout();
+          saveWorkout(time_now);
         }
       }
 
@@ -550,5 +312,6 @@ window.onload = function () {
     chart.fft.update();
   };
 
-  initHistory();
+  loadHistory();
+  loadParameters();
 }

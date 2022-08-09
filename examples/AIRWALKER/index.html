@@ -38,23 +38,24 @@
 
     <script>
       var timestamp = {
-        start: 0,
-        end: 0,
+        start: Date.now(),
+        offset: 0,
         getElaspedTime: function () {
-          let now = new Date();
-          return (now - this.start);
+          let now = Date.now();
+          console.log(now - this.start);
+          return (now - this.start + this.offset);
         }
       }
       function toggleWorkout(dom) {
         let checked = dom.checked;
         if (checked == true) {
           ble.begin('RAW');
-          timestamp.start = new Date();
+          timestamp.start = Date.now();
 
         }
         else {
           ble.reset();
-          timestamp.end = new Date();
+          timestamp.end = Date.now();
         }
       }
     </script>
@@ -80,6 +81,27 @@
           <div class="card-body bg-primary">
             <p class="text-center" style="font-size:3em;margin:-0.3em 0em;white-space: nowrap;" id="p_steps">
               0 </p>
+            <div class="input-group mb-0 mt-3 input-group-sm ">
+
+              <span class="input-group-text bg-light text-dark">Threshold</span>
+
+              <input type="number" class="form-control text-black bg-light" value="85" id="threshold"
+                onchange="saveParameters();">
+
+              <span class="input-group-text bg-light text-dark">%</span>
+              <button onclick="resetParameters('#threshold',85);" class="btn btn-light" type="button"
+                style="border-color:#CCCCCC"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
+
+
+            <div class="input-group mb-0 mt-1 input-group-sm ">
+              <span class="input-group-text bg-light text-dark">Interval</span>
+              <input type="number" class="form-control text-black bg-light" value="500" id="interval"
+                onchange="saveParameters();">
+              <span class="input-group-text bg-light text-dark">ms</span>
+              <button onclick="resetParameters('#interval',500);" class="btn btn-light" type="button"
+                style="border-color:#CCCCCC"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
           </div>
         </div>
       </div>
@@ -90,6 +112,13 @@
           </div>
           <div class="card-body bg-warning">
             <p class="text-center" style="font-size:3em;margin:-0.3em 0em;white-space: nowrap;" id="p_calories">0 </p>
+            <div class="input-group mb-0 mt-3 input-group-sm">
+              <span class="input-group-text bg-light text-dark">calorie/step</span>
+              <input type="number" class="form-control text-black bg-light" step=0.00001 value="0.14285"
+                id="cal_per_step" onchange="saveParameters();">
+              <button onclick="resetParameters('#cal_per_step',0.14285);" class="btn btn-light" type="button"
+                style="border-color:#CCCCCC"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
           </div>
         </div>
       </div>
@@ -100,6 +129,13 @@
           </div>
           <div class="card-body bg-dark text-white">
             <p class="text-center" style="font-size:3em;margin:-0.3em 0em;white-space: nowrap;" id="p_distance">0</p>
+            <div class="input-group mb-0 mt-3 input-group-sm ">
+              <span class="input-group-text bg-light text-dark">km/step</span>
+              <input type="number" class="form-control text-black bg-light" step='0.00001' value="0.00356"
+                id="km_per_step" onchange="saveParameters();">
+              <button onclick="resetParameters('#km_per_step',0.00356);" class="btn btn-light" type="button"
+                style="border-color:#CCCCCC"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
           </div>
         </div>
       </div>
@@ -115,10 +151,10 @@
                   for (let i = 1; i < tds.length; i++) {
                     tds[i].innerText = '0';
                   }
-                  timestamp.start = new Date();
+                  timestamp.start = Date.now();
                   steps = 0;
                   document.querySelector('#tbody_history').innerHTML = '';
-                  localStorage.setItem('air_walker', '');
+                  localStorage.clear();
                 }
               }
             </script>
@@ -128,28 +164,30 @@
             <table class="table small text-dark" id="table_today_workout">
               <thead>
                 <tr>
-                  <th style="width:25%" scope="col">Date</th>
-                  <th style="width:25%" scope="col">Steps</th>
-                  <th style="width:25%" scope="col">Calories</th>
-                  <th style="width:25%" scope="col">Distance</th>
-                  <th style="width:25%" scope="col">Time</th>
+                  <th class="th-workout" scope="col">Date</th>
+                  <th class="th-workout" scope="col">Steps</th>
+                  <th class="th-workout" scope="col">Calories</th>
+                  <th class="th-workout" scope="col">Distance</th>
+                  <th class="th-workout" scope="col">Time</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td style="width:25%" id="td_date">1</td>
-                  <script>
-                    let today = new Date();
 
+                  <td class="td-workout" id="td_steps">0</td>
+                  <td class="td-workout" id="td_calories">0</td>
+                  <td class="td-workout" id="td_distance">0</td>
+                  <td class="td-workout" id="td_time">0</td>
+
+                  <script>
+                    let today = new Date(Date.now());
                     let year = today.getFullYear();
                     let month = today.getMonth() + 1;
                     let date = today.getDate();
                     document.querySelector('#td_date').innerText = `${year.toString().padStart(4, '0')}${month.toString().padStart(2, '0')}${date.toString().padStart(2, '0')}`;
+                    document.querySelector('#td_time').innerText = '00:00:00';
                   </script>
-                  <td style="width:25%" id="td_steps">0</td>
-                  <td style="width:25%" id="td_calories">0</td>
-                  <td style="width:25%" id="td_distance">0</td>
-                  <td style="width:25%" id="td_time">0</td>
                 </tr>
               </tbody>
             </table>
@@ -170,11 +208,11 @@
                     <table class="table small  text-dark" id="table_history">
                       <thead>
                         <tr>
-                          <th style="width:25%" scope="col">Date</th>
-                          <th style="width:25%" scope="col">Steps</th>
-                          <th style="width:25%" scope="col">Calories</th>
-                          <th style="width:25%" scope="col">Distance</th>
-                          <th style="width:25%" scope="col">Time</th>
+                          <th style="text-align:center; width:25%" scope="col">Date</th>
+                          <th style="text-align:center; width:25%" scope="col">Steps</th>
+                          <th style="text-align:center; width:25%" scope="col">Calories</th>
+                          <th style="text-align:center; width:25%" scope="col">Distance</th>
+                          <th style="text-align:center; width:25%" scope="col">Time</th>
                         </tr>
                       </thead>
                       <tbody id="tbody_history">
@@ -242,6 +280,8 @@
 
   <script src="gauge.min.js"></script>
   <script src="fft.js"></script>
+  <script src="chart_and_gauge_design.js"></script>
+  <script src="utils.js"></script>
   <script src="sketch.js"></script>
 
 

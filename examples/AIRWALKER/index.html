@@ -40,9 +40,9 @@
       var timestamp = {
         start: Date.now(),
         offset: 0,
-        getElaspedTime: function () {
+        getElapsedTime: function () {
           let now = Date.now();
-          console.log(now - this.start);
+          //console.log(now - this.start);
           return (now - this.start + this.offset);
         }
       }

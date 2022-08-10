@@ -117,7 +117,7 @@ function loadHistory() {
         document.querySelector('#p_distance').innerText = saved_data[key].distance;
 
         timestamp.offset = parseInt(saved_data[key].time);
-        let time_now = timestamp.getElaspedTime();;
+        let time_now = timestamp.getElapsedTime();;
         let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
         let minutes = parseInt((time_now / (1000 * 60)) % 60);
         let seconds = parseInt((time_now / 1000) % 60)
@@ -277,14 +277,14 @@ window.onload = function () {
       let interval = document.querySelector('#interval').value;
       if (
         distance > distance_max * threshold &&
-        timestamp.getElaspedTime() - steps_count_timestamp > interval
+        timestamp.getElapsedTime() - steps_count_timestamp > interval
       ) {
         if (is_active) {
           steps++;
-          steps_count_timestamp = timestamp.getElaspedTime();
+          steps_count_timestamp = timestamp.getElapsedTime();
           ble.gotStepsNumber(steps);
 
-          let time_now = timestamp.getElaspedTime();;
+          let time_now = timestamp.getElapsedTime();;
           let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
           let minutes = parseInt((time_now / (1000 * 60)) % 60);
           let seconds = parseInt((time_now / 1000) % 60)

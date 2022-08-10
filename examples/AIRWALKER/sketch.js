@@ -45,7 +45,7 @@ async function saveWorkout(time_now) {
     // そうでなければ既存に追加
     saved_data[date] = data[date];
 
-    console.log('saved_data', saved_data);
+    //console.log('saved_data', saved_data);
     let json = JSON.stringify(saved_data);
     localStorage.setItem(key, json);
   }
@@ -74,7 +74,7 @@ function loadHistory() {
     document.querySelector('#tbody_history').innerHTML = '';
     //console.log(saved_data);
     for (key in saved_data) {
-      console.log(saved_data[key]);
+      //console.log(saved_data[key]);
       let tbody = document.querySelector('#tbody_history');
       let tr = document.createElement('tr');
       tbody.appendChild(tr);
@@ -288,7 +288,7 @@ window.onload = function () {
           let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
           let minutes = parseInt((time_now / (1000 * 60)) % 60);
           let seconds = parseInt((time_now / 1000) % 60)
-          console.log("steps", hours, minutes, seconds);
+          //console.log("steps", hours, minutes, seconds);
           // Workout テーブルの更新
           document.querySelector('#td_time').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
           saveWorkout(time_now);

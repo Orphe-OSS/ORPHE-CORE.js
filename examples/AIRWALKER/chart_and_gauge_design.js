@@ -1,5 +1,5 @@
 var opts = {
-    angle: 0.22, // The span of the gauge arc
+    angle: 0.15, // The span of the gauge arc
     lineWidth: 0.2, // The line thickness
     radiusScale: 1.0, // Relative radius
     pointer: {
@@ -26,8 +26,9 @@ var opts = {
         subColor: '#666666'
     },
     staticZones: [
-        { strokeStyle: "#FF1818", min: 0, max: 1.0 },
-        { strokeStyle: "#74C150", min: 1.0, max: 5.0 }, // Red from 100 to 130
+        { strokeStyle: "#bfbfbf", min: 0, max: 1.0 },
+        { strokeStyle: "#45e6e6", min: 1.0, max: 7.0 },
+        { strokeStyle: "#ff6040", min: 7.0, max: 10.0 },
     ],
 };
 
@@ -174,7 +175,8 @@ const data = [
                 label: "FFT composite Acc",
                 backgroundColor: "rgb(28, 28, 28)",
                 borderColor: "rgb(28, 28, 28)",
-                pointRadius: 1.0,
+                pointRadius: 0.0,
+                borderWidth: 1.0,
                 data: [],
             },
         ],
@@ -216,7 +218,7 @@ const config = {
             scales: {
                 y: {
                     min: 0.0,
-                    max: 10.0,
+                    max: 50.0,
                 },
             },
         },

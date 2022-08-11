@@ -1,8 +1,9 @@
 var bufsize = 128;
-var fft = new FFTJS(bufsize);
-var input = new Array(bufsize);
+var fft_bufsize = 1024;
+var fft = new FFTJS(fft_bufsize);
+var fft_input = new Array(fft_bufsize);
 var sampling_rate = 50;
-var freq_step = sampling_rate / bufsize;
+var freq_step = sampling_rate / fft_bufsize;
 var out = fft.createComplexArray();
 
 var ble = new Orphe(0);
@@ -184,7 +185,7 @@ var steps_count_timestamp = 0;
 window.onload = function () {
   let target = document.getElementById('gauge'); // your canvas element
   gauge = new Gauge(target).setOptions(opts); // create sexy gauge!
-  gauge.maxValue = 5.0; // set max gauge value
+  gauge.maxValue = 10.0; // set max gauge value
   //gauge.limitMax = 5;
   gauge.setMinValue(0);  // Prefer setter over gauge.minValue = 0
   gauge.animationSpeed = 1; // set animation speed (32 is default value)
@@ -201,6 +202,10 @@ window.onload = function () {
 
   // ORPHE CORE Init
   ble.setup();
+  ble.onDisconnect = function () {
+    alert('ORHPE COREとの接続が切れました。接続し直してください。')
+    location.reload();
+  }
   ble.gotStepsNumber = function (number) {
     //    console.log(number);
     document.querySelector('#td_steps').innerText = document.querySelector('#p_steps').innerText = number;
@@ -229,15 +234,42 @@ window.onload = function () {
         Math.pow(_acc.x, 2) + Math.pow(_acc.y, 2) + Math.pow(_acc.z, 2)
       );
       chart.acc.data.datasets[3].data.push(distance);
+
+      let distance_max = Math.max.apply(null, chart.acc.data.datasets[3].data);
+      let threshold = document.querySelector('#threshold').value / 100;
+      let interval = document.querySelector('#interval').value;
+      for (let i = 0; i < bufsize; i++) {
+        chart.acc.data.datasets[4].data[i] = distance_max;
+      }
+
+      if (
+        distance > distance_max * threshold &&
+        timestamp.getElapsedTime() - steps_count_timestamp > interval
+      ) {
+        if (is_active) {
+          steps++;
+          steps_count_timestamp = timestamp.getElapsedTime();
+          ble.gotStepsNumber(steps);
+
+          let time_now = timestamp.getElapsedTime();;
+          let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
+          let minutes = parseInt((time_now / (1000 * 60)) % 60);
+          let seconds = parseInt((time_now / 1000) % 60)
+          //console.log("steps", hours, minutes, seconds);
+          // Workout テーブルの更新
+          document.querySelector('#td_time').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
+          saveWorkout(time_now);
+        }
+      }
     }
     acc_count++;
 
     {
-      while (chart.delta_acc.data.labels.length > 100) {
+      while (chart.delta_acc.data.labels.length > bufsize) {
         chart.delta_acc.data.labels.shift();
       }
       chart.delta_acc.data.labels.push(acc_count);
-      while (chart.delta_acc.data.datasets[0].data.length > 100) {
+      while (chart.delta_acc.data.datasets[0].data.length > bufsize) {
         chart.delta_acc.data.datasets[0].data.shift();
         chart.delta_acc.data.datasets[1].data.shift();
         chart.delta_acc.data.datasets[2].data.shift();
@@ -265,44 +297,46 @@ window.onload = function () {
       else {
         is_active = false;
       }
+
+
     }
     // for fft and analysis
     {
-      input.push(distance_fft);
-      while (input.length > bufsize) {
-        input.shift();
+      fft_input.push(distance_fft);
+      while (fft_input.length > fft_bufsize) {
+        fft_input.shift();
       }
-      let distance_max = Math.max.apply(null, input);
-      let threshold = document.querySelector('#threshold').value / 100;
-      let interval = document.querySelector('#interval').value;
-      if (
-        distance > distance_max * threshold &&
-        timestamp.getElapsedTime() - steps_count_timestamp > interval
-      ) {
-        if (is_active) {
-          steps++;
-          steps_count_timestamp = timestamp.getElapsedTime();
-          ble.gotStepsNumber(steps);
+      // let distance_max = Math.max.apply(null, fft_input);
+      // let threshold = document.querySelector('#threshold').value / 100;
+      // let interval = document.querySelector('#interval').value;
+      // if (
+      //   distance > distance_max * threshold &&
+      //   timestamp.getElapsedTime() - steps_count_timestamp > interval
+      // ) {
+      //   if (is_active) {
+      //     steps++;
+      //     steps_count_timestamp = timestamp.getElapsedTime();
+      //     ble.gotStepsNumber(steps);
 
-          let time_now = timestamp.getElapsedTime();;
-          let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
-          let minutes = parseInt((time_now / (1000 * 60)) % 60);
-          let seconds = parseInt((time_now / 1000) % 60)
-          //console.log("steps", hours, minutes, seconds);
-          // Workout テーブルの更新
-          document.querySelector('#td_time').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
-          saveWorkout(time_now);
-        }
-      }
+      //     let time_now = timestamp.getElapsedTime();;
+      //     let hours = parseInt((time_now / (1000 * 60 * 60)) % 24);
+      //     let minutes = parseInt((time_now / (1000 * 60)) % 60);
+      //     let seconds = parseInt((time_now / 1000) % 60)
+      //     //console.log("steps", hours, minutes, seconds);
+      //     // Workout テーブルの更新
+      //     document.querySelector('#td_time').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} `;
+      //     saveWorkout(time_now);
+      //   }
+      // }
 
-      const data = fft.toComplexArray(input);
+      const data = fft.toComplexArray(fft_input);
       fft.transform(out, data);
       let array_labels = [];
       let array_power = [];
       for (let i = 0; i < out.length / 2; i++) {
-        array_labels.push(i * freq_step);
+        array_labels.push((i * freq_step).toFixed(2));
         array_power.push(out[i]);
-        chart.acc.data.datasets[4].data[i] = distance_max;
+
       }
       chart.fft.data.labels = array_labels;
       chart.fft.data.datasets[0].data = array_power;

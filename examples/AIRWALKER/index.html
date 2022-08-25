@@ -68,28 +68,31 @@
             Activity
           </div>
           <div class="card-body">
-            <span class="text-center" id="p_activity"></span>
+            <p class="text-center" id="p_activity"></p>
+            <p class="text-center" id="p_speed"></p>
             <canvas id="gauge" data-type="radial-gauge" style="width:100%"></canvas>
           </div>
         </div>
       </div>
       <div class="col-lg-3 col-md-6 col-sm-12">
-        <div class=" card mt-4">
+        <div class="card mt-4">
           <div class="card-header bg-primary">
-            Steps/Cycle
+            Steps/Cycles
           </div>
+
           <div class="card-body bg-primary">
             <p class="text-center" style="font-size:3em;margin:-0.3em 0em;white-space: nowrap;" id="p_steps">
               0 </p>
+
             <div class="input-group mb-0 mt-3 input-group-sm ">
 
               <span class="input-group-text bg-light text-dark">Threshold</span>
 
-              <input type="number" class="form-control text-black bg-light" value="85" id="threshold"
+              <input type="number" class="form-control text-black bg-light" value="70" id="threshold"
                 onchange="saveParameters();">
 
               <span class="input-group-text bg-light text-dark">%</span>
-              <button onclick="resetParameters('#threshold',85);" class="btn btn-light" type="button"
+              <button onclick="resetParameters('#threshold',70);" class="btn btn-light" type="button"
                 style="border-color:#CCCCCC"><i class="bi bi-arrow-repeat"></i></button>
             </div>
 
@@ -112,6 +115,7 @@
           </div>
           <div class="card-body bg-warning">
             <p class="text-center" style="font-size:3em;margin:-0.3em 0em;white-space: nowrap;" id="p_calories">0 </p>
+
             <div class="input-group mb-0 mt-3 input-group-sm">
               <span class="input-group-text bg-light text-dark">calorie/step</span>
               <input type="number" class="form-control text-black bg-light" step=0.00001 value="0.14285"

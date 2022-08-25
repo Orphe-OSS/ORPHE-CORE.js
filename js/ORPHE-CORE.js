@@ -21,6 +21,7 @@ var Orphe = function (_num) {
   //callBack
   this.onScan = function (deviceName) { console.log("onScan"); };
   this.onConnectGATT = function (uuid) { console.log("onConnectGATT"); };
+  this.onConnect = function (uuid) { console.log("onConnect"); };
   // this.onRead = function (data, uuid) { console.log("onRead"); };
   this.onWrite = function (uuid) { console.log("onWrite"); };
   this.onStartNotify = function (uuid) { console.log("onStartNotify"); };
@@ -86,6 +87,13 @@ Orphe.prototype.begin = async function (str_type = 'ANALYSIS') {
         this.startNotify('SENSOR_VALUES').then(() => {
           console.log("raw---")
           resolve("done begin(); RAW");
+        });
+      }
+      else if (str_type == "ANALYSIS_AND_RAW") {
+        this.startNotify('SENSOR_VALUES').then(() => {
+          this.startNotify('RAW').then(() => {
+            resolve("done begin(); RAW");
+          });
         });
       }
     });
@@ -178,20 +186,21 @@ Orphe.prototype.connectGATT = function (uuid) {
   }
   this.hashUUID_lastConnected = uuid;
 
-  console.log('Execute : connect');
+  //console.log('Execute : connect');
   return this.bluetoothDevice.gatt.connect()
     .then(server => {
-      console.log('Execute : getPrimaryService');
+      //console.log('Execute : getPrimaryService');
       return server.getPrimaryService(this.hashUUID[uuid].serviceUUID);
     })
     .then(service => {
-      console.log('Execute : getCharacteristic');
+      //console.log('Execute : getCharacteristic');
       return service.getCharacteristic(this.hashUUID[uuid].characteristicUUID);
     })
     .then(characteristic => {
       this.dataCharacteristic = characteristic;
       this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
       this.onConnectGATT(uuid);
+      this.onConnect();
     })
     .catch(error => {
       console.log('Error : ' + error);
@@ -222,7 +231,7 @@ Orphe.prototype.read = function (uuid) {
       return this.connectGATT(uuid);
     })
     .then(() => {
-      console.log('Execute : readValue');
+      //console.log('Execute : readValue');
       return this.dataCharacteristic.readValue();
     })
     .catch(error => {
@@ -244,7 +253,7 @@ Orphe.prototype.write = function (uuid, array_value) {
       return this.connectGATT(uuid);
     })
     .then(() => {
-      console.log('Execute : writeValue');
+      //console.log('Execute : writeValue');
       data = Uint8Array.from(array_value);
       return this.dataCharacteristic.writeValue(data);
     })
@@ -269,7 +278,7 @@ Orphe.prototype.startNotify = function (uuid) {
       return this.connectGATT(uuid);
     })
     .then(() => {
-      console.log('Execute : startNotifications');
+      //console.log('Execute : startNotifications');
       this.dataCharacteristic.startNotifications()
     })
     .then(() => {
@@ -293,7 +302,7 @@ Orphe.prototype.stopNotify = function (uuid) {
       return this.connectGATT(uuid);
     })
     .then(() => {
-      console.log('Execute : stopNotifications');
+      //console.log('Execute : stopNotifications');
       this.dataCharacteristic.stopNotifications()
     })
     .then(() => {
@@ -323,7 +332,7 @@ Orphe.prototype.disconnect = function () {
   }
 
   if (this.bluetoothDevice.gatt.connected) {
-    console.log('Execute : disconnect');
+    //console.log('Execute : disconnect');
     this.bluetoothDevice.gatt.disconnect();
   } else {
     var error = "Bluetooth Device is already disconnected";
@@ -338,7 +347,7 @@ Orphe.prototype.disconnect = function () {
 //clear
 //--------------------------------------------------
 Orphe.prototype.clear = function () {
-  console.log('Excute : Clear Device and Characteristic');
+  //console.log('Excute : Clear Device and Characteristic');
   this.bluetoothDevice = null;
   this.dataCharacteristic = null;
   this.onClear();
@@ -349,7 +358,7 @@ Orphe.prototype.clear = function () {
  * reset(disconnect & clear)
  */
 Orphe.prototype.reset = function () {
-  console.log('Excute : reset');
+  //console.log('Excute : reset');
   this.disconnect(); //disconnect() is not Promise Object
   this.clear();
   this.onReset();

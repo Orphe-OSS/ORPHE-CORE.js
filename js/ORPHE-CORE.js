@@ -90,8 +90,9 @@ Orphe.prototype.begin = async function (str_type = 'ANALYSIS') {
         });
       }
       else if (str_type == "ANALYSIS_AND_RAW") {
-        this.startNotify('SENSOR_VALUES').then(() => {
-          this.startNotify('RAW').then(() => {
+        this.startNotify('STEP_ANALYSIS').then(() => {
+          this.startNotify('SENSOR_VALUES').then(() => {
+            console.log("analysis and raw---")
             resolve("done begin(); RAW");
           });
         });

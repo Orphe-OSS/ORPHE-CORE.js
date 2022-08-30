@@ -69,6 +69,11 @@ let landmarks = [
   [23, 25, 27, 29, 31]
 ]
 
+var basefont;
+function preload() {
+  basefont = loadFont('/fonts/Roboto/Roboto-Medium.ttf');
+
+}
 function setup() {
   let w = document.querySelector('#canvas_placeholder').clientWidth;
   let h = document.querySelector('#canvas_placeholder').clientHeight;
@@ -90,9 +95,57 @@ function setup() {
   //capture.size(1280, 720);
   capture.hide();
 
-
+  textFont(basefont);
 
 }
+
+var stride = [
+  {
+    x: 0,
+    y: 0,
+    z: 0,
+    unit: 'cm'
+  },
+  {
+    x: 0,
+    y: 0,
+    z: 0,
+    unit: 'cm'
+  },
+];
+
+var pronation = [
+  {
+    angle: 0,
+    unit: 'deg'
+  },
+  {
+    angle: 0,
+    unit: 'deg'
+  }
+];
+
+var contact = [
+  {
+    force: { value: 0, unit: 'kgf' },
+    duration: { value: 0, unit: 'sec' }
+  },
+  {
+    force: { value: 0, unit: 'kgf' },
+    duration: { value: 0, unit: 'sec' }
+  }
+];
+
+var footstrike = [
+  {
+    angle: 0,
+    unit: 'deg'
+  },
+  {
+    angle: 0,
+    unit: 'deg'
+  },
+]
 
 function draw() {
   background(200);
@@ -121,11 +174,27 @@ function draw() {
         }
         endShape();
       }
-
-
     }
-
   }
+
+  // ------------------------------
+  textAlign(CENTER, BASELINE);
+  textSize(24);
+  fill(255);
+  let grid = { x: width / 10, y: height / 20 };
+  for (let i = 0; i < 2; i++) {
+    textAlign(CENTER, BASELINE);
+    textSize(24);
+    text('Stride', (width - 2 * grid.x) * i + grid.x, grid.y);
+    textSize(18);
+    text('Height', (width - 2 * grid.x) * i + grid.x - width / 30, grid.y * 2);
+    textSize(24);
+    textAlign(RIGHT, BASELINE);
+    text(`${stride[i].z.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * 2);
+    textSize(18);
+    text(`${stride[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.65, grid.y * 2);
+  }
+  // ------------------------------
 }
 
 
@@ -154,9 +223,6 @@ async function toggleCoreModule(dom) {
       else if (obj.battery == 1) str_battery_status = 'normal';
       else if (obj.battery == 2) str_battery_status = 'full';
       document.querySelector(`#icon_battery${number}`).setAttribute('title', `${str_battery_status}`);
-
-
-
 
       if (obj.battery == '0') {
         document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery"></i>';
@@ -210,7 +276,10 @@ window.onload = function () {
 
     ble.setup();
     ble.gotStride = function (_stride) {
-      console.log(this.id);
+      stride[this.id].x = 100 * _stride.x;
+      stride[this.id].y = 100 * _stride.y;
+      stride[this.id].z = 100 * _stride.z;
+
       while (chart_stride[this.id].data.labels.length > 100) {
         chart_stride[this.id].data.labels.shift();
       }

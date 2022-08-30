@@ -29,7 +29,7 @@ var Orphe = function (_num) {
   this.onDisconnect = function () { console.log("onDisconnect"); };
   this.onClear = function () { console.log("onClear"); };
   this.onReset = function () { console.log("onReset"); };
-  this.onError = function (error) { console.log("onError"); };
+  this.onError = function (error) { console.log("onError: ", error); };
 }
 
 Orphe.prototype.setUUID = function (name, serviceUUID, characteristicUUID) {
@@ -75,28 +75,33 @@ Orphe.prototype.setup = function (names = ['DEVICE_INFORMATION', 'STEP_ANALYSIS'
  * @return {Promise<string>} 
  */
 Orphe.prototype.begin = async function (str_type = 'ANALYSIS') {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     this.read('DEVICE_INFORMATION').then(() => {
       if (str_type == "ANALYSIS") {
         this.startNotify('STEP_ANALYSIS').then(() => {
-          console.log("analysis---")
+          //console.log("analysis---")
           resolve("done begin(); ANALYSIS");
-        });
+        })
+          .catch(err => alert(err));
       }
       else if (str_type == "RAW") {
         this.startNotify('SENSOR_VALUES').then(() => {
-          console.log("raw---")
+          //console.log("raw---")
           resolve("done begin(); RAW");
         });
       }
       else if (str_type == "ANALYSIS_AND_RAW") {
         this.startNotify('STEP_ANALYSIS').then(() => {
           this.startNotify('SENSOR_VALUES').then(() => {
-            console.log("analysis and raw---")
-            resolve("done begin(); RAW");
+            //console.log("analysis and raw---")
+            resolve("done begin(); RAW and ANALYSIS");
           });
         });
       }
+    }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
+      console.log('Error: ' + error);
+      this.onError(error);
+      return;
     });
   });
 }
@@ -135,7 +140,7 @@ Orphe.prototype.setLEDBrightness = function (value) {
 Orphe.prototype.scan = function (uuid) {
   return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))
     .catch(error => {
-      console.log('Error : ' + error);
+      //console.log('Error : ' + error);
       this.onError(error);
     });
 }
@@ -148,7 +153,7 @@ Orphe.prototype.scan = function (uuid) {
  */
 
 Orphe.prototype.requestDevice = function (uuid) {
-  console.log('Execute : requestDevice');
+  //console.log('Execute : requestDevice');
 
   let options = {
     /*
@@ -177,7 +182,7 @@ Orphe.prototype.requestDevice = function (uuid) {
 Orphe.prototype.connectGATT = function (uuid) {
   if (!this.bluetoothDevice) {
     var error = "No Bluetooth Device";
-    console.log('Error : ' + error);
+    //console.log('Error : ' + error);
     this.onError(error);
     return;
   }
@@ -204,7 +209,7 @@ Orphe.prototype.connectGATT = function (uuid) {
       this.onConnect();
     })
     .catch(error => {
-      console.log('Error : ' + error);
+      //console.log('Error : ' + error);
       this.onError(error);
     });
 }
@@ -232,11 +237,12 @@ Orphe.prototype.read = function (uuid) {
       return this.connectGATT(uuid);
     })
     .then(() => {
-      //console.log('Execute : readValue');
+      //      console.log('Execute : readValue', this.dataCharacteristic.readValue());
       return this.dataCharacteristic.readValue();
     })
     .catch(error => {
-      console.log('Error : ' + error);
+      //console.log('Error : ' + error);
+      throw 'read error';
       this.onError(error);
     });
 }
@@ -262,7 +268,7 @@ Orphe.prototype.write = function (uuid, array_value) {
       this.onWrite(uuid);
     })
     .catch(error => {
-      console.log('Error : ' + error);
+      //console.log('Error : ' + error);
       this.onError(error);
     });
 }
@@ -286,7 +292,7 @@ Orphe.prototype.startNotify = function (uuid) {
       this.onStartNotify(uuid);
     })
     .catch(error => {
-      console.log('Error : ' + error);
+      //console.log('Error : ' + error);
       this.onError(error);
     });
 }
@@ -310,7 +316,7 @@ Orphe.prototype.stopNotify = function (uuid) {
       this.onStopNotify(uuid);
     })
     .catch(error => {
-      console.log('Error : ' + error);
+      //console.log('Error : ' + error);
       this.onError(error);
     });
 }
@@ -327,7 +333,7 @@ Orphe.prototype.isConnected = function () {
 Orphe.prototype.disconnect = function () {
   if (!this.bluetoothDevice) {
     var error = "No Bluetooth Device";
-    console.log('Error : ' + error);
+    //console.log('Error : ' + error);
     this.onError(error);
     return;
   }
@@ -337,7 +343,7 @@ Orphe.prototype.disconnect = function () {
     this.bluetoothDevice.gatt.disconnect();
   } else {
     var error = "Bluetooth Device is already disconnected";
-    console.log('Error : ' + error);
+    //console.log('Error : ' + error);
     this.onError(error);
     return;
   }
@@ -534,7 +540,7 @@ Orphe.prototype.onRead = function (data, uuid) {
     }
     // Stride
     else if (data.getUint8(1) == 1 && data.getUint16(2) > this.stride.steps) {
-      console.log(uuid);
+      //console.log(uuid);
       this.stride.foot_angle = data.getFloat32(4);
       this.stride.x = data.getFloat32(8);
       this.stride.y = data.getFloat32(12);
@@ -544,7 +550,8 @@ Orphe.prototype.onRead = function (data, uuid) {
       this.gotStride({
         x: this.stride.x,
         y: this.stride.y,
-        z: this.stride.z
+        z: this.stride.z,
+        steps_number: this.stride.steps
       });
       this.gotStepsNumber({ value: this.stride.steps });
     }
@@ -645,6 +652,42 @@ Orphe.prototype.onRead = function (data, uuid) {
     this.gotEuler(this.euler);
   }
 
+}
+
+Orphe.prototype.getDeviceInformation = async function () {
+  return new Promise((resolve, reject) => {
+    this.read('DEVICE_INFORMATION').then((data) => {
+      this.array_device_information.setUint8(0, 1);
+      this.array_device_information.setUint8(1, data.getUint8(1));
+      this.array_device_information.setUint8(2, data.getUint8(4));
+      this.array_device_information.setUint8(3, data.getUint8(5));
+      this.array_device_information.setUint8(4, data.getUint8(3));
+      this.array_device_information.setUint8(5, data.getUint8(6));
+      this.array_device_information.setUint8(6, data.getUint8(7));
+      this.array_device_information.setUint8(7, data.getUint8(8));
+      this.array_device_information.setUint8(8, data.getUint8(9));
+      for (let i = 9; i <= 19; i++) {
+        this.array_device_information.setUint8(i, 0);
+      }
+      this.device_information = {
+        battery: data.getUint8(0),
+        lr: data.getUint8(1),
+        rec_mode: data.getUint8(2),
+        rec_auto_run: data.getUint8(3),
+        led_brightness: data.getUint8(4),
+        range: {
+          acc: data.getUint8(8),
+          gyro: data.getUint8(9)
+        }
+      }
+      // デバイスインフォメーションを取得したら確認の為LEDの発光パターンを1にしておく
+      resolve(this.device_information);
+    }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
+      console.log('Error: ' + error);
+      this.onError(error);
+      reject(error);
+    });
+  });
 }
 
 /**

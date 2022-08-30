@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>ORPHE CORE JS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../css/custom.css" rel="stylesheet">
+  <link href="../../css/orphe_custom.css" rel="stylesheet">
+  <link href="./style.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+</head>
+
+<body class="text-black">
+
+  <div class="container">
+    <nav class="navbar navbar-brand bg-light">
+      <div class="container-fluid">
+        <a class="navbar-brand text-black fw-normal" href="./">
+          <i class="bi bi-activity"></i>
+          ORPHE-CORE.js
+        </a>
+        <div class="form-check form-switch">
+          <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble0" value=0
+            onchange="toggleCoreModule(this);">
+
+          <label class="form-check-label ms-0" for="switch_ble0">
+          </label>
+          <span class="text-muted" id="icon_bluetooth0"><i class="bi bi-bluetooth"></i></span>
+          <span class="text-muted" id="icon_battery0" data-bs-toggle="popover" data-bs-content="a">
+            <i class="bi bi-battery"></i>
+          </span>
+          <span class="text-muted" id="icon_brightness0" number=0 role="button" value=0
+            onclick="toggleBrightness(this);">
+            <i class="bi bi-brightness-alt-high position-relative">
+              <span class="position-absolute top-0 start-100 translate-middle badge text-muted bg-light"
+                style="font-size:0.2em;" id="led_number0">
+                1
+              </span>
+            </i>
+          </span>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble1" value=1
+            onchange="toggleCoreModule(this);">
+
+          <label class="form-check-label ms-0" for="switch_ble">
+          </label>
+          <span class="text-muted" id="icon_bluetooth1"><i class="bi bi-bluetooth"></i></span>
+          <span class="text-muted" id="icon_battery1" data-bs-toggle="popover" data-bs-content="a">
+            <i class="bi bi-battery"></i>
+          </span>
+          <span class="text-muted" id="icon_brightness1" number=0 value=1 role="button"
+            onclick="toggleBrightness(this);">
+            <i class="bi bi-brightness-alt-high position-relative">
+              <span class="position-absolute top-0 start-100 translate-middle badge text-muted bg-light"
+                style="font-size:0.2em;" id="led_number1">
+                1
+              </span>
+            </i>
+          </span>
+        </div>
+
+      </div>
+    </nav>
+
+
+    <div class="container mt-4">
+      <h1>template</h1>
+    </div>
+  </div>
+
+
+
+  <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="../../js/float16.min.js" crossorigin="anonymous" type="text/javascript"></script>
+  <script src="../../js/quaternion.js" crossorigin="anonymous" type="text/javascript"></script>
+
+  <script src="popper.min.js" integrity="sha384-Xe+8cL9oJa6tN/veChSP7q+mnSPaj5Bcu9mPX5F5xIGE0DVittaqT5lorf0EI7Vk"
+    crossorigin="anonymous"></script>
+  <script src="bootstrap.min.js" integrity="sha384-ODmDIVzN+pFdexxHEHFBQH3/9/vQ9uori45z4JjnFsRydbmQbmL5t1tQ0culUzyK"
+    crossorigin="anonymous"></script>
+  <script src="sketch.js"></script>
+
+</body>
+
+</html>

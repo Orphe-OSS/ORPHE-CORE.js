@@ -62,6 +62,7 @@ function Orphe(_num) {
     z: 0,
     steps: 0,
   }
+  this.steps_number = 0;
   /**
   * associative array for quotanion
   */
@@ -493,9 +494,9 @@ Orphe.prototype =
       } = float16;
       const header = data.getUint8(1);
       const steps_now = data.getUint16(2);
-      if (0 <= header && header <= 2) {
-        console.log(uuid, steps_now);
+      if ((0 <= header && header <= 2) && steps_now > this.steps_number) {
         this.gotStepsNumber({ value: steps_now });
+        this.steps_number = steps_now;
       }
       // Gait Overview
       if (data.getUint8(1) == 0 && steps_now > this.gait.steps) {

@@ -180,7 +180,6 @@ Orphe.prototype =
    * @param {int} on_off 0: turning off the LED, 1: turning on the LED
    * @param {int} pattern 0-4
    */
-
   setLED: function (on_off, pattern) {
     const data = new Uint8Array([0x02, on_off, pattern]);
     this.write('DEVICE_INFORMATION', data);
@@ -192,6 +191,20 @@ Orphe.prototype =
   setLEDBrightness: function (value) {
     this.array_device_information.setUint8(2, value);
     this.write('DEVICE_INFORMATION', this.array_device_information);
+  },
+  /**
+   * Reset motion sensor attitude, quaternion culculation.
+   */
+  resetMotionSensorAttitude: function () {
+    const data = new Uint8Array([0x03]);
+    this.write('DEVICE_INFORMATION', data);
+  },
+  /**
+   * Reset Analysis logs in the core module.
+   */
+  resetAnalysisLogs: function () {
+    const data = new Uint8Array([0x04]);
+    this.write('DEVICE_INFORMATION', data);
   },
   scan: function (uuid) {
     return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))

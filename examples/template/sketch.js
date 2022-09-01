@@ -6,7 +6,7 @@ async function toggleCoreModule(dom) {
   let ble = bles[number];
 
   if (checked == true) {
-    let ret = await ble.begin();
+    let ret = await ble.begin('ANALYSIS');
     console.log(number);
     setTimeout(async function () {
       var obj = await ble.getDeviceInformation();
@@ -16,9 +16,6 @@ async function toggleCoreModule(dom) {
       else if (obj.battery == 1) str_battery_status = 'normal';
       else if (obj.battery == 2) str_battery_status = 'full';
       document.querySelector(`#icon_battery${number}`).setAttribute('title', `${str_battery_status}`);
-
-
-
 
       if (obj.battery == '0') {
         document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery"></i>';
@@ -34,6 +31,7 @@ async function toggleCoreModule(dom) {
       }
     }, 500);
     document.querySelector(`#icon_bluetooth${number}`).classList = 'text-primary';
+    document.querySelector(`#icon_reset${number}`).classList = 'text-primary';
     document.querySelector(`#icon_brightness${number}`).classList = 'text-primary';
   }
   else {
@@ -41,8 +39,15 @@ async function toggleCoreModule(dom) {
     document.querySelector(`#icon_bluetooth${number}`).classList = 'text-muted';
     document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery"></i>';
     document.querySelector(`#icon_battery${number}`).classList = 'text-muted';
+    document.querySelector(`#icon_reset${number}`).classList = 'text-muted';
     document.querySelector(`#icon_brightness${number}`).classList = 'text-muted';
   }
+}
+
+function resetCoreModule(dom) {
+  let id = dom.getAttribute("value");
+  bles[id].resetMotionSensorAttitude();
+  bles[id].resetAnalysisLogs();
 }
 
 function toggleBrightness(dom) {
@@ -63,6 +68,7 @@ function toggleBrightness(dom) {
   dom.setAttribute('number', number);
 }
 
+
 window.onload = function () {
   for (let ble of bles) {
     ble.setup();
@@ -70,10 +76,11 @@ window.onload = function () {
       document.querySelector(`#icon_bluetooth${ble.id}`).classList = 'text-muted';
       document.querySelector(`#icon_battery${ble.id}`).innerHTML = '<i class="bi bi-battery"></i>';
       document.querySelector(`#icon_battery${ble.id}`).classList = 'text-muted';
+      document.querySelector(`#icon_reset${ble.id}`).classList = 'text-muted';
       document.querySelector(`#icon_brightness${ble.id}`).classList = 'text-muted';
       document.querySelector(`#switch_ble${ble.id}`).checked = false;
-      //ble.reset();
-      //alert('接続が切れました');
+      ble.reset();
+      alert('接続が切れました');
       ble.begin();
     }
   }

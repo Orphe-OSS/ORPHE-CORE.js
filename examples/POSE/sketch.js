@@ -49,13 +49,7 @@ pose.setOptions({
 });
 pose.onResults(onResults);
 
-const camera = new Camera(videoElement, {
-  onFrame: async () => {
-    await pose.send({ image: videoElement });
-  },
-  width: 1280,
-  height: 720
-});
+
 
 
 let capture;
@@ -79,6 +73,14 @@ function setup() {
   let h = document.querySelector('#canvas_placeholder').clientHeight;
   let canvas = createCanvas(w, w * 9 / 16);
   document.querySelector('#canvas_placeholder').appendChild(canvas.elt);
+
+  const camera = new Camera(videoElement, {
+    onFrame: async () => {
+      await pose.send({ image: videoElement });
+    },
+    width: 1280,
+    height: 720
+  });
   camera.start();
 
   capture = createCapture(
@@ -117,11 +119,18 @@ var stride = [
 var pronation = [
   {
     angle: 0,
-    unit: 'deg'
+    unit: 'deg',
+    x: 0,
+    y: 0,
+    z: 0,
   },
   {
     angle: 0,
-    unit: 'deg'
+    unit: 'deg',
+    x: 0,
+    y: 0,
+    z: 0,
+
   }
 ];
 
@@ -147,10 +156,21 @@ var footstrike = [
   },
 ]
 
-function draw() {
-  background(200);
-  image(capture, 0, 0, width, height);
+var activity = [
+  {
+    calorie: { value: 0, unit: 'cal' },
+    distance: { value: 0, unit: 'km' },
+    steps: { value: 0, unit: 'steps' }
+  },
+  {
+    calorie: { value: 0, unit: 'cal' },
+    distance: { value: 0, unit: 'km' },
+    steps: { value: 0, unit: 'steps' }
+  }
+]
 
+function draw() {
+  image(capture, 0, 0, width, height);
   if (g_results) {
     if (g_results.poseLandmarks) {
       let p = g_results.poseLandmarks;
@@ -181,19 +201,91 @@ function draw() {
   textAlign(CENTER, BASELINE);
   textSize(24);
   fill(255);
-  let grid = { x: width / 10, y: height / 20 };
-  for (let i = 0; i < 2; i++) {
-    textAlign(CENTER, BASELINE);
-    textSize(24);
-    text('Stride', (width - 2 * grid.x) * i + grid.x, grid.y);
-    textSize(18);
-    text('Height', (width - 2 * grid.x) * i + grid.x - width / 30, grid.y * 2);
-    textSize(24);
-    textAlign(RIGHT, BASELINE);
-    text(`${stride[i].z.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * 2);
-    textSize(18);
-    text(`${stride[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.65, grid.y * 2);
+  let grid = { x: width / 10, y: height / 19 };
+  let fontsize = {
+    title: 24,
+    name: 14,
+    param: 24,
+    unit: 14
   }
+
+  // Stride
+  for (let i = 0; i < 2; i++) {
+    textAlign(CENTER, BASELINE)
+    textSize(fontsize.title);
+    text('Stride', (width - 2 * grid.x) * i + grid.x, grid.y);
+    textSize(fontsize.name);
+    textAlign(LEFT, BASELINE)
+    text('X', (width - 2 * grid.x) * i + grid.x - width / 17, grid.y * 2);
+    textSize(fontsize.param);
+    textAlign(RIGHT, BASELINE);
+    text(`${stride[i].x.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * 2);
+    textSize(fontsize.unit);
+    textAlign(LEFT, BASELINE);
+    text(`${stride[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * 2);
+
+    textAlign(CENTER, BASELINE)
+    textSize(fontsize.name);
+    textAlign(LEFT, BASELINE)
+    text('Y', (width - 2 * grid.x) * i + grid.x - width / 17, grid.y * 3);
+    textSize(fontsize.param);
+    textAlign(RIGHT, BASELINE);
+    text(`${stride[i].y.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * 3);
+    textSize(fontsize.unit);
+    textAlign(LEFT, BASELINE);
+    text(`${stride[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * 3);
+
+    textAlign(CENTER, BASELINE)
+    textSize(fontsize.name);
+    textAlign(LEFT, BASELINE)
+    text('Z', (width - 2 * grid.x) * i + grid.x - width / 17, grid.y * 4);
+    textSize(fontsize.param);
+    textAlign(RIGHT, BASELINE);
+    text(`${stride[i].z.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * 4);
+    textSize(fontsize.unit);
+    textAlign(LEFT, BASELINE);
+    text(`${stride[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * 4);
+  }
+
+  // Pronation
+  let y_start = 6;
+  for (let i = 0; i < 2; i++) {
+
+    textAlign(CENTER, BASELINE)
+    textSize(fontsize.title);
+    text('Pronation', (width - 2 * grid.x) * i + grid.x, grid.y * (y_start));
+    textSize(fontsize.name);
+    textAlign(LEFT, BASELINE)
+    text('X', (width - 2 * grid.x) * i + grid.x - width / 17, grid.y * (y_start + 1));
+    textSize(fontsize.param);
+    textAlign(RIGHT, BASELINE);
+    text(`${pronation[i].x.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * (y_start + 1));
+    textSize(fontsize.unit);
+    textAlign(LEFT, BASELINE);
+    text(`${pronation[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * (y_start + 1));
+
+    textAlign(LEFT, BASELINE);
+    text(`${pronation[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * (y_start + 2));
+    text('Y', (width - 2 * grid.x) * i + grid.x - width / 17, grid.y * (y_start + 2));
+    textSize(fontsize.param);
+    textAlign(RIGHT, BASELINE);
+    text(`${pronation[i].y.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * (y_start + 2));
+    textSize(fontsize.unit);
+    textAlign(LEFT, BASELINE);
+    text(`${pronation[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * (y_start + 2));
+
+    textAlign(LEFT, BASELINE);
+    text(`${pronation[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * (y_start + 3));
+    text('Z', (width - 2 * grid.x) * i + grid.x - width / 17, grid.y * (y_start + 3));
+    textSize(fontsize.param);
+    textAlign(RIGHT, BASELINE);
+    text(`${pronation[i].z.toFixed(0)}`, (width - 2 * grid.x) * i + grid.x * 1.4, grid.y * (y_start + 3));
+    textSize(fontsize.unit);
+    textAlign(LEFT, BASELINE);
+    text(`${pronation[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * 8);
+  }
+
+
   // ------------------------------
 }
 
@@ -238,6 +330,7 @@ async function toggleCoreModule(dom) {
       }
     }, 500);
     document.querySelector(`#icon_bluetooth${number}`).classList = 'text-primary';
+    document.querySelector(`#icon_reset${number}`).classList = 'text-primary';
     document.querySelector(`#icon_brightness${number}`).classList = 'text-primary';
   }
   else {
@@ -245,8 +338,15 @@ async function toggleCoreModule(dom) {
     document.querySelector(`#icon_bluetooth${number}`).classList = 'text-muted';
     document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery"></i>';
     document.querySelector(`#icon_battery${number}`).classList = 'text-muted';
+    document.querySelector(`#icon_reset${number}`).classList = 'text-muted';
     document.querySelector(`#icon_brightness${number}`).classList = 'text-muted';
   }
+}
+
+function resetCoreModule(dom) {
+  let id = dom.getAttribute("value");
+  bles[id].resetMotionSensorAttitude();
+  bles[id].resetAnalysisLogs();
 }
 
 function toggleBrightness(dom) {
@@ -275,6 +375,16 @@ window.onload = function () {
     chart_quat[ble.id] = new Chart(document.querySelector(`#chart_quat${ble.id}`), config_quat[ble.id]);
 
     ble.setup();
+    ble.gotFootAngle = function (_footangle) {
+      pronation[this.id].angle = _footangle.value;
+    }
+    ble.gotPronation = function (_pronation) {
+      pronation[this.id].x = _pronation.x;
+      pronation[this.id].y = _pronation.y;
+      pronation[this.id].z = _pronation.z;
+    }
+    ble.gotGait = function (_gait) {
+    }
     ble.gotStride = function (_stride) {
       stride[this.id].x = 100 * _stride.x;
       stride[this.id].y = 100 * _stride.y;
@@ -319,6 +429,7 @@ window.onload = function () {
       document.querySelector(`#icon_bluetooth${ble.id}`).classList = 'text-muted';
       document.querySelector(`#icon_battery${ble.id}`).innerHTML = '<i class="bi bi-battery"></i>';
       document.querySelector(`#icon_battery${ble.id}`).classList = 'text-muted';
+      document.querySelector(`#icon_reset${ble.id}`).classList = 'text-muted';
       document.querySelector(`#icon_brightness${ble.id}`).classList = 'text-muted';
       document.querySelector(`#switch_ble${ble.id}`).checked = false;
       ble.reset();

@@ -65,7 +65,7 @@ let landmarks = [
 
 var basefont;
 function preload() {
-  basefont = loadFont('/fonts/Roboto/Roboto-Medium.ttf');
+  basefont = loadFont('../../fonts/Roboto/Roboto-Medium.ttf');
 
 }
 function setup() {

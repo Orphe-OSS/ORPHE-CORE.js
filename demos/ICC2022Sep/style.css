@@ -45,19 +45,29 @@ canvas#gauge_ave {
 
 .parent {
   position: relative;
-  width: 100%;
 }
 
 .child {
   position: absolute;
-  bottom: 10px;
+  bottom: 15px;
   left: 10px;
   width: 25%;
+  margin: 0;
+  padding: 0;
 }
 
 .child_right {
   position: absolute;
-  bottom: 0px;
+  bottom: 10px;
   right: 0px;
+  margin: 0;
+  padding: 0;
+}
 
+.child_canvas {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  margin: 0;
+  padding: 0;
 }

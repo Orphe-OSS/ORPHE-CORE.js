@@ -80,10 +80,12 @@
     </nav>
 
 
-    <div class="container mt-0" id="main_container">
-      <video class="input_video" hidden></video>
 
-      <div class="parent" id="canvas_placeholder" style="margin:0;padding:0;">
+
+    <div class="container mt-0" id="main_container">
+      <div class="parent" id="video_placeholder" style="margin:0;padding:0;">
+        <video class="input_video" width="100%" style="margin:0;padding:0;"></video>
+        <div class="child_canvas" id="canvas_placeholder"></div>
         <div class="landmark-grid-container child"></div>
         <div class="form-check form-switch child_right">
           <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble0" value=0

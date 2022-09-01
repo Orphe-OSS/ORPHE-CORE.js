@@ -1,7 +1,7 @@
 /**
  * Mediapipe: https://google.github.io/mediapipe/solutions/pose.html
  */
-const videoElement = document.getElementsByClassName('input_video')[0];
+const videoElement = document.querySelector('.input_video');
 const landmarkContainer = document.getElementsByClassName('landmark-grid-container')[0];
 const grid = new LandmarkGrid(landmarkContainer, {
   axesColor: 0xffffff,
@@ -90,41 +90,41 @@ function preload() {
 }
 
 function setup() {
-  let w = document.querySelector('#canvas_placeholder').clientWidth;
-  let h = document.querySelector('#canvas_placeholder').clientHeight;
+  let w = document.querySelector('#video_placeholder').clientWidth;
+  let h = document.querySelector('#video_placeholder').clientHeight;
   let canvas = createCanvas(w, w * 9 / 16);
   document.querySelector('#canvas_placeholder').appendChild(canvas.elt);
 
-  setTimeout(function () {
-    const camera = new Camera(videoElement, {
-      onFrame: async () => {
-        await pose.send({ image: videoElement });
-      },
-      width: 1280,
-      height: 720
-    });
-    camera.start();
 
-  }, 1000);
+  console.log(document.querySelector('#video_placeholder'));
+  const camera = new Camera(videoElement, {
+    onFrame: async () => {
+      await pose.send({ image: videoElement });
+    },
+    width: 1280,
+    height: 720
+  });
+  camera.start();
 
 
-  capture = createCapture(
-    {
-      video: {
-        //devideId:
-        //'d5e42f51fb9195bb836947df7b527c21701cf4378a3cad62a1a33a4948abbc5f',
-        //'16d38bc45b2b90e6219d122ff2f006c4f9ce2d2147253efdba40b8ef914fd2d'
-        facingMode: 'user',
-        width: 1280,
-        height: 720,
-      }
-    });
+  // capture = createCapture(
+  //   {
+  //     video: {
+  //       //devideId:
+  //       //'d5e42f51fb9195bb836947df7b527c21701cf4378a3cad62a1a33a4948abbc5f',
+  //       //'16d38bc45b2b90e6219d122ff2f006c4f9ce2d2147253efdba40b8ef914fd2d'
+  //       facingMode: 'user',
+  //       width: 1280,
+  //       height: 720,
+  //     }
+  //   });
   //capture.size(1280, 720);
-  capture.hide();
-
-
+  //capture.hide();
+  //
+  //console.log(document.querySelector('#video_placeholder'));;
   textFont(basefont);
 
+  frameRate(30);
 }
 
 var stride = [
@@ -207,9 +207,10 @@ var coin = {
 }
 
 function draw() {
+  clear();
   imageMode(CORNER);
   tint(255, 255);
-  image(capture, 0, 0, width, height);
+  //image(capture, 0, 0, width, height);
   if (g_results) {
     if (g_results.poseLandmarks) {
       let p = g_results.poseLandmarks;
@@ -354,7 +355,7 @@ function draw() {
 
 
 function windowResized() {
-  let w = document.querySelector('#main_container').clientWidth;
+  let w = document.querySelector('#video_placeholder').clientWidth;
   let h = w * 9 / 16;
   resizeCanvas(w, h);
 }
@@ -368,7 +369,7 @@ async function toggleCoreModule(dom) {
   let ble = bles[number];
 
   if (checked == true) {
-    let ret = await ble.begin('ANALYSIS');
+    let ret = await ble.begin();
     //console.log(number);
     setTimeout(async function () {
       var obj = await ble.getDeviceInformation();
@@ -448,15 +449,13 @@ window.onload = function () {
         coin_sound.play();
       }
     }
-    ble.gotFootAngle = function (_footangle) {
-      pronation[this.id].angle = _footangle.value;
-    }
+    // ble.gotFootAngle = function (_footangle) {
+    //   pronation[this.id].angle = _footangle.value;
+    // }
     ble.gotPronation = function (_pronation) {
       pronation[this.id].x = _pronation.x;
       pronation[this.id].y = _pronation.y;
       pronation[this.id].z = _pronation.z;
-    }
-    ble.gotGait = function (_gait) {
     }
     ble.gotStride = function (_stride) {
       stride[this.id].x = 100 * _stride.x;

@@ -161,8 +161,8 @@ function setup() {
     onFrame: async () => {
       await pose.send({ image: videoElement });
     },
-    width: 1929,
-    height: 1080
+    width: 1280,
+    height: 720
   });
   camera.start();
 

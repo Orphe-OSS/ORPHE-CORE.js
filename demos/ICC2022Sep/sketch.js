@@ -1,6 +1,65 @@
 /**
  * Mediapipe: https://google.github.io/mediapipe/solutions/pose.html
  */
+const MODE_ONLY_CAMERA = 0;
+const MODE_HUD_ARROW = 1;
+const MODE_HUD_COIN = 2;
+var mode = MODE_ONLY_CAMERA;
+
+var poseRecognizer = {
+  createInputVector: function (landmark_vector) {
+    let calc_array = [
+      [16, 14, 12],
+      [14, 12, 11],
+      [12, 11, 13],
+      [11, 13, 15]
+    ];
+    let input_array = [];
+    for (let c of calc_array) {
+      let v1 = createVector(landmark_vector[c[0]].x - landmark_vector[c[1]].x, landmark_vector[c[0]].y - landmark_vector[c[1]].y);
+      let v2 = createVector(landmark_vector[c[2]].x - landmark_vector[c[1]].x, landmark_vector[c[2]].y - landmark_vector[c[1]].y);
+      input_array.push(abs(v1.angleBetween(v2)));
+    }
+    return input_array;
+  },
+  classify: function (input_vector) {
+    let distance = 0;
+    for (let i = 0; i < input_vector.length; i++) {
+      distance += pow(input_vector[i] - this.data[i], 2);
+    }
+    distance = sqrt(distance);
+    if (distance < 0.5) {
+      if (this.is_detecting == false) {
+        this.timestamp.start_detecting = millis();
+      }
+      this.is_detecting = true;
+      return true;
+    }
+
+    if (this.is_detecting == true) {
+      this.timestamp.end_detecting = millis();
+    }
+    this.is_detecting = false;
+    return false;
+  },
+  getContinuesRecognizingTime: function () {
+    if (this.is_detecting) {
+      return millis() - this.timestamp.start_detecting;
+    }
+    return 0;
+  },
+  resetContinuesRecognizingTime: function () {
+    this.timestamp.start_detecting = millis();
+  },
+  data: [3.14, 3.14, 3.14, 3.14],
+  threshold: 0.7,
+  is_detecting: false,
+  timestamp: {
+    start_detecting: 0,
+    end_detecting: 0,
+  }
+}
+
 const videoElement = document.querySelector('.input_video');
 const landmarkContainer = document.getElementsByClassName('landmark-grid-container')[0];
 const grid = new LandmarkGrid(landmarkContainer, {
@@ -35,7 +94,6 @@ function onResults(results) {
     return;
   }
   if (results.poseLandmarks.length == 33) {
-
     pos_coin[0] = {
       x: width * results.poseLandmarks[29].x,
       y: height * results.poseLandmarks[29].y,
@@ -44,6 +102,8 @@ function onResults(results) {
       x: width * results.poseLandmarks[30].x,
       y: height * results.poseLandmarks[30].y,
     }
+
+    poseRecognizer.classify(poseRecognizer.createInputVector(results.poseLandmarks));
   }
 
   grid.updateLandmarks(results.poseWorldLandmarks);
@@ -70,8 +130,8 @@ pose.onResults(onResults);
 
 let capture;
 let landmarks = [
-  [7, 3, 2, 1, 0, 4, 5, 6, 8],
-  [10, 9],
+  //[7, 3, 2, 1, 0, 4, 5, 6, 8],
+  //[10, 9],
   [12, 14, 16, 18, 20, 16, 22],
   [11, 13, 15, 17, 19, 15, 21],
   [12, 11, 23, 24, 12],
@@ -101,8 +161,8 @@ function setup() {
     onFrame: async () => {
       await pose.send({ image: videoElement });
     },
-    width: 1280,
-    height: 720
+    width: 1929,
+    height: 1080
   });
   camera.start();
 
@@ -211,6 +271,41 @@ function draw() {
   imageMode(CORNER);
   tint(255, 255);
   //image(capture, 0, 0, width, height);
+
+  let command_time = poseRecognizer.getContinuesRecognizingTime()
+  if (command_time > 0) {
+    noStroke();
+    fill(69, 230, 230, 100);
+    arc(width / 2, height / 2, width / 4, width / 4, -HALF_PI, 2 * PI * (command_time / 1500) - HALF_PI);
+    if (command_time / 1500 > 1) {
+      mode++;
+
+
+      poseRecognizer.resetContinuesRecognizingTime();
+      if (mode > MODE_HUD_COIN) {
+        mode = MODE_ONLY_CAMERA;
+      }
+
+      if (mode == MODE_ONLY_CAMERA) {
+        toggleCoinMode({ checked: false });
+        document.querySelector('#switch_coin').checked = false;
+        document.querySelector('#landmark-grid-container').hidden = true;
+      }
+      else if (mode == MODE_HUD_ARROW) {
+        document.querySelector('#landmark-grid-container').hidden = false;
+      }
+      else if (mode == MODE_HUD_COIN) {
+        document.querySelector('#landmark-grid-container').hidden = false;
+        document.querySelector('#switch_coin').checked = true;
+        toggleCoinMode({ checked: true });
+      }
+    }
+  }
+  if (mode == MODE_ONLY_CAMERA) {
+    return;
+  }
+
+
   if (g_results) {
     if (g_results.poseLandmarks) {
       let p = g_results.poseLandmarks;
@@ -236,6 +331,7 @@ function draw() {
       }
     }
   }
+
 
   // ------------------------------
   textAlign(CENTER, BASELINE);
@@ -326,6 +422,7 @@ function draw() {
   }
   // ------------------------------
 
+  if (mode == MODE_HUD_ARROW) return;
 
   // draw coin effect
   if (is_coin_mode) {
@@ -352,7 +449,6 @@ function draw() {
   // ------------------------------
   coin_effect.draw();
 }
-
 
 function windowResized() {
   let w = document.querySelector('#video_placeholder').clientWidth;

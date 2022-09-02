@@ -601,8 +601,8 @@ window.onload = function () {
       document.querySelector(`#icon_brightness${ble.id}`).classList = 'text-muted';
       document.querySelector(`#switch_ble${ble.id}`).checked = false;
       ble.reset();
-      alert('接続が切れました');
-      ble.begin();
+      //alert('接続が切れました');
+      //ble.begin();
     }
   }
 }

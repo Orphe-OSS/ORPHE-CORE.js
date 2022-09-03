@@ -4,7 +4,42 @@
 const MODE_ONLY_CAMERA = 0;
 const MODE_HUD_ARROW = 1;
 const MODE_HUD_COIN = 2;
-var mode = MODE_ONLY_CAMERA;
+var mode = 0;//MODE_ONLY_CAMERA;
+var particle_effect;
+function getUserAttitude(landmark_vector) {
+  let angles = [
+    [12, 24, 26],
+    [11, 23, 25]
+  ]
+}
+
+function mousePressed() {
+  if (mode == 2) coin_effect.create(mouseX, mouseY);
+  else if (mode == 1) particle_effect.create(mouseX, mouseY, 20);
+
+}
+function keyPressed() {
+
+  if (key == '1') {
+    mode = MODE_ONLY_CAMERA;
+    toggleCoinMode({ checked: false });
+    document.querySelector('#switch_coin').checked = false;
+    document.querySelector('#landmark-grid-container').hidden = true;
+  }
+  else if (key == '2') {
+    mode = MODE_HUD_ARROW;
+    toggleCoinMode({ checked: false });
+    document.querySelector('#switch_coin').checked = false;
+    document.querySelector('#landmark-grid-container').hidden = false;
+  }
+  else if (key == '3') {
+    mode = MODE_HUD_COIN;
+    document.querySelector('#landmark-grid-container').hidden = false;
+    document.querySelector('#switch_coin').checked = true;
+    toggleCoinMode({ checked: true });
+  }
+
+}
 
 var poseRecognizer = {
   createInputVector: function (landmark_vector) {
@@ -145,6 +180,7 @@ var coin_sound;
 function preload() {
   basefont = loadFont('../../fonts/Roboto/Roboto-Medium.ttf');
   coin_effect = new CoinEffect(10);
+  particle_effect = new ParticleEffect(100);
   coin_sound = loadSound('coin.mp3');
   coin_sound.setVolume(0.1);
 }
@@ -183,8 +219,8 @@ function setup() {
   //
   //console.log(document.querySelector('#video_placeholder'));;
   textFont(basefont);
-
-  frameRate(30);
+  document.querySelector('#landmark-grid-container').hidden = true;
+  frameRate(60);
 }
 
 var stride = [
@@ -336,6 +372,7 @@ function draw() {
   // ------------------------------
   textAlign(CENTER, BASELINE);
   textSize(24);
+  noStroke();
   fill(255);
   let grid = { x: width / 10, y: height / 19 };
   let fontsize = {
@@ -421,6 +458,7 @@ function draw() {
     text(`${pronation[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * 8);
   }
   // ------------------------------
+  particle_effect.draw();
 
   if (mode == MODE_HUD_ARROW) return;
 
@@ -431,7 +469,7 @@ function draw() {
 
       textAlign(CENTER, BASELINE)
       textSize(fontsize.title);
-      text('Coins', (width - 2 * grid.x) * i + grid.x, grid.y * (y_start));
+      text('Wallet', (width - 2 * grid.x) * i + grid.x, grid.y * (y_start));
       textSize(fontsize.param);
       textAlign(RIGHT, BASELINE);
       text(`${coin.getSteps().toFixed(0)}`, (width - 2 * grid.x) * i + grid.x - width / 17, grid.y * (y_start + 1));
@@ -448,6 +486,7 @@ function draw() {
   }
   // ------------------------------
   coin_effect.draw();
+
 }
 
 function windowResized() {
@@ -544,6 +583,12 @@ window.onload = function () {
         coin.steps[ble.id] = steps_number.value;
         coin_sound.play();
       }
+      else if (mode == MODE_HUD_ARROW) {
+        particle_effect.create(pos_coin[this.id].x, pos_coin[this.id].y, 20);
+      }
+    }
+    ble.gotLandingImpact = function (impact) {
+      console.log(impact);
     }
     // ble.gotFootAngle = function (_footangle) {
     //   pronation[this.id].angle = _footangle.value;

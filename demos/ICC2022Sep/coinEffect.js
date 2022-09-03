@@ -20,21 +20,22 @@ class Coin {
             this.x += this.vx;
             this.y += this.vy;
             imageMode(CENTER);
-            tint(255, 255 * (this.life / 120)); // Display at half opacity            
+            tint(255, 255 * (this.life / 60)); // Display at half opacity            
             image(this.img, this.x, this.y);
             textAlign(CENTER, CENTER);
 
 
             this.info.x += this.info.vx;
             this.info.y += this.info.vy;
-            textSize(96);
+            textSize(width / 10);
             if (this.sign == '+') {
                 //fill(69, 230, 230, 255 * (this.life / 120)); // Display at half opacity            )
-                fill(210, 210, 64, 255 * sin(HALF_PI * this.life / 120)); // Display at half opacity            )
+                fill(210, 210, 64, 255 * sin(HALF_PI * this.life / 60)); // Display at half opacity            )
                 text(`Good Walk!!\n${this.sign}0.072 yen`, this.info.x, this.info.y);
             }
             else {
-                fill(255, 96, 64, 255 * (this.life / 120)); // Display at half opacity            )
+                fill(69, 230, 230, 255 * (this.life / 60)); // Display at half opacity            )
+                text(`Bad Walk!!\n${this.sign}0.072 yen`, this.info.x, this.info.y);
             }
 
             this.life--;
@@ -59,8 +60,13 @@ class CoinEffect {
                 coin.x = x;
                 coin.y = y;
                 coin.vx = 0.0;
-                coin.vy = -3;
-                coin.life = 120;
+                if (sign == '-') {
+                    coin.vy = 3;
+                }
+                else if (sign == '+') {
+                    coin.vy = -3;
+                }
+                coin.life = 60;
                 coin.sign = sign;
                 coin.info.x = width / 2;
                 coin.info.y = height / 2;
@@ -88,7 +94,7 @@ class Particle {
             this.y += this.vy;
             this.vy -= this.ay;
             fill(255);
-            stroke(255, 255, 255, 255 * sin(HALF_PI * this.life / 120));
+            stroke(255, 255, 255, 255 * sin(HALF_PI * this.life / 60));
 
             strokeWeight(5);
             beginShape(POINTS);
@@ -119,7 +125,7 @@ class ParticleEffect {
                 particle.vx = random(-1.0, 1.0);
                 particle.vy = random(-3, -1.5);
 
-                particle.life = 120;
+                particle.life = 60;
                 count++;
                 if (count > number) {
                     return;

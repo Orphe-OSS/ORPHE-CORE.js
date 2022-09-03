@@ -10,11 +10,33 @@ function getUserAttitude(landmark_vector) {
   let angles = [
     [12, 24, 26],
     [11, 23, 25]
-  ]
+  ];
+  let input_array = [];
+  for (let c of angles) {
+    let v1 = createVector(landmark_vector[c[0]].x - landmark_vector[c[1]].x, landmark_vector[c[0]].y - landmark_vector[c[1]].y);
+    let v2 = createVector(landmark_vector[c[2]].x - landmark_vector[c[1]].x, landmark_vector[c[2]].y - landmark_vector[c[1]].y);
+    input_array.push(abs(v1.angleBetween(v2)));
+  }
+  let result_angle = (input_array[0] + input_array[1]) / 2;
+  if (result_angle > 3.00) {
+    console.log("good walk")
+    coin_effect.create(pos_coin[this.id].x, pos_coin[this.id].y, '+');
+  }
+  else {
+    console.log("bad walk");
+    coin_effect.create(pos_coin[this.id].x, pos_coin[this.id].y, '-');
+  }
 }
 
 function mousePressed() {
-  if (mode == 2) coin_effect.create(mouseX, mouseY);
+  if (mode == 2) {
+    if (keyIsPressed === true) {
+      coin_effect.create(mouseX, mouseY, '-');
+    }
+    else {
+      coin_effect.create(mouseX, mouseY);
+    }
+  }
   else if (mode == 1) particle_effect.create(mouseX, mouseY, 20);
 
 }
@@ -298,7 +320,7 @@ var coin = {
   },
   money: 0,
   getMoney: function () {
-    return 0.085 * this.getSteps();
+    return 0.072 * this.getSteps();
   }
 }
 
@@ -376,10 +398,10 @@ function draw() {
   fill(255);
   let grid = { x: width / 10, y: height / 19 };
   let fontsize = {
-    title: 24,
-    name: 14,
-    param: 24,
-    unit: 14
+    title: width / 30,
+    name: width / 50,
+    param: width / 30,
+    unit: width / 50,
   }
 
   // Stride
@@ -579,7 +601,7 @@ window.onload = function () {
     ble.setup();
     ble.gotStepsNumber = function (steps_number) {
       if (is_coin_mode) {
-        coin_effect.create(pos_coin[this.id].x, pos_coin[this.id].y);
+        getUserAttitude(g_results.poseLandmarks);
         coin.steps[ble.id] = steps_number.value;
         coin_sound.play();
       }
@@ -588,7 +610,7 @@ window.onload = function () {
       }
     }
     ble.gotLandingImpact = function (impact) {
-      console.log(impact);
+
     }
     // ble.gotFootAngle = function (_footangle) {
     //   pronation[this.id].angle = _footangle.value;

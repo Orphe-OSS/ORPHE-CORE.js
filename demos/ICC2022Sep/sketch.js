@@ -78,62 +78,14 @@ function keyPressed() {
     document.querySelector('#switch_coin').checked = true;
     toggleCoinMode({ checked: true });
   }
+  else if (key == '@') { // show now landmark vector
+    setTimeout(function () {
+      poseRecognizer.showInputVector(g_results.poseLandmarks);
+    }, 3000);
 
-}
-
-var poseRecognizer = {
-  createInputVector: function (landmark_vector) {
-    let calc_array = [
-      [16, 14, 12],
-      [14, 12, 11],
-      [12, 11, 13],
-      [11, 13, 15]
-    ];
-    let input_array = [];
-    for (let c of calc_array) {
-      let v1 = createVector(landmark_vector[c[0]].x - landmark_vector[c[1]].x, landmark_vector[c[0]].y - landmark_vector[c[1]].y);
-      let v2 = createVector(landmark_vector[c[2]].x - landmark_vector[c[1]].x, landmark_vector[c[2]].y - landmark_vector[c[1]].y);
-      input_array.push(abs(v1.angleBetween(v2)));
-    }
-    return input_array;
-  },
-  classify: function (input_vector) {
-    let distance = 0;
-    for (let i = 0; i < input_vector.length; i++) {
-      distance += pow(input_vector[i] - this.data[i], 2);
-    }
-    distance = sqrt(distance);
-    if (distance < 0.5) {
-      if (this.is_detecting == false) {
-        this.timestamp.start_detecting = millis();
-      }
-      this.is_detecting = true;
-      return true;
-    }
-
-    if (this.is_detecting == true) {
-      this.timestamp.end_detecting = millis();
-    }
-    this.is_detecting = false;
-    return false;
-  },
-  getContinuesRecognizingTime: function () {
-    if (this.is_detecting) {
-      return millis() - this.timestamp.start_detecting;
-    }
-    return 0;
-  },
-  resetContinuesRecognizingTime: function () {
-    this.timestamp.start_detecting = millis();
-  },
-  data: [3.14, 3.14, 3.14, 3.14],
-  threshold: 0.7,
-  is_detecting: false,
-  timestamp: {
-    start_detecting: 0,
-    end_detecting: 0,
   }
 }
+
 
 const videoElement = document.querySelector('.input_video');
 const landmarkContainer = document.getElementsByClassName('landmark-grid-container')[0];

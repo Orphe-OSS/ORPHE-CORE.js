@@ -134,3 +134,49 @@ class ParticleEffect {
         }
     }
 }
+
+class ArrowEffect {
+    constructor() {
+        this.arrow = [];
+        for (let i = 0; i < 5; i++) {
+            this.arrow[i] = {
+                vec0: createVector(0, 0),
+                vec1: createVector(0, 0),
+                life: 0,
+                color: 'black'
+            }
+        }
+    }
+    create(base, vec) {
+
+        for (let a of this.arrow) {
+            console.log(a);
+            if (a.life == 0) {
+                a.life = 60;
+                a.vec0 = base;
+                a.vec1 = vec;
+                a.color = 'black';
+                return;
+            }
+        }
+    }
+    draw() {
+        for (let a of this.arrow) {
+            if (a.life > 0) {
+                sin(HALF_PI * a.life / 60);
+                push();
+                stroke(0, 0, 0);//, 255 * sin(HALF_PI * a.life / 60));
+                strokeWeight(width / 30);
+                fill(0, 0, 0);//, 255 * sin(HALF_PI * a.life / 60));
+                translate(a.vec0.x, a.vec0.y);
+                line(0, 0, a.vec1.x, a.vec1.y);
+                rotate(a.vec1.heading());
+                let arrowSize = width / 100;
+                translate(a.vec1.mag() - arrowSize, 0);
+                triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
+                pop();
+                a.life--;
+            }
+        }
+    }
+}

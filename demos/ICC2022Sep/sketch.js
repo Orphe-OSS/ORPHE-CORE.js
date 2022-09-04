@@ -6,7 +6,16 @@ const MODE_HUD_ARROW = 1;
 const MODE_HUD_COIN = 2;
 var mode = 0;//MODE_ONLY_CAMERA;
 var particle_effect;
-function getUserAttitude(landmark_vector) {
+var arrow_effect;
+
+var g_results;
+var pos_coin = [
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+];
+
+
+function getUserAttitude(id, landmark_vector) {
   let angles = [
     [12, 24, 26],
     [11, 23, 25]
@@ -19,12 +28,10 @@ function getUserAttitude(landmark_vector) {
   }
   let result_angle = (input_array[0] + input_array[1]) / 2;
   if (result_angle > 3.00) {
-    console.log("good walk")
-    coin_effect.create(pos_coin[this.id].x, pos_coin[this.id].y, '+');
+    coin_effect.create(pos_coin[id].x, pos_coin[id].y, '+');
   }
   else {
-    console.log("bad walk");
-    coin_effect.create(pos_coin[this.id].x, pos_coin[this.id].y, '-');
+    coin_effect.create(pos_coin[id].x, pos_coin[id].y, '-');
   }
 }
 
@@ -36,8 +43,19 @@ function mousePressed() {
     else {
       coin_effect.create(mouseX, mouseY);
     }
+
+
   }
-  else if (mode == 1) particle_effect.create(mouseX, mouseY, 20);
+  else if (mode == 1) {
+    particle_effect.create(mouseX, mouseY, 20);
+    let v0 = createVector(
+      mouseX, mouseY
+    );
+    let v1 = createVector(
+      0, -100
+    );
+    arrow_effect.create(v0, v1);
+  }
 
 }
 function keyPressed() {
@@ -139,11 +157,7 @@ const grid = new LandmarkGrid(landmarkContainer, {
   rotationSpeed: .00,
   showHidden: true,
 });
-var g_results;
-var pos_coin = [
-  { x: 0, y: 0 },
-  { x: 0, y: 0 },
-];
+
 function onResults(results) {
   g_results = results;
   if (!results.poseLandmarks) {
@@ -203,6 +217,7 @@ function preload() {
   basefont = loadFont('../../fonts/Roboto/Roboto-Medium.ttf');
   coin_effect = new CoinEffect(10);
   particle_effect = new ParticleEffect(100);
+  arrow_effect = new ArrowEffect();
   coin_sound = loadSound('coin.mp3');
   coin_sound.setVolume(0.1);
 }
@@ -481,6 +496,7 @@ function draw() {
   }
   // ------------------------------
   particle_effect.draw();
+  arrow_effect.draw();
 
   if (mode == MODE_HUD_ARROW) return;
 
@@ -601,7 +617,7 @@ window.onload = function () {
     ble.setup();
     ble.gotStepsNumber = function (steps_number) {
       if (is_coin_mode) {
-        getUserAttitude(g_results.poseLandmarks);
+        getUserAttitude(this.id, g_results.poseLandmarks);
         coin.steps[ble.id] = steps_number.value;
         coin_sound.play();
       }
@@ -624,6 +640,15 @@ window.onload = function () {
       stride[this.id].x = 100 * _stride.x;
       stride[this.id].y = 100 * _stride.y;
       stride[this.id].z = 100 * _stride.z;
+      let v0 = createVector(
+        pos_coin[this.id].x,
+        pos_coin[this.id].y,
+      );
+      let v1 = createVector(
+        0,
+        abs(_stride.z) * -300,
+      );
+      arrow_effect.create(v0, v1);
 
       while (chart_stride[this.id].data.labels.length > 100) {
         chart_stride[this.id].data.labels.shift();

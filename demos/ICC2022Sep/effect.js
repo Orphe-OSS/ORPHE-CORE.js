@@ -142,20 +142,23 @@ class ArrowEffect {
             this.arrow[i] = {
                 vec0: createVector(0, 0),
                 vec1: createVector(0, 0),
+                vec1_original: createVector(0, 0),
                 life: 0,
                 color: 'black'
             }
         }
     }
-    create(base, vec) {
+    create(base, vec, text) {
 
         for (let a of this.arrow) {
-            console.log(a);
             if (a.life == 0) {
-                a.life = 60;
+                a.life = 30;
                 a.vec0 = base;
                 a.vec1 = vec;
+                a.vec1_original.x = vec.x;
+                a.vec1_original.y = vec.y;
                 a.color = 'black';
+                a.text = text;
                 return;
             }
         }
@@ -163,18 +166,20 @@ class ArrowEffect {
     draw() {
         for (let a of this.arrow) {
             if (a.life > 0) {
-                sin(HALF_PI * a.life / 60);
+                a.vec1.y = a.vec1_original.y * sin(PI * (a.life / 30));
                 push();
                 stroke(0, 0, 0);//, 255 * sin(HALF_PI * a.life / 60));
-                strokeWeight(width / 30);
+                strokeWeight(width / 60);
                 fill(0, 0, 0);//, 255 * sin(HALF_PI * a.life / 60));
                 translate(a.vec0.x, a.vec0.y);
                 line(0, 0, a.vec1.x, a.vec1.y);
                 rotate(a.vec1.heading());
-                let arrowSize = width / 100;
+                let arrowSize = width / 1000;
                 translate(a.vec1.mag() - arrowSize, 0);
                 triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
                 pop();
+                textSize(width / 30);
+                text(a.text, a.vec0.x, a.vec0.y);
                 a.life--;
             }
         }

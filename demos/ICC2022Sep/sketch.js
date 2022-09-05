@@ -21,18 +21,31 @@ function getUserAttitude(id, landmark_vector) {
     [11, 23, 25]
   ];
   let input_array = [];
-  for (let c of angles) {
-    let v1 = createVector(landmark_vector[c[0]].x - landmark_vector[c[1]].x, landmark_vector[c[0]].y - landmark_vector[c[1]].y);
-    let v2 = createVector(landmark_vector[c[2]].x - landmark_vector[c[1]].x, landmark_vector[c[2]].y - landmark_vector[c[1]].y);
+  {
+    let v1 = createVector(landmark_vector[24].x - landmark_vector[12].x, landmark_vector[24].y - landmark_vector[12].y);
+    let v2 = createVector(landmark_vector[24].x - landmark_vector[24].x + 100, landmark_vector[24].y - landmark_vector[24].y);
     input_array.push(abs(v1.angleBetween(v2)));
   }
+  {
+    let v1 = createVector(landmark_vector[25].x - landmark_vector[11].x, landmark_vector[25].y - landmark_vector[11].y);
+    let v2 = createVector(landmark_vector[25].x - landmark_vector[25].x + 100, landmark_vector[25].y - landmark_vector[25].y);
+    input_array.push(abs(v1.angleBetween(v2)));
+  }
+
+
   let result_angle = (input_array[0] + input_array[1]) / 2;
-  if (result_angle > 3.00) {
-    coin_effect.create(pos_coin[id].x, pos_coin[id].y, '+');
+  console.log("attitude: ", result_angle);
+  if (result_angle < 1.50 || result_angle > 1.67) {
+    coin_effect.create(pos_coin[id].x, pos_coin[id].y, '-');
+    return false;
   }
   else {
-    coin_effect.create(pos_coin[id].x, pos_coin[id].y, '-');
+    coin_effect.create(pos_coin[id].x, pos_coin[id].y, '+');
+    return true;
   }
+
+
+
 }
 
 function mousePressed() {
@@ -54,7 +67,7 @@ function mousePressed() {
     let v1 = createVector(
       0, -100
     );
-    arrow_effect.create(v0, v1);
+    arrow_effect.create(v0, v1, '100');
   }
 
 }
@@ -70,7 +83,7 @@ function keyPressed() {
     mode = MODE_HUD_ARROW;
     toggleCoinMode({ checked: false });
     document.querySelector('#switch_coin').checked = false;
-    document.querySelector('#landmark-grid-container').hidden = false;
+    document.querySelector('#landmark-grid-container').hidden = true;
   }
   else if (key == '3') {
     mode = MODE_HUD_COIN;
@@ -165,6 +178,7 @@ let landmarks = [
 var basefont;
 var coin_effect;
 var coin_sound;
+var coin_fail_sound;
 function preload() {
   basefont = loadFont('../../fonts/Roboto/Roboto-Medium.ttf');
   coin_effect = new CoinEffect(10);
@@ -172,6 +186,8 @@ function preload() {
   arrow_effect = new ArrowEffect();
   coin_sound = loadSound('coin.mp3');
   coin_sound.setVolume(0.1);
+  coin_fail_sound = loadSound('coin_fail.mp3');
+  coin_fail_sound.setVolume(0.1);
 }
 
 function setup() {
@@ -317,7 +333,9 @@ function draw() {
         document.querySelector('#landmark-grid-container').hidden = true;
       }
       else if (mode == MODE_HUD_ARROW) {
-        document.querySelector('#landmark-grid-container').hidden = false;
+        toggleCoinMode({ checked: false });
+        document.querySelector('#switch_coin').checked = false;
+        document.querySelector('#landmark-grid-container').hidden = true;
       }
       else if (mode == MODE_HUD_COIN) {
         document.querySelector('#landmark-grid-container').hidden = false;
@@ -330,32 +348,6 @@ function draw() {
     return;
   }
 
-
-  if (g_results) {
-    if (g_results.poseLandmarks) {
-      let p = g_results.poseLandmarks;
-      noFill();
-      stroke('#45e6e6');
-      strokeWeight(5);
-      for (ls of landmarks) {
-        beginShape();
-        for (l of ls) {
-          vertex(width * p[l].x, height * p[l].y);
-        }
-        endShape();
-      }
-
-      for (ls of landmarks) {
-        fill('#ff6040');
-        noStroke();
-        beginShape();
-        for (l of ls) {
-          circle(width * p[l].x, height * p[l].y, 10);
-        }
-        endShape();
-      }
-    }
-  }
 
 
   // ------------------------------
@@ -447,10 +439,39 @@ function draw() {
     text(`${pronation[i].unit}`, (width - 2 * grid.x) * i + grid.x * 1.41, grid.y * 8);
   }
   // ------------------------------
-  particle_effect.draw();
   arrow_effect.draw();
+  particle_effect.draw();
 
   if (mode == MODE_HUD_ARROW) return;
+
+
+  if (g_results) {
+    if (g_results.poseLandmarks) {
+      let p = g_results.poseLandmarks;
+      noFill();
+      stroke('#45e6e6');
+      strokeWeight(5);
+      for (ls of landmarks) {
+        beginShape();
+        for (l of ls) {
+          vertex(width * p[l].x, height * p[l].y);
+        }
+        endShape();
+      }
+
+      for (ls of landmarks) {
+        fill('#ff6040');
+        noStroke();
+        beginShape();
+        for (l of ls) {
+          circle(width * p[l].x, height * p[l].y, 10);
+        }
+        endShape();
+      }
+    }
+  }
+
+
 
   // draw coin effect
   if (is_coin_mode) {
@@ -459,6 +480,8 @@ function draw() {
 
       textAlign(CENTER, BASELINE)
       textSize(fontsize.title);
+      fill(255);
+      noStroke();
       text('Wallet', (width - 2 * grid.x) * i + grid.x, grid.y * (y_start));
       textSize(fontsize.param);
       textAlign(RIGHT, BASELINE);
@@ -569,9 +592,14 @@ window.onload = function () {
     ble.setup();
     ble.gotStepsNumber = function (steps_number) {
       if (is_coin_mode) {
-        getUserAttitude(this.id, g_results.poseLandmarks);
+        let result = getUserAttitude(this.id, g_results.poseLandmarks);
         coin.steps[ble.id] = steps_number.value;
-        coin_sound.play();
+        if (result) {
+          coin_sound.play();
+        }
+        else {
+          coin_fail_sound.play();
+        }
       }
       else if (mode == MODE_HUD_ARROW) {
         particle_effect.create(pos_coin[this.id].x, pos_coin[this.id].y, 20);
@@ -598,9 +626,9 @@ window.onload = function () {
       );
       let v1 = createVector(
         0,
-        abs(_stride.z) * -300,
+        -20 + abs(_stride.z) * -300,
       );
-      arrow_effect.create(v0, v1);
+      arrow_effect.create(v0, v1, (20 + abs(_stride.z) * 300).toFixed(1));
 
       while (chart_stride[this.id].data.labels.length > 100) {
         chart_stride[this.id].data.labels.shift();

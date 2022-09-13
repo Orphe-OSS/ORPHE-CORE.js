@@ -551,12 +551,10 @@ window.onload = function () {
 
         ble.onStartNotify = function (uuid) {
             console.log('> Start Notify!');
-            document.getElementById(`uuid_name${this.id}`).innerHTML = uuid;
         }
 
         ble.onStopNotify = function (uuid) {
             console.log('> Stop Notify!');
-            //document.getElementById('uuid_name').innerHTML = uuid;
         }
     }
 }

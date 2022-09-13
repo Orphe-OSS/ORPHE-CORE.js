@@ -1,12 +1,12 @@
 // 複数orphe coreを利用する場合は配列つかうと便利
-const ble = new Orphe(0);
+var ble = new Orphe(0);
 
 //--------------------------------------------------
 //ロード時の処理
 //--------------------------------------------------
 window.onload = function () {
     // ORPHE COREの初期セットアップ
-    ble.setup(['DEVICE_INFORMATION']);
+    ble.setup();
 }
 
 async function toggleConnect(dom) {
@@ -21,7 +21,7 @@ async function toggleConnect(dom) {
     }
     else {
         // 解除
-        ble.stop();
+        ble.reset();
 
         // Get Device Informationボタンを非アクティブにする
         document.querySelector('button').disabled = true;

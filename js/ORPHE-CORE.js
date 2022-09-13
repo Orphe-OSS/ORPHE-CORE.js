@@ -1,5 +1,5 @@
 /**
-ORPHE.js is javascript library for ORPHE CORE Module, which is inspired by BlueJelly.js
+ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 @module Orphe
 @author Tetsuaki BABA
 @see https://orphe.io/
@@ -84,18 +84,19 @@ function Orphe(_num) {
     x: 0.0, y: 0.0, z: 0.0
   }
 
-  //callBack
-  this.onScan = function (deviceName) { console.log("onScan"); };
-  this.onConnectGATT = function (uuid) { console.log("onConnectGATT"); };
-  this.onConnect = function (uuid) { console.log("onConnect"); };
-  // this.onRead = function (data, uuid) { console.log("onRead"); };
-  this.onWrite = function (uuid) { console.log("onWrite"); };
-  this.onStartNotify = function (uuid) { console.log("onStartNotify"); };
-  this.onStopNotify = function (uuid) { console.log("onStopNotify"); };
-  this.onDisconnect = function () { console.log("onDisconnect"); };
-  this.onClear = function () { console.log("onClear"); };
-  this.onReset = function () { console.log("onReset"); };
-  this.onError = function (error) { console.log("onError: ", error); };
+  // initial callBack register
+  // this.onScan = function (deviceName) { console.log("onScan"); };
+  // this.onConnectGATT = function (uuid) { console.log("onConnectGATT"); };
+  // this.onConnect = function (uuid) { console.log("onConnect"); };
+  // // this.onRead = function (data, uuid) { console.log("onRead"); };
+  // this.onWrite = function (uuid) { console.log("onWrite"); };
+  // this.onStartNotify = function (uuid) { console.log("onStartNotify"); };
+  // this.onStopNotify = function (uuid) { console.log("onStopNotify"); };
+  // this.onDisconnect = function () { console.log("onDisconnect"); };
+  // this.gotBLEFrequency = function (frequency) { }
+  // this.onClear = function () { console.log("onClear"); };
+  // this.onReset = function () { console.log("onReset"); };
+  // this.onError = function (error) { console.log("onError: ", error); };
 }
 
 Object.defineProperty(Orphe, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
@@ -139,6 +140,8 @@ Orphe.prototype =
    * @return {Promise<string>} 
    */
   begin: async function (str_type = 'ANALYSIS') {
+    this.notification_type = str_type;
+
     return new Promise((resolve, reject) => {
       this.read('DEVICE_INFORMATION').then(() => {
         if (str_type == "ANALYSIS") {
@@ -418,6 +421,20 @@ Orphe.prototype =
     this.onReset();
   },
 
+  timestamp: {
+    start: 0,
+    millis: function () {
+      const blenow = performance.now();
+      let diff = (blenow - this.start);
+      this.start = blenow;
+      return diff;
+    },
+    getHz: function () {
+      let t = this.millis();
+      if (t <= 15) return -1;
+      else return 1000 / t;
+    }
+  },
 
   // Readコールバック
   /**
@@ -426,6 +443,10 @@ Orphe.prototype =
    * @param {string} uuid 
    */
   onRead: function (data, uuid) {
+
+
+
+
 
     //  console.log(uuid, data.byteLength, data.getUint8(0));
     // デバイス情報Readの場合
@@ -484,6 +505,7 @@ Orphe.prototype =
     }
     else if (uuid == 'STEP_ANALYSIS') {
 
+
       const buffer = new ArrayBuffer(20);
       const view = new DataView(buffer);
 
@@ -520,7 +542,7 @@ Orphe.prototype =
       }
       // Stride
       else if (data.getUint8(1) == 1 && steps_now > this.stride.steps) {
-        console.log(steps_now, this.stride.steps);
+        //console.log(steps_now, this.stride.steps);
         this.stride.foot_angle = data.getFloat32(4);
         this.stride.x = data.getFloat32(8);
         this.stride.y = data.getFloat32(12);
@@ -573,6 +595,12 @@ Orphe.prototype =
         this.gotQuat(this.quat);
         this.gotDelta(this.delta);
         this.gotEuler(this.euler);
+
+        if (this.notification_type == 'ANALYSIS' || this.notification_type == 'ANALYSIS_AND_RAW') {
+          let ret = this.timestamp.getHz();
+          if (ret > 0) this.gotBLEFrequency(ret);
+        }
+
       }
       // Sensor test
       else if (data.getUint8(1) == 5) {
@@ -602,6 +630,12 @@ Orphe.prototype =
           z: data.getInt16(26) / 16384
         }
 
+        // sensor valuesのときはrawデータのみなので，QuatのときにHzは計算しておく
+        if (this.notification_type == 'RAW') {
+          let ret = this.timestamp.getHz();
+          if (ret > 0) this.gotBLEFrequency(ret);
+        }
+
       }
       else if (data.getUint8(0) == 40) {
 
@@ -621,6 +655,9 @@ Orphe.prototype =
           y: data.getInt8(15) / 127,
           z: data.getInt8(16) / 127
         }
+
+
+
       }
       this.gotQuat(this.quat);
       this.gotGyro(this.gyro);
@@ -766,4 +803,19 @@ Orphe.prototype =
    */
   gotStepsNumber: function (steps_number) {
   },
+
+
+
+  onScan: function (deviceName) { console.log("onScan"); },
+  onConnectGATT: function (uuid) { console.log("onConnectGATT"); },
+  onConnect: function (uuid) { console.log("onConnect"); },
+  // this.onRead = function (data, uuid) { console.log("onRead"); };
+  onWrite: function (uuid) { console.log("onWrite"); },
+  onStartNotify: function (uuid) { console.log("onStartNotify"); },
+  onStopNotify: function (uuid) { console.log("onStopNotify"); },
+  onDisconnect: function () { console.log("onDisconnect"); },
+  gotBLEFrequency: function (frequency) { },
+  onClear: function () { console.log("onClear"); },
+  onReset: function () { console.log("onReset"); },
+  onError: function (error) { console.log("onError: ", error); },
 }

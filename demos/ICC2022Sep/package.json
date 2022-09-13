@@ -1,0 +1,42 @@
+{
+    "name": "icc2022sep",
+    "version": "1.0.0",
+    "description": "POSE is an example to use MediaPipe Pose, p5js and ORPHE-CORE.js in a single project.",
+    "main": "main.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "electron ."
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "electron": "^20.1.1"
+    },
+    "build": {
+        "appId": "net.tetsuakibaba.app.handable",
+        "productName": "handable",
+        "afterSign": "./scripts/notarize.js",
+        "copyright": "Copyright © 2021 Tetsuaki Baba",
+        "dmg": {
+            "sign": false
+        },
+        "mac": {
+            "target": {
+                "target": "dmg",
+                "arch": "universal"
+            },
+            "hardenedRuntime": true,
+            "gatekeeperAssess": false,
+            "entitlements": "build/entitlements.mac.plist",
+            "entitlementsInherit": "build/entitlements.mac.plist",
+            "icon": "./images/icon.icns"
+        },
+        "win": {
+            "target": {
+                "target": "nsis",
+                "arch": "x64"
+            },
+            "icon": "./images/icon.ico"
+        }
+    }
+}

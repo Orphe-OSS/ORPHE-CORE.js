@@ -143,34 +143,34 @@ Orphe.prototype =
     this.notification_type = str_type;
 
     return new Promise((resolve, reject) => {
-      this.read('DEVICE_INFORMATION').then(() => {
-        if (str_type == "ANALYSIS") {
-          this.startNotify('STEP_ANALYSIS').then(() => {
-            //console.log("analysis---")
-            resolve("done begin(); ANALYSIS");
-          })
-            .catch(err => alert(err));
-        }
-        else if (str_type == "RAW") {
+      //this.read('DEVICE_INFORMATION').then(() => {
+      if (str_type == "ANALYSIS") {
+        this.startNotify('STEP_ANALYSIS').then(() => {
+          //console.log("analysis---")
+          resolve("done begin(); ANALYSIS");
+        })
+          .catch(err => alert(err));
+      }
+      else if (str_type == "RAW") {
+        this.startNotify('SENSOR_VALUES').then(() => {
+          //console.log("raw---")
+          resolve("done begin(); RAW");
+        });
+      }
+      else if (str_type == "ANALYSIS_AND_RAW") {
+        this.startNotify('STEP_ANALYSIS').then(() => {
           this.startNotify('SENSOR_VALUES').then(() => {
-            //console.log("raw---")
-            resolve("done begin(); RAW");
+            //console.log("analysis and raw---")
+            resolve("done begin(); RAW and ANALYSIS");
           });
-        }
-        else if (str_type == "ANALYSIS_AND_RAW") {
-          this.startNotify('STEP_ANALYSIS').then(() => {
-            this.startNotify('SENSOR_VALUES').then(() => {
-              //console.log("analysis and raw---")
-              resolve("done begin(); RAW and ANALYSIS");
-            });
-          });
-        }
-      }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        console.log('Error: ' + error);
-        this.onError(error);
-        return;
-      });
+        });
+      }
+    }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
+      console.log('Error: ' + error);
+      this.onError(error);
+      return;
     });
+    //});
   },
   /**
    * stop and disconnect GATT connection

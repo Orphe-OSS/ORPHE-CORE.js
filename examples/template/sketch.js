@@ -12,8 +12,6 @@ window.onload = function () {
       document.querySelector(`#status${ble.id}`).innerText = 'OFFLINE';
       document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
     }
-    ble.gotBLEFrequency = function (freq) {
-      document.querySelector(`#freq${this.id}`).innerHTML = `${Math.floor(freq)}Hz`;
-    };
+
   }
 }

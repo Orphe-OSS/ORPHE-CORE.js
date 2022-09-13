@@ -15,13 +15,14 @@
 
   <div class="container">
     <nav class="navbar navbar-brand bg-light">
-      <div class="container-fluid">
+      <!-- <div class="container-fluid "> -->
+      <div class="container-fluid justify-content-between">
 
-        <div class="form-check form-switch">
+        <div class="form-check form-switch me-4">
           <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble0" value=0
             onchange="toggleCoreModule(this);">
 
-          <label class="form-check-label ms-0" for="switch_ble0">
+          <label class="form-check-label ms-0" for="switch_ble0">01
           </label>
           <span class="text-muted" id="icon_bluetooth0">
             <i class="bi bi-bluetooth position-relative">
@@ -47,56 +48,18 @@
             data-bs-toggle="modal" data-bs-target="#settings_modal0"><i class="bi bi-gear" role="button"></i></span>
         </div>
 
-        <!-- Modal -->
-        <div class="modal fade" id="settings_modal0" tabindex="-1" aria-labelledby="exampleModalLabel"
-          aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE01 Settings</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="form-floating mt-2">
-                  <select class="form-select text-black" id="select_acc" aria-label="Floating label select example">
-                    <option value="2" selected>2</option>
-                    <option value="4">4</option>
-                    <option value="8">8</option>
-                    <option value="16">16</option>
-                  </select>
-                  <label for="select_acc" class="small">Accelerometer Range [g]</label>
-                </div>
-                <div class="form-floating mt-2">
-                  <select class="form-select text-black" id="select_gyro" aria-label="Floating label select example">
-                    <option value="250" selected>250</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                    <option value="2000">2000</option>
-                  </select>
-                  <label for="select_gyro" class="small">Gryorscope Range [g]</label>
-                </div>
-              </div>
-              <div class="d-grid gap-2 col-10 mx-auto">
-                <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(1);">Reset
-                  Attitude & Gait Analysis</button>
-              </div>
-              <div class="modal-footer">
-                <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <a class="navbar-brand text-black fw-normal" href="./">
+        <!-- <a class="navbar-brand text-black fw-normal" href="./">
           <i class="bi bi-activity"></i>
           template
-        </a>
+        </a> -->
 
         <div class="form-check form-switch">
           <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble1" value=1
             onchange="toggleCoreModule(this);">
 
           <label class="form-check-label ms-0" for="switch_ble">
+            02
           </label>
           <span class="text-muted" id="icon_bluetooth1"><i class="bi bi-bluetooth position-relative">
               <span class="position-absolute start-50 translate-middle badge text-muted" style="font-size:0.2em;"
@@ -121,48 +84,88 @@
             data-bs-toggle="modal" data-bs-target="#settings_modal1"><i class="bi bi-gear" role="button"></i></span>
         </div>
 
-        <!-- Modal -->
-        <div class="modal fade" id="settings_modal1" tabindex="-1" aria-labelledby="exampleModalLabel"
-          aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE02 Settings</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="form-floating mt-2">
-                  <select class="form-select text-black" id="select_acc" aria-label="Floating label select example">
-                    <option value="2" selected>2</option>
-                    <option value="4">4</option>
-                    <option value="8">8</option>
-                    <option value="16">16</option>
-                  </select>
-                  <label for="select_acc" class="small">Accelerometer Range [g]</label>
-                </div>
-                <div class="form-floating mt-2">
-                  <select class="form-select text-black" id="select_gyro" aria-label="Floating label select example">
-                    <option value="250" selected>250</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                    <option value="2000">2000</option>
-                  </select>
-                  <label for="select_gyro" class="small">Gryorscope Range [g]</label>
-                </div>
-              </div>
-              <div class="d-grid gap-2 col-10 mx-auto">
-                <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(1);">Reset
-                  Attitude & Gait Analysis</button>
-              </div>
-              <div class="modal-footer">
-                <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
-              </div>
-            </div>
-          </div>
-        </div>
+
 
       </div>
     </nav>
+
+    <!-- Modal -->
+    <div class="modal fade" id="settings_modal0" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE01 Settings</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-floating mt-2">
+              <select class="form-select text-black" id="select_acc" aria-label="Floating label select example">
+                <option value="2" selected>2</option>
+                <option value="4">4</option>
+                <option value="8">8</option>
+                <option value="16">16</option>
+              </select>
+              <label for="select_acc" class="small">Accelerometer Range [g]</label>
+            </div>
+            <div class="form-floating mt-2">
+              <select class="form-select text-black" id="select_gyro" aria-label="Floating label select example">
+                <option value="250" selected>250</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+                <option value="2000">2000</option>
+              </select>
+              <label for="select_gyro" class="small">Gryorscope Range [g]</label>
+            </div>
+          </div>
+          <div class="d-grid gap-2 col-10 mx-auto">
+            <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(1);">Reset
+              Attitude & Gait Analysis</button>
+          </div>
+          <div class="modal-footer">
+            <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="settings_modal1" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE02 Settings</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-floating mt-2">
+              <select class="form-select text-black" id="select_acc" aria-label="Floating label select example">
+                <option value="2" selected>2</option>
+                <option value="4">4</option>
+                <option value="8">8</option>
+                <option value="16">16</option>
+              </select>
+              <label for="select_acc" class="small">Accelerometer Range [g]</label>
+            </div>
+            <div class="form-floating mt-2">
+              <select class="form-select text-black" id="select_gyro" aria-label="Floating label select example">
+                <option value="250" selected>250</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+                <option value="2000">2000</option>
+              </select>
+              <label for="select_gyro" class="small">Gryorscope Range [g]</label>
+            </div>
+          </div>
+          <div class="d-grid gap-2 col-10 mx-auto">
+            <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(1);">Reset
+              Attitude & Gait Analysis</button>
+          </div>
+          <div class="modal-footer">
+            <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+          </div>
+        </div>
+      </div>
+    </div>
 
 
     <div class="container mt-4">

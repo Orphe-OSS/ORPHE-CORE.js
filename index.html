@@ -39,6 +39,15 @@
       and sample code. ORPHE-CORE.js uses BLE, so please be sure to check its compatibility with a CHROME browser. The
       environment that has been tested in this document is ,
       <span class="bg-warning">Chrome browser on macOS, Windows, Linux and Android.</span>
+
+    </p>
+    <p class="bg-warning text-light" style="padding:0.5em;">
+      <strong>[known issue] For AndroidOS Users</strong>: In the case of an example that uses
+      multiple graphs displayed
+      by chartjs, the BLE data update speed may become slow due to performance degradation.
+    </p>
+    <p class="bg-warning text-light" style="padding:0.5em;">
+      <strong>[known issue] For AndroidOS Users</strong>: ANALYSIS and RAW Starter Template won't work.
     </p>
     <p>Happy hacking with ORPHE CORE Module and javascript.</p>
 
@@ -134,7 +143,8 @@
 
       <div class="input-group mb-3 mt-2">
         <button class="btn btn-outline-primary" type="button" id="button_copy_cdn"
-          onclick="copyInputValue(this, '#cdn')"> <i class="bi bi-clipboard"></i></button>
+          onclick="copyInputValue(this, '#cdn')">
+          <i class="bi bi-clipboard"></i></button>
         <input type="text" class="form-control bg-secondary" id="cdn"
           value='<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous" type="text/javascript"></script>'>
       </div>

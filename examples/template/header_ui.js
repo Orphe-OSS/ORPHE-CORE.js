@@ -7,30 +7,31 @@ async function toggleCoreModule(dom) {
 
     if (checked == true) {
         let ret = await ble.begin('ANALYSIS');
+
         ble.gotBLEFrequency = function (freq) {
             document.querySelector(`#freq${this.id}`).innerHTML = `${Math.floor(freq)}Hz`;
         };
-        setTimeout(async function () {
-            var obj = await ble.getDeviceInformation();
-            let str_battery_status;
-            if (obj.battery == 0) str_battery_status = 'empty';
-            else if (obj.battery == 1) str_battery_status = 'normal';
-            else if (obj.battery == 2) str_battery_status = 'full';
-            document.querySelector(`#icon_battery${number}`).setAttribute('title', `${str_battery_status}`);
 
-            if (obj.battery == '0') {
-                document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery"></i>';
-                document.querySelector(`#icon_battery${number}`).classList = 'text-warning';
-            }
-            else if (obj.battery == '1') {
-                document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery-half"></i>';
-                document.querySelector(`#icon_battery${number}`).classList = 'text-primary';
-            }
-            else if (obj.battery == '2') {
-                document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery-full"></i>';
-                document.querySelector(`#icon_battery${number}`).classList = 'text-primary';
-            }
-        }, 500);
+        var obj = await ble.getDeviceInformation();
+        let str_battery_status;
+        if (obj.battery == 0) str_battery_status = 'empty';
+        else if (obj.battery == 1) str_battery_status = 'normal';
+        else if (obj.battery == 2) str_battery_status = 'full';
+        document.querySelector(`#icon_battery${number}`).setAttribute('title', `${str_battery_status}`);
+
+        if (obj.battery == '0') {
+            document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery"></i>';
+            document.querySelector(`#icon_battery${number}`).classList = 'text-warning';
+        }
+        else if (obj.battery == '1') {
+            document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery-half"></i>';
+            document.querySelector(`#icon_battery${number}`).classList = 'text-primary';
+        }
+        else if (obj.battery == '2') {
+            document.querySelector(`#icon_battery${number}`).innerHTML = '<i class="bi bi-battery-full"></i>';
+            document.querySelector(`#icon_battery${number}`).classList = 'text-primary';
+        }
+
         document.querySelector(`#icon_bluetooth${number}`).classList = 'text-primary';
         document.querySelector(`#icon_settings${number}`).classList = 'text-primary';
         document.querySelector(`#icon_brightness${number}`).classList = 'text-primary';

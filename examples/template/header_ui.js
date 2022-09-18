@@ -17,7 +17,7 @@ function buildCoreToolkit(parent_element, title, core_id) {
 
     let span_group = buildElement('span', '', '', '', div_form_check);
     span_group.id = `ui${core_id}`;
-    //span_group.style.visibility = 'hidden';
+    span_group.style.visibility = 'hidden';
 
     let span_activity = buildElement('span',
         `<i class="bi bi-activity position-relative">

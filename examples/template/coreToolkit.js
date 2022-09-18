@@ -1,3 +1,7 @@
+var coreToolkit_version_date = `
+Last modified: 2022/09/18 11:09:44
+`;
+
 var bles = [new Orphe(0), new Orphe(1)];
 
 function buildCoreToolkit(parent_element, title, core_id) {
@@ -10,6 +14,7 @@ function buildCoreToolkit(parent_element, title, core_id) {
     input.setAttribute('role', 'switch');
     input.setAttribute('id', `switch_ble${core_id}`);
     input.setAttribute('value', `${core_id}`);
+    input.setAttribute('title', `coreToolkit_version_date: ${coreToolkit_version_date}`);
     input.addEventListener('change', function () {
         toggleCoreModule(this);
     })

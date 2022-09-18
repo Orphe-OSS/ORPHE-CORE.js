@@ -232,9 +232,10 @@ Orphe.prototype =
       ORPHE core module name: CR-2, CR-3
       */
       filters: [
-        { services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833'] },
+        { services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833', '01a9d6b5-ff6e-444a-b266-0be75e85c064'] },
         //{ services: [0x1802, 0x1803] },
-        { services: ['c48e6067-5295-48d3-8d5c-0395f61792b1'] },
+        //  01A9D6B5-FF6E-444A-B266-0BE75E85C064
+        //{ services: ['c48e6067-5295-48d3-8d5c-0395f61792b1'] },
         //{ name: 'CR-2' },
         { namePrefix: 'CR-' }
       ],
@@ -297,6 +298,8 @@ Orphe.prototype =
    * 
    */
   read: function (uuid) {
+    //return this.dataCharacteristic.readValue();
+    console.log(uuid);
     return (this.scan(uuid))
       .then(() => {
         return this.connectGATT(uuid);

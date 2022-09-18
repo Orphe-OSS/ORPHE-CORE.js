@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2022/09/18 12:00:59
+Last modified: 2022/09/18 13:16:12
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -178,17 +178,20 @@ function changeNotify(no, dom) {
 async function changeAccRange(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.range.acc = parseInt(dom.value);
+    obj.lr = 0xFF;
     bles[no].setDeviceInformation(obj);
 }
 
 async function changeGryoRange(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.range.gyro = parseInt(dom.value);
+    obj.lr = 0xFF;
     bles[no].setDeviceInformation(obj);
 }
 async function changeLEDBrightness(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.led_brightness = parseInt(dom.value);
+    obj.lr = 0xFF;
     bles[no].setDeviceInformation(obj);
 }
 async function changeLR(no, dom) {

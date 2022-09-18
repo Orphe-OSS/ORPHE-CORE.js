@@ -134,15 +134,6 @@ async function toggleCoreModule(dom) {
         ble.gotBLEFrequency = function (freq) {
             document.querySelector(`#freq${this.id} `).innerHTML = `${Math.floor(freq)} Hz`;
         };
-        ble.gotAcc = function (acc) {
-            //console.log(acc);
-        };
-        ble.gotStride = function (stride) {
-            console.log(stride);
-        }
-        ble.gotStepsNumber = function (step) {
-            console.log(step);
-        }
     }
     else {
         ble.reset();

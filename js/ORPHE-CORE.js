@@ -306,8 +306,8 @@ Orphe.prototype =
         return this.dataCharacteristic.readValue();
       })
       .catch(error => {
-        //console.log('Error : ' + error);
-        throw 'read error';
+        console.log('Error : ' + error);
+        //throw 'read error';
         this.onError(error);
       });
   },

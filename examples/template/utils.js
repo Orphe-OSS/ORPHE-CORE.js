@@ -21,3 +21,14 @@ function millis() {
     //console.log("経過時間(ミリ秒):", diff);
     return diff;
 }
+
+function buildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
+    let element = document.createElement(name_tag);
+    element.innerHTML = innerHTML;
+    element.classList = str_class;
+    if (str_style != '') {
+        element.setAttribute('style', str_style);
+    }
+    element_appended.appendChild(element);
+    return element;
+}

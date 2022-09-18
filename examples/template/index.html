@@ -12,180 +12,40 @@
 </head>
 
 <body class="text-black">
+
+
+
   <div class="container">
-    <nav class="navbar navbar-brand bg-light">
-      <!-- <div class="container-fluid "> -->
-      <div class="container-fluid justify-content-between">
-
-        <div class="form-check form-switch me-4">
-          <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble0" value=0
-            onchange="toggleCoreModule(this);">
-          <label class="form-check-label ms-0" for="switch_ble0">
-            01
-          </label>
-          <span class="text-muted" id="icon_bluetooth0">
-            <i class="bi bi-bluetooth position-relative">
-              <span class="position-absolute top-0 start-50 translate-middle badge text-muted" style="font-size:0.2em;"
-                id="freq0">
-              </span>
-            </i>
-          </span>
-
-          <span class="text-muted" id="icon_battery0" data-bs-toggle="popover" data-bs-content="a">
-            <i class="bi bi-battery"></i>
-          </span>
-          <span class="text-muted" id="icon_brightness0" number=0 role="button" value=0
-            onclick="toggleBrightness(this);">
-            <i class="bi bi-brightness-alt-high position-relative">
-              <span class="position-absolute  top-0 start-50 translate-middle badge text-muted bg-light"
-                style="font-size:0.2em;" id="led_number0">
-                1
-              </span>
-            </i>
-          </span>
-          <span class="text-muted" id="icon_settings0" value=0 title="Reset motion sensor and activity log"
-            data-bs-toggle="modal" data-bs-target="#settings_modal0"><i class="bi bi-gear" role="button"></i></span>
-        </div>
-
-
-
-        <div class="form-check form-switch">
-          <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble1" value=1
-            onchange="toggleCoreModule(this);">
-
-          <label class="form-check-label ms-0" for="switch_ble">
-            02
-          </label>
-          <span class="text-muted" id="icon_bluetooth1"><i class="bi bi-bluetooth position-relative">
-              <span class="position-absolute start-50 translate-middle badge text-muted" style="font-size:0.2em;"
-                id="freq1">
-              </span>
-            </i>
-          </span>
-
-          <span class="text-muted" id="icon_battery1" data-bs-toggle="popover" data-bs-content="a">
-            <i class="bi bi-battery"></i>
-          </span>
-          <span class="text-muted" id="icon_brightness1" number=0 value=1 role="button"
-            onclick="toggleBrightness(this);">
-            <i class="bi bi-brightness-alt-high position-relative">
-              <span class="position-absolute top-0 start-50 translate-middle badge text-muted bg-light"
-                style="font-size:0.2em;" id="led_number1">
-                1
-              </span>
-            </i>
-          </span>
-          <span class="text-muted" id="icon_settings1" value=0 title="Reset motion sensor and activity log"
-            data-bs-toggle="modal" data-bs-target="#settings_modal1"><i class="bi bi-gear" role="button"></i></span>
-        </div>
+    <nav class="navbar bg-light" style="font-size:1.2em;">
+      <div id='toolkit_placeholder' class="container-fluid justify-content-between" style="padding:0px;margin:0px;">
       </div>
     </nav>
 
-    <!-- Modal -->
-    <div class="modal fade" id="settings_modal0" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE01 Settings</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="form-floating mt-2">
-              <select class="form-select text-black" id="select_acc" aria-label="Floating label select example">
-                <option value="2" selected>2</option>
-                <option value="4">4</option>
-                <option value="8">8</option>
-                <option value="16">16</option>
-              </select>
-              <label for="select_acc" class="small">Accelerometer Range [g]</label>
-            </div>
-            <div class="form-floating mt-2">
-              <select class="form-select text-black" id="select_gyro" aria-label="Floating label select example">
-                <option value="250" selected>250</option>
-                <option value="500">500</option>
-                <option value="1000">1000</option>
-                <option value="2000">2000</option>
-              </select>
-              <label for="select_gyro" class="small">Gryorscope Range [g]</label>
-            </div>
-          </div>
-          <div class="d-grid gap-2 col-10 mx-auto">
-            <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(1);">Reset
-              Attitude & Gait Analysis</button>
-          </div>
-          <div class="modal-footer">
-            <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
-          </div>
-        </div>
+
+
+    <div class="row mt-4">
+      <div class="col-sm-12">
+        <h1>SENSING FEET, CHANGING EVERYTHING.</h1>
+        <p>
+          Analyze every step. Visualize people's movements.
+          Turn everyday life into data.
+          ORPHE's sensing and creative platform makes it all possible. Here is a template page of the example of
+          CORE-CORE.js.
+        </p>
       </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="settings_modal1" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE02 Settings</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="form-floating mt-2">
-              <select class="form-select text-black" id="select_acc" aria-label="Floating label select example">
-                <option value="2" selected>2</option>
-                <option value="4">4</option>
-                <option value="8">8</option>
-                <option value="16">16</option>
-              </select>
-              <label for="select_acc" class="small">Accelerometer Range [g]</label>
-            </div>
-            <div class="form-floating mt-2">
-              <select class="form-select text-black" id="select_gyro" aria-label="Floating label select example">
-                <option value="250" selected>250</option>
-                <option value="500">500</option>
-                <option value="1000">1000</option>
-                <option value="2000">2000</option>
-              </select>
-              <label for="select_gyro" class="small">Gryorscope Range [g]</label>
-            </div>
-          </div>
-          <div class="d-grid gap-2 col-10 mx-auto">
-            <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(1);">Reset
-              Attitude & Gait Analysis</button>
-          </div>
-          <div class="modal-footer">
-            <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
-          </div>
-        </div>
+    <div class="row mt-4">
+      <div class="col-sm-6">
+        <h1>CORE01</h1>
+        <span id="status0" class="bg-secondary text-white">OFFILINE</span>
       </div>
-    </div>
-
-
-    <div class="container mt-4">
-      <div class=" row">
-        <div class="col-sm-12">
-          <h1>SENSING FEET, CHANGING EVERYTHING.</h1>
-          <p>
-            Analyze every step. Visualize people's movements.
-            Turn everyday life into data.
-            ORPHE's sensing and creative platform makes it all possible. Here is a template page of the example of
-            CORE-CORE.js.
-          </p>
-        </div>
-      </div>
-      <div class="row mt-4">
-        <div class="col-sm-6">
-          <h1>CORE01</h1>
-          <span id="status0" class="bg-secondary text-white">OFFILINE</span>
-        </div>
-        <div class="col-sm-6">
-          <h1>CORE02</h1>
-          <span id="status1" class="bg-secondary text-white">OFFLINE</span>
-        </div>
+      <div class="col-sm-6">
+        <h1>CORE02</h1>
+        <span id="status1" class="bg-secondary text-white">OFFLINE</span>
       </div>
     </div>
   </div>
-
-
 
   <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
   <script src="../../js/float16.min.js" crossorigin="anonymous" type="text/javascript"></script>
@@ -193,6 +53,7 @@
 
   <script src="bootstrap.min.js" integrity="sha384-ODmDIVzN+pFdexxHEHFBQH3/9/vQ9uori45z4JjnFsRydbmQbmL5t1tQ0culUzyK"
     crossorigin="anonymous"></script>
+  <script src="utils.js"></script>
   <script src="header_ui.js"></script>
   <script src="sketch.js"></script>
 

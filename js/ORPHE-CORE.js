@@ -149,7 +149,11 @@ Orphe.prototype =
           //console.log("analysis---")
           resolve("done begin(); ANALYSIS");
         })
-          .catch(err => alert(err));
+          .catch(err => {
+            //alert(err)
+            reject('User cancel.')
+          }
+          );
       }
       else if (str_type == "RAW") {
         this.startNotify('SENSOR_VALUES').then(() => {
@@ -349,8 +353,9 @@ Orphe.prototype =
         this.onStartNotify(uuid);
       })
       .catch(error => {
-        //console.log('Error : ' + error);
+        console.log('startNotify: Error : ' + error);
         this.onError(error);
+        throw error;
       });
   },
   /**
@@ -381,6 +386,7 @@ Orphe.prototype =
     }
     return this.bluetoothDevice.gatt.connected;
   },
+
   //--------------------------------------------------
   //disconnect
   //--------------------------------------------------
@@ -401,6 +407,12 @@ Orphe.prototype =
       this.onError(error);
       return;
     }
+  },
+  setDeviceInformation: function (obj) {
+    const senddata = new Uint8Array([0x01, obj.lr, obj.led_brightness, 0, obj.rec_auto_run, obj.time01, obj.time02, obj.range.acc, obj.range.gyro]);
+    //const senddata = new Uint8Array([0x01, 0, 128, 0, 0, 0, 60, 0, 0]);
+    //console.log(senddata);
+    this.write('DEVICE_INFORMATION', senddata);
   },
   //--------------------------------------------------
   //clear
@@ -443,11 +455,6 @@ Orphe.prototype =
    * @param {string} uuid 
    */
   onRead: function (data, uuid) {
-
-
-
-
-
     //  console.log(uuid, data.byteLength, data.getUint8(0));
     // デバイス情報Readの場合
     if (uuid == 'DEVICE_INFORMATION') {
@@ -494,18 +501,18 @@ Orphe.prototype =
         rec_mode: data.getUint8(2),
         rec_auto_run: data.getUint8(3),
         led_brightness: data.getUint8(4),
+        time01: data.getUint8(6),
+        time02: data.getUint8(7),
         range: {
           acc: data.getUint8(8),
           gyro: data.getUint8(9)
         }
       }
       // デバイスインフォメーションを取得したら確認の為LEDの発光パターンを1にしておく
-      const senddata = new Uint8Array([0x02, 1, 0]);
-      this.write('DEVICE_INFORMATION', senddata);
+      // const senddata = new Uint8Array([0x02, 1, 0]);
+      // this.write('DEVICE_INFORMATION', senddata);
     }
     else if (uuid == 'STEP_ANALYSIS') {
-
-
       const buffer = new ArrayBuffer(20);
       const view = new DataView(buffer);
 
@@ -695,7 +702,6 @@ Orphe.prototype =
             gyro: data.getUint8(9)
           }
         }
-        // デバイスインフォメーションを取得したら確認の為LEDの発光パターンを1にしておく
         resolve(this.device_information);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
         console.log('Error: ' + error);

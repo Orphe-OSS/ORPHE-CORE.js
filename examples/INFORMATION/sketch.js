@@ -39,6 +39,8 @@ function getDeviceInformation() {
         document.querySelector('#td_led_brightness').innerText = ble.device_information.led_brightness;
         document.querySelector('#td_range_acc').innerText = ble.device_information.range.acc;
         document.querySelector('#td_range_gyro').innerText = ble.device_information.range.gyro;
+        document.querySelector('#td_timer01').innerText = ble.device_information.time01;
+        document.querySelector('#td_timer02').innerText = ble.device_information.time02;
     });
 }
 

@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2022/09/18 11:26:23
+Last modified: 2022/09/18 12:00:59
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -14,7 +14,7 @@ function buildCoreToolkit(parent_element, title, core_id) {
     input.setAttribute('role', 'switch');
     input.setAttribute('id', `switch_ble${core_id}`);
     input.setAttribute('value', `${core_id}`);
-    input.setAttribute('title', `coreToolkit_version_date: ${coreToolkit_version_date}`);
+    input.setAttribute('title', `coreToolkit_version_date: ${coreToolkit_version_date}\norphe_js_version_date: ${orphe_js_version_date}`);
     input.addEventListener('change', function () {
         toggleCoreModule(this);
     })
@@ -22,7 +22,7 @@ function buildCoreToolkit(parent_element, title, core_id) {
 
     let span_group = buildElement('span', '', '', '', div_form_check);
     span_group.id = `ui${core_id}`;
-    //span_group.style.visibility = 'hidden';
+    span_group.style.visibility = 'hidden';
 
     let span_activity = buildElement('span',
         `<i class="bi bi-activity position-relative">

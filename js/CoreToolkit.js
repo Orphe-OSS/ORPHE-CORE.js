@@ -1,10 +1,10 @@
 var coreToolkit_version_date = `
-Last modified: 2022/09/18 13:16:12
+Last modified: 2022/09/18 16:38:44
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
 
-function buildCoreToolkit(parent_element, title, core_id) {
+function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ANALYSIS') {
     let div_form_check = buildElement('div', '', 'form-ckeck form-switch d-flex', '', parent_element);
     div_form_check.id = `core_toolkit${core_id}`;
     // toggle and title
@@ -13,6 +13,7 @@ function buildCoreToolkit(parent_element, title, core_id) {
     input.setAttribute('type', 'checkbox');
     input.setAttribute('role', 'switch');
     input.setAttribute('id', `switch_ble${core_id}`);
+    input.setAttribute('notification', notification);
     input.setAttribute('value', `${core_id}`);
     input.setAttribute('title', `coreToolkit_version_date: ${coreToolkit_version_date}\norphe_js_version_date: ${orphe_js_version_date}`);
     input.addEventListener('change', function () {
@@ -126,10 +127,11 @@ async function toggleCoreModule(dom) {
     let checked = dom.checked;
     let number = parseInt(dom.value);
     let ble = bles[number];
+    let notification = dom.getAttribute('notification');
 
     if (checked == true) {
 
-        let ret = await ble.begin('ANALYSIS');
+        let ret = await ble.begin(notification);
         if (!ret) {
             document.querySelector(`#switch_ble${number}`).checked = false;
             return;

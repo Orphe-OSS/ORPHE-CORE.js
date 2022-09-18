@@ -6,7 +6,7 @@ var sampling_rate = 50;
 var freq_step = sampling_rate / fft_bufsize;
 var out = fft.createComplexArray();
 
-var ble = new Orphe(0);
+//var ble = new Orphe(0);
 
 var is_active = false;
 var chart;
@@ -174,6 +174,17 @@ function getDistance(steps) {
   return dist_per_step * steps;
 }
 
+function buildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
+  let element = document.createElement(name_tag);
+  element.innerHTML = innerHTML;
+  element.classList = str_class;
+  if (str_style != '') {
+    element.setAttribute('style', str_style);
+  }
+  element_appended.appendChild(element);
+  return element;
+}
+
 var acc_count = 0;
 var acc_prev = {
   x: 0,
@@ -200,9 +211,15 @@ window.onload = function () {
     fft: new Chart(document.getElementById("chart_fft"), config.fft),
   };
 
+
+  let ble = bles[0];
   // ORPHE CORE Init
   ble.setup();
+  ble.onConnect = function () {
+    timestamp.start = Date.now();
+  }
   ble.onDisconnect = function () {
+    timestamp.end = Date.now();
     alert('ORHPE COREとの接続が切れました。接続し直してください。')
     location.reload();
   }
@@ -348,4 +365,5 @@ window.onload = function () {
 
   loadHistory();
   loadParameters();
+  buildCoreToolkit(document.querySelector('#CoreToolkit_placeholder'), '01', 0, 'RAW');
 }

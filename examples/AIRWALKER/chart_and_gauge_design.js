@@ -203,10 +203,10 @@ const config = {
         options: {
             animation: false,
             scales: {
-                y: {
-                    min: -0.2,
-                    max: 0.2,
-                },
+                // y: {
+                //     min: -0.2,
+                //     max: 0.2,
+                // },
             },
         },
     },

@@ -280,7 +280,7 @@ Orphe.prototype =
         this.dataCharacteristic = characteristic;
         this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
         this.onConnectGATT(uuid);
-        this.onConnect();
+        this.onConnect(uuid);
       })
       .catch(error => {
         //console.log('Error : ' + error);
@@ -330,7 +330,7 @@ Orphe.prototype =
       })
       .then(() => {
         //console.log('Execute : writeValue');
-        data = Uint8Array.from(array_value);
+        const data = Uint8Array.from(array_value);
         return this.dataCharacteristic.writeValue(data);
       })
       .then(() => {
@@ -823,8 +823,8 @@ Orphe.prototype =
   onConnect: function (uuid) { console.log("onConnect"); },
   // this.onRead = function (data, uuid) { console.log("onRead"); };
   onWrite: function (uuid) { console.log("onWrite"); },
-  onStartNotify: function (uuid) { console.log("onStartNotify"); },
-  onStopNotify: function (uuid) { console.log("onStopNotify"); },
+  onStartNotify: function (uuid) { console.log("onStartNotify", uuid); },
+  onStopNotify: function (uuid) { console.log("onStopNotify", uuid); },
   onDisconnect: function () { console.log("onDisconnect"); },
   gotBLEFrequency: function (frequency) { },
   onClear: function () { console.log("onClear"); },

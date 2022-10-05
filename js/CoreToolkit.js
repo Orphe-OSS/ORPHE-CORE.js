@@ -120,6 +120,13 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
   <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(${core_id});">Reset
     Attitude & Gait Analysis</button>
 </div>`, 'modal-body', '', div_modal_content);
+
+    // div_modal_bodyにある notificationセレクタを設定値にあわせる
+    let select_notify = div_modal_body.querySelector(`#select_notify${core_id}`);
+    if (notification == 'ANALYSIS') select_notify.options[0].selected = true;
+    else if (notification == 'RAW') select_notify.options[1].selected = true;
+    else if (notification == 'ANALYSIS_AND_RAW') select_notify.options[2].selected = true;
+
     console.log(div_form_check);
 }
 
@@ -137,19 +144,21 @@ async function toggleCoreModule(dom) {
             return;
         }
 
-        document.querySelector(`#ui${number} `).style.visibility = 'visible';
+        document.querySelector(`#ui${number}`).style.visibility = 'visible';
         ble.gotBLEFrequency = function (freq) {
             document.querySelector(`#freq${this.id} `).innerHTML = `${Math.floor(freq)} Hz`;
         };
     }
     else {
         ble.reset();
-        document.querySelector(`#ui${number} `).style.visibility = 'hidden';
+        document.querySelector(`#ui${number}`).style.visibility = 'hidden';
         //setHeaderStatusOffline(ble.id);
 
     }
 }
 
+// notifyは複数同じものを呼び出せてしまうので，必ずすでに登録したnotificationはストップする
+// 必要がある．
 function changeNotify(no, dom) {
     if (bles[no].notification_type == 'ANALYSIS') {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
@@ -263,7 +272,6 @@ function toggleLED(dom) {
     number++;
     if (number > 6) number = 0;
     document.querySelector(`#led_number${id} `).innerText = number;
-
     if (number == 0) {
         bles[id].setLED(0, 0);
     } else {

@@ -2,7 +2,8 @@ window.onload = function () {
   // bles: defined in coreToolkit.js
   for (let ble of bles) {
     ble.setup();
-    ble.onConnect = function () {
+    ble.onConnect = function (uuid) {
+      console.log('onConnect:', uuid);
       document.querySelector(`#status${ble.id}`).innerText = 'ONLINE';
       document.querySelector(`#status${ble.id}`).classList = 'bg-primary text-white'
     }

@@ -16,34 +16,35 @@
   <div class="container">
     <nav class="navbar bg-light" style="font-size:1.2em;">
       <div id='toolkit_placeholder' class="container-fluid justify-content-between" style="padding:0px;margin:0px;">
+
       </div>
     </nav>
 
     <div class="row mt-4">
-      <div class="col-sm-12">
-        <h1>SENSING FEET, CHANGING EVERYTHING.</h1>
-        <p>
-          Analyze every step. Visualize people's movements.
-          Turn everyday life into data.
-          ORPHE's sensing and creative platform makes it all possible. Here is a template page of the example of
-          CORE-CORE.js.
-        </p>
-      </div>
-    </div>
+      <div class="col-4">
+        <h1>OH1</h1>
+        <span id="status_oh1" class="bg-secondary text-white">OFFLINE</span><br>
+        <button id="startOH1" class="btn btn-outline-dark">OH1 Connect</button>
 
-    <div class="row mt-4">
-      <div class="col-6">
+        <ul>
+          <li>BPM: <span id="bpm"></span></li>
+        </ul>
+      </div>
+      <div class="col-4">
         <h1>CORE01</h1>
         <span id="status0" class="bg-secondary text-white">OFFILINE</span>
+        <div id='toolkit_placeholder00'></div>
+
         <ul>
           <li>QUAT.w: <span id="quat0"></span></li>
           <li>ACC.x: <span id="acc0"></span></li>
           <li>STRIDE.x: <span id="stride0"></span></li>
         </ul>
       </div>
-      <div class="col-6">
+      <div class="col-4">
         <h1>CORE02</h1>
         <span id="status1" class="bg-secondary text-white">OFFLINE</span>
+        <div id='toolkit_placeholder01'></div>
         <ul>
           <li>QUAT.x: <span id="quat1"></span></li>
           <li>ACC.x: <span id="acc1"></span></li>
@@ -58,6 +59,7 @@
   <script src="../../js/float16.min.js" crossorigin="anonymous" type="text/javascript"></script>
   <script src="../../js/quaternion.js" crossorigin="anonymous" type="text/javascript"></script>
   <script src="../../js/CoreToolkit.js"></script>
+  <script src="./bluejelly.js"></script>
 
   <script src="bootstrap.min.js" integrity="sha384-ODmDIVzN+pFdexxHEHFBQH3/9/vQ9uori45z4JjnFsRydbmQbmL5t1tQ0culUzyK"
     crossorigin="anonymous"></script>

@@ -107,7 +107,12 @@ function setup() {
 }
 
 function draw() {
-    background(200,0,0);
+    background(200);
+    let s = 'This is a creative canvas using p5.js. \nYou can create the various interactions using sensor data!'; ;
+    fill(0);
+    textSize(16);
+    textFont('Roboto');
+    text(s,32,32);
 }
 
 function windowResized() {

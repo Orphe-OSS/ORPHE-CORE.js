@@ -11,48 +11,341 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
 </head>
 
-<body class="text-black">
+<body class="bg-dark text-light">
 
   <div class="container">
-    <nav class="navbar bg-light" style="font-size:1.2em;">
+    <nav class="navbar bg-dark" style="font-size:1.2em;"> 
       <div id='toolkit_placeholder' class="container-fluid justify-content-between" style="padding:0px;margin:0px;">
-      </div>
+        <p>TEMPLATE:Version 0.1</p> 
+        <img src="../../images/orphe.svg" alt="" height="24"></div>
+        <!-- 本当はテキストとロゴを右に表示したい... -->      
     </nav>
 
     <div class="row mt-4">
       <div class="col-sm-12">
         <h1>SENSING FEET, CHANGING EVERYTHING.</h1>
         <p>
-          Analyze every step. Visualize people's movements.
-          Turn everyday life into data.
-          ORPHE's sensing and creative platform makes it all possible. Here is a template page of the example of
-          CORE-CORE.js.
+          Analyze every step. Life becomes art. This template project is the base program for everyone to hack ORPHE at will. 
+          More information on this project can be found at https://orphe-oss.github.io/ORPHE-CORE.js.
         </p>
       </div>
     </div>
 
-    <div class="row mt-4">
-      <div class="col-6">
-        <h1>CORE01</h1>
-        <span id="status0" class="bg-secondary text-white">OFFILINE</span>
-        <ul>
-          <li>QUAT.w: <span id="quat0"></span></li>
-          <li>ACC.x: <span id="acc0"></span></li>
-          <li>STRIDE.x: <span id="stride0"></span></li>
-        </ul>
+    <div class="container-sm mt-4">
+      <div id="canvas_placeholder"><p>
+        CANVAS PLACEHOLDER
+      </p>
       </div>
-      <div class="col-6">
-        <h1>CORE02</h1>
-        <span id="status1" class="bg-secondary text-white">OFFLINE</span>
-        <ul>
-          <li>QUAT.x: <span id="quat1"></span></li>
-          <li>ACC.x: <span id="acc1"></span></li>
-          <li>STRIDE.x: <span id="stride1"></span></li>
-        </ul>
+      <!-- <button id="stopNotifications" class="btn btn-light">Stop Notify</button> -->
+      <hr>
+  
+      <div class="row small">
+        <div class="col-6">
+          <div class="card text-white bg-dark mt-4" style="font-size:0.5em">
+            <div class="card-header">
+              Device Name: <span id="device_name0"> </span> (<span id="uuid_name0"> </span>)
+            </div>
+  
+            <div class="card-body">
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-bottom">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%">W</th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Quat</th>
+                    <td id="sq0_w"></td>
+                    <td id="sq0_x"></td>
+                    <td id="sq0_y"></td>
+                    <td id="sq0_z"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Euler</th>
+                    <td></td>
+                    <td id="el0_x"></td>
+                    <td id="el0_y"></td>
+                    <td id="el0_z"></td>
+                  </tr>
+                </tbody>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%"></th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Gyro</th>
+                    <td></td>
+                    <td id="svg0_x"></td>
+                    <td id="svg0_y"></td>
+                    <td id="svg0_z"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Acc</th>
+                    <td></td>
+                    <td id="sva0_x"></td>
+                    <td id="sva0_y"></td>
+                    <td id="sva0_z"></td>
+                  </tr>
+                </tbody>
+              </table>
+  
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-bottom">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%"></th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Delta</th>
+                    <td></td>
+                    <td id="sd0_x"></td>
+                    <td id="sd0_y"></td>
+                    <td id="sd0_z"></td>
+                  </tr>
+                </tbody>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-middle">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%; font-size:0.1em">type</th>
+                    <th scope="col" style="width:17%; font-size:0.1em">direc</th>
+                    <th scope="col" style="width:17%; font-size:0.1em">cals</th>
+                    <th scope="col" style="width:17%; font-size:0.1em">dist</th>
+                  </tr>
+                </thead>
+                <tr>
+                  <th scope="row">Gait</th>
+                  <td id="gait0_w"></td>
+                  <td id="gait0_x"></td>
+                  <td id="gait0_y"></td>
+                  <td id="gait0_z"></td>
+                </tr>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-middle">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%; font-size:0.1em">Foot Angle</th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+  
+                <tr>
+                  <th scope="row">Stride</th>
+                  <td id="stride0_w"></td>
+                  <td id="stride0_x"></td>
+                  <td id="stride0_y"></td>
+                  <td id="stride0_z"></td>
+                </tr>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-middle">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%; font-size:0.1em">Landing Impact</th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+  
+  
+                <tr>
+                  <th scope="row">Pronation</th>
+                  <td id="pronation0_w"></td>
+                  <td id="pronation0_x"></td>
+                  <td id="pronation0_y"></td>
+                  <td id="pronation0_z"></td>
+                </tr>
+              </table>
+  
+            </div>
+          </div>
+        </div>
+  
+        <div class="col-6">
+          <div class="card text-white bg-dark mt-4" style="font-size:0.5em">
+            <div class="card-header">
+              Device Name: <span id="device_name1"> </span> (<span id="uuid_name1"> </span>)
+            </div>
+  
+            <div class="card-body">
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-bottom">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%">W</th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Quat</th>
+                    <td id="sq1_w"></td>
+                    <td id="sq1_x"></td>
+                    <td id="sq1_y"></td>
+                    <td id="sq1_z"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Euler</th>
+                    <td></td>
+                    <td id="el1_x"></td>
+                    <td id="el1_y"></td>
+                    <td id="el1_z"></td>
+                  </tr>
+                </tbody>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%"></th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Gyro</th>
+                    <td></td>
+                    <td id="svg1_x"></td>
+                    <td id="svg1_y"></td>
+                    <td id="svg1_z"></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Acc</th>
+                    <td></td>
+                    <td id="sva1_x"></td>
+                    <td id="sva1_y"></td>
+                    <td id="sva1_z"></td>
+                  </tr>
+                </tbody>
+              </table>
+  
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-bottom">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%"></th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Delta</th>
+                    <td></td>
+                    <td id="sd1_x"></td>
+                    <td id="sd1_y"></td>
+                    <td id="sd1_z"></td>
+                  </tr>
+                </tbody>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-middle">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%; font-size:0.1em">type</th>
+                    <th scope="col" style="width:17%; font-size:0.1em">direc</th>
+                    <th scope="col" style="width:17%; font-size:0.1em">cals</th>
+                    <th scope="col" style="width:17%; font-size:0.1em">dist</th>
+                  </tr>
+                </thead>
+                <tr>
+                  <th scope="row">Gait</th>
+                  <td id="gait1_w"></td>
+                  <td id="gait1_x"></td>
+                  <td id="gait1_y"></td>
+                  <td id="gait1_z"></td>
+                </tr>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-middle">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%; font-size:0.1em">Foot Angle</th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+  
+                <tr>
+                  <th scope="row">Stride</th>
+                  <td id="stride1_w"></td>
+                  <td id="stride1_x"></td>
+                  <td id="stride1_y"></td>
+                  <td id="stride1_z"></td>
+                </tr>
+              </table>
+  
+              <table class="table table-sm table-dark table-hover">
+                <thead>
+                  <tr class="align-middle">
+                    <th scope="col" style="width:30%"></th>
+                    <th scope="col" style="width:17%; font-size:0.1em">Landing Impact</th>
+                    <th scope="col" style="width:17%">X</th>
+                    <th scope="col" style="width:17%">Y</th>
+                    <th scope="col" style="width:17%">Z</th>
+                  </tr>
+                </thead>
+  
+  
+                <tr>
+                  <th scope="row">Pronation</th>
+                  <td id="pronation1_w"></td>
+                  <td id="pronation1_x"></td>
+                  <td id="pronation1_y"></td>
+                  <td id="pronation1_z"></td>
+                </tr>
+              </table>
+  
+            </div>
+          </div>
+  
+        </div>
       </div>
+  
+      <hr>
+      <footer class="text-center small">
+        &copy; 2022 Tetsuaki BABA
+      </footer>
+  
     </div>
-  </div>
-
 
   <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
   <script src="../../js/float16.min.js" crossorigin="anonymous" type="text/javascript"></script>

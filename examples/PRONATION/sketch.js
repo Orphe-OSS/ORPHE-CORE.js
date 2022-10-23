@@ -1,20 +1,48 @@
 //Starting point of canvas_placeholder
 var mycanvas;
+let foot_img = []; // Declare variable image
+let normal_image = [];
+let overpronation_image = [];
+let oversupination_image = [];
+let pronation_image = [];
+let supination_image = [];
+let pronations = [0,0];//Variable to which the value of pronation is assigned
+let states =['NORMAL','NORMAL'];
+
 function setup() {
     const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
-    const canvas_height = canvas_width * 9 / 16;
-    //mycanvas = createCanvas(canvas_width, canvas_height, WEBGL);
+    const canvas_height = canvas_width * 9 / 16 * 0.5;
     mycanvas = createCanvas(canvas_width, canvas_height);
     document.querySelector('#canvas_placeholder').appendChild(mycanvas.elt);
-    textSize(16);
+    textSize(32);
     textFont('Roboto');
+    textAlign(CENTER);
+    foot_img[0] = loadImage('images/normal0.png'); // Load the image
+    foot_img[1] = loadImage('images/normal1.png'); // Load the image
+    overpronation_image[0] = loadImage('images/overpronation0.png'); // Load the image
+    overpronation_image[1] = loadImage('images/overpronation1.png'); // Load the image
+    pronation_image[0] = loadImage('images/pronation0.png'); // Load the image
+    pronation_image[1] = loadImage('images/pronation1.png'); // Load the image
+    normal_image[0] = loadImage('images/normal0.png'); // Load the image
+    normal_image[1] = loadImage('images/normal1.png'); // Load the image
+    supination_image[0] = loadImage('images/supination0.png'); // Load the image
+    supination_image[1] = loadImage('images/supination1.png'); // Load the image
+    oversupination_image[0] = loadImage('images/oversupination0.png'); // Load the image
+    oversupination_image[1] = loadImage('images/oversupination1.png'); // Load the image
 }
+
+
 
 function draw() {
     background(200);
-    let s = 'This is a creative canvas using p5.js. \nYou can create the various interactions using sensor data!';
     fill(0);
-    text(s,32,32);
+    text(pronations[0] + "°",width * 0.25, height * 0.8);
+    text(pronations[1] + "°",width * 0.75, height * 0.8);
+    text(states[0],width * 0.25, height * 0.95);
+    text(states[1],width * 0.75, height * 0.95);
+    imageMode(CENTER);
+    image(foot_img[0], width * 0.25, height * 0.2, height * 0.9 * foot_img[0].width / foot_img[0].height, height*0.9);
+    image(foot_img[1], width * 0.75, height * 0.2, height * 0.9 * foot_img[1].width / foot_img[1].height, height*0.9);
 }
 
 function windowResized() {
@@ -108,6 +136,26 @@ window.onload = function () {
       document.querySelector(`#pronation${this.id}_x`).innerHTML = pronation.x.toFixed(3);
       document.querySelector(`#pronation${this.id}_y`).innerHTML = pronation.y.toFixed(3);
       document.querySelector(`#pronation${this.id}_z`).innerHTML = pronation.z.toFixed(3);
+      
+      //code inserted for this example
+      pronations[this.id] = pronation.y.toFixed(3);
+
+      if(20 <= pronation.y){
+            states[this.id]= 'OVER PRONATION';
+            foot_img[this.id] = overpronation_image[this.id];
+        }else if(10 < pronation.y && pronation.y < 20){
+            states[this.id]= 'PRONATION';
+            foot_img[this.id] = pronation_image[this.id];
+        }else if(-10 <= pronation.y && pronation.y <= 10){
+            states[this.id]= 'NORMAL';
+            foot_img[this.id] = normal_image[this.id];
+        }else if(-20 < pronation.y && pronation.y < -10){
+            states[this.id]= 'SUPINATION';
+            foot_img[this.id] = supination_image[this.id];
+        }else {
+            states[this.id]= 'OVER SUPINATION';
+            foot_img[this.id] = oversupination_image[this.id];
+        }
   }
   ble.gotLandingImpact = function (landing_impact) {
       document.querySelector(`#pronation${this.id}_w`).innerHTML = landing_impact.value.toFixed(3);

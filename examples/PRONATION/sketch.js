@@ -6,7 +6,9 @@ let overpronation_image = [];
 let oversupination_image = [];
 let pronation_image = [];
 let supination_image = [];
-let pronations = [0,0];//Variable to which the value of pronation is assigned
+//let pronations = [0,0];//Variable to which the value of pronation is assigned
+let pronations = [[0,0,0,0,0],[0,0,0,0,0]];//Variable to which the value of pronation is assigned
+let ave_pronations = [77,66];
 let states =['NORMAL','NORMAL'];
 
 function setup() {
@@ -14,7 +16,6 @@ function setup() {
     const canvas_height = canvas_width * 9 / 16 * 0.5;
     mycanvas = createCanvas(canvas_width, canvas_height);
     document.querySelector('#canvas_placeholder').appendChild(mycanvas.elt);
-    textSize(32);
     textFont('Roboto');
     textAlign(CENTER);
     foot_img[0] = loadImage('images/normal0.png'); // Load the image
@@ -36,14 +37,58 @@ function setup() {
 function draw() {
     background(200);
     fill(0);
-    text(pronations[0] + "°",width * 0.25, height * 0.8);
-    text(pronations[1] + "°",width * 0.75, height * 0.8);
-    text(states[0],width * 0.25, height * 0.95);
-    text(states[1],width * 0.75, height * 0.95);
+
+
+
+    // calculate the average value 
+    let sum = 0;
+    for (let i = 0; i < 5; i++) {
+    sum += pronations[0][i];
+    }
+    ave_pronations[0] = sum / 5.0;
+
+    //なぜか平均がエラーになってしまう　ここを解決する必要がある
+
+    textSize(32);
+    text(ave_pronations[0].toFixed(2) + "°",width * 0.35, height * 0.8);
+    text(ave_pronations[1].toFixed(2) + "°",width * 0.65, height * 0.8);
+    text(states[0],width * 0.35, height * 0.95);
+    text(states[1],width * 0.65, height * 0.95);
     imageMode(CENTER);
-    image(foot_img[0], width * 0.25, height * 0.2, height * 0.9 * foot_img[0].width / foot_img[0].height, height*0.9);
-    image(foot_img[1], width * 0.75, height * 0.2, height * 0.9 * foot_img[1].width / foot_img[1].height, height*0.9);
+    image(foot_img[0], width * 0.35, height * 0.2, height * 0.9 * foot_img[0].width / foot_img[0].height, height*0.9);
+    image(foot_img[1], width * 0.65, height * 0.2, height * 0.9 * foot_img[1].width / foot_img[1].height, height*0.9);
+
+
+    textSize(16);
+    for (let i = 0; i < 2; i++) {
+        text("Last 5 values",width * (0.1 + 0.8*i), height * 0.1);
+        for (let j = 0; j < pronations[i].length; j++) {
+            text(pronations[i][j].toFixed(2) + "°",width * (0.1  + 0.8*i), height * (0.17+0.07*j));
+        }
+        text("Moving Average",width * (0.1  + 0.8*i), height * 0.6);
+        text(ave_pronations[i].toFixed(2),width * (0.1  + 0.8*i), height * 0.67);
+    }
 }
+
+
+function keyPressed() {
+    if (keyCode === UP_ARROW) {
+        pronations[0].unshift(-100.000);
+      if (pronations[0].length > 5) {
+        pronations[0].pop();
+        }
+    } else if (keyCode === RIGHT_ARROW) {
+        pronations[0].unshift(50.000);
+      if (pronations[0].length > 5) {
+        pronations[0].pop();
+        }
+    } else if (keyCode === DOWN_ARROW) {
+        pronations[1][1] = 10;
+    } else if (keyCode === LEFT_ARROW) {
+        pronations[1][1] = 11;
+    }
+  }
+
 
 function windowResized() {
     const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
@@ -138,24 +183,53 @@ window.onload = function () {
       document.querySelector(`#pronation${this.id}_z`).innerHTML = pronation.z.toFixed(3);
       
       //code inserted for this example
-      pronations[this.id] = pronation.y.toFixed(3);
+      //pronations[this.id][0] = pronation.y.toFixed(3);
+      pronations[this.id][0] = pronation.y;
+      pronations[this.id].unshift(pronation.y);
+      if (pronations[this.id].length > 5) {
+        pronations[this.id].pop();
+        }
+        
+    // calculate the average value 
+        let sum = 0;
+        for (let i = 0; i < 5; i++) {
+        sum += pronations[this.id][i];
+        }
+        ave_pronations[this.id] = sum / 5.0;
 
-      if(20 <= pronation.y){
+        if(20 <= ave_pronations[this.id]){
             states[this.id]= 'OVER PRONATION';
             foot_img[this.id] = overpronation_image[this.id];
-        }else if(10 < pronation.y && pronation.y < 20){
+        }else if(10 < ave_pronations[this.id] && ave_pronations[this.id] < 20){
             states[this.id]= 'PRONATION';
             foot_img[this.id] = pronation_image[this.id];
-        }else if(-10 <= pronation.y && pronation.y <= 10){
+        }else if(-10 <= ave_pronations[this.id] && ave_pronations[this.id] <= 10){
             states[this.id]= 'NORMAL';
             foot_img[this.id] = normal_image[this.id];
-        }else if(-20 < pronation.y && pronation.y < -10){
+        }else if(-20 < ave_pronations[this.id] && ave_pronations[this.id] < -10){
             states[this.id]= 'SUPINATION';
             foot_img[this.id] = supination_image[this.id];
         }else {
             states[this.id]= 'OVER SUPINATION';
             foot_img[this.id] = oversupination_image[this.id];
         }
+
+    //   if(20 <= pronation.y){
+    //         states[this.id]= 'OVER PRONATION';
+    //         foot_img[this.id] = overpronation_image[this.id];
+    //     }else if(10 < pronation.y && pronation.y < 20){
+    //         states[this.id]= 'PRONATION';
+    //         foot_img[this.id] = pronation_image[this.id];
+    //     }else if(-10 <= pronation.y && pronation.y <= 10){
+    //         states[this.id]= 'NORMAL';
+    //         foot_img[this.id] = normal_image[this.id];
+    //     }else if(-20 < pronation.y && pronation.y < -10){
+    //         states[this.id]= 'SUPINATION';
+    //         foot_img[this.id] = supination_image[this.id];
+    //     }else {
+    //         states[this.id]= 'OVER SUPINATION';
+    //         foot_img[this.id] = oversupination_image[this.id];
+    //     }
   }
   ble.gotLandingImpact = function (landing_impact) {
       document.querySelector(`#pronation${this.id}_w`).innerHTML = landing_impact.value.toFixed(3);

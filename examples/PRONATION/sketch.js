@@ -8,7 +8,7 @@ let pronation_image = [];
 let supination_image = [];
 //let pronations = [0,0];//Variable to which the value of pronation is assigned
 let pronations = [[0,0,0,0,0],[0,0,0,0,0]];//Variable to which the value of pronation is assigned
-let ave_pronations = [77,66];
+let ave_pronations = [20,20];
 let states =['NORMAL','NORMAL'];
 
 function setup() {
@@ -30,22 +30,48 @@ function setup() {
     supination_image[1] = loadImage('images/supination1.png'); // Load the image
     oversupination_image[0] = loadImage('images/oversupination0.png'); // Load the image
     oversupination_image[1] = loadImage('images/oversupination1.png'); // Load the image
+
+    ellipseMode(CENTER);
+    angleMode(DEGREES);
 }
 
 
 
 function draw() {
     background(200);
-    fill(0);
+    fill(200);
+    stroke(255);
+    arc(width*0.35, height*0.5, width*0.15, width*0.15, 180, 360, OPEN);
+    arc(width*0.65, height*0.5, width*0.15, width*0.15, 180, 360, OPEN);
+    line(width*0.25, height*0.5, width*0.45, height*0.5);
+    line(width*0.55, height*0.5, width*0.75, height*0.5);
+    
 
-
-
-    // calculate the average value 
-    let sum = 0;
-    for (let i = 0; i < 5; i++) {
-    sum += pronations[0][i];
+    /*draw average pronations by red line
+    ORPHE CORE takes a positive value to pronation for 
+    both the right and left foot, and a negative value to supination. 
+    Therefore, the same value on the left foot and the right foot implies opposite rotation.
+    */
+    for (let i = 0; i < 2; i++) {
+        push();
+        stroke(255,100,0);
+        strokeWeight(3);
+        translate(width* (0.35 + 0.3*i), height*0.5);
+        (i == 0) ? rotate(ave_pronations[i] * -1) : rotate(ave_pronations[i]);//
+        line(- width*0.1,0,width*0.1,0);
+        pop();
     }
-    ave_pronations[0] = sum / 5.0;
+        
+
+    
+
+    fill(0);
+    // // calculate the average value 
+    // let sum = 0;
+    // for (let i = 0; i < 5; i++) {
+    // sum += pronations[0][i];
+    // }
+    // ave_pronations[0] = sum / 5.0;
 
     //なぜか平均がエラーになってしまう　ここを解決する必要がある
 

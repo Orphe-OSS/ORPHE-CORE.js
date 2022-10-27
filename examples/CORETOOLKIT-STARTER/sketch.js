@@ -1,3 +1,32 @@
+//Starting point of canvas_placeholder
+var mycanvas;
+function setup() {
+    const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
+    const canvas_height = canvas_width * 9 / 16;
+    //mycanvas = createCanvas(canvas_width, canvas_height, WEBGL);
+    mycanvas = createCanvas(canvas_width, canvas_height);
+    document.querySelector('#canvas_placeholder').appendChild(mycanvas.elt);
+    textSize(16);
+    textFont('Roboto');
+}
+
+function draw() {
+    background(200);
+    let s = 'This is a creative canvas using p5.js. \nYou can create the various interactions using sensor data!';
+    fill(0);
+    text(s,32,32);
+}
+
+function windowResized() {
+    const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
+    const canvas_height = canvas_width * 9 / 16;
+    resizeCanvas(canvas_width, canvas_height);
+}
+//End point of canvas_placeholder
+
+
+
+
 window.onload = function () {
   // bles: defined in coreToolkit.js
   for (let ble of bles) {
@@ -96,28 +125,3 @@ window.onload = function () {
 }
 }
 
-//本当はキャンバスを表示したいのに出ない...
-var mycanvas;
-function setup() {
-    const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
-    const canvas_height = canvas_width * 9 / 16;
-    //mycanvas = createCanvas(canvas_width, canvas_height, WEBGL);
-    mycanvas = createCanvas(canvas_width, canvas_height);
-    document.querySelector('#canvas_placeholder').appendChild(mycanvas.elt);
-}
-
-function draw() {
-    background(200);
-    let s = 'This is a creative canvas using p5.js. \nYou can create the various interactions using sensor data!'; ;
-    fill(0);
-    textSize(16);
-    textFont('Roboto');
-    text(s,32,32);
-}
-
-function windowResized() {
-    const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
-    const canvas_height = canvas_width * 9 / 16;
-    resizeCanvas(canvas_width, canvas_height);
-    console.log("hello")
-}

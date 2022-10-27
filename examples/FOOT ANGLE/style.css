@@ -1,0 +1,44 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+canvas {
+  display: block;
+}
+
+.btn-circle.btn-xl {
+  width: 70px;
+  height: 70px;
+  padding: 10px 16px;
+  border-radius: 35px;
+  font-size: 24px;
+  line-height: 1.33;
+}
+
+.btn-circle {
+  width: 30px;
+  height: 30px;
+  padding: 6px 0px;
+  border-radius: 15px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.42857;
+}
+
+canvas#gauge {
+  width: 100% !important;
+  height: auto !important;
+}
+
+canvas#gauge_ave {
+  width: 100% !important;
+  height: auto !important;
+}
+
+.td-workout,
+.th-workout {
+  text-align: center;
+  width: 25%;
+}

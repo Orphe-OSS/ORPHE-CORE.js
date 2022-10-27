@@ -34,6 +34,7 @@ function setup() {
     mycanvas = createCanvas(canvas_width, canvas_height);
     document.querySelector('#canvas_placeholder').appendChild(mycanvas.elt);
     textFont('Roboto');
+    textSize(14);
 
   textAlign(CENTER, CENTER);
   foot_print_left = loadImage("images/foot_print_left.png");
@@ -51,18 +52,21 @@ function setup() {
 }
 
 
-//to Debug
+//for Debug
 function keyPressed() {
     if (keyCode === UP_ARROW) {
-      landCircles.push(new LandingPoint(0, 20));
+      osc.start();
+      landCircles.push(new footAnglePoint(0, 50));
+       //Generates a circle based on the angle of landing
     } else if (keyCode === RIGHT_ARROW) {
-      landCircles.push(new LandingPoint(0, 10));
+      landCircles.push(new footAnglePoint(0, 20));
     } else if (keyCode === DOWN_ARROW) {
-      landCircles.push(new LandingPoint(1, -20));
+      landCircles.push(new footAnglePoint(0, -20));
     } else if (keyCode === LEFT_ARROW) {
-      landCircles.push(new LandingPoint(1, -10));
+      landCircles.push(new footAnglePoint(0, -50));
     }
   }
+
 
 
 function draw() {
@@ -107,15 +111,8 @@ function draw() {
     }
   }
 
-  text(`foot_angle:` + foot_angles[0].toFixed(3), width * 0.25, height * 0.7);
-  text(`acc X:` + ACCs[0].x.toFixed(3), width * 0.25, height * 0.73);
-  text(`acc Y:` + ACCs[0].y.toFixed(3), width * 0.25, height * 0.76);
-  text(`acc Z:` + ACCs[0].z.toFixed(3), width * 0.25, height * 0.79);
-
-  text(`foot_angle:` + foot_angles[1].toFixed(3), width * 0.75, height * 0.7);
-  text(`acc X:` + ACCs[1].x.toFixed(3), width * 0.75, height * 0.73);
-  text(`acc Y:` + ACCs[1].y.toFixed(3), width * 0.75, height * 0.76);
-  text(`acc Z:` + ACCs[1].z.toFixed(3), width * 0.75, height * 0.79);
+  text(`foot_angle:` + foot_angles[0].toFixed(3), width * 0.25, height * 0.98);
+  text(`foot_angle:` + foot_angles[1].toFixed(3), width * 0.75, height * 0.98);
 }
 
 
@@ -124,7 +121,7 @@ class footAnglePoint {
     constructor(_left_or_right, _footAngle) {
       this.left_or_right = _left_or_right;
       this.footAngle = _footAngle;
-      this.diameter = 100;
+      this.diameter = width * 0.25;
       this.transparency = 255;
   
       this.x = _left_or_right == 0 ? width * 0.27 : width * 0.73;
@@ -134,7 +131,7 @@ class footAnglePoint {
         _footAngle,
         -30,
         30,
-        (width * 0.5 * 320) / 120 - this.diameter * 0.5,
+        (width * 0.5 * 960) / 360 - this.diameter * 0.5,
         this.diameter * 0.5
       );
   
@@ -176,9 +173,6 @@ class footAnglePoint {
     }
   }
 
-
-
-
 function windowResized() {
     const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
     const canvas_height = canvas_width * 9 / 16;
@@ -195,18 +189,17 @@ window.onload = function () {
     ble.setup();
     ble.onConnect = function (uuid) {
       console.log('onConnect:', uuid);
-      document.querySelector(`#status${ble.id}`).innerText = 'ONLINE';
-      document.querySelector(`#status${ble.id}`).classList = 'bg-primary text-white'
+      // document.querySelector(`#status${ble.id}`).innerText = 'ONLINE';
+      // document.querySelector(`#status${ble.id}`).classList = 'bg-primary text-white'
 
       ////start sound////
       osc.start();
       envelope.play(osc, 0, 0.5);
-
-
     }
+
     ble.onDisconnect = function () {
-      document.querySelector(`#status${ble.id}`).innerText = 'OFFLINE';
-      document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
+      // document.querySelector(`#status${ble.id}`).innerText = 'OFFLINE';
+      // document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
     }
 
     buildCoreToolkit(document.querySelector('#toolkit_placeholder'),  
@@ -221,15 +214,24 @@ window.onload = function () {
       document.querySelector(`#char${this.id}`).disabled = true;
   }
 
-  ble.onScan = function (deviceName) {
+    ble.onScan = function (deviceName) {
       document.getElementById(`device_name${this.id}`).innerHTML = deviceName;
-  }
-  ble.gotFootAngle = function (foot_angle) {
-    document.querySelector(`#stride${this.id}_w`).innerHTML = foot_angle.value.toFixed(3);
-    //Register an event listener when a FootAngle is received.
-    foot_angles[this.id] = _foot_angle.value;
-    landCircles.push(new footAnglePoint(this.id, _foot_angle.value));
     }
+      //Register an event listener when a FootAngle is received.
+    ble.gotFootAngle = function (foot_angle) {
+      document.querySelector(`#stride${this.id}_w`).innerHTML = foot_angle.value.toFixed(3);
+      foot_angles[this.id] = foot_angle.value;
+      landCircles.push(new footAnglePoint(this.id, foot_angle.value));//Generates a circle based on the angle of landing
+    };
+
+    ble.gotAcc = function (acc) {
+      document.querySelector(`#sva${this.id}_x`).innerHTML = `${acc.x.toFixed(3)}`;
+      document.querySelector(`#sva${this.id}_y`).innerHTML = `${acc.y.toFixed(3)}`;
+      document.querySelector(`#sva${this.id}_z`).innerHTML = `${acc.z.toFixed(3)}`;
+      //Register an event listener when a Acc is received.
+      ACCs[this.id] = acc;
+      accCircles.push(new accelerometerPoint(this.id, acc));
+  }
 
   ble.gotPronation = function (pronation) {
     document.querySelector(`#pronation${this.id}_x`).innerHTML = pronation.x.toFixed(3);
@@ -261,16 +263,6 @@ window.onload = function () {
       document.querySelector(`#svg${this.id}_x`).innerHTML = `${gyro.x.toFixed(3)}`;
       document.querySelector(`#svg${this.id}_y`).innerHTML = `${gyro.y.toFixed(3)}`;
       document.querySelector(`#svg${this.id}_z`).innerHTML = `${gyro.z.toFixed(3)}`;
-  }
-
-  ble.gotAcc = function (acc) {
-      document.querySelector(`#sva${this.id}_x`).innerHTML = `${acc.x.toFixed(3)}`;
-      document.querySelector(`#sva${this.id}_y`).innerHTML = `${acc.y.toFixed(3)}`;
-      document.querySelector(`#sva${this.id}_z`).innerHTML = `${acc.z.toFixed(3)}`;
-
-      //Register an event listener when a Acc is received.
-      ACCs[this.id] = acc;
-      accCircles.push(new accelerometerPoint(this.id, acc));
   }
 
   ble.gotGait = function (gait) {

@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2022/10/28 14:47:33
+Last modified: 2022/10/28 15:05:32
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -49,7 +49,9 @@ function Orphe(_num) {
     direction: 0,
     calorie: 0,
     distance: 0,
-    steps: 0
+    steps: 0,
+    standing_phase_duration: 0,
+    swing_phase_duration: 0
   }
   this.stride = {
     foot_angle: 0,

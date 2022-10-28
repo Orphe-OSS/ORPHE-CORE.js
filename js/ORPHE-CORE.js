@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2022/10/28 15:05:32
+Last modified: 2022/10/28 15:11:30
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -783,13 +783,18 @@ Orphe.prototype =
    */
   gotCalorie: function (calorie) {
   },
+
   /**
    * 
    * @param {Object} distance {value}
    */
   gotDistance: function (distance) {
   },
+  gotStandingPhaseDuration: function (standing_phase_duration) {
+  },
+  gotSwingPhaseDuration: function (swing_phase_duration) {
 
+  },
   /**
    * 
    * @param {Object} stride {x,y,z}

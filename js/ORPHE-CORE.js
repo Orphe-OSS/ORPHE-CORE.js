@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2022/09/18 11:59:55
+Last modified: 2022/10/28 14:47:33
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -547,11 +547,15 @@ Orphe.prototype =
         this.gait.calorie = calorie;
         this.gait.distance = dist;
         this.gait.steps = steps_now;
+        this.gait.standing_phase_duration = data.getFloat32(12);
+        this.gait.swing_phase_duration = data.getFloat32(16);
         this.gotGait(this.gait);
         this.gotType({ value: this.gait.type });
         this.gotDistance({ value: this.gait.distance });
         this.gotDirection({ value: this.gait.direction });
         this.gotCalorie({ value: this.gait.calorie });
+        this.gotStandingPhaseDuration({ value: this.gait.standing_phase_duration });
+        this.gotSwingPhaseDuration({ value: this.gait.swing_phase_duration });
       }
       // Stride
       else if (data.getUint8(1) == 1 && steps_now > this.stride.steps) {

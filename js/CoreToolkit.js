@@ -1,15 +1,22 @@
 var coreToolkit_version_date = `
-Last modified: 2022/09/18 17:06:00
+Last modified: 2022/11/21 09:03:12
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
 
-function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ANALYSIS') {
-    let div_form_check = buildElement('div', '', 'form-ckeck form-switch d-flex', '', parent_element);
+/**
+ * 
+ * @param {html element} parent_element 
+ * @param {string} title 
+ * @param {int} core_id 
+ * @param {string} notification 
+ */
+function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ANALYSIS_AND_RAW') {
+    let div_form_check = CTbuildElement('div', '', 'form-ckeck form-switch d-flex', '', parent_element);
     div_form_check.id = `core_toolkit${core_id}`;
     // toggle and title
 
-    let input = buildElement('input', '', 'form-check-input position-relative', '', div_form_check);
+    let input = CTbuildElement('input', '', 'form-check-input position-relative', '', div_form_check);
     input.setAttribute('type', 'checkbox');
     input.setAttribute('role', 'switch');
     input.setAttribute('id', `switch_ble${core_id}`);
@@ -19,13 +26,13 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     input.addEventListener('change', function () {
         toggleCoreModule(this);
     })
-    let label = buildElement('label', title, 'form-check-label ms-1', '', div_form_check);
+    let label = CTbuildElement('label', title, 'form-check-label ms-1', '', div_form_check);
 
-    let span_group = buildElement('span', '', '', '', div_form_check);
+    let span_group = CTbuildElement('span', '', '', '', div_form_check);
     span_group.id = `ui${core_id}`;
     span_group.style.visibility = 'hidden';
 
-    let span_activity = buildElement('span',
+    let span_activity = CTbuildElement('span',
         `<i class="bi bi-activity position-relative">
         <span class="position-absolute top-0 start-50 translate-middle badge text-muted" style="font-size:0.2em;"
           id="freq${core_id}">
@@ -35,14 +42,14 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     span_activity.setAttribute('id', `freq${core_id}`);
     span_activity.id = `icon_bluetooth${core_id}`
 
-    let span_battery = buildElement('span', `<i class="bi bi-battery"></i>`, 'text-muted ms-1', '', span_group);
+    let span_battery = CTbuildElement('span', `<i class="bi bi-battery"></i>`, 'text-muted ms-1', '', span_group);
     span_battery.id = `icon_battery${core_id}`;
     span_battery.setAttribute('core_id', `${core_id}`);
     span_battery.addEventListener('click', function () {
         updateBatteryInfo(span_battery);
     })
 
-    let span_led = buildElement('span', `<i class="bi bi-brightness-alt-high position-relative"><span class="position-absolute  top-0 start-50 tanslate-middle badge text-muted bg-light" style="font-size:0.2em;" id="led_number${core_id}">
+    let span_led = CTbuildElement('span', `<i class="bi bi-brightness-alt-high position-relative"><span class="position-absolute  top-0 start-50 tanslate-middle badge text-muted bg-light" style="font-size:0.2em;" id="led_number${core_id}">
           0
         </span>
       </i>`, 'text-muted ms-1', '', span_group);
@@ -53,7 +60,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
         toggleLED(span_led);
     })
 
-    let span_settings = buildElement('span', `<i
+    let span_settings = CTbuildElement('span', `<i
         class="bi bi-gear"></i>`, 'text-muted ms-1', '', span_group);
     span_settings.id = `icon_settings${core_id}`;
     span_settings.setAttribute('value', `${core_id}`);
@@ -65,17 +72,17 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     })
 
     // build modal
-    let div_modal = buildElement('div', '', 'modal fade', '', span_group);
+    let div_modal = CTbuildElement('div', '', 'modal fade', '', span_group);
     div_modal.id = `settings_modal${core_id}`;
     div_modal.setAttribute('tanindex', '-1');
     div_modal.setAttribute('aria-labelledby', 'exampleModalLabel');
     div_modal.setAttribute('aria-hidden', 'true');
-    let div_modal_dialog = buildElement('div', '', 'modal-dialog', '', div_modal);
-    let div_modal_content = buildElement('div', '', 'modal-content', '', div_modal_dialog);
-    let div_modal_header = buildElement('div', `<h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE0${core_id} Settings</h5 >
+    let div_modal_dialog = CTbuildElement('div', '', 'modal-dialog', '', div_modal);
+    let div_modal_content = CTbuildElement('div', '', 'modal-content', '', div_modal_dialog);
+    let div_modal_header = CTbuildElement('div', `<h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE0${core_id} Settings</h5 >
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>`, 'modal-header', '', div_modal_content);
 
-    let div_modal_body = buildElement('div', `<div class="form-floating mt-2">
+    let div_modal_body = CTbuildElement('div', `<div class="form-floating mt-2">
     <select class="form-select text-black" id="select_notify${core_id}" aria-label="Floating label select example"
       onchange="changeNotify(${core_id}, this);">
       <option value="ANALYSIS" selected>ANALYSIS</option>
@@ -282,4 +289,16 @@ function toggleLED(dom) {
 
 function setHeaderStatusOffline(id) {
     document.querySelector(`#switch_ble${id} `).checked = false;
+}
+
+
+function CTbuildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
+    let element = document.createElement(name_tag);
+    element.innerHTML = innerHTML;
+    element.classList = str_class;
+    if (str_style != '') {
+        element.setAttribute('style', str_style);
+    }
+    element_appended.appendChild(element);
+    return element;
 }

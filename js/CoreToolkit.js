@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2022/11/21 09:03:12
+Last modified: 2022/12/26 06:29:24
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -293,6 +293,16 @@ function setHeaderStatusOffline(id) {
 
 
 function CTbuildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
+    let element = document.createElement(name_tag);
+    element.innerHTML = innerHTML;
+    element.classList = str_class;
+    if (str_style != '') {
+        element.setAttribute('style', str_style);
+    }
+    element_appended.appendChild(element);
+    return element;
+}
+function buildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
     let element = document.createElement(name_tag);
     element.innerHTML = innerHTML;
     element.classList = str_class;

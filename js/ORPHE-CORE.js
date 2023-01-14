@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2022/10/28 15:11:30
+Last modified: 2023/01/15 01:39:50
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -633,20 +633,20 @@ Orphe.prototype =
     else if (uuid == 'SENSOR_VALUES') {
       if (data.getUint8(0) == 50) {
         this.quat = {
-          w: data.getInt16(8) / 16384,
-          x: data.getInt16(10) / 16384,
-          y: data.getInt16(12) / 16384,
-          z: data.getInt16(14) / 16384
+          w: data.getInt16(8) / 32768,
+          x: data.getInt16(10) / 32768,
+          y: data.getInt16(12) / 32768,
+          z: data.getInt16(14) / 32768
         }
         this.gyro = {
-          x: data.getInt16(16) / 16384,
-          y: data.getInt16(18) / 16384,
-          z: data.getInt16(20) / 16384
+          x: data.getInt16(16) / 32768,
+          y: data.getInt16(18) / 32768,
+          z: data.getInt16(20) / 32768
         }
         this.acc = {
-          x: data.getInt16(22) / 16384,
-          y: data.getInt16(24) / 16384,
-          z: data.getInt16(26) / 16384
+          x: data.getInt16(22) / 32768,
+          y: data.getInt16(24) / 32768,
+          z: data.getInt16(26) / 32768
         }
 
         // sensor valuesのときはrawデータのみなので，QuatのときにHzは計算しておく
@@ -659,10 +659,10 @@ Orphe.prototype =
       else if (data.getUint8(0) == 40) {
 
         this.quat = {
-          w: data.getInt16(1) / 16384,
-          x: data.getInt16(3) / 16384,
-          y: data.getInt16(5) / 16384,
-          z: data.getInt16(7) / 16384
+          w: data.getInt16(1) / 32768,
+          x: data.getInt16(3) / 32768,
+          y: data.getInt16(5) / 32768,
+          z: data.getInt16(7) / 32768
         }
         this.gyro = {
           x: data.getInt8(9) / 127,

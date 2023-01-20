@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2023/01/15 01:39:50
+Last modified: 2023/01/15 01:48:26
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js

@@ -12,23 +12,41 @@ function setup() {
     const canvas_height = canvas_width * 9 / 16;
     mycanvas = createCanvas(canvas_width, canvas_height, WEBGL);
     document.querySelector('#canvas_placeholder').appendChild(mycanvas.elt);
+    mycamera = createCamera(
+        0, 0, 0,
+        0, 0, 0,
+        1, 1, 1);
 }
 
 var eulers = [];
+var quats = [];
+var mycamera;
+var theta = 0.0;
 function draw() {
     background(200);
-    orbitControl()
+    //orbitControl()
+    //mycamera.lookAt(0, 0, 0);
+    //mycamera.setPosition(0, 0, 500 * sin(theta));
+    camera(
+        0, -300, 200,
+        0, 0, 0,
+        0, -1, 0
+    );
+    theta += .01;
     if (eulers.length > 0) {
         scale(1);
-        //rotateX(3.14 / 2);
 
         let count = 0;
-        for (euler of eulers) {
+        for (quat of quats) {
+
+            const quatr = new toxi.geom.Quaternion(quat.z, -quat.x, quat.y, quat.w);
+            let axisAngle = quatr.toAxisAngle();
+
+            let r = axisAngle[0];
+            let v = createVector(axisAngle[1], axisAngle[2], axisAngle[3]);
             push();
-            translate(-100 + 200 * count, -2, 0);
-            rotateX(euler.pitch);
-            rotateY(euler.roll);
-            rotateZ(-euler.yaw);
+            translate(100 - 200 * count, 0, 0);
+            rotate(r, v);
 
             // 太陽光が手前上から当たる
             directionalLight(255, 255, 255, 0, 1, -1);
@@ -48,7 +66,8 @@ function draw() {
             directionalLight(255, 255, 255, 0, 1, -1);
             // 黄色のマテリアル
             ambientMaterial(255, 255, 255);
-            translate(-100 + 200 * i, 0, 0);
+            rotateZ(PI);
+            translate(100 - 200 * i, 0, 0);
             noStroke();
             model(my_model);
             pop();
@@ -77,10 +96,10 @@ window.onload = function () {
 
         ble.onConnectGATT = function (uuid) {
             console.log('> connected GATT!');
-            document.getElementById(`uuid_name${this.id + 1}`).innerHTML = uuid;
-            document.querySelector(`#startNotifications${this.id}`).classList = 'btn btn-danger';
-            document.querySelector(`#button_name${this.id}`).innerHTML = "disconnect";
+            //document.getElementById(`uuid_name${this.id + 1}`).innerHTML = uuid;
             document.querySelector(`#char${this.id}`).disabled = true;
+            document.querySelector(`#reset_button${this.id}`).disabled = false;
+            console.log('debug', document.querySelector(`#reset_button${this.id}`).disabled);
         }
 
         ble.onScan = function (deviceName) {
@@ -88,6 +107,7 @@ window.onload = function () {
         }
 
         ble.gotQuat = function (quat) {
+            quats[this.id] = quat;
             document.querySelector(`#sq${this.id}_w`).innerHTML = `${quat.w.toFixed(3)}`;
             document.querySelector(`#sq${this.id}_x`).innerHTML = `${quat.x.toFixed(3)}`;
             document.querySelector(`#sq${this.id}_y`).innerHTML = `${quat.y.toFixed(3)}`;

@@ -1,6 +1,6 @@
 <script>
   var last_modified = `
-  Last modified: 2022/10/18 17:47:09
+  Last modified: 2023/01/20 16:36:43
   `;
 </script>
 
@@ -169,10 +169,62 @@
       </div>
     </section>
 
+    <h3 class="mt-4">Quick Start with CoreToolkit.js</h3>
+    <p>
+      ORPHE-CORE.js can be run with a few lines of code, but it can be somewhat cumbersome to configure detailed
+      settings
+      such as sensor sensitivity and data reception format. coretoolkit.js can add an integrated UI, including module
+      settings, with a single line of code. This may be useful when developing large scale applications.
+    </p>
+    <div class="p-4 m-4 bg-secondary">
+      <code class="prettyprint lang-html" data-lang="html">
+      &lt;!doctype html&gt;<br>
+      &lt;html lang=&quot;en&quot;&gt;<br>
+      <br>
+      &lt;head&gt;<br>
+          &lt;meta charset=&quot;utf-8&quot;&gt;<br>
+          &lt;title&gt;CoreToolkit.js&lt;/title&gt;<br>
+          &lt;link href=&quot;https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css&quot; rel=&quot;stylesheet&quot;
+              integrity=&quot;sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi&quot; crossorigin=&quot;anonymous&quot;&gt;<br>
+          &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css&quot;&gt;<br>
+      &lt;/head&gt;<br>
+      <br>
+      &lt;body&gt;<br>
+          &lt;h1&gt;Hello, CoreToolkit.js&lt;/h1&gt;<br>
+          &lt;div id=&quot;toolkit_placeholder&quot;&gt;&lt;/div&gt;<br>
+          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js&quot;
+              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;<br>
+          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js&quot; crossorigin=&quot;anonymous&quot;
+              type=&quot;text/javascript&quot;&gt;&lt;/script&gt;<br>
+          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js&quot; crossorigin=&quot;anonymous&quot;
+              type=&quot;text/javascript&quot;&gt;&lt;/script&gt;<br>
+          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/CoreToolkit.js&quot; crossorigin=&quot;anonymous&quot;
+              type=&quot;text/javascript&quot;&gt;&lt;/script&gt;<br>
+          &lt;script src=&quot;https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js&quot;
+              integrity=&quot;sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk&quot;
+              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;<br>
+              <br>
+          &lt;script&gt;<br>
+      
+              window.onload = function () {<br>
+                  // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js<br>
+                  bles[0].setup();<br>
+                  buildCoreToolkit(document.querySelector(&#039;#toolkit_placeholder&#039;), &#039;01&#039;, 0, &#039;RAW&#039;);<br>
+                  bles[0].gotAcc = function (acc) {<br>
+                  }<br>
+              }<br>
+          &lt;/script&gt;<br>
+      &lt;/body&gt;<br>
+      <br>
+      &lt;/html&gt;<br>
+            </code>
+    </div>
+
 
     <h3 class="mt-4"><i class="bi bi-code"></i> Examples </h3>
     <section class="ms-4">
-      We have prepared several examples using ORPHE-CORE.js. All examples are located under the /ORPHE-CORE.js/examples
+      We have prepared several examples using ORPHE-CORE.js. All examples are located under the
+      /ORPHE-CORE.js/examples
       directory.
       <!-- The following is a list of BLE Advertising by ORPHE CORE Module. Not all advertisements are listed in this page.
       <table class="table table-dark table-striped table-hover">
@@ -283,8 +335,10 @@
           [ <a href="./examples/CORETOOLKIT-STARTER/" target="_blank">DEMO</a> ]
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/5nV83PG1A" target="_blank">p5.js</a> ]
         </li>
-
       </ul>
+
+
+
       <div class="row">
         <h4 class="mt-4">Play LIGHT example with VSCode</h4>
         <div class="col-md-6">
@@ -324,7 +378,8 @@
     <h3 class="mt-4"><i class="bi bi-star"></i> Starter Templates </h3>
     <section class="ms-4">
       Although we have provided an ORPHE-like example in the Examples section, it would be better to have a simpler
-      example if users want to create their own applications using ORPHE-CORE. In this section, as Starter Templates, we
+      example if users want to create their own applications using ORPHE-CORE. In this section, as Starter Templates,
+      we
       provide a very simple working example without css. All starter templates are located under the
       /ORPHE-CORE.js/starter-templates/ directory.
       <ul>
@@ -449,7 +504,8 @@
       </p>
 
       <p class="ms-4">
-        Electron is a framework for building desktop applications using JavaScript, HTML, and CSS. By embedding Chromium
+        Electron is a framework for building desktop applications using JavaScript, HTML, and CSS. By embedding
+        Chromium
         and Node.js into its binary, Electron allows you to maintain one JavaScript codebase and create cross-platform
         apps that work on Windows, macOS, and Linux — no native development experience required.
       </p>
@@ -458,8 +514,12 @@
       </figcaption>
 
       <h3>
-        Getting Started ( not yet )
+        Examples
       </h3>
+      <ul>
+        <span class="bg-warning">OSC HUB</span>: Transfers acquired sensor data with any OSC message. [<a
+          href="https://github.com/TetsuakiBaba/electron-orphe-osc" target="_blank">source</a>]
+      </ul>
 
     </section>
 
@@ -475,7 +535,7 @@
   <script src="./js/bootstrap.bundle.min.js"
     integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
     crossorigin="anonymous"></script>
-  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?skin=sunburst"></script>
+  <script src="./js/run_prettify.js?skin=sunburst"></script>
 
   <script>
     function copyInputValue(button_dom, id) {

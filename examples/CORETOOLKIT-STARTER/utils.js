@@ -14,13 +14,13 @@ function getParam(name, url) {
     return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-var s_time = Date.now();
-function millis() {
-    let e_time = Date.now();;
-    let diff = e_time - s_time;
-    //console.log("経過時間(ミリ秒):", diff);
-    return diff;
-}
+// var s_time = Date.now();
+// function millis() {
+//     let e_time = Date.now();
+//     let diff = e_time - s_time;
+//     console.log("経過時間(ミリ秒):", diff);
+//     return diff;
+// }
 
 function buildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
     let element = document.createElement(name_tag);

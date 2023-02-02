@@ -454,7 +454,7 @@ window.onload = function () {
 
 
 
-    for (ble of bles) {
+    for (let ble of bles) {
         ble.setup();
 
         ble.onConnectGATT = function (uuid) {

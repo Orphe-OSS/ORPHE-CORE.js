@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2023/01/15 01:48:26
+Last modified: 2023/02/02 21:34:21
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -463,8 +463,10 @@ Orphe.prototype =
    * @param {string} uuid 
    */
   onRead: function (data, uuid) {
-    //  console.log(uuid, data.byteLength, data.getUint8(0));
-    // デバイス情報Readの場合
+    //console.log(uuid, data.byteLength, data.getUint8(0));
+    this.gotData(data, uuid);
+
+    // デバイス情報Readの場合    
     if (uuid == 'DEVICE_INFORMATION') {
       /*
       read pay load
@@ -721,6 +723,14 @@ Orphe.prototype =
         reject(error);
       });
     });
+  },
+
+  /**
+   * 
+   * @param {dataview} data orphe terminal専用
+   */
+  gotData: function (data) {
+    //console.log('prototype.gotQuat');
   },
 
   /**

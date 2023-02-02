@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2022/12/26 06:29:24
+Last modified: 2023/02/02 17:19:03
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -77,7 +77,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     div_modal.setAttribute('tanindex', '-1');
     div_modal.setAttribute('aria-labelledby', 'exampleModalLabel');
     div_modal.setAttribute('aria-hidden', 'true');
-    let div_modal_dialog = CTbuildElement('div', '', 'modal-dialog', '', div_modal);
+    let div_modal_dialog = CTbuildElement('div', '', 'modal-dialog text-dark', '', div_modal);
     let div_modal_content = CTbuildElement('div', '', 'modal-content', '', div_modal_dialog);
     let div_modal_header = CTbuildElement('div', `<h5 class="modal-title" id="exampleModalLabel"><i class="bi bi-gear"></i> CORE0${core_id} Settings</h5 >
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>`, 'modal-header', '', div_modal_content);

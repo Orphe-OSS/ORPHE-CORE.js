@@ -166,9 +166,9 @@ function send(dom) {
     let list = message.split(',');
     let commands = []
     for (let l of list) {
-        commands.push(parseInt(l, 15));
-
+        commands.push(parseInt(l, 16));
     }
+    console.log(commands);
     let senddata = new Uint8Array(commands);
     bles[0].write('DEVICE_INFORMATION', senddata);
 }

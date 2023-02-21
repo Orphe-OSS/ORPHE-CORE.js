@@ -11,6 +11,9 @@ var out = fft.createComplexArray();
 var is_active = false;
 var chart;
 var gauge;
+var delta_distances = []
+var acc_distances = []
+var accs = [];
 
 async function saveWorkout(time_now) {
   let user = getParam('user');
@@ -202,14 +205,14 @@ window.onload = function () {
   gauge.animationSpeed = 1; // set animation speed (32 is default value)
   gauge.set(0); // set actual value
 
-  chart = {
-    acc: new Chart(document.getElementById("chart_acc"), config.acc),
-    delta_acc: new Chart(
-      document.getElementById("chart_delta_acc"),
-      config.delta_acc
-    ),
-    fft: new Chart(document.getElementById("chart_fft"), config.fft),
-  };
+  // chart = {
+  //   acc: new Chart(document.getElementById("chart_acc"), config.acc),
+  //   delta_acc: new Chart(
+  //     document.getElementById("chart_delta_acc"),
+  //     config.delta_acc
+  //   ),
+  //   fft: new Chart(document.getElementById("chart_fft"), config.fft),
+  // };
 
 
   let ble = bles[0];
@@ -234,30 +237,41 @@ window.onload = function () {
     var distance_fft;
     var distance;
     {
-      while (chart.acc.data.labels.length > 100) {
-        chart.acc.data.labels.shift();
-      }
-      chart.acc.data.labels.push(acc_count);
+      // while (chart.acc.data.labels.length > 100) {
+      //   chart.acc.data.labels.shift();
+      // }
+      // chart.acc.data.labels.push(acc_count);
 
-      while (chart.acc.data.datasets[0].data.length > 100) {
-        for (let dataset of chart.acc.data.datasets) {
-          dataset.data.shift();
-        }
+      // while (chart.acc.data.datasets[0].data.length > 100) {
+      //   for (let dataset of chart.acc.data.datasets) {
+      //     dataset.data.shift();
+      //   }
+      // }
+      // chart.acc.data.datasets[0].data.push(_acc.x);
+      // chart.acc.data.datasets[1].data.push(_acc.y);
+      // chart.acc.data.datasets[2].data.push(_acc.z);
+      // distance = distance_fft = Math.sqrt(
+      //   Math.pow(_acc.x, 2) + Math.pow(_acc.y, 2) + Math.pow(_acc.z, 2)
+      // );
+      // chart.acc.data.datasets[3].data.push(distance);
+
+      accs.push(_acc);
+      while (accs.length > 100) {
+        accs.shift();
       }
-      chart.acc.data.datasets[0].data.push(_acc.x);
-      chart.acc.data.datasets[1].data.push(_acc.y);
-      chart.acc.data.datasets[2].data.push(_acc.z);
-      distance = distance_fft = Math.sqrt(
+      distance = Math.sqrt(
         Math.pow(_acc.x, 2) + Math.pow(_acc.y, 2) + Math.pow(_acc.z, 2)
       );
-      chart.acc.data.datasets[3].data.push(distance);
-
-      let distance_max = Math.max.apply(null, chart.acc.data.datasets[3].data);
+      acc_distances.push(distance);
+      while (acc_distances > 100) {
+        acc_distances.shift();
+      }
+      let distance_max = Math.max.apply(null, acc_distances);
       let threshold = document.querySelector('#threshold').value / 100;
       let interval = document.querySelector('#interval').value;
-      for (let i = 0; i < bufsize; i++) {
-        chart.acc.data.datasets[4].data[i] = distance_max;
-      }
+      // for (let i = 0; i < bufsize; i++) {
+      //   chart.acc.data.datasets[4].data[i] = distance_max;
+      // }
 
       if (
         distance > distance_max * threshold &&
@@ -282,30 +296,36 @@ window.onload = function () {
     acc_count++;
 
     {
-      while (chart.delta_acc.data.labels.length > bufsize) {
-        chart.delta_acc.data.labels.shift();
-      }
-      chart.delta_acc.data.labels.push(acc_count);
-      while (chart.delta_acc.data.datasets[0].data.length > bufsize) {
-        chart.delta_acc.data.datasets[0].data.shift();
-        chart.delta_acc.data.datasets[1].data.shift();
-        chart.delta_acc.data.datasets[2].data.shift();
-        chart.delta_acc.data.datasets[3].data.shift();
-      }
-      chart.delta_acc.data.datasets[0].data.push(_acc.x - acc_prev.x);
-      chart.delta_acc.data.datasets[1].data.push(_acc.y - acc_prev.y);
-      chart.delta_acc.data.datasets[2].data.push(_acc.z - acc_prev.z);
-      let delta_distance = Math.sqrt(
-        Math.pow(_acc.x - acc_prev.x, 2) +
-        Math.pow(_acc.y - acc_prev.y, 2) +
-        Math.pow(_acc.z - acc_prev.z, 2)
-      );
-      chart.delta_acc.data.datasets[3].data.push(delta_distance);
+      // while (chart.delta_acc.data.labels.length > bufsize) {
+      //   chart.delta_acc.data.labels.shift();
+      // }
+      // chart.delta_acc.data.labels.push(acc_count);
+      // while (chart.delta_acc.data.datasets[0].data.length > bufsize) {
+      //   chart.delta_acc.data.datasets[0].data.shift();
+      //   chart.delta_acc.data.datasets[1].data.shift();
+      //   chart.delta_acc.data.datasets[2].data.shift();
+      //   chart.delta_acc.data.datasets[3].data.shift();
+      // }
+      // chart.delta_acc.data.datasets[0].data.push(_acc.x - acc_prev.x);
+      // chart.delta_acc.data.datasets[1].data.push(_acc.y - acc_prev.y);
+      // chart.delta_acc.data.datasets[2].data.push(_acc.z - acc_prev.z);
+      // let delta_distance = Math.sqrt(
+      //   Math.pow(_acc.x - acc_prev.x, 2) +
+      //   Math.pow(_acc.y - acc_prev.y, 2) +
+      //   Math.pow(_acc.z - acc_prev.z, 2)
+      // );
+      // chart.delta_acc.data.datasets[3].data.push(delta_distance);
 
-      acc_prev = _acc;
-      chart.delta_acc.update();
-      let activity = bufsize * average(chart.delta_acc.data.datasets[3].data);
+      // acc_prev = _acc;
+      // chart.delta_acc.update();
+      // let activity = bufsize * average(chart.delta_acc.data.datasets[3].data);
       // get area of delta distance graph for activity monitoring
+
+      delta_distances.push(Math.pow(_acc.x - acc_prev.x, 2) +
+        Math.pow(_acc.y - acc_prev.y, 2) +
+        Math.pow(_acc.z - acc_prev.z, 2));
+      while (delta_distances.length > bufsize) delta_distances.shift();
+      let activity = bufsize * average(delta_distances);
       gauge.set(activity);
       document.querySelector('#p_activity').innerText = activity.toFixed(2);
       if (activity > 1.0) {
@@ -319,10 +339,10 @@ window.onload = function () {
     }
     // for fft and analysis
     {
-      fft_input.push(distance_fft);
-      while (fft_input.length > fft_bufsize) {
-        fft_input.shift();
-      }
+      // fft_input.push(distance_fft);
+      // while (fft_input.length > fft_bufsize) {
+      //   fft_input.shift();
+      // }
       // let distance_max = Math.max.apply(null, fft_input);
       // let threshold = document.querySelector('#threshold').value / 100;
       // let interval = document.querySelector('#interval').value;
@@ -346,21 +366,21 @@ window.onload = function () {
       //   }
       // }
 
-      const data = fft.toComplexArray(fft_input);
-      fft.transform(out, data);
-      let array_labels = [];
-      let array_power = [];
-      for (let i = 0; i < out.length / 2; i++) {
-        array_labels.push((i * freq_step).toFixed(2));
-        array_power.push(out[i]);
+      // const data = fft.toComplexArray(fft_input);
+      // fft.transform(out, data);
+      // let array_labels = [];
+      // let array_power = [];
+      // for (let i = 0; i < out.length / 2; i++) {
+      //   array_labels.push((i * freq_step).toFixed(2));
+      //   array_power.push(out[i]);
 
-      }
-      chart.fft.data.labels = array_labels;
-      chart.fft.data.datasets[0].data = array_power;
+      // }
+      // chart.fft.data.labels = array_labels;
+      // chart.fft.data.datasets[0].data = array_power;
     }
 
-    chart.acc.update();
-    chart.fft.update();
+    // chart.acc.update();
+    // chart.fft.update();
   };
 
   loadHistory();

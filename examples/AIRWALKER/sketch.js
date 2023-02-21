@@ -1,3 +1,7 @@
+var last_modified = `
+last modified: 2023/02/22 00:16:19
+`;
+last_modified.trim('\n');
 var bufsize = 128;
 var fft_bufsize = 1024;
 var fft = new FFTJS(fft_bufsize);
@@ -198,6 +202,7 @@ var acc_prev = {
 var steps = 0;
 var steps_count_timestamp = 0;
 window.onload = function () {
+  document.querySelector('#last_modified').innerHTML = last_modified;
   let target = document.getElementById('gauge'); // your canvas element
   gauge = new Gauge(target).setOptions(opts); // create sexy gauge!
   gauge.maxValue = 10.0; // set max gauge value

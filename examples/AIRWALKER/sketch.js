@@ -14,6 +14,7 @@ var gauge;
 var delta_distances = []
 var acc_distances = []
 var accs = [];
+var activity_previous = 0;
 
 async function saveWorkout(time_now) {
   let user = getParam('user');
@@ -316,15 +317,20 @@ window.onload = function () {
       // );
       // chart.delta_acc.data.datasets[3].data.push(delta_distance);
 
-      // acc_prev = _acc;
+
       // chart.delta_acc.update();
       // let activity = bufsize * average(chart.delta_acc.data.datasets[3].data);
       // get area of delta distance graph for activity monitoring
 
-      delta_distances.push(Math.pow(_acc.x - acc_prev.x, 2) +
-        Math.pow(_acc.y - acc_prev.y, 2) +
-        Math.pow(_acc.z - acc_prev.z, 2));
+      delta_distances.push(
+        Math.sqrt(
+          Math.pow(_acc.x - acc_prev.x, 2) +
+          Math.pow(_acc.y - acc_prev.y, 2) +
+          Math.pow(_acc.z - acc_prev.z, 2))
+      );
+
       while (delta_distances.length > bufsize) delta_distances.shift();
+
       let activity = bufsize * average(delta_distances);
       gauge.set(activity);
       document.querySelector('#p_activity').innerText = activity.toFixed(2);
@@ -335,6 +341,7 @@ window.onload = function () {
         is_active = false;
       }
 
+      acc_prev = _acc;
 
     }
     // for fft and analysis

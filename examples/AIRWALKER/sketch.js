@@ -264,9 +264,10 @@ window.onload = function () {
         Math.pow(_acc.x, 2) + Math.pow(_acc.y, 2) + Math.pow(_acc.z, 2)
       );
       acc_distances.push(distance);
-      while (acc_distances > 100) {
+      while (acc_distances.length > 100) {
         acc_distances.shift();
       }
+      console.log(acc_distances.length);
       let distance_max = Math.max.apply(null, acc_distances);
       let threshold = document.querySelector('#threshold').value / 100;
       let interval = document.querySelector('#interval').value;

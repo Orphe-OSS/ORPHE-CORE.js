@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>uoo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="toolkit_placeholder"></div>
+    <div id = "ui">
+        <div id = "hp_text"></div>
+        <div id = "hp_gauge"></div>
+        <button type = "button" id = "startButton" onclick = "start()">START</button>
+        <div id = "boss">
+        </div>
+        <div id = "buttons">
+            <button type="button" class="btn btn-secondary" id = "turn" onclick="turn_switch()">turn</button>
+            <button type="button" class="btn btn-secondary" id = "reset" onclick="reset()">reset</button>
+        </div>
+    </div>
+    <p  id = "rotateCount">
+        <span id = "floorPart" style = "font-size: 200px;">0</span>
+        <span style = "font-size:100px;">.</span>
+        <span id = "syosu" style = "font-size: 100px;">0</span>
+    </p>
+    <div id = "eulertest"></div>
+    <div id = "rotatetest"></div>
+    <div id = "damage"></div>
+    <div id = "hpdata"></div>
+    <div id = "turnmoniter"></div>
+
+
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/CoreToolkit.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
+        integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.5.0/lib/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src = "script.js"></script>
+</body>
+</html>

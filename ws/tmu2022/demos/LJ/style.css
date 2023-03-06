@@ -1,0 +1,66 @@
+body{
+    font-family: 'Aldrich', sans-serif;
+}
+
+.h1 a{
+    font-size: 80px;
+}
+
+.list{
+    font-size: 23px;
+}
+
+.rootin {
+    display: flex;
+}
+
+.button1 label:hover {
+    background: #9c9c9c;
+    color: #FFF;
+}
+
+.button1{
+    display: flex;
+}
+.button1 label{
+    display: block;
+    width: 150px;
+    background: #e7e7e7;
+    color: #000;
+    padding: 10px;
+    margin: 10px;
+    box-sizing: border-box;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.button1 input:checked+label{
+    background: #62405a;
+    color: #FFF;
+}
+.button1 input{
+    display: none;
+}
+
+.input-range {
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    background: #2a2a2a;
+    height: 14px;
+    width: 100%;
+    margin: auto;
+    border-radius: 10px;
+    border: solid 6px #fff;
+    outline: 0; /* アウトラインを消して代わりにfocusのスタイルをあてる */
+}
+
+::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background: #373737;
+    width: 5px;
+    height: 20px;
+    border-radius: 20%;
+    /* box-shadow: 0px 3px 6px 0px rgba(0, 0, 0, 0.15); */
+  }

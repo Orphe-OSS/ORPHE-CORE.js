@@ -1,0 +1,1691 @@
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{margin:0;padding:0;border:0;font-size:100%;font:inherit;vertical-align:baseline;}article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block;}body{line-height:1;}ol,ul{list-style:none;}blockquote,q{quotes:none;}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none;}table{border-collapse:collapse;border-spacing:0;}body{-webkit-text-size-adjust:none}mark{background-color:transparent;color:inherit}input::-moz-focus-inner{border:0;padding:0}input[type="text"],input[type="email"],select,textarea{-moz-appearance:none;-webkit-appearance:none;-ms-appearance:none;appearance:none}
+
+*, *:before, *:after {
+	box-sizing: border-box;
+}
+
+body {
+	line-height: 1.0;
+	min-height: var(--viewport-height);
+	min-width: 320px;
+	overflow-x: hidden;
+	word-wrap: break-word;
+	background-color: #F2F2F2;
+}
+
+:root {
+	--background-height: 100vh;
+	--site-language-alignment: left;
+	--site-language-direction: ltr;
+	--site-language-flex-alignment: flex-start;
+	--site-language-indent-left: 1;
+	--site-language-indent-right: 0;
+	--viewport-height: 100vh;
+}
+
+html {
+	font-size: 16pt;
+}
+
+u {
+	text-decoration: underline;
+}
+
+strong {
+	color: inherit;
+	font-weight: bolder;
+}
+
+em {
+	font-style: italic;
+}
+
+code {
+	background-color: rgba(144,144,144,0.25);
+	border-radius: 0.25em;
+	font-family: 'Lucida Console', 'Courier New', monospace;
+	font-size: 0.9em;
+	font-weight: normal;
+	letter-spacing: 0;
+	margin: 0 0.25em;
+	padding: 0.25em 0.5em;
+	text-indent: 0;
+}
+
+mark {
+	background-color: rgba(144,144,144,0.25);
+}
+
+s {
+	text-decoration: line-through;
+}
+
+sub {
+	font-size: smaller;
+	vertical-align: sub;
+}
+
+sup {
+	font-size: smaller;
+	vertical-align: super;
+}
+
+a {
+	color: inherit;
+	text-decoration: underline;
+	transition: color 0.25s ease;
+}
+
+#wrapper {
+	-webkit-overflow-scrolling: touch;
+	align-items: center;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: var(--viewport-height);
+	overflow: hidden;
+	position: relative;
+	z-index: 2;
+	padding: 3.5rem 3.5rem 3.5rem 3.5rem;
+}
+
+#main {
+	--alignment: var(--site-language-alignment);
+	--flex-alignment: var(--site-language-flex-alignment);
+	--indent-left: var(--site-language-indent-left);
+	--indent-right: var(--site-language-indent-right);
+	--border-radius-tl: 0;
+	--border-radius-tr: 0;
+	--border-radius-br: 0;
+	--border-radius-bl: 0;
+	align-items: center;
+	display: flex;
+	flex-grow: 0;
+	flex-shrink: 0;
+	justify-content: center;
+	max-width: 100%;
+	position: relative;
+	text-align: var(--alignment);
+	z-index: 1;
+	background-color: transparent;
+	transition: opacity 0.75s ease-in-out 0s;
+}
+
+#main > .inner {
+	--padding-horizontal: 5rem;
+	--padding-vertical: 5rem;
+	--spacing: 2rem;
+	--width: 80rem;
+	border-radius: var(--border-radius-tl) var(--border-radius-tr) var(--border-radius-br) var(--border-radius-bl);
+	max-width: 100%;
+	position: relative;
+	width: var(--width);
+	z-index: 1;
+	padding: var(--padding-vertical) var(--padding-horizontal);
+}
+
+#main > .inner > * {
+	margin-top: var(--spacing);
+	margin-bottom: var(--spacing);
+}
+
+#main > .inner > :first-child {
+	margin-top: 0 !important;
+}
+
+#main > .inner > :last-child {
+	margin-bottom: 0 !important;
+}
+
+#main > .inner > .full {
+	margin-left: calc(var(--padding-horizontal) * -1);
+	max-width: calc(100% + calc(var(--padding-horizontal) * 2) + 0.4725px);
+	width: calc(100% + calc(var(--padding-horizontal) * 2) + 0.4725px);
+}
+
+#main > .inner > .full:first-child {
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+	margin-top: calc(var(--padding-vertical) * -1) !important;
+}
+
+#main > .inner > .full:last-child {
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+	margin-bottom: calc(var(--padding-vertical) * -1) !important;
+}
+
+#main > .inner > .full.screen {
+	border-radius: 0 !important;
+	max-width: 100vw;
+	position: relative;
+	width: 100vw;
+	left: 50%;
+	margin-left: -50vw;
+	right: auto;
+}
+
+body.is-loading #main {
+	opacity: 0;
+}
+
+body.is-instant #main, body.is-instant #main > .inner > *,body.is-instant #main > .inner > section > *  {
+	transition: none !important;
+}
+
+body.is-instant:after {
+	display: none !important;
+	transition: none !important;
+}
+
+h1, h2, h3, p {
+	direction: var(--site-language-direction);
+	position: relative;
+}
+
+h1 span.p, h2 span.p, h3 span.p, p span.p {
+	display: block;
+	position: relative;
+}
+
+h1 span[style], h2 span[style], h3 span[style], p span[style], h1 strong, h2 strong, h3 strong, p strong, h1 a, h2 a, h3 a, p a, h1 code, h2 code, h3 code, p code, h1 mark, h2 mark, h3 mark, p mark {
+	-webkit-text-fill-color: currentcolor;
+}
+
+h1.style5, h2.style5, h3.style5, p.style5 {
+	color: #000000;
+	font-family: 'Noto Sans', sans-serif;
+	font-size: 4.5em;
+	line-height: 1.125;
+	font-weight: 700;
+}
+
+h1.style5 mark, h2.style5 mark, h3.style5 mark, p.style5 mark {
+	color: #FCCA13;
+	background-color: transparent;
+}
+
+h1.style5 a, h2.style5 a, h3.style5 a, p.style5 a {
+	text-decoration: none;
+}
+
+h1.style5 a:hover, h2.style5 a:hover, h3.style5 a:hover, p.style5 a:hover {
+	text-decoration: underline;
+}
+
+h1.style5 span.p:nth-child(n + 2), h2.style5 span.p:nth-child(n + 2), h3.style5 span.p:nth-child(n + 2), p.style5 span.p:nth-child(n + 2) {
+	margin-top: 1rem;
+}
+
+h1.style3, h2.style3, h3.style3, p.style3 {
+	color: #000000;
+	font-family: 'Noto Sans', sans-serif;
+	letter-spacing: 0.025rem;
+	width: calc(100% + 0.025rem);
+	font-size: 1em;
+	line-height: 2;
+	font-weight: 400;
+}
+
+h1.style3 mark, h2.style3 mark, h3.style3 mark, p.style3 mark {
+	background-color: transparent;
+}
+
+h1.style3 a, h2.style3 a, h3.style3 a, p.style3 a {
+	color: #7A82FF;
+	text-decoration: none;
+}
+
+h1.style3 a:hover, h2.style3 a:hover, h3.style3 a:hover, p.style3 a:hover {
+	color: #747989;
+}
+
+h1.style3 span.p:nth-child(n + 2), h2.style3 span.p:nth-child(n + 2), h3.style3 span.p:nth-child(n + 2), p.style3 span.p:nth-child(n + 2) {
+	margin-top: 1rem;
+}
+
+.icons {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: var(--flex-alignment);
+	letter-spacing: 0;
+	padding: 0;
+}
+
+.icons li {
+	position: relative;
+	z-index: 1;
+}
+
+.icons li a {
+	align-items: center;
+	display: flex;
+	justify-content: center;
+}
+
+.icons li a svg {
+	display: block;
+	position: relative;
+}
+
+.icons li a + svg {
+	display: block;
+	height: 100%;
+	left: 0;
+	pointer-events: none;
+	position: absolute;
+	top: 0;
+	width: 100%;
+	z-index: -1;
+}
+
+.icons li a .label {
+	display: none;
+}
+
+.icons.style2 {
+	font-size: 1.75em;
+	gap: 1.5rem;
+}
+
+.icons.style2:not(:first-child) {
+	margin-top: 2.75rem !important;
+}
+
+.icons.style2:not(:last-child) {
+	margin-bottom: 2.75rem !important;
+}
+
+.icons.style2 li a {
+	border-radius: 100%;
+	height: 2em;
+	width: 2em;
+	transition: transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.icons.style2 li a svg {
+	height: 60%;
+	width: 60%;
+	transition: fill 0.25s ease;
+}
+
+.icons.style2 a {
+	background-color: #FFFFFF;
+}
+
+.icons.style2 a svg {
+	fill: #000000;
+}
+
+.icons.style2 li a + svg {
+	transition: transform 0.25s ease, fill 0.25s ease, stroke 0.25s ease;
+}
+
+.icons.style2 li a:hover {
+	transform: scale(1.1125);
+}
+
+.icons.style2 li a:hover + svg {
+	transform: scale(1.1125);
+}
+
+.buttons {
+	cursor: default;
+	display: flex;
+	justify-content: var(--flex-alignment);
+	letter-spacing: 0;
+	padding: 0;
+}
+
+.buttons li {
+	max-width: 100%;
+}
+
+.buttons li a {
+	align-items: center;
+	justify-content: center;
+	max-width: 100%;
+	text-align: center;
+	text-decoration: none;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.buttons.style2 {
+	gap: 0.75rem;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.buttons.style2:not(:first-child) {
+	margin-top: 2.375rem !important;
+}
+
+.buttons.style2:not(:last-child) {
+	margin-bottom: 2.375rem !important;
+}
+
+.buttons.style2 li a {
+	display: inline-flex;
+	width: auto;
+	height: 4.25rem;
+	line-height: 4.25rem;
+	padding: 0 2.125rem;
+	vertical-align: middle;
+	text-transform: uppercase;
+	font-family: 'Inter', sans-serif;
+	letter-spacing: 0.25rem;
+	padding-left: calc(0.25rem + 2.125rem);
+	font-size: 0.75em;
+	font-weight: 400;
+	border-radius: 2.5rem;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
+	transition: transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.buttons.style2 li a svg {
+	display: block;
+	fill: #000000;
+	flex-grow: 0;
+	flex-shrink: 0;
+	height: 100%;
+	min-width: 18px;
+	width: 1.40625em;
+	margin-left: 0.75rem;
+	margin-right: calc(-0.125em + 0.25rem);
+	transition: fill 0.25s ease;
+}
+
+.buttons.style2 li a .label {
+	direction: var(--site-language-direction);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex-grow: 1;
+	flex-shrink: 1;
+	text-align: left;
+	width: 100%;
+}
+
+.buttons.style2 .button {
+	background-color: #FF6040;
+	color: #000000;
+}
+
+.buttons.style2 li a:hover {
+	transform: scale(1.095);
+}
+
+.buttons.style1 {
+	gap: 0.75rem;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.buttons.style1:not(:first-child) {
+	margin-top: 2.375rem !important;
+}
+
+.buttons.style1:not(:last-child) {
+	margin-bottom: 2.375rem !important;
+}
+
+.buttons.style1 li a {
+	display: inline-flex;
+	width: auto;
+	height: 4.25rem;
+	line-height: 4.25rem;
+	padding: 0 2.125rem;
+	vertical-align: middle;
+	text-transform: uppercase;
+	font-family: 'Inter', sans-serif;
+	letter-spacing: 0.25rem;
+	padding-left: calc(0.25rem + 2.125rem);
+	font-size: 0.75em;
+	font-weight: 400;
+	border-radius: 2.5rem;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
+	transition: transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.buttons.style1 li a svg {
+	display: block;
+	fill: #000000;
+	flex-grow: 0;
+	flex-shrink: 0;
+	height: 100%;
+	min-width: 18px;
+	width: 1.40625em;
+	margin-left: 0.75rem;
+	margin-right: calc(-0.125em + 0.25rem);
+	transition: fill 0.25s ease;
+}
+
+.buttons.style1 li a .label {
+	direction: var(--site-language-direction);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex-grow: 1;
+	flex-shrink: 1;
+	text-align: left;
+	width: 100%;
+}
+
+.buttons.style1 .button {
+	background-color: #FFFFFF;
+	color: #000000;
+}
+
+.buttons.style1 li a:hover {
+	transform: scale(1.095);
+}
+
+.image {
+	display: block;
+	line-height: 0;
+	max-width: 100%;
+	position: relative;
+}
+
+.image .frame {
+	-webkit-backface-visibility: hidden;
+	-webkit-transform: translate3d(0, 0, 0);
+	display: inline-block;
+	max-width: 100%;
+	overflow: hidden;
+	vertical-align: top;
+	width: 100%;
+}
+
+.image .frame img {
+	border-radius: 0 !important;
+	max-width: 100%;
+	vertical-align: top;
+	width: inherit;
+}
+
+.image.full .frame {
+	display: block;
+}
+
+.image.full:first-child .frame {
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+}
+
+.image.full:last-child .frame {
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
+.image.style1 .frame {
+	width: 100vw;
+	transition: none;
+}
+
+.image.style1 img {
+	height: 100% !important;
+	object-fit: cover;
+	object-position: center;
+	width: 100% !important;
+}
+
+.image.style1 .frame img {
+	transition: none;
+}
+
+.container {
+	position: relative;
+}
+
+.container > .wrapper {
+	vertical-align: top;
+	position: relative;
+	max-width: 100%;
+	border-radius: inherit;
+}
+
+.container > .wrapper > .inner {
+	vertical-align: top;
+	position: relative;
+	max-width: 100%;
+	border-radius: inherit;
+	text-align: var(--alignment);
+}
+
+#main .container.full:first-child > .wrapper {
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+}
+
+#main .container.full:last-child > .wrapper {
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
+#main .container.full:first-child > .wrapper > .inner {
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+}
+
+#main .container.full:last-child > .wrapper > .inner {
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
+.container.style1 {
+	display: flex;
+	width: 100%;
+	min-height: 33rem;
+	align-items: center;
+	justify-content: center;
+	background-color: #ff6040;
+	background-image: url('data:image/svg+xml;charset=utf8,%3Csvg%20width%3D%22768%22%20height%3D%22432%22%20viewBox%3D%220%200%20768%20432%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%20%3Cstyle%20type%3D%22text%2Fcss%22%3E%20rect%20%7B%20fill%3A%20rgba(0,0,0,0.169)%3B%20transform%3A%20scale%28155%25%29%3B%20%7D%20%3C%2Fstyle%3E%20%3Crect%20x%3D%22578%22%20y%3D%22218%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.3%3B0.9%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.3%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22578%3B578%3B578%3B578%3B578%3B578%3B578%3B576%3B578%3B578%3B578%3B578%3B578%3B578%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B218%3B218%3B218%3B218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22602%22%20y%3D%2274%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%220.5%3B0.9%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.5%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%22602%3B602%3B602%3B602%3B602%3B602%3B602%3B600%3B602%3B602%3B602%3B602%3B602%3B602%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%2274%3B74%3B74%3B74%3B74%3B74%3B74%3B72%3B74%3B74%3B74%3B74%3B74%3B74%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22362%22%20y%3D%2274%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%220%3B0%3B0%3B0.2%3B0.9%3B0%3B0%3B0%3B0.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%22362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B360%3B362%3B362%3B362%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%2274%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B72%3B74%3B74%3B74%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22290%22%20y%3D%22362%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.2%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.2%3B0.8%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22290%3B290%3B290%3B290%3B290%3B290%3B290%3B288%3B290%3B290%3B290%3B290%3B290%3B290%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22362%3B362%3B362%3B362%3B362%3B362%3B362%3B360%3B362%3B362%3B362%3B362%3B362%3B362%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%2250%22%20y%3D%22122%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.5%3B0.9%3B0%3B0%3B0%3B0.3e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2250%3B50%3B48%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22122%3B122%3B120%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22674%22%20y%3D%22338%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%220%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.4%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%22674%3B674%3B674%3B674%3B674%3B672%3B674%3B674%3B674%3B674%3B674%3B674%3B674%3B674%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%22338%3B338%3B338%3B338%3B338%3B336%3B338%3B338%3B338%3B338%3B338%3B338%3B338%3B338%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22698%22%20y%3D%2298%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.3%3B0.7%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%22698%3B698%3B696%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%2298%3B98%3B96%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%2274%22%20y%3D%222%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%2274%3B74%3B72%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%222%3B2%3B0%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22314%22%20y%3D%22218%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.2%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.2%3B0.9%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22314%3B314%3B314%3B314%3B314%3B314%3B314%3B312%3B314%3B314%3B314%3B314%3B314%3B314%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B218%3B218%3B218%3B218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22554%22%20y%3D%22314%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.3%3B0.9%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22554%3B554%3B554%3B554%3B554%3B552%3B554%3B554%3B554%3B554%3B554%3B554%3B554%3B554%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22314%3B314%3B314%3B314%3B314%3B312%3B314%3B314%3B314%3B314%3B314%3B314%3B314%3B314%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22434%22%20y%3D%22386%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22434%3B434%3B434%3B434%3B434%3B432%3B434%3B434%3B434%3B434%3B434%3B434%3B434%3B434%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22386%3B386%3B386%3B386%3B386%3B384%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%222%22%20y%3D%22362%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.3%3B0.8%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%222%3B2%3B0%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%22362%3B362%3B360%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%2250%22%20y%3D%22266%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.3%3B0.8%3B0%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.3%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2250%3B50%3B50%3B50%3B50%3B50%3B50%3B48%3B50%3B50%3B50%3B50%3B50%3B50%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22266%3B266%3B266%3B266%3B266%3B266%3B266%3B264%3B266%3B266%3B266%3B266%3B266%3B266%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22218%22%20y%3D%22146%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.4e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%3B0%3B0%3B0.5%3B0.7%3B0%3B0%3B0%3B0.4e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22146%3B146%3B144%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22218%22%20y%3D%2226%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B218%3B218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2226%3B26%3B26%3B26%3B26%3B24%3B26%3B26%3B26%3B26%3B26%3B26%3B26%3B26%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22698%22%20y%3D%22194%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.3%3B0.7%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B696%3B698%3B698%3B698%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B192%3B194%3B194%3B194%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22194%22%20y%3D%22242%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%220%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22194%3B194%3B194%3B194%3B194%3B192%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22242%3B242%3B242%3B242%3B242%3B240%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22698%22%20y%3D%222%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.5%3B0.8%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B696%3B698%3B698%3B698%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%222%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B0%3B2%3B2%3B2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22458%22%20y%3D%22242%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%220%3B0%3B0%3B0.5%3B0.9%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%22458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B456%3B458%3B458%3B458%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%22242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B240%3B242%3B242%3B242%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22170%22%20y%3D%22386%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%220%3B0%3B0%3B0.4%3B0.9%3B0%3B0%3B0%3B0.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22170%3B170%3B170%3B170%3B170%3B170%3B170%3B170%3B170%3B170%3B168%3B170%3B170%3B170%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B384%3B386%3B386%3B386%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22530%22%20y%3D%22410%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%220.3%3B0.9%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.3%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%22530%3B530%3B530%3B530%3B530%3B530%3B530%3B528%3B530%3B530%3B530%3B530%3B530%3B530%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%22410%3B410%3B410%3B410%3B410%3B410%3B410%3B408%3B410%3B410%3B410%3B410%3B410%3B410%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22482%22%20y%3D%2250%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.4%3B0.9%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22482%3B482%3B480%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2250%3B50%3B48%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22458%22%20y%3D%22146%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%220%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.3%3B0.7%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%22458%3B458%3B458%3B458%3B458%3B456%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%22146%3B146%3B146%3B146%3B146%3B144%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%3C%2Fsvg%3E');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+
+.container.style1:not(:first-child) {
+	margin-top: 0rem !important;
+}
+
+.container.style1:not(:last-child) {
+	margin-bottom: 0rem !important;
+}
+
+.container.style1 > .wrapper > .inner {
+	--gutters: calc(var(--padding-horizontal) * 2);
+	padding: var(--padding-vertical) var(--padding-horizontal);
+}
+
+.container.style1 > .wrapper {
+	max-width: var(--width);
+	width: 100%;
+}
+
+.container.style1.default > .wrapper > .inner > * {
+	margin-bottom: var(--spacing);
+	margin-top: var(--spacing);
+}
+
+.container.style1.default > .wrapper > .inner > *:first-child {
+	margin-top: 0 !important;
+}
+
+.container.style1.default > .wrapper > .inner > *:last-child {
+	margin-bottom: 0 !important;
+}
+
+.container.style1.columns > .wrapper > .inner {
+	flex-wrap: wrap;
+	display: flex;
+	align-items: center;
+}
+
+.container.style1.columns > .wrapper > .inner > * {
+	flex-grow: 0;
+	flex-shrink: 0;
+	max-width: 100%;
+	text-align: var(--alignment);
+	padding: 0 0 0 var(--gutters);
+}
+
+.container.style1.columns > .wrapper > .inner > * > * {
+	margin-bottom: var(--spacing);
+	margin-top: var(--spacing);
+}
+
+.container.style1.columns > .wrapper > .inner > * > *:first-child {
+	margin-top: 0 !important;
+}
+
+.container.style1.columns > .wrapper > .inner > * > *:last-child {
+	margin-bottom: 0 !important;
+}
+
+.container.style1.columns > .wrapper > .inner > *:first-child {
+	margin-left: calc(var(--gutters) * -1);
+}
+
+.container.style1.default > .wrapper > .inner > .full {
+	margin-left: calc(var(--padding-horizontal) * -1);
+	max-width: none !important;
+	width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+}
+
+.container.style1.default > .wrapper > .inner > .full:first-child {
+	margin-top: calc(var(--padding-vertical) * -1) !important;
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+}
+
+.container.style1.default > .wrapper > .inner > .full:last-child {
+	margin-bottom: calc(var(--padding-vertical) * -1) !important;
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
+.container.style1.columns > .wrapper > .inner > div > .full {
+	margin-left: calc(var(--gutters) * -0.5);
+	max-width: none !important;
+	width: calc(100% + var(--gutters) + 0.4725px);
+}
+
+.container.style1.columns > .wrapper > .inner > div:first-child > .full {
+	margin-left: calc(var(--padding-horizontal) * -1);
+	width: calc(100% + var(--padding-horizontal) + calc(var(--gutters) * 0.5) + 0.4725px);
+}
+
+.container.style1.columns > .wrapper > .inner > div:last-child > .full {
+	width: calc(100% + var(--padding-horizontal) + calc(var(--gutters) * 0.5) + 0.4725px);
+}
+
+.container.style1.columns > .wrapper > .inner > div > .full:first-child {
+	margin-top: calc(var(--padding-vertical) * -1) !important;
+}
+
+.container.style1.columns > .wrapper > .inner > div > .full:last-child {
+	margin-bottom: calc(var(--padding-vertical) * -1) !important;
+}
+
+.container.style1.columns > .wrapper > .inner > .full {
+	align-self: stretch;
+	min-height: 33rem;
+}
+
+.container.style1.columns > .wrapper > .inner > .full:first-child {
+	border-bottom-left-radius: inherit;
+	border-top-left-radius: inherit;
+}
+
+.container.style1.columns > .wrapper > .inner > .full:last-child {
+	border-bottom-right-radius: inherit;
+	border-top-right-radius: inherit;
+}
+
+.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child {
+	border-radius: inherit;
+	height: calc(100% + (var(--padding-vertical) * 2));
+}
+
+.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child > * {
+	border-radius: inherit;
+	height: 100%;
+	position: absolute;
+	width: 100%;
+}
+
+#container04 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container04 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+.container.style2 {
+	--alignment: left;
+	--flex-alignment: flex-start;
+	--indent-left: 1;
+	--indent-right: 0;
+	display: flex;
+	width: 100%;
+	min-height: 33rem;
+	align-items: center;
+	justify-content: center;
+	background-color: #FFFFFF;
+	background-image: url('data:image/svg+xml;charset=utf8,%3Csvg%20width%3D%22768%22%20height%3D%22432%22%20viewBox%3D%220%200%20768%20432%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%20%3Cstyle%20type%3D%22text%2Fcss%22%3E%20rect%20%7B%20fill%3A%20rgba(0,0,0,0.078)%3B%20transform%3A%20scale%28155%25%29%3B%20%7D%20%3C%2Fstyle%3E%20%3Crect%20x%3D%22578%22%20y%3D%22218%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.3%3B0.9%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.3%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22578%3B578%3B578%3B578%3B578%3B578%3B578%3B576%3B578%3B578%3B578%3B578%3B578%3B578%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B218%3B218%3B218%3B218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%2210000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22602%22%20y%3D%2274%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%220.5%3B0.9%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.5%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%22602%3B602%3B602%3B602%3B602%3B602%3B602%3B600%3B602%3B602%3B602%3B602%3B602%3B602%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%2274%3B74%3B74%3B74%3B74%3B74%3B74%3B72%3B74%3B74%3B74%3B74%3B74%3B74%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226348ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22544ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22362%22%20y%3D%2274%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%220%3B0%3B0%3B0.2%3B0.9%3B0%3B0%3B0%3B0.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%22362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B360%3B362%3B362%3B362%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%2274%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B72%3B74%3B74%3B74%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%229696ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22632ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22290%22%20y%3D%22362%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.2%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.2%3B0.8%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22290%3B290%3B290%3B290%3B290%3B290%3B290%3B288%3B290%3B290%3B290%3B290%3B290%3B290%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22362%3B362%3B362%3B362%3B362%3B362%3B362%3B360%3B362%3B362%3B362%3B362%3B362%3B362%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223609ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%2250%22%20y%3D%22122%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.5%3B0.9%3B0%3B0%3B0%3B0.3e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2250%3B50%3B48%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22122%3B122%3B120%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%3B122%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223000ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22674%22%20y%3D%22338%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%220%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.4%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%22674%3B674%3B674%3B674%3B674%3B672%3B674%3B674%3B674%3B674%3B674%3B674%3B674%3B674%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%22338%3B338%3B338%3B338%3B338%3B336%3B338%3B338%3B338%3B338%3B338%3B338%3B338%3B338%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%229087ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22208ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22698%22%20y%3D%2298%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.3%3B0.7%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%22698%3B698%3B696%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%2298%3B98%3B96%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%3B98%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223913ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22531ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%2274%22%20y%3D%222%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%2274%3B74%3B72%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%3B74%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%222%3B2%3B0%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%229391ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22658ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22314%22%20y%3D%22218%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.2%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.2%3B0.9%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22314%3B314%3B314%3B314%3B314%3B314%3B314%3B312%3B314%3B314%3B314%3B314%3B314%3B314%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B218%3B218%3B218%3B218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%224826ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22554%22%20y%3D%22314%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.3%3B0.9%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22554%3B554%3B554%3B554%3B554%3B552%3B554%3B554%3B554%3B554%3B554%3B554%3B554%3B554%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22314%3B314%3B314%3B314%3B314%3B312%3B314%3B314%3B314%3B314%3B314%3B314%3B314%3B314%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%228478ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22434%22%20y%3D%22386%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22434%3B434%3B434%3B434%3B434%3B432%3B434%3B434%3B434%3B434%3B434%3B434%3B434%3B434%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22386%3B386%3B386%3B386%3B386%3B384%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%225435ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%222%22%20y%3D%22362%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.3%3B0.8%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%222%3B2%3B0%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%22362%3B362%3B360%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%3B362%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%225739ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22653ms%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%2250%22%20y%3D%22266%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.3%3B0.8%3B0%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.3%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2250%3B50%3B50%3B50%3B50%3B50%3B50%3B48%3B50%3B50%3B50%3B50%3B50%3B50%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22266%3B266%3B266%3B266%3B266%3B266%3B266%3B264%3B266%3B266%3B266%3B266%3B266%3B266%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%227261ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22218%22%20y%3D%22146%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.4e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%3B0%3B0%3B0.5%3B0.7%3B0%3B0%3B0%3B0.4e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22146%3B146%3B144%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%228174ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22218%22%20y%3D%2226%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22218%3B218%3B218%3B218%3B218%3B216%3B218%3B218%3B218%3B218%3B218%3B218%3B218%3B218%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2226%3B26%3B26%3B26%3B26%3B24%3B26%3B26%3B26%3B26%3B26%3B26%3B26%3B26%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%227870ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22698%22%20y%3D%22194%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.3%3B0.7%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B696%3B698%3B698%3B698%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B192%3B194%3B194%3B194%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226957ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22194%22%20y%3D%22242%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%220%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.2%3B0.8%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22194%3B194%3B194%3B194%3B194%3B192%3B194%3B194%3B194%3B194%3B194%3B194%3B194%3B194%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22242%3B242%3B242%3B242%3B242%3B240%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%228783ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22698%22%20y%3D%222%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220%3B0%3B0%3B0.5%3B0.8%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B698%3B696%3B698%3B698%3B698%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%222%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B2%3B0%3B2%3B2%3B2%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226043ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22458%22%20y%3D%22242%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%220%3B0%3B0%3B0.5%3B0.9%3B0%3B0%3B0%3B0.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%22458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B456%3B458%3B458%3B458%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%22242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B242%3B240%3B242%3B242%3B242%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%226652ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22614ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22170%22%20y%3D%22386%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%220%3B0%3B0%3B0.4%3B0.9%3B0%3B0%3B0%3B0.4e0%3B0.9%3B1%3B0.9%3B0.4e0%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22170%3B170%3B170%3B170%3B170%3B170%3B170%3B170%3B170%3B170%3B168%3B170%3B170%3B170%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%22386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B386%3B384%3B386%3B386%3B386%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%224522ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22716ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22530%22%20y%3D%22410%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.3%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%220.3%3B0.9%3B0%3B0%3B0%3B0.3e0%3B0.9%3B1%3B0.9%3B0.3e0%3B0%3B0%3B0%3B0.3%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%22530%3B530%3B530%3B530%3B530%3B530%3B530%3B528%3B530%3B530%3B530%3B530%3B530%3B530%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%22410%3B410%3B410%3B410%3B410%3B410%3B410%3B408%3B410%3B410%3B410%3B410%3B410%3B410%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%224217ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22886ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22482%22%20y%3D%2250%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220.5e0%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%220.5e0%3B0.9%3B1%3B0.9%3B0.5e0%3B0%3B0%3B0%3B0.4%3B0.9%3B0%3B0%3B0%3B0.5e0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%22482%3B482%3B480%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%3B482%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2250%3B50%3B48%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%3B50%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%223304ms%22%20repeatCount%3D%22indefinite%22%20values%3D%2220%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%20%3Crect%20x%3D%22458%22%20y%3D%22146%22%20width%3D%2220%22%20height%3D%2220%22%20fill-opacity%3D%220%22%3E%20%3Canimate%20attributeName%3D%22fill-opacity%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%220%3B0%3B0%3B0.2e0%3B0.9%3B1%3B0.9%3B0.2e0%3B0%3B0%3B0%3B0.3%3B0.7%3B0%22%20%2F%3E%20%3Canimate%20attributeName%3D%22x%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%22458%3B458%3B458%3B458%3B458%3B456%3B458%3B458%3B458%3B458%3B458%3B458%3B458%3B458%22%20%2F%3E%20%3Canimate%20attributeName%3D%22y%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%22146%3B146%3B146%3B146%3B146%3B144%3B146%3B146%3B146%3B146%3B146%3B146%3B146%3B146%22%20%2F%3E%20%3Canimate%20attributeName%3D%22width%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3Canimate%20attributeName%3D%22height%22%20dur%3D%225130ms%22%20repeatCount%3D%22indefinite%22%20begin%3D%22932ms%22%20values%3D%2220%3B20%3B20%3B20%3B20%3B24%3B20%3B20%3B20%3B20%3B20%3B20%3B20%3B20%22%20%2F%3E%20%3C%2Frect%3E%3C%2Fsvg%3E');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+
+.container.style2:not(:first-child) {
+	margin-top: 0rem !important;
+}
+
+.container.style2:not(:last-child) {
+	margin-bottom: 0rem !important;
+}
+
+.container.style2 > .wrapper > .inner {
+	--gutters: calc(var(--padding-horizontal) * 2);
+	padding: var(--padding-vertical) var(--padding-horizontal);
+}
+
+.container.style2 > .wrapper {
+	max-width: var(--width);
+	width: 100%;
+}
+
+.container.style2.default > .wrapper > .inner > * {
+	margin-bottom: var(--spacing);
+	margin-top: var(--spacing);
+}
+
+.container.style2.default > .wrapper > .inner > *:first-child {
+	margin-top: 0 !important;
+}
+
+.container.style2.default > .wrapper > .inner > *:last-child {
+	margin-bottom: 0 !important;
+}
+
+.container.style2.columns > .wrapper > .inner {
+	flex-wrap: wrap;
+	display: flex;
+	align-items: center;
+}
+
+.container.style2.columns > .wrapper > .inner > * {
+	flex-grow: 0;
+	flex-shrink: 0;
+	max-width: 100%;
+	text-align: var(--alignment);
+	padding: 0 0 0 var(--gutters);
+}
+
+.container.style2.columns > .wrapper > .inner > * > * {
+	margin-bottom: var(--spacing);
+	margin-top: var(--spacing);
+}
+
+.container.style2.columns > .wrapper > .inner > * > *:first-child {
+	margin-top: 0 !important;
+}
+
+.container.style2.columns > .wrapper > .inner > * > *:last-child {
+	margin-bottom: 0 !important;
+}
+
+.container.style2.columns > .wrapper > .inner > *:first-child {
+	margin-left: calc(var(--gutters) * -1);
+}
+
+.container.style2.default > .wrapper > .inner > .full {
+	margin-left: calc(var(--padding-horizontal) * -1);
+	max-width: none !important;
+	width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+}
+
+.container.style2.default > .wrapper > .inner > .full:first-child {
+	margin-top: calc(var(--padding-vertical) * -1) !important;
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+}
+
+.container.style2.default > .wrapper > .inner > .full:last-child {
+	margin-bottom: calc(var(--padding-vertical) * -1) !important;
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+
+.container.style2.columns > .wrapper > .inner > div > .full {
+	margin-left: calc(var(--gutters) * -0.5);
+	max-width: none !important;
+	width: calc(100% + var(--gutters) + 0.4725px);
+}
+
+.container.style2.columns > .wrapper > .inner > div:first-child > .full {
+	margin-left: calc(var(--padding-horizontal) * -1);
+	width: calc(100% + var(--padding-horizontal) + calc(var(--gutters) * 0.5) + 0.4725px);
+}
+
+.container.style2.columns > .wrapper > .inner > div:last-child > .full {
+	width: calc(100% + var(--padding-horizontal) + calc(var(--gutters) * 0.5) + 0.4725px);
+}
+
+.container.style2.columns > .wrapper > .inner > div > .full:first-child {
+	margin-top: calc(var(--padding-vertical) * -1) !important;
+}
+
+.container.style2.columns > .wrapper > .inner > div > .full:last-child {
+	margin-bottom: calc(var(--padding-vertical) * -1) !important;
+}
+
+.container.style2.columns > .wrapper > .inner > .full {
+	align-self: stretch;
+	min-height: 33rem;
+}
+
+.container.style2.columns > .wrapper > .inner > .full:first-child {
+	border-bottom-left-radius: inherit;
+	border-top-left-radius: inherit;
+}
+
+.container.style2.columns > .wrapper > .inner > .full:last-child {
+	border-bottom-right-radius: inherit;
+	border-top-right-radius: inherit;
+}
+
+.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child {
+	border-radius: inherit;
+	height: calc(100% + (var(--padding-vertical) * 2));
+}
+
+.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child > * {
+	border-radius: inherit;
+	height: 100%;
+	position: absolute;
+	width: 100%;
+}
+
+#container06 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container06 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container05 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container05 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container07 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container07 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container02 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container02 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container11 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container11 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container08 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container08 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container09 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container09 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container12 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container12 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container13 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container13 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container14 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container14 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container03 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container03 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container10 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container10 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container01 > .wrapper > .inner > :nth-child(1) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+#container01 > .wrapper > .inner > :nth-child(2) {
+	width: calc(50% + (var(--gutters) / 2));
+}
+
+@media (max-width: 1920px) {
+	
+}
+
+@media (max-width: 1680px) {
+	html {
+		font-size: 12pt;
+	}
+}
+
+@media (max-width: 1280px) {
+	html {
+		font-size: 12pt;
+	}
+}
+
+@media (max-width: 1024px) {
+	
+}
+
+@media (max-width: 980px) {
+	html {
+		font-size: 10pt;
+	}
+	
+	.container.style1 {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+	}
+	
+	.container.style1.columns > .wrapper > .inner {
+		flex-direction: column !important;
+		flex-wrap: nowrap !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > span {
+		height: 0;
+		margin-top: calc(var(--gutters) * -1);
+		pointer-events: none;
+		visibility: hidden;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > *:first-child {
+		margin-left: 0 !important;
+		padding-top: 0 !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > * {
+		padding: calc(var(--gutters) * 0.5) 0 !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > *:last-child {
+		padding-bottom: 0 !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div > .full {
+		margin-left: calc(var(--padding-horizontal) * -1);
+		width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:first-of-type > .full {
+		margin-left: calc(var(--padding-horizontal) * -1);
+		width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:last-of-type > .full {
+		margin-left: calc(var(--padding-horizontal) * -1);
+		width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div > .full:first-child {
+		margin-top: calc(var(--gutters) * -0.5) !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div > .full:last-child {
+		margin-bottom: calc(var(--gutters) * -0.5) !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:first-of-type > .full:first-child {
+		margin-top: calc(var(--padding-vertical) * -1) !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:last-of-type > .full:last-child {
+		margin-bottom: calc(var(--padding-vertical) * -1) !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:first-of-type, .container.style1.columns > .wrapper > .inner > div:first-of-type > .full:first-child {
+		border-top-left-radius: inherit;
+		border-top-right-radius: inherit;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:last-of-type, .container.style1.columns > .wrapper > .inner > div:last-of-type > .full:last-child {
+		border-bottom-left-radius: inherit;
+		border-bottom-right-radius: inherit;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:first-of-type, .container.style1.columns > .wrapper > .inner > div:first-of-type > .full:last-child {
+		border-bottom-left-radius: 0 !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > div:last-of-type, .container.style1.columns > .wrapper > .inner > div:last-of-type > .full:first-child {
+		border-top-right-radius: 0 !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child {
+		height: auto;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child > * {
+		height: auto;
+		position: relative;
+		width: auto;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child.image img {
+		max-height: 35rem;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child.slideshow .bg {
+		min-height: 35rem;
+	}
+	
+	#container04 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container04 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	.container.style2 {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+	}
+	
+	.container.style2.columns > .wrapper > .inner {
+		flex-direction: column !important;
+		flex-wrap: nowrap !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > span {
+		height: 0;
+		margin-top: calc(var(--gutters) * -1);
+		pointer-events: none;
+		visibility: hidden;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > *:first-child {
+		margin-left: 0 !important;
+		padding-top: 0 !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > * {
+		padding: calc(var(--gutters) * 0.5) 0 !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > *:last-child {
+		padding-bottom: 0 !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div > .full {
+		margin-left: calc(var(--padding-horizontal) * -1);
+		width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:first-of-type > .full {
+		margin-left: calc(var(--padding-horizontal) * -1);
+		width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:last-of-type > .full {
+		margin-left: calc(var(--padding-horizontal) * -1);
+		width: calc(100% + (var(--padding-horizontal) * 2) + 0.4725px);
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div > .full:first-child {
+		margin-top: calc(var(--gutters) * -0.5) !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div > .full:last-child {
+		margin-bottom: calc(var(--gutters) * -0.5) !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:first-of-type > .full:first-child {
+		margin-top: calc(var(--padding-vertical) * -1) !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:last-of-type > .full:last-child {
+		margin-bottom: calc(var(--padding-vertical) * -1) !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:first-of-type, .container.style2.columns > .wrapper > .inner > div:first-of-type > .full:first-child {
+		border-top-left-radius: inherit;
+		border-top-right-radius: inherit;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:last-of-type, .container.style2.columns > .wrapper > .inner > div:last-of-type > .full:last-child {
+		border-bottom-left-radius: inherit;
+		border-bottom-right-radius: inherit;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:first-of-type, .container.style2.columns > .wrapper > .inner > div:first-of-type > .full:last-child {
+		border-bottom-left-radius: 0 !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > div:last-of-type, .container.style2.columns > .wrapper > .inner > div:last-of-type > .full:first-child {
+		border-top-right-radius: 0 !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child {
+		height: auto;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child > * {
+		height: auto;
+		position: relative;
+		width: auto;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child.image img {
+		max-height: 35rem;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child.slideshow .bg {
+		min-height: 35rem;
+	}
+	
+	#container06 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container06 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container05 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container05 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container07 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container07 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container02 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container02 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container11 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container11 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container08 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container08 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container09 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container09 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container12 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container12 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container13 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container13 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container14 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container14 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container03 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container03 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container10 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container10 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container01 > .wrapper > .inner > :nth-child(1) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+	
+	#container01 > .wrapper > .inner > :nth-child(2) {
+		--alignment: center;
+		--flex-alignment: center;
+		--indent-left: 1;
+		--indent-right: 1;
+		min-height: 100% !important;
+		width: 100% !important;
+	}
+}
+
+@media (max-width: 736px) {
+	html {
+		font-size: 12pt;
+	}
+	
+	
+	
+	#wrapper {
+		padding: 0rem 0rem 0rem 0rem;
+	}
+	
+	#main > .inner {
+		--padding-horizontal: 2rem;
+		--padding-vertical: 3.5rem;
+		--spacing: 2rem;
+	}
+	
+	h1.style5, h2.style5, h3.style5, p.style5 {
+		letter-spacing: 0rem;
+		width: 100%;
+		font-size: 3.25em;
+		line-height: 1.125;
+	}
+	
+	h1.style3, h2.style3, h3.style3, p.style3 {
+		letter-spacing: 0.021875rem;
+		width: calc(100% + 0.021875rem);
+		font-size: 1em;
+		line-height: 2;
+	}
+	
+	.icons.style2 {
+		font-size: 1.75em;
+		gap: 1rem;
+	}
+	
+	.icons.style2:not(:first-child) {
+		margin-top: 2.0625rem !important;
+	}
+	
+	.icons.style2:not(:last-child) {
+		margin-bottom: 2.0625rem !important;
+	}
+	
+	.buttons.style2 {
+		gap: 0.75rem;
+	}
+	
+	.buttons.style2:not(:first-child) {
+		margin-top: 1.78125rem !important;
+	}
+	
+	.buttons.style2:not(:last-child) {
+		margin-bottom: 1.78125rem !important;
+	}
+	
+	.buttons.style2 li a {
+		letter-spacing: 0.25rem;
+		padding-left: calc(0.25rem + 2.125rem);
+		font-size: 0.75em;
+	}
+	
+	.buttons.style2 li a svg {
+		width: 1.40625em;
+	}
+	
+	.buttons.style1 {
+		gap: 0.75rem;
+	}
+	
+	.buttons.style1:not(:first-child) {
+		margin-top: 1.78125rem !important;
+	}
+	
+	.buttons.style1:not(:last-child) {
+		margin-bottom: 1.78125rem !important;
+	}
+	
+	.buttons.style1 li a {
+		letter-spacing: 0.25rem;
+		padding-left: calc(0.25rem + 2.125rem);
+		font-size: 0.75em;
+	}
+	
+	.buttons.style1 li a svg {
+		width: 1.40625em;
+	}
+	
+	.image.style1 .frame {
+		height: 20.46875rem !important;
+	}
+	
+	.image.style1 img {
+		height: 100% !important;
+		object-fit: cover;
+		object-position: center;
+		width: 100% !important;
+	}
+	
+	.container.style1:not(:first-child) {
+		margin-top: 0rem !important;
+	}
+	
+	.container.style1:not(:last-child) {
+		margin-bottom: 0rem !important;
+	}
+	
+	.container.style1 > .wrapper > .inner {
+		--gutters: calc(var(--padding-vertical) * 2);
+	}
+	
+	.container.style1 {
+		min-height: 24.75rem;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > * {
+		padding: calc(var(--gutters) * 0.5) 0 !important;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full {
+		min-height: 24.75rem;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child.image img {
+		max-height: none;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full > .full:first-child:last-child.slideshow .bg {
+		min-height: auto;
+	}
+	
+	.container.style2:not(:first-child) {
+		margin-top: 0rem !important;
+	}
+	
+	.container.style2:not(:last-child) {
+		margin-bottom: 0rem !important;
+	}
+	
+	.container.style2 > .wrapper > .inner {
+		--gutters: calc(var(--padding-vertical) * 2);
+	}
+	
+	.container.style2 {
+		min-height: 24.75rem;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > * {
+		padding: calc(var(--gutters) * 0.5) 0 !important;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full {
+		min-height: 24.75rem;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child.image img {
+		max-height: none;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full > .full:first-child:last-child.slideshow .bg {
+		min-height: auto;
+	}
+}
+
+@media (max-width: 480px) {
+	#wrapper {
+		padding: 0rem 0rem 0rem 0rem;
+	}
+	
+	#main > .inner {
+		--spacing: 1.75rem;
+	}
+	
+	.image.style1 .frame {
+		height: 16.375rem !important;
+	}
+}
+
+@media (max-width: 360px) {
+	#wrapper {
+		padding: 0rem 0rem 0rem 0rem;
+	}
+	
+	#main > .inner {
+		--padding-horizontal: 1.5rem;
+		--padding-vertical: 2.625rem;
+		--spacing: 1.5rem;
+	}
+	
+	h1.style5, h2.style5, h3.style5, p.style5 {
+		font-size: 3.25em;
+	}
+	
+	h1.style3, h2.style3, h3.style3, p.style3 {
+		font-size: 1em;
+	}
+	
+	.icons.style2 {
+		gap: 0.75rem;
+	}
+	
+	.buttons.style2 {
+		gap: 0.5625rem;
+	}
+	
+	.buttons.style1 {
+		gap: 0.5625rem;
+	}
+	
+	.image.style1 .frame {
+		height: 14.328125rem !important;
+	}
+	
+	.container.style1 > .wrapper > .inner {
+		--gutters: calc(var(--padding-vertical) * 2);
+	}
+	
+	.container.style1 {
+		min-height: 16.5rem;
+	}
+	
+	.container.style1.columns > .wrapper > .inner > .full {
+		min-height: 16.5rem;
+	}
+	
+	.container.style2 > .wrapper > .inner {
+		--gutters: calc(var(--padding-vertical) * 2);
+	}
+	
+	.container.style2 {
+		min-height: 16.5rem;
+	}
+	
+	.container.style2.columns > .wrapper > .inner > .full {
+		min-height: 16.5rem;
+	}
+}

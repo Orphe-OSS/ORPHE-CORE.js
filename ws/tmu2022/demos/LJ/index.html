@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css" />
+    <meta charset="utf-8" />
+</head>
+
+<body class="text-black">
+    <div class="container">
+        <nav class="navbar bg-light" style="font-size:1.2em;">
+            <div id="toolkit_placeholder" class="container-fluid justify-content-between" style="padding:0px;margin:0px;"></div>
+        </nav>
+
+        <div class="row mt-4">
+            <div class="col-sm-12">
+                <h1><a>LONG JUMP sonification</a></h1>
+
+                <p>
+                    <!-- 走幅跳のソニフィケーションを行います。 -->
+                </p>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-3">
+                <div class="rootin">
+                    <div class ="button1">
+                        <input class="button" id="rootin" type="checkbox" onclick="OnClick();"><label for="rootin"><a>Your ROOTIN</a></label>
+                    </div>
+                    <input type="range" class="input-range" value="4" min="2" max="6" onchange="changedSlider(this);">
+                </div>
+                <ul style="list-style: none;" class="list">
+                    <p>　</p>
+                    <li>ACC : <span id="ACC"></span></li>
+                    <p></p>
+                    <li>acc.x : <span id="acc0"></span></li>
+                    <p></p>
+                    <li>acc.y : <span id="acc1"></span></li>
+                    <p></p>
+                    <li>acc.z : <span id="acc2"></span></li>
+                    <p></p>
+                    <li>gyro.x : <span id="gyro0"></span></li>
+                    <p></p>
+                    <li>gyro.y : <span id="gyro1"></span></li>
+                    <p></p>
+                    <li>gyro.z : <span id="gyro2"></span></li>
+                </ul>
+            </div>
+            <div class="col-9">
+                <div id="canvas"></div>
+                <p style="font-size:0.5em" id="input_data"></p>
+                <p></p>
+                <p style="font-size:0.5em" id="inputgyro_data"></p>
+            </div> 
+        </div>
+
+        <div class="row">
+            <div class="col-12 m-0 p-0" id="canvas_placeholder">
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/CoreToolkit.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+        crossorigin="anonymous"></script>
+     <script src="dtw.js"></script>
+     <script src="fft.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/p5@1.5.0/lib/p5.js"></script>
+
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.5.0/addons/p5.sound.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.5.0/addons/p5.sound.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aldrich&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css" />
+
+    <script>
+
+
+let osc;
+let isPlaying = false;
+let Hz;
+let recosc;
+let recisPlaying = false;
+let recACC;
+
+let rec1osc;
+let rec2osc;
+let rec3osc;
+
+let rec1isPlaying = false;
+let rec2isPlaying = false;
+let rec3isPlaying = false;
+
+var ACCdata = [];
+
+// var fft = new FFTJS(512);
+// var input_fft = [];
+// var sampling_rate = 50; // [Hz]
+// var freq_step = sampling_rate / 512;
+// var out = fft.createComplexArray();
+
+var theta = 0.0;
+var d = 25;
+
+var value = 0;
+
+let count = 0;
+let h = 100;
+
+function setup() {
+            // let canvas = createCanvas(500, 300);
+            let canvas = createCanvas(950,500);
+            canvas.parent('#canvas');
+
+            osc = new p5.Oscillator('sine');
+            recosc = new p5.Oscillator('sine');
+            rec1osc = new p5.Oscillator('sine');
+            rec2osc = new p5.Oscillator('sine');
+            rec3osc = new p5.Oscillator('sine');
+
+            // //fft
+            // setInterval(function () {
+            //     //input_fft.push(10 * sin(theta));
+            //     input_fft.push(ACC * 200);
+            //     theta = theta + TWO_PI / d;
+            //     if (input_fft.length > 500) {
+            //         input_fft.shift();
+            //     }
+            // }, 20);
+        }
+
+        function draw() {
+            background(255);
+            osc.freq(ACC * 2000);
+
+            // if (input_fft.length >= 500) {
+            //     const data = fft.toComplexArray(input_fft);
+            //     fft.realTransform(out, data);
+            //     beginShape();
+            //     for (let i = 0; i < input_fft.length / 2; i++) {
+            //         vertex(i, -0.0001 * (pow(out[i], 2)) + height - 20);
+            //         value = 0.1 * (pow(out[i], 2)) * i;
+            //     }
+            //     // console.log(value / input_fft.length);
+            //     Hz = value / input_fft.length;
+            //     osc.freq(Hz + 250);
+            //     endShape();
+                
+            //     fill(0);
+            //     textSize(7);
+            //     textAlign(CENTER);
+            //     for (let i = 0; i < input_fft.length / 2; i+=25) {
+            //         text((i * freq_step).toFixed(1), i, height - 10);
+            //     }
+            // }
+
+
+            // let x = 0;
+            // noFill();
+            // stroke(150, 0, 0);
+            // beginShape();
+            // for (let g of myacc) {
+            //     vertex(x, 100 * g.x + 220);
+            //     x++;
+            //     // console.log("g.x:" + g.x);
+            // }
+            // endShape();
+
+            // x = 0;
+            // stroke(0, 150, 0);
+            // beginShape();
+            // for (let g of myacc) {
+            //     vertex(x, 100 * g.y + 220);
+            //     x++;
+            // }
+            // endShape();
+
+            // x = 0;
+            // stroke(0, 0, 150);
+            // beginShape();
+            // for (let g of myacc) {
+            //     vertex(x, 100 * g.z + 220);
+            //     x++;
+            // }
+            // endShape();
+
+            // x = 0;
+            // stroke(150, 0, 0);
+            // beginShape();
+            // for (let g of mygyro) {
+            //     vertex(x, 100 * g.x + 150);
+            //     x++;
+            //     // console.log("g._x:" + g._x);
+            //     // console.log(myACC);
+            // }
+            // endShape();
+
+            // x = 0;
+            // stroke(0, 150, 0);
+            // beginShape();
+            // for (let g of mygyro) {
+            //     vertex(x, 100 * g.y + 150);
+            //     x++;
+            // }
+            // endShape();
+
+            // x = 0;
+            // stroke(0, 0, 150);
+            // beginShape();
+            // for (let g of mygyro) {
+            //     vertex(x, 100 * g.z + 150);
+            //     x++;
+            // }
+            // endShape();
+
+            let x = 0;
+            stroke(200, 200, 200);
+            beginShape();
+            for (let g of myACC) {
+                vertex(x, 100 * g + 50);
+                //console.log(ACC);
+                x++;
+            }
+            endShape();
+
+            if (isPlaying == true){
+                myACCwave.push(ACC);
+                count += 1;
+            }
+            else if(count >= 1){
+                x = 0;
+                stroke(0);
+                beginShape();
+                for(let g of myACCwave) {
+                    vertex(x, 100 * g + 50 + h);
+                    x++
+                }
+                endShape();
+            }
+
+            x = 0;
+            stroke(0);
+            beginShape();
+            for(let g of myACCwave) {
+                vertex(x, 100 * g + 50 + h);
+                x++
+            }
+            endShape();
+
+
+            if (recisPlaying == true){
+                for (let g = 0; g < myACCwave.length * 5000; g++) {
+                    recosc.freq(myACCwave[Math.floor(g / 5000)] * 2000);
+                    // console.log(myACCwave[Math.floor(g/120)] * 2000);
+                }
+                recosc.stop();
+                recisPlaying = false;
+                // console.log(ACCdata[0].length);
+            }
+
+            if (rec1isPlaying == true){
+                for (let g = 0; g < ACCdata[0].length * 5000; g++) {
+                    rec1osc.freq(ACCdata[0][Math.floor(g / 5000)] * 2000);
+                    // console.log(myACCwave[Math.floor(g/120)] * 2000);
+                }
+                rec1osc.stop();
+                rec1isPlaying = false;
+                // console.log(ACCdata[0].length);
+            }
+
+            if (rec2isPlaying == true){
+                for (let g = 0; g < ACCdata[1].length * 5000; g++) {
+                    rec2osc.freq(ACCdata[1][Math.floor(g / 5000)] * 2000);
+                    // console.log(myACCwave[Math.floor(g/120)] * 2000);
+                }
+                rec2osc.stop();
+                rec2isPlaying = false;
+                // console.log(ACCdata[0].length);
+            }
+
+            if (rec3isPlaying == true){
+                for (let g = 0; g < ACCdata[2].length * 5000; g++) {
+                    rec3osc.freq(ACCdata[2][Math.floor(g / 5000)] * 2000);
+                    // console.log(myACCwave[Math.floor(g/120)] * 2000);
+                }
+                rec3osc.stop();
+                rec3isPlaying = false;
+                // console.log(ACCdata[0].length);
+            }
+
+            for(let i = 0; i < ACCdata.length; i++){
+                    x = 0;
+                    stroke(100);
+                    beginShape();
+                    for(let g = 0; g < ACCdata[i].length; g++){
+                        vertex(x, 100 * ACCdata[i][g] + 150 + ACCdata.length * 100 - i * 100);
+                        x++
+                    }
+                    endShape();
+                }
+        }
+
+        let input_acc = [];
+        let input_gyro = [];
+        let input_myACC =[];
+
+        let gesture = {
+            //ACC
+            'rootin':
+            // [0.06833437735038171, 0.07744567084866887, 0.08760767000218718, 0.08981161475790567, 0.08106131698889281, 0.07679727767652494, 0.0670804135109679, 0.05407868979433826, 0.04426883711708692, 0.03473464839499949, 0.03046800783671746, 0.0264188648598157, 0.054381493627368355, 0.09075597822482138, 0.07428696283471678, 0.06057353355741942, 0.15282782954086138, 0.30463170647243665, 0.21823264361451478, 0.13671592981972042, 0.19151309495636418, 0.1874236855572493, 0.10878232904275462, 0.04758107361011087, 0.04305696102723074, 0.012984575015293697, 0.016300186685724652, 0.029114761175705477, 0.03176523677853267, 0.03549817490587404, 0.04435698224017328, 0.046633545563506074, 0.047770148715387054, 0.05307591182922277, 0.056676269693732774, 0.08405815255080203, 0.16487012207007382, 0.3523485337226572, 0.248336191484279, 0.1460459346602207, 0.1763203354848637, 0.1631125782433643, 0.10353778206115476, 0.07188382327821555, 0.04626252463908803, 0.020439169308094855, 0.013452610901015852, 0.020688127087542005, 0.026017358481587777, 0.030216548134312134, 0.03681802568997274, 0.040740818209145005, 0.04254489704539917, 0.0399128973024165, 0.0292824073672696, 0.023862833790370405, 0.022407842159231663, 0.0358954961607395, 0.07000943274677587, 0.12178141167277312, 0.22981866380674817, 0.25037011860030345, 0.16475034040077974, 0.15955009250629967, 0.1756066064052072, 0.13732252656243715, 0.08457731918311912, 0.048102867251270484, 0.01875577678699975, 0.021026699913070834, 0.013179778500679766, 0.030808337777768317, 0.03280236507751875, 0.03720028933821464, 0.039590156640508696, 0.04185733655712878, 0.03968752076306138, 0.03321549241357767, 0.021888508202192833, 0.021995214961955466, 0.025095081568361367, 0.060739771374796435, 0.12403236191847782, 0.19373311663330553, 0.23970438872224847, 0.17126397413473146, 0.15688608752541766, 0.17998481078765327, 0.14079868002350365, 0.08660504236486707, 0.043966860256782314, 0.018704088944696905, 0.007841830033817708, 0.017144497264481584, 0.020954356738361404, 0.03044999841618025, 0.03695220036791458, 0.041236566194811815, 0.04706064853154571, 0.054465618629527424, 0.05791858463805058, 0.06479859963323388, 0.0639770510723927, 0.061819288599392584, 0.061067641196522415, 0.05456967945318778, 0.0583239063808729, 0.048738072323869175, 0.05654950046531586, 0.06420175344850095],
+            [],
+            
+            //ACC
+            'jump': 
+            // [0.11194653414447628, 0.15039578342260773, 0.2039410744997371, 0.20237304123845934, 0.15141855106734334, 0.08167115717437957, 0.024430955764255635, 0.06188490809959516, 0.08503475490203564, 0.0909750860413, 0.07306852096478977, 0.03059417267839573, 0.025492281252764322],
+            //16 [0.06168400534941281, 0.060040401401618655, 0.06017065061632562, 0.059438606750300584, 0.05032271829346355, 0.024802099678635503, 0.011001153056442831, 0.023825884541726277, 0.15566499989800497, 0.24695529635391056, 0.2543943518639809, 0.2401928633203489, 0.19141223956487527, 0.13571170423441634, 0.07971094431732696, 0.04059670728552367, 0.06609368393040234, 0.037219111166161764, 0.017964099199228194, 0.0182221120853273, 0.018880690645217867, 0.01296167444912827, 0.005555372847758081, 0.006876552363177808, 0.005383736728999935, 0.006308360612181219, 0.012469185159494411, 0.00881345331500678, 0.00955161194416455, 0.00635278934393288, 0.007887303342498634, 0.10971500563337094, 0.2552974094993702, 0.16894216203784024, 0.22143970641211325, 0.170253408312466, 0.14916851711079998, 0.12487593842202488, 0.09499071591901213, 0.06682870926109927, 0.0504961538909816, 0.031311972085420046, 0.028974106118589152, 0.03284940517477061, 0.04075280635405828, 0.052984298882616784, 0.06690456148116694, 0.07121166835709096, 0.06368965181603224, 0.058901787722930844, 0.05798312538484227, 0.060094845693362216, 0.06123646154691195,],
+            //4[0.21591082137970943, 0.20225684626872054, 0.19103338942974857, 0.17465283815133442, 0.15011902224600476, 0.1383254633819472, 0.18730217958825862, 0.2812255295730986, 0.45089408137591647, 0.420721442807589, 0.3823946964592878, 0.29921467562906945, 0.19267731118307752, 0.1334498797766761, 0.13883789292718066, 0.2052568202093666, 0.22987577562087214, 0.20263745640999606, 0.08625273433269413, 0.0906080667937741, 0.14789815216536661, 0.55749479727739, 0.8331517959339885, 0.8441119416653676, 0.8869547960377689, 0.7262776057246009, 0.5832938007209753, 0.40974918783437875, 0.21501545113805373, 0.03800410257485404, 0.17165517295646737, 0.18372759353579385, 0.13365739761824894, 0.12536539005059075, 0.13566018104217978, 0.12178565595779851, 0.10521052680073849, 0.09205875175249822, 0.0859993202926284, 0.1003835456667583, 0.1177774876203383, 0.12302334121416418, 0.1037734348044682, 0.07416152002438432, 0.06251776710936226, 0.04491814307591937, 0.04604080117032122, 0.04550164758075585, 0.03512769440077449, 0.14580348715599523, 0.4822214797251524, 0.7737901406302541, 1.0444739041033055, 0.6402899415444069, 0.6218106253290209, 0.5035632993932176, 0.4104798697826663, 0.3602546390971679, 0.2999354537057239, 0.23768308673909702, 0.20102544427351646, 0.16787254272954039, 0.14130559442233004, 0.1330135520671367, 0.1568968556005305, 0.19494293773734822, 0.26222510604078875, 0.3015590401930312, 0.2958659761708287, 0.24670476030944125, 0.24005277096346458, 0.23477775221871736, 0.2396284502332737, 0.2432859682043335, 0.24422216579589173, 0.24285189380534183, 0.24395520989625316, 0.24472743275480813, 0.24602319447734128, 0.24296016455627073, 0.23925296428205814,], 
+            [0.05398552669781662, 0.05121175144110306, 0.04104779888909587, 0.046539306640625, 0.052509774407954846, 0.04438816095339195, 0.038396983463546766, 0.03302422177692257, 0.030294503296697726, 0.02832670797285102, 0.03099375210566051, 0.0305813999391034, 0.033643494968627605, 0.0359227803395374, 0.032163413627997184, 0.02489849135575875, 0.016814631679711024, 0.013053321045473456, 0.008521620450976018, 0.003774939299404884, 0.009636067248195075, 0.019454375613660476, 0.02228462429230833, 0.08971778186453795, 0.23430406371151863, 0.5039491385682866,], //8
+            //16-11歩
+            // [0.05622605171623554, 0.055542076026937066, 0.055750670733180394, 0.05563658320447859, 0.056949537671823224, 0.05766579630371558, 0.05697594240511007, 0.055639771967269935, 0.05220819150161303, 0.053024245886473885, 0.05727145351396982, 0.06588462410074422, 0.0790818566631068, 0.09558400701296783, 0.10434307171828774, 0.12380064078653936, 0.1258131823374366, 0.110489134991729, 0.11230834042786356, 0.09892503487699876, 0.08355534553714564, 0.0640214422123344, 0.04292113743993003, 0.025581176693445708, 0.01576131723263584, 0.019123615764875132, 0.016433085338289462, 0.015824798842668762, 0.01616746289424316, 0.014301678053977652, 0.008882293018325901, 0.04166418430761918, 0.1058489076429402, 0.22524108578677562, 0.19184397742547976, 0.15654486311767593, 0.14209528057275758, 0.09974822016522787, 0.0666294414308449, 0.04327269903469885, 0.01943519336500464, 0.03504229993121353, 0.042941583368461315, 0.036507417357918806, 0.0051237732244739055, 0.06300585154244773, 0.16402069194882413, 0.16927566093505372, 0.14480946479184084, 0.12205846347521708, 0.08526155299864736, 0.0515884020076699, 0.008258149117616673, 0.01723403050829726, 0.02633023321500657, 0.016695402501264868, 0.04710927672241486, 0.09090950902963253, 0.16345801424835574, 0.13581584743152306, 0.13170284688275083, 0.10695822967596842, 0.06920101577962114, 0.041118187056678725, 0.0173482433289329, 0.012387468022421666, 0.028414831611014206, 0.026252426194284396, 0.03176503154539911, 0.0715129094419842, 0.15322386082892356, 0.14045788186136635, 0.1408502774360607, 0.12984551345922202, 0.06421277720341581, 0.04058857394293483, 0.020981428658148334, 0.008645097182236735, 0.023077787261227153, 0.01815293186385109, 0.029085957740532787, 0.0575784617741543, 0.16717717871937668, 0.1587942318467851, 0.12614798157209656, 0.10640860283276739, 0.0770552652018849, 0.05404938788250449, 0.02264675730762454, 0.03010891230454835, 0.028073717092923372, 0.03166318960090198, 0.0836760772857266, 0.13465681728363943, 0.17772067719379345, 0.09435676873870483, 0.07320719836860048, 0.04853892513202292, 0.017629046329049106, 0.01992844585437369, 0.011040532650684163, 0.028708364410318977, 0.07828049087346689, 0.16180921249652605, 0.1660226988687806, 0.11722202984399299, 0.10149517945941962, 0.08418585208173468, 0.035073819480328776, 0.025232169081461503, 0.011512935831681862, 0.03107603646841609, 0.031251683785852746, 0.059235711851658955, 0.12848581037817886, 0.16906294834091617, 0.135165085531303, 0.11028636424193108, 0.08479543438635409, 0.06261021611558099, 0.03517628469747613, 0.01741463074370979, 0.0207737975991361, 0.0073755373758994745, 0.04991416492532254, 0.1020679550687002, 0.15530007511748575, 0.14334535907031862, 0.10567416391371329, 0.08885044946344861, 0.06921853616565199, 0.041876533839616384, 0.012824065873033391, 0.01961905293803464, 0.0256496386297603, 0.024485844942285166, 0.07618760288918473, 0.10765410376846882, 0.2153476895372081, 0.11083778093745958, 0.111483473891083, 0.07171668519266146, 0.04225460384752623, 0.03056889606121939, 0.015726860147796715, 0.039502880146857204, 0.014909578219715652, 0.02398429255517961, 0.024085020976488063, 0.1527618088438229, 0.21077339977098775, 0.27387687600131827, 0.21698450011362855, 0.2017943603042895, 0.1476897050408001, 0.10117201289605718, 0.058865505085617595, 0.015747188597242282, 0.026819725525786403, 0.026508377136638787, 0.017074278146068392, 0.02182008970032829, 0.024929910249351518, 0.029034007472223945, 0.025755498046839822, 0.02153297908605859, 0.02075998487436611, 0.0197823830004375, 0.021024042202330624, 0.01948403373303153, 0.01944843856248832, 0.019151306091556606, 0.016414173801268087, 0.017984772877472046, 0.04638545385945038, 0.08940961895888372, 0.12724747280096688, 0.1908754218417854, 0.20905579701256843, 0.13857915626208397, 0.11302375302594057, 0.08578156824695635, 0.07613827502293516, 0.0762317434424737, 0.06371501005617718, 0.05344459211959443, 0.04277457449111679, 0.038795536457558254, 0.038065073216028526, 0.04418444736854395, 0.05127066656399694, 0.06021650226052384, 0.06622032475950572, 0.0672425524144483, 0.06968900620111479,],
+            'run':
+            []
+        }
+        var distFunc = function (a, b) {
+            return Math.abs(a - b);
+        }
+        let time = 0;
+        let flg_show = false;
+        let myacc = [];
+
+        let mygyro = [];
+        var GYRO = {_x : 0, _y : 0, _z : 0};
+
+        let myACC = [];
+        var ACC = 0;
+
+        let myACCwave = [];
+        // let isrec = false;
+
+        let boolrootin = false;
+        let recRootin = false;
+
+        let slider = 4;
+
+        let b = 0;
+
+        var euler = {
+            pitch: 0,
+            roll: 0,
+            yaw: 0
+        };
+
+        window.onload = function () {
+            // bles: defined in coreToolkit.js
+
+            for (let ble of bles) {
+                ble.setup();
+                ble.onConnect = function (uuid) {
+                    console.log('onConnect:', uuid);
+                    document.querySelector(`#status${ble.id}`).innerText = 'ON';
+                    document.querySelector(`#status${ble.id}`).classList = 'bg-primary text-white'
+                }
+                ble.onDisconnect = function () {
+                    document.querySelector(`#status${ble.id}`).innerText = 'OFF';
+                    document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
+                }
+
+                ble.gotAcc = function (acc) {
+                    ble.gotGyro = function (gyro) {
+                        document.querySelector('#gyro0').innerText = `${(gyro.x * ( 180 / Math.PI )).toFixed(2)}`;
+                        document.querySelector('#gyro1').innerText = `${(gyro.y * ( 180 / Math.PI )).toFixed(2)}`;
+                        document.querySelector('#gyro2').innerText = `${(gyro.z * ( 180 / Math.PI )).toFixed(2)}`;
+
+                        ble.gotEuler = function (_euler) {
+                            euler = _euler;
+                    
+                        // ACC : 合成した加速度
+                        ACC = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
+
+                        if(recRootin == true) {
+                            gesture.rootin.push(ACC);
+                        }
+
+                        myacc.push(acc);
+                        while (myacc.length > 950) {
+                            myacc.shift();
+                        }
+
+                        input_acc.push(acc.y);
+                        while (input_acc.length > 50) {
+                            input_acc.shift();
+                        }
+
+                        mygyro.push(gyro);
+                        while (mygyro.length > 950) {
+                            mygyro.shift();
+                        }
+
+                        input_gyro.push(gyro.x);
+                        while (input_gyro.length > 50) {
+                            input_gyro.shift();
+                        }
+
+                        myACC.push(ACC);
+                        while (myACC.length > 950) {
+                            myACC.shift();
+                        }
+
+                        input_myACC.push(ACC);
+                        while (input_myACC.length > 50) {
+                            input_myACC.shift();
+                        }
+
+                        document.querySelector(`#acc0`).innerText = `${acc.x.toFixed(5)}`;
+                        document.querySelector(`#acc1`).innerText = `${acc.y.toFixed(5)}`;
+                        document.querySelector(`#acc2`).innerText = `${acc.z.toFixed(5)}`;
+                        document.querySelector(`#ACC`).innerText = `${ACC.toFixed(5)}`;
+
+
+                        if (input_myACC.length == 50) {
+                            let dtw_rootin = new DynamicTimeWarping(input_myACC, gesture.rootin, distFunc);
+                            let dtw_jump = new DynamicTimeWarping(input_myACC, gesture.jump, distFunc);
+
+
+                            let d1 = dtw_rootin.getDistance();
+                            let d2 = dtw_jump.getDistance();
+                            //console.log(millis());
+
+                                if (d1 < slider && (millis() - time > 1000) && isPlaying == false && recRootin == false) {
+                                    console.log("ROOTIN");
+                                    myACCwave = [];
+                                    osc.start();
+                                    isPlaying = true;
+                                    time = millis();
+
+                                    // isrec = true;
+                                }
+                                if (d2 < 1.5 && (millis() - time > 1000) && isPlaying == true) {
+                                    console.log(d2);
+                                    osc.stop();
+                                    // console.log("myACCwave" + myACCwave);
+                                    
+                                    ACCdata.push(myACCwave);
+                                    while (ACCdata.length > 3) {
+                                        ACCdata.shift();
+                                    }
+                                    console.log(ACCdata);
+                                    isPlaying = false;
+                                    time = millis();
+                                    // isrec = false;
+                                }
+                            }
+                        }
+                        if (flg_show) {
+                            document.querySelector('#input_data').innerHTML += `${ACC}, `;
+                            // document.querySelector('#inputgyro_data').innerHTML += `${gyro.x}, `;
+                    }
+                    }
+                    //console.log("time" + millis()/1000);
+                }
+
+                // ble.gotQuat = function (quat) {
+                //     document.querySelector(`#quat${ble.id}`).innerText = `${quat.w.toFixed(2)}`;
+                // }
+                // ble.gotStride = function (stride) {
+                //     document.querySelector(`#stride${ble.id}`).innerText = `${stride.x.toFixed(2)}`;
+                // }
+
+                buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
+                    `CORE 0${ble.id + 1}`,
+                    ble.id);
+
+            }
+        }
+
+        function keyPressed() {
+            if (key == 'r') {
+                flg_show = !flg_show;
+            }
+            if (key == 'd') {
+                document.querySelector('#input_data').innerText = '';
+                document.querySelector('#inputgyro_data').innerText = '';
+            }
+            if (key == 'a'){
+                EULER = {x: euler.pitch, y: euler.roll, z: euler.yaw};
+                console.log(EULER);
+            }
+            if (key == 'p' && isPlaying == false){
+                osc.start();
+                isPlaying = true;
+            }
+            if (key == 'o' && isPlaying == true){
+                osc.stop();
+                isPlaying = false;
+            }
+            if (key == 'q'){
+                recosc.start();
+                recisPlaying = true;
+            }
+            if (key == '1'){
+                rec1osc.start();
+                rec1isPlaying = true;
+            }
+            if (key == '2'){
+                rec2osc.start();
+                rec2isPlaying = true;
+            }
+            if (key == '3'){
+                rec3osc.start();
+                rec3isPlaying = true;
+            }
+        }
+
+        function OnClick() {
+            if (recRootin == false) {
+                gesture.rootin.length = 0;
+                recRootin = true;
+                // document.getElementById('rootin').style.background = 'pink';
+            }
+            else {
+                recRootin = false;
+                // document.getElementById('rootin').style.background = 'white';
+                console.log(gesture.rootin);
+            }
+        }
+
+        function changedSlider(dom) {
+            slider = dom.value;
+            console.log(dom.value);
+        }
+        
+        function buildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
+            let element = document.createElement(name_tag);
+            element.innerHTML = innerHTML;
+            element.classList = str_class;
+            if (str_style != '') {
+                element.setAttribute('style', str_style);
+            }
+            element_appended.appendChild(element);
+            return element;
+        }
+    </script>
+</body>
+
+</html>

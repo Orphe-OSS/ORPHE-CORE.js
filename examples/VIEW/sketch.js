@@ -2,7 +2,8 @@ let my_model;
 
 function preload() {
     //my_model = loadModel('./ORPHE CORE3.0.obj');
-    my_model = loadModel('../../models/orphe.shoe.stl');
+    my_model_R = loadModel('../../models/orphe_shoeR3.stl');
+    my_model_L = loadModel('../../models/orphe_shoeL3.stl');
 }
 
 
@@ -25,13 +26,19 @@ var theta = 0.0;
 function draw() {
     background(200);
     //orbitControl()
-    //mycamera.lookAt(0, 0, 0);
-    //mycamera.setPosition(0, 0, 500 * sin(theta));
+    mycamera.lookAt(0, 0, 0);
+    // mycamera.setPosition(400 * sig(theta), 0, 400 * cos(theta));
+    //回転
+    // camera(
+    //     400 * sin(theta), 400 * cos(theta), 400,
+    //     0, 0, 0,
+    //     sin(theta), cos(theta), 0
+    // );
     camera(
-        0, -300, 200,
+        0, 400, 400,
         0, 0, 0,
-        0, -1, 0
-    );
+        0, 1, 0
+    )
     theta += .01;
     if (eulers.length > 0) {
         scale(1);
@@ -45,16 +52,18 @@ function draw() {
             let r = axisAngle[0];
             let v = createVector(axisAngle[1], axisAngle[2], axisAngle[3]);
             push();
-            translate(100 - 200 * count, 0, 0);
+            translate(-100 + 200 * count, 0, 0);
+            rotateZ(PI);
             rotate(r, v);
 
             // 太陽光が手前上から当たる
-            directionalLight(255, 255, 255, 0, 1, -1);
+            directionalLight(255, 255, 255, 0, -100, -100);
             // 黄色のマテリアル
             ambientMaterial(255, 255, 255);
             noStroke();
 
-            model(my_model);
+            if (count == 0) model(my_model_R);
+            if (count == 1) model(my_model_L);
             pop();
             count++;
         }
@@ -63,13 +72,14 @@ function draw() {
         for (let i = 0; i < 2; i++) {
             push();
             // 太陽光が手前上から当たる
-            directionalLight(255, 255, 255, 0, 1, -1);
+            directionalLight(255, 255, 255, 0, -100, -100);
             // 黄色のマテリアル
             ambientMaterial(255, 255, 255);
-            rotateZ(PI);
-            translate(100 - 200 * i, 0, 0);
+            //rotateZ(PI);
+            translate(-100 + 200 * i, 0, 0);
             noStroke();
-            model(my_model);
+            if (i == 0) model(my_model_R);
+            if (i == 1) model(my_model_L);
             pop();
         }
     }
@@ -79,7 +89,6 @@ function windowResized() {
     const canvas_width = document.querySelector('#canvas_placeholder').clientWidth;
     const canvas_height = canvas_width * 9 / 16;
     resizeCanvas(canvas_width, canvas_height);
-    console.log("hello")
 }
 
 //--------------------------------------------------

@@ -13,7 +13,7 @@ const data = [
             // Acc
             datasets: [
                 {
-                    label: "c",
+                    label: "x",
                     backgroundColor: "rgb(69,230, 230)",
                     borderColor: "rgb(69,230,230)",
                     pointRadius: 1.0,
@@ -40,7 +40,7 @@ const data = [
             // gyro
             datasets: [
                 {
-                    label: "c",
+                    label: "x",
                     backgroundColor: "rgb(69,230, 230)",
                     borderColor: "rgb(69,230,230)",
                     pointRadius: 1.0,
@@ -130,7 +130,7 @@ const data = [
             // Acc
             datasets: [
                 {
-                    label: "c",
+                    label: "x",
                     backgroundColor: "rgb(69,230, 230)",
                     borderColor: "rgb(69,230,230)",
                     pointRadius: 1.0,
@@ -157,7 +157,7 @@ const data = [
             // gyro
             datasets: [
                 {
-                    label: "c",
+                    label: "x",
                     backgroundColor: "rgb(69,230, 230)",
                     borderColor: "rgb(69,230,230)",
                     pointRadius: 1.0,

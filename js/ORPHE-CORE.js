@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2023/02/02 21:34:21
+Last modified: 2023/09/16 23:54:37
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -7,6 +7,20 @@ ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 @author Tetsuaki BABA
 @see https://orphe.io/
 */
+
+// float16.min.js を読み込む
+var float16Script = document.createElement('script');
+float16Script.src = 'https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js';
+float16Script.type = 'text/javascript';
+float16Script.crossOrigin = 'anonymous';
+document.head.appendChild(float16Script);
+
+// quaternion.js を読み込む
+var quaternionScript = document.createElement('script');
+quaternionScript.src = 'https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js';
+quaternionScript.type = 'text/javascript';
+quaternionScript.crossOrigin = 'anonymous';
+document.head.appendChild(quaternionScript);
 
 /**
  * @class
@@ -124,7 +138,7 @@ Orphe.prototype =
    * setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
    * @param {string[]} names DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
    */
-  setup: function (names = ['DEVICE_INFORMATION', 'STEP_ANALYSIS', 'SENSOR_VALUES']) {
+  setup: function (names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS']) {
     //console.log(names);
     for (const name of names) {
       if (name == 'DEVICE_INFORMATION') {
@@ -138,13 +152,20 @@ Orphe.prototype =
       }
     }
   },
+
   /**
-   * begin BLE connection
-   * 
+   *  begin BLE connection 
+   *  If options is not specified, it follows the current settings of the device. 
+   * @param {string} [notification_type="ANALYSIS"] ANALYSIS, RAW, ANALYSIS_AND_RAW
+   * @param {object} [options={range:{acc:-1, gyro:-1}}] {range:{acc:[2,4,8,16],gyro:[250,500,1000,2000]}
    * @async
    * @return {Promise<string>} 
    */
-  begin: async function (str_type = 'ANALYSIS') {
+  begin: async function (str_type = 'ANALYSIS', options = {}) {
+    const {
+      range = { acc: -1, gyro: -1 }
+    } = options;
+    console.log(range);
     this.notification_type = str_type;
 
     return new Promise((resolve, reject) => {
@@ -174,11 +195,39 @@ Orphe.prototype =
           });
         });
       }
-    }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-      console.log('Error: ' + error);
-      this.onError(error);
-      return;
-    });
+    })
+      .then(async (result) => {  // この関数をasyncで宣言
+        // ここにresolveされたときに実行する共通のコードを書く
+        console.log("Common code executed upon resolution");
+
+        if (range.acc == -1 && range.gyro == -1) {
+          console.log("no settings changed:acc and gyro range");
+        }
+        else {
+          console.log("settings changed:acc and gyro range");
+          let obj = await this.getDeviceInformation();  // ここでawaitが使える
+          console.log(obj);
+          if (range.acc == 16) obj.range.acc = 3;
+          if (range.acc == 8) obj.range.acc = 2;
+          if (range.acc == 4) obj.range.acc = 1;
+          if (range.acc == 2) obj.range.acc = 0;
+          if (range.gyro == 2000) obj.range.gyro = 3;
+          if (range.gyro == 1000) obj.range.gyro = 2;
+          if (range.gyro == 500) obj.range.gyro = 1;
+          if (range.gyro == 250) obj.range.gyro = 0;
+
+          // 設定値の書き換え
+          console.log(obj)
+          this.setDeviceInformation(obj);
+        }
+
+        return result;
+      })
+      .catch(error => {  // ダイアログのキャンセルはそのまま閉じる
+        console.log('Error: ' + error);
+        this.onError(error);
+        return;
+      });
     //});
   },
   /**
@@ -219,7 +268,7 @@ Orphe.prototype =
     const data = new Uint8Array([0x04]);
     this.write('DEVICE_INFORMATION', data);
   },
-  scan: function (uuid) {
+  scan: function (uuid, options = {}) {
     return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))
       .catch(error => {
         //console.log('Error : ' + error);
@@ -238,10 +287,6 @@ Orphe.prototype =
       */
       filters: [
         { services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833', '01a9d6b5-ff6e-444a-b266-0be75e85c064'] },
-        //{ services: [0x1802, 0x1803] },
-        //  01A9D6B5-FF6E-444A-B266-0BE75E85C064
-        //{ services: ['c48e6067-5295-48d3-8d5c-0395f61792b1'] },
-        //{ name: 'CR-2' },
         { namePrefix: 'CR-' }
       ],
       //acceptAllDevices: true,

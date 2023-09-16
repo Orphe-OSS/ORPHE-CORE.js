@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2023/02/02 17:19:03
+Last modified: 2023/09/16 21:40:54
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -11,7 +11,25 @@ var bles = [new Orphe(0), new Orphe(1)];
  * @param {int} core_id 
  * @param {string} notification 
  */
-function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ANALYSIS_AND_RAW') {
+function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ANALYSIS_AND_RAW', options = {}) {
+    // デフォルト値を設定
+    options.range = options.range || { acc: -1, gyro: -1 };
+
+    console.log(options)
+    if (options.range && options.range.acc != -1 && options.range.gyro != -1) {
+
+    }
+    else {
+        if (options.range.acc == 16) options.range.acc = 3;
+        else if (options.range.acc == 8) options.range.acc = 2;
+        else if (options.range.acc == 4) options.range.acc = 1;
+        else if (options.range.acc == 2) options.range.acc = 0;
+
+        if (options.range.gyro == 2000) options.range.gyro = 3;
+        else if (options.range.gyro == 1000) options.range.gyro = 2;
+        else if (options.range.gyro == 500) options.range.gyro = 1;
+        else if (options.range.gyro == 250) options.range.gyro = 0;
+    }
     let div_form_check = CTbuildElement('div', '', 'form-ckeck form-switch d-flex', '', parent_element);
     div_form_check.id = `core_toolkit${core_id}`;
     // toggle and title
@@ -24,7 +42,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     input.setAttribute('value', `${core_id}`);
     input.setAttribute('title', `coreToolkit_version_date: ${coreToolkit_version_date}\norphe_js_version_date: ${orphe_js_version_date}`);
     input.addEventListener('change', function () {
-        toggleCoreModule(this);
+        toggleCoreModule(this, options);
     })
     let label = CTbuildElement('label', title, 'form-check-label ms-1', '', div_form_check);
 
@@ -137,7 +155,8 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     console.log(div_form_check);
 }
 
-async function toggleCoreModule(dom) {
+async function toggleCoreModule(dom, options = {}) {
+    console.log("toggleCoreModule", options);
     let checked = dom.checked;
     let number = parseInt(dom.value);
     let ble = bles[number];
@@ -145,7 +164,7 @@ async function toggleCoreModule(dom) {
 
     if (checked == true) {
 
-        let ret = await ble.begin(notification);
+        let ret = await ble.begin(notification, options);
         if (!ret) {
             document.querySelector(`#switch_ble${number}`).checked = false;
             return;

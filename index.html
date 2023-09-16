@@ -1,6 +1,6 @@
 <script>
   var last_modified = `
-  Last modified: 2023/06/16 16:43:19
+  Last modified: 2023/09/17 00:06:07
   `;
 </script>
 
@@ -15,12 +15,13 @@
   <link href="./css/custom.css" rel="stylesheet">
   <link href="./css/orphe_custom.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css" />
+
 </head>
 
 
 <body class="bg-dark">
-
-
   <div class="container-sm mt-2">
     <nav class="navbar fixed-top navbar-light bg-base position-relative navbar-expand-lg">
       <span id="last_modified" class="position-absolute top-25 end-0 badge bg-base border-light p-1"
@@ -105,31 +106,30 @@
 
       <ol>
         <li>Create a new index.html file in your project root. </li>
-        <div class="bg-secondary">
-          <code class="prettyprint lang-html" data-lang="html">
-
-          &lt;!doctype html&gt;<br>
-          &lt;html lang=&quot;en&quot;&gt;<br>
-            &lt;head&gt;<br>
-              &lt;meta charset=&quot;utf-8&quot;&gt;<br>
-              &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;<br>
-            &lt;/head&gt;<br>
-            &lt;body&gt;<br>
-              &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;<br>
-              &lt;button onclick=&quot;ble.setLED(1,0);&quot;&gt;connect&lt;/button&gt;<br>
-              &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js&quot; <br>
-              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;<br>
-              &lt;script&gt;<br>
-              var ble = new Orphe(0);<br>
-            window.onload = function () {<br>
-              // ORPHE CORE Init<br>
-              ble.setup();<br>
-              }<br>
-              &lt;/script&gt;<br>
-              &lt;/body&gt;<br>
-          &lt;/html&gt;<br>
-         </code>
-        </div>
+        <pre style="white-space:pre-wrap" class="p-2 m-2">
+            <code class="language-html p-0 m-0" >
+            &lt;!doctype html&gt;
+            &lt;html lang=&quot;en&quot;&gt;
+              &lt;head&gt;
+                &lt;meta charset=&quot;utf-8&quot;&gt;
+                &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;
+              &lt;/head&gt;
+              &lt;body&gt;
+                &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;
+                &lt;button onclick=&quot;ble.setLED(1,0);&quot;&gt;connect&lt;/button&gt;
+                &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js&quot;
+                crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+                &lt;script&gt;
+                var ble = new Orphe(0);
+                window.onload = function () {
+                  // ORPHE CORE Init
+                  ble.setup();
+                }
+                &lt;/script&gt;
+              &lt;/body&gt;
+            &lt;/html&gt;
+          </code>
+        </pre>
         <li>Check the index.html on your browser via local live server, such as Live Server, php -S localhost:8000,
           etc. Then click connect button and connect ORPHE CORE Module (CR-2). You will see light emitting on your ORPHE
           CORE Module like a below video.
@@ -146,6 +146,49 @@
       </ol>
     </section>
 
+    <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> BLINKING LED</h3>
+    <p>If you make LEDs glow, you'll be tempted to make them blink.Don't you ever do that?ThisThis codeWith this code, L
+      Let's make LED BLINKING happen with this code. Hello World!</p>
+    <pre style="white-space:pre-wrap" class="p-2 m-2">
+        <code class="language-html p-0 m-0" >
+          &lt;!doctype html&gt;
+          &lt;html lang=&quot;en&quot;&gt;
+          
+          &lt;head&gt;
+              &lt;meta charset=&quot;utf-8&quot;&gt;
+              &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;
+          &lt;/head&gt;
+          
+          &lt;body&gt;
+              &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;
+              &lt;button onclick=&quot;mystart()&quot;&gt;connect&lt;/button&gt;
+              &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+          
+              &lt;script&gt;
+                  var ble = new Orphe(0);
+                  window.onload = function () {
+                      ble.setup();
+                  }
+                  async function mystart() {
+                      await ble.begin();
+                      // alternative begin function call
+                      // ANALYSIS, RAW, ANALYSIS_AND_RAW
+                      // await ble.begin('ANALYSIS', { range: { acc: 16, gyro: 2000 } }); 
+                      
+                      ble.setLED(1, 0);
+                      let flg = true;
+                      setInterval(function () {
+                          if (flg == true) ble.setLED(0, 0);
+                          else ble.setLED(1, 0);
+                          flg = !flg;
+                      }, 1000);
+                  }
+              &lt;/script&gt;
+          &lt;/body&gt;
+          
+          &lt;/html&gt;
+      </code>
+    </pre>
 
     <h3 class="mt-4"><i class="bi bi-link-45deg"></i> CDN Link</h3>
     <section class="ms-4">
@@ -169,6 +212,7 @@
       </div>
     </section>
 
+
     <h3 class="mt-4">Quick Start with CoreToolkit.js</h3>
     <p>
       ORPHE-CORE.js can be run with a few lines of code, but it can be somewhat cumbersome to configure detailed
@@ -176,49 +220,50 @@
       such as sensor sensitivity and data reception format. coretoolkit.js can add an integrated UI, including module
       settings, with a single line of code. This may be useful when developing large scale applications.
     </p>
-    <div class="p-4 m-4 bg-secondary">
-      <code class="prettyprint lang-html" data-lang="html">
-      &lt;!doctype html&gt;<br>
-      &lt;html lang=&quot;en&quot;&gt;<br>
-      <br>
-      &lt;head&gt;<br>
-          &lt;meta charset=&quot;utf-8&quot;&gt;<br>
-          &lt;title&gt;CoreToolkit.js&lt;/title&gt;<br>
+
+    <pre style="white-space:pre-wrap" class="p-2 m-2">
+      <code class="language-html p-0 m-0" >
+      &lt;!doctype html&gt;
+      &lt;html lang=&quot;en&quot;&gt;
+      &lt;head&gt;
+          &lt;meta charset=&quot;utf-8&quot;&gt;
+          &lt;title&gt;CoreToolkit.js&lt;/title&gt;
           &lt;link href=&quot;https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css&quot; rel=&quot;stylesheet&quot;
-              integrity=&quot;sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi&quot; crossorigin=&quot;anonymous&quot;&gt;<br>
-          &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css&quot;&gt;<br>
-      &lt;/head&gt;<br>
-      <br>
-      &lt;body&gt;<br>
-          &lt;h1&gt;Hello, CoreToolkit.js&lt;/h1&gt;<br>
-          &lt;div id=&quot;toolkit_placeholder&quot;&gt;&lt;/div&gt;<br>
+              integrity=&quot;sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi&quot; crossorigin=&quot;anonymous&quot;&gt;
+          &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css&quot;&gt;
+      &lt;/head&gt;
+      &lt;body&gt;
+          &lt;h1&gt;Hello, CoreToolkit.js&lt;/h1&gt;
+          &lt;div id=&quot;toolkit_placeholder&quot;&gt;&lt;/div&gt;
           &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js&quot;
-              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;<br>
-          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js&quot; crossorigin=&quot;anonymous&quot;
-              type=&quot;text/javascript&quot;&gt;&lt;/script&gt;<br>
-          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js&quot; crossorigin=&quot;anonymous&quot;
-              type=&quot;text/javascript&quot;&gt;&lt;/script&gt;<br>
+              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
           &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/CoreToolkit.js&quot; crossorigin=&quot;anonymous&quot;
-              type=&quot;text/javascript&quot;&gt;&lt;/script&gt;<br>
+              type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
           &lt;script src=&quot;https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js&quot;
               integrity=&quot;sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk&quot;
-              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;<br>
-              <br>
-          &lt;script&gt;<br>
-      
-              window.onload = function () {<br>
-                  // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js<br>
-                  bles[0].setup();<br>
-                  buildCoreToolkit(document.querySelector(&#039;#toolkit_placeholder&#039;), &#039;01&#039;, 0, &#039;RAW&#039;);<br>
-                  bles[0].gotAcc = function (acc) {<br>
-                  }<br>
-              }<br>
-          &lt;/script&gt;<br>
-      &lt;/body&gt;<br>
-      <br>
-      &lt;/html&gt;<br>
-            </code>
-    </div>
+              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+          &lt;script&gt;
+              window.onload = function () {
+                  // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
+                  bles[0].setup();
+                  buildCoreToolkit(document.querySelector(&#039;#toolkit_placeholder&#039;), &#039;01&#039;, 0, &#039;RAW&#039;);
+                  // alternatibe begin function call
+                  // buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
+                  //     '01', // name to be shown on the UI
+                  //     0, // index of bles array
+                  //     'ANALYSIS', // ANALYSIS, RAW, ANALYSIS_AND_RAW
+                  //     { range: { acc: 8, gyro: 1000 } } // sensor range
+                  // );
+                  
+                  bles[0].gotAcc = function (acc) {
+                  }
+              }
+          &lt;/script&gt;
+      &lt;/body&gt;
+      &lt;/html&gt;
+    </code>
+  </pre>
+
 
 
     <h3 class="mt-4"><i class="bi bi-code"></i> Application Examples </h3>
@@ -584,6 +629,12 @@
     crossorigin="anonymous"></script>
   <script src="./js/run_prettify.js?skin=sunburst"></script>
 
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <!-- and it's easy to individually load additional languages -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/go.min.js"></script>
+  <script src="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.js"></script>
+
   <script>
     function copyInputValue(button_dom, id) {
       console.log(id);
@@ -604,9 +655,16 @@
         button_dom.innerHTML = '<i class="bi bi-clipboard"></i>';
 
       }, 1000, dom)
-      //test
+
+
     }
+
   </script>
+  <script>
+    hljs.highlightAll();
+    hljs.addPlugin(new CopyButtonPlugin());
+  </script>
+
 </body>
 
 </html>

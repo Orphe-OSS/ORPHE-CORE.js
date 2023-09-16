@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2023/09/16 21:40:54
+Last modified: 2023/09/17 00:14:34
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -30,6 +30,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
         else if (options.range.gyro == 500) options.range.gyro = 1;
         else if (options.range.gyro == 250) options.range.gyro = 0;
     }
+
     let div_form_check = CTbuildElement('div', '', 'form-ckeck form-switch d-flex', '', parent_element);
     div_form_check.id = `core_toolkit${core_id}`;
     // toggle and title

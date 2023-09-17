@@ -1,6 +1,6 @@
 <script>
   var last_modified = `
-  Last modified: 2023/09/17 00:22:00
+  Last modified: 2023/09/17 11:07:54
   `;
 </script>
 
@@ -13,11 +13,11 @@
   <title>ORPHE-CORE.js Document</title>
 
   <link href="./css/custom.css" rel="stylesheet">
-  <link href="./css/orphe_custom.css" rel="stylesheet">
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css">
   <link rel="stylesheet" href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css" />
-
+  <link href="./css/orphe_custom.css" rel="stylesheet">
 </head>
 
 
@@ -147,23 +147,48 @@
     </section>
 
     <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> BLINKING LED</h3>
-    <p>If you make LEDs glow, you'll be tempted to make them blink.Don't you ever do that? Let's make
-      LED BLINKING happen with this code. Hello ORPHE-CORE World!!</p>
-    <pre style="white-space:pre-wrap" class="p-2 m-2">
-        <code class="language-html p-0 m-0" >
+    <section class="ms-4">
+      <div class="row">
+        <div class="col-sm-8">
+          <p>If you make LEDs glow, you'll be tempted to make them blink.Don't you ever do that? Let's make
+            LED BLINKING happen with this code. Hello ORPHE-CORE World!!</p>
+          <p>
+            The sample code below also describes how to set the notificaiton type and sensor sensitivity from the
+            beginning when calling ble.begin. Normally, the begin() function can be used by calling it without any
+            arguments, but if you have detailed specifications, please refer to it.
+          </p>
+
+          API Reference:
+          <ul>
+            <li>
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#setLED">
+                setLED
+              </a>
+            </li>
+            <li>
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#begin">
+                begin
+              </a>
+            </li>
+          </ul>
+
+        </div>
+        <div class="col-sm-4">
+          <img src="./images/led_blinking.gif" class="img-fluid">
+        </div>
+      </div>
+      <pre style="white-space:pre-wrap" class="p-2 m-2">
+        <code class="language-html p-0 m-0">
           &lt;!doctype html&gt;
           &lt;html lang=&quot;en&quot;&gt;
-          
           &lt;head&gt;
               &lt;meta charset=&quot;utf-8&quot;&gt;
               &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;
           &lt;/head&gt;
-          
           &lt;body&gt;
               &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;
               &lt;button onclick=&quot;mystart()&quot;&gt;connect&lt;/button&gt;
               &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@1140ee7/js/ORPHE-CORE.js&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
-          
               &lt;script&gt;
                   var ble = new Orphe(0);
                   window.onload = function () {
@@ -174,7 +199,7 @@
                       // alternative begin function call
                       // ANALYSIS, RAW, ANALYSIS_AND_RAW
                       // await ble.begin('ANALYSIS', { range: { acc: 16, gyro: 2000 } }); 
-                      
+
                       ble.setLED(1, 0);
                       let flg = true;
                       setInterval(function () {
@@ -185,10 +210,10 @@
                   }
               &lt;/script&gt;
           &lt;/body&gt;
-          
           &lt;/html&gt;
       </code>
     </pre>
+    </section>
 
     <h3 class="mt-4"><i class="bi bi-link-45deg"></i> CDN Link</h3>
     <section class="ms-4">
@@ -214,14 +239,15 @@
 
 
     <h3 class="mt-4">Quick Start with CoreToolkit.js</h3>
-    <p>
-      ORPHE-CORE.js can be run with a few lines of code, but it can be somewhat cumbersome to configure detailed
-      settings
-      such as sensor sensitivity and data reception format. coretoolkit.js can add an integrated UI, including module
-      settings, with a single line of code. This may be useful when developing large scale applications.
-    </p>
+    <section class="ms-4">
+      <p>
+        ORPHE-CORE.js can be run with a few lines of code, but it can be somewhat cumbersome to configure detailed
+        settings
+        such as sensor sensitivity and data reception format. coretoolkit.js can add an integrated UI, including module
+        settings, with a single line of code. This may be useful when developing large scale applications.
+      </p>
 
-    <pre style="white-space:pre-wrap" class="p-2 m-2">
+      <pre style="white-space:pre-wrap" class="p-2 m-2">
       <code class="language-html p-0 m-0" >
       &lt;!doctype html&gt;
       &lt;html lang=&quot;en&quot;&gt;
@@ -263,7 +289,7 @@
       &lt;/html&gt;
     </code>
   </pre>
-
+    </section>
 
 
     <h3 class="mt-4"><i class="bi bi-code"></i> Application Examples </h3>
@@ -579,11 +605,6 @@
     <section class="ms-4">
       Here is a ORPHE class API reference which is generated by jsdoc.
       <li><a href="./api_doc/" target="_blank">API Reference for ORPHE-CORE.js</a></li>
-      <li><a
-          href="https://jsoncrack.com/editor?json=%5B%5B%22Start%22%2C%22notify%20type%22%2C%22a%7C0%7C1%22%2C%22begin()%22%2C%22ANALYSIS%22%2C%22a%7C4%22%2C%22function%22%2C%22Object%22%2C%22a%7C6%7C7%22%2C%22gotStepsNumber%22%2C%22value%22%2C%22a%7CA%22%2C%22o%7C8%7C9%7CB%22%2C%22gotQuat%22%2C%22w%22%2C%22x%22%2C%22y%22%2C%22z%22%2C%22a%7CE%7CF%7CG%7CH%22%2C%22o%7C8%7CD%7CI%22%2C%22gotEuler%22%2C%22pitch%22%2C%22roll%22%2C%22yaw%22%2C%22a%7CL%7CM%7CN%22%2C%22o%7C8%7CK%7CO%22%2C%22gotDistance%22%2C%22o%7C8%7CQ%7CB%22%2C%22gotCalorie%22%2C%22o%7C8%7CS%7CB%22%2C%22gotGait%22%2C%22type%22%2C%22direction%22%2C%22calorie%22%2C%22distance%22%2C%22steps%22%2C%22a%7CV%7CW%7CX%7CY%7CZ%22%2C%22o%7C8%7CU%7Ca%22%2C%22gotType%22%2C%22o%7C8%7Cc%7CB%22%2C%22gotDirection%22%2C%22o%7C8%7Ce%7CB%22%2C%22gotLandingImpact%22%2C%22o%7C8%7Cg%7CB%22%2C%22gotStride%22%2C%22a%7CF%7CG%7CH%22%2C%22o%7C8%7Ci%7Cj%22%2C%22gotPronation%22%2C%22o%7C8%7Cl%7Cj%22%2C%22a%7CC%7CJ%7CP%7CR%7CT%7Cb%7Cd%7Cf%7Ch%7Ck%7Cm%22%2C%22o%7C5%7Cn%22%2C%22RAW%22%2C%22a%7Cp%22%2C%22gotAcc%22%2C%22o%7C8%7Cr%7Cj%22%2C%22gotGryo%22%2C%22o%7C8%7Ct%7Cj%22%2C%22a%7CJ%7CP%7Cs%7Cu%22%2C%22o%7Cq%7Cv%22%2C%22a%7Co%7Cw%22%2C%22o%7C2%7C3%7Cx%22%5D%2C%22y%22%5D"
-          target="_blank">Notification
-          Callbacks map by JSON Crack</a></li>
-
     </section>
 
 

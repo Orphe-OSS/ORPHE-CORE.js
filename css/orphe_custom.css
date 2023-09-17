@@ -29,3 +29,13 @@ body {
 ul {
     margin-top: 0.3em;
 }
+
+code {
+    font-family: 'Roboto';
+    font-weight: 300;
+    font-size: 0.9rem;
+    padding: 0.0em;
+    margin: 0em;
+    border-radius: 0.2em;
+    color: #333;
+}

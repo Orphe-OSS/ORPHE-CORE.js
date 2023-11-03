@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2023/09/16 23:54:37
+Last modified: 2023/11/03 15:15:49
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -29,7 +29,8 @@ document.head.appendChild(quaternionScript);
  */
 function Orphe(_num) {
   this.bluetoothDevice = null;
-  this.dataCharacteristic = null;
+  this.dataCharacteristic = null;// 通知を行うcharacteristicを保持する
+
   this.hashUUID = {};
   this.hashUUID_lastConnected;
   this.id = _num;
@@ -394,22 +395,33 @@ Orphe.prototype =
    * 
    */
   startNotify: function (uuid) {
-    return (this.scan(uuid))
-      .then(() => {
-        return this.connectGATT(uuid);
-      })
-      .then(() => {
-        //console.log('Execute : startNotifications');
-        this.dataCharacteristic.startNotifications()
-      })
+
+    return this.scan(uuid)
+      .then(() => this.connectGATT(uuid))
+      .then(() => this.dataCharacteristic.startNotifications())
       .then(() => {
         this.onStartNotify(uuid);
       })
       .catch(error => {
-        console.log('startNotify: Error : ' + error);
+        console.error('startNotify: Error : ' + error);
         this.onError(error);
-        throw error;
       });
+    // return (this.scan(uuid))
+    //   .then(() => {
+    //     return this.connectGATT(uuid);
+    //   })
+    //   .then(() => {
+    //     //console.log('Execute : startNotifications');
+    //     this.dataCharacteristic.startNotifications()
+    //   })
+    //   .then(() => {
+    //     this.onStartNotify(uuid);
+    //   })
+    //   .catch(error => {
+    //     console.log('startNotify: Error : ' + error);
+    //     this.onError(error);
+    //     throw error;
+    //   });
   },
   /**
    * Stop Notification
@@ -417,21 +429,30 @@ Orphe.prototype =
    * 
    */
   stopNotify: function (uuid) {
-    return (this.scan(uuid))
+    // return this.dataCharacteristic.stopNotifications()
+    //   .then(_ => {
+    //     log('> Notifications stopped');
+    //     return;
+    //   })
+
+    return this.scan(uuid) // BLEデバイスのスキャンを開始します。
       .then(() => {
-        return this.connectGATT(uuid);
+        return this.connectGATT(uuid); // GATTサーバーに接続します。
       })
       .then(() => {
-        //console.log('Execute : stopNotifications');
-        this.dataCharacteristic.stopNotifications()
+        // stopNotificationsメソッドを呼び出してNotificationを停止します。
+        // このメソッドはPromiseを返すため、その完了を待つ必要があります。
+        return this.dataCharacteristic.stopNotifications();
       })
       .then(() => {
+        // Notificationを停止した後のコールバック関数を呼び出します。
         this.onStopNotify(uuid);
       })
       .catch(error => {
-        //console.log('Error : ' + error);
+        // どこかのステップでエラーが発生した場合、そのエラーを処理する関数を呼び出します。
         this.onError(error);
       });
+
   },
   isConnected: function () {
     if (!this.bluetoothDevice) {
@@ -508,9 +529,11 @@ Orphe.prototype =
    * @param {string} uuid 
    */
   onRead: function (data, uuid) {
-    //console.log(uuid, data.byteLength, data.getUint8(0));
+    console.log(uuid, data.byteLength, data.getUint8(0));
+    // 受け取ったデータそのままがほしければ gotData を利用する
     this.gotData(data, uuid);
-
+    let ret = this.timestamp.getHz();
+    if (ret > 0) this.gotBLEFrequency(ret);
     // デバイス情報Readの場合    
     if (uuid == 'DEVICE_INFORMATION') {
       /*
@@ -662,10 +685,10 @@ Orphe.prototype =
         this.gotDelta(this.delta);
         this.gotEuler(this.euler);
 
-        if (this.notification_type == 'ANALYSIS' || this.notification_type == 'ANALYSIS_AND_RAW') {
-          let ret = this.timestamp.getHz();
-          if (ret > 0) this.gotBLEFrequency(ret);
-        }
+        // if (this.notification_type == 'ANALYSIS' || this.notification_type == 'ANALYSIS_AND_RAW') {
+        //   let ret = this.timestamp.getHz();
+        //   if (ret > 0) this.gotBLEFrequency(ret);
+        // }
 
       }
       // Sensor test
@@ -678,31 +701,97 @@ Orphe.prototype =
       }
     }
     else if (uuid == 'SENSOR_VALUES') {
+
+      // 魔改造200Hzの場合はヘッダが50
       if (data.getUint8(0) == 50) {
-        this.quat = {
-          w: data.getInt16(8) / 32768,
-          x: data.getInt16(10) / 32768,
-          y: data.getInt16(12) / 32768,
-          z: data.getInt16(14) / 32768
-        }
-        this.gyro = {
-          x: data.getInt16(16) / 32768,
-          y: data.getInt16(18) / 32768,
-          z: data.getInt16(20) / 32768
-        }
-        this.acc = {
-          x: data.getInt16(22) / 32768,
-          y: data.getInt16(24) / 32768,
-          z: data.getInt16(26) / 32768
+
+        // エラー処理
+        if (data.byteLength != 92) {
+          console.error("SENSOR VALUES: Data length is not 92");
+          return
         }
 
-        // sensor valuesのときはrawデータのみなので，QuatのときにHzは計算しておく
-        if (this.notification_type == 'RAW') {
-          let ret = this.timestamp.getHz();
-          if (ret > 0) this.gotBLEFrequency(ret);
+        // 50Hzで毎でおくられてくるデータのタイムスタンプ。
+        // 200Hz分取り出す場合は、全て同じタイムスタンプになるので、packet_numberを付与して識別する
+        let serial_number = data.getUint16(1);
+
+        // COREから送られてきたタイムスタンプをUNIXタイムスタンプに変換
+        function toTimestamp(hours, minutes, seconds, milliseconds) {
+          // 現在の日付を取得
+          const now = new Date();
+
+          // Dateオブジェクトに時間を設定
+          now.setHours(hours);
+          now.setMinutes(minutes);
+          now.setSeconds(seconds);
+          now.setMilliseconds(milliseconds);
+
+          // タイムスタンプ（ミリ秒）を返す
+          return now.getTime();
         }
+        let timestamp = toTimestamp(
+          data.getUint8(3),
+          data.getUint8(4),
+          data.getUint8(5),
+          data.getUint16(6)
+        )
+
+        let t_start = timestamp;
+        // それぞれの値は29毎で、4つ分ある
+        for (let i = 3; i >= 0; i--) {
+
+          serial_number = data.getUint16(1);
+
+          // 2番目移行のtimestampは最初のタイムスタンプとの差分になっているため
+          // t_startに数値を足す処理を行って、各パケットのtimestampを算出する
+          if (i > 0) {
+            timestamp = t_start + data.getUint8(28 + 21 * (i - 1));
+          }
+
+
+          this.quat = {
+            w: data.getInt16(8 + 21 * i) / 32768,
+            x: data.getInt16(10 + 21 * i) / 32768,
+            y: data.getInt16(12 + 21 * i) / 32768,
+            z: data.getInt16(14 + 21 * i) / 32768,
+            timestamp: timestamp,
+            serial_number: serial_number,
+            packet_number: i
+          }
+          this.gyro = {
+            x: data.getInt16(16 + 21 * i) / 32768,
+            y: data.getInt16(18 + 21 * i) / 32768,
+            z: data.getInt16(20 + 21 * i) / 32768,
+            timestamp: timestamp,
+            serial_number: serial_number,
+            packet_number: i
+          }
+          this.acc = {
+            x: data.getInt16(22 + 21 * i) / 32768,
+            y: data.getInt16(24 + 21 * i) / 32768,
+            z: data.getInt16(26 + 21 * i) / 32768,
+            timestamp: timestamp,
+            serial_number: serial_number,
+            packet_number: i
+          }
+
+          this.gotAcc(this.acc);
+          this.gotQuat(this.quat);
+          this.gotGyro(this.gyro);
+          let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
+          this.euler = q.toEuler();
+          this.gotEuler(this.euler);
+        }
+
+
+        // 実際のBLE受信頻度の計算処理
+        // if (this.notification_type == 'RAW') {
+        //   let ret = this.timestamp.getHz();
+        //   if (ret > 0) this.gotBLEFrequency(ret);
+        // }
 
       }
+      // 通常のupdate sensor valuesであればヘッダは40
       else if (data.getUint8(0) == 40) {
 
         this.quat = {
@@ -721,17 +810,17 @@ Orphe.prototype =
           y: data.getInt8(15) / 127,
           z: data.getInt8(16) / 127
         }
-
-
-
+        this.gotAcc(this.acc);
+        this.gotQuat(this.quat);
+        this.gotGyro(this.gyro);
+        let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
+        this.euler = q.toEuler();
+        this.gotEuler(this.euler);
       }
-      this.gotQuat(this.quat);
-      this.gotGyro(this.gyro);
-      this.gotAcc(this.acc);
 
-      let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
-      this.euler = q.toEuler();
-      this.gotEuler(this.euler);
+
+
+
     }
 
   },

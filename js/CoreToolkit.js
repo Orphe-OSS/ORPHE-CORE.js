@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2023/11/03 15:44:38
+Last modified: 2023/11/04 23:44:52
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -15,7 +15,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     // デフォルト値を設定
     options.range = options.range || { acc: -1, gyro: -1 };
 
-    console.log(options)
+    // console.log(options)
     if (options.range && options.range.acc != -1 && options.range.gyro != -1) {
 
     }
@@ -103,7 +103,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
 
     let div_modal_body = CTbuildElement('div', `<div class="form-floating mt-2">
     <select class="form-select text-black" id="select_notify${core_id}" aria-label="Floating label select example"
-      onchange="changeNotify(${core_id}, this);" disabled>
+      onchange="changeNotify(${core_id}, this);">
       <option value="ANALYSIS" selected>ANALYSIS</option>
       <option value="RAW">RAW</option>
       <option value="ANALYSIS_AND_RAW">ANALYSIS_AND_RAW</option>
@@ -152,13 +152,13 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     if (notification == 'ANALYSIS') select_notify.options[0].selected = true;
     else if (notification == 'RAW') select_notify.options[1].selected = true;
     else if (notification == 'ANALYSIS_AND_RAW') select_notify.options[2].selected = true;
-    select_notify.disabled = true;
 
-    console.log(div_form_check);
+
+    // console.log(div_form_check);
 }
 
 async function toggleCoreModule(dom, options = {}) {
-    console.log("toggleCoreModule", options);
+    // console.log("toggleCoreModule", options);
     let checked = dom.checked;
     let number = parseInt(dom.value);
     let ble = bles[number];

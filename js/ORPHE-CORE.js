@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2023/11/03 15:15:49
+Last modified: 2023/11/04 23:49:44
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -30,7 +30,7 @@ document.head.appendChild(quaternionScript);
 function Orphe(_num) {
   this.bluetoothDevice = null;
   this.dataCharacteristic = null;// 通知を行うcharacteristicを保持する
-
+  this.dataChangedEventHandlerMap = {};
   this.hashUUID = {};
   this.hashUUID_lastConnected;
   this.id = _num;
@@ -166,7 +166,7 @@ Orphe.prototype =
     const {
       range = { acc: -1, gyro: -1 }
     } = options;
-    console.log(range);
+    // console.log(range);
     this.notification_type = str_type;
 
     return new Promise((resolve, reject) => {
@@ -199,15 +199,15 @@ Orphe.prototype =
     })
       .then(async (result) => {  // この関数をasyncで宣言
         // ここにresolveされたときに実行する共通のコードを書く
-        console.log("Common code executed upon resolution");
+        // console.log("Common code executed upon resolution");
 
         if (range.acc == -1 && range.gyro == -1) {
-          console.log("no settings changed:acc and gyro range");
+          // console.log("no settings changed:acc and gyro range");
         }
         else {
-          console.log("settings changed:acc and gyro range");
+          // console.log("settings changed:acc and gyro range");
           let obj = await this.getDeviceInformation();  // ここでawaitが使える
-          console.log(obj);
+          // console.log(obj);
           if (range.acc == 16) obj.range.acc = 3;
           if (range.acc == 8) obj.range.acc = 2;
           if (range.acc == 4) obj.range.acc = 1;
@@ -218,14 +218,14 @@ Orphe.prototype =
           if (range.gyro == 250) obj.range.gyro = 0;
 
           // 設定値の書き換え
-          console.log(obj)
+          // console.log(obj)
           this.setDeviceInformation(obj);
         }
 
         return result;
       })
       .catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        console.log('Error: ' + error);
+        // console.log('Error: ' + error);
         this.onError(error);
         return;
       });
@@ -326,7 +326,7 @@ Orphe.prototype =
       })
       .then(characteristic => {
         this.dataCharacteristic = characteristic;
-        this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
+        // this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
         this.onConnectGATT(uuid);
         this.onConnect(uuid);
       })
@@ -350,7 +350,7 @@ Orphe.prototype =
    */
   read: function (uuid) {
     //return this.dataCharacteristic.readValue();
-    console.log(uuid);
+    // console.log(uuid);
     return (this.scan(uuid))
       .then(() => {
         return this.connectGATT(uuid);
@@ -360,7 +360,7 @@ Orphe.prototype =
         return this.dataCharacteristic.readValue();
       })
       .catch(error => {
-        console.log('Error : ' + error);
+        // console.log('Error : ' + error);
         //throw 'read error';
         this.onError(error);
       });
@@ -395,11 +395,14 @@ Orphe.prototype =
    * 
    */
   startNotify: function (uuid) {
-
+    // 
     return this.scan(uuid)
       .then(() => this.connectGATT(uuid))
       .then(() => this.dataCharacteristic.startNotifications())
       .then(() => {
+        this.dataChangedEventHandlerMap[uuid] = this.dataChanged(this, uuid);
+        // this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
+        this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChangedEventHandlerMap[uuid]);
         this.onStartNotify(uuid);
       })
       .catch(error => {
@@ -442,10 +445,21 @@ Orphe.prototype =
       .then(() => {
         // stopNotificationsメソッドを呼び出してNotificationを停止します。
         // このメソッドはPromiseを返すため、その完了を待つ必要があります。
+
         return this.dataCharacteristic.stopNotifications();
       })
       .then(() => {
         // Notificationを停止した後のコールバック関数を呼び出します。
+        // this.dataCharacteristic.removeEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
+        // イベントハンドラを解除
+        if (this.dataChangedEventHandlerMap[uuid]) {
+          this.dataCharacteristic.removeEventListener(
+            'characteristicvaluechanged',
+            this.dataChangedEventHandlerMap[uuid]
+          );
+          // 登録されたハンドラをマップから削除
+          delete this.dataChangedEventHandlerMap[uuid];
+        }
         this.onStopNotify(uuid);
       })
       .catch(error => {
@@ -529,7 +543,7 @@ Orphe.prototype =
    * @param {string} uuid 
    */
   onRead: function (data, uuid) {
-    console.log(uuid, data.byteLength, data.getUint8(0));
+    // console.log(uuid, data.byteLength, data.getUint8(0));
     // 受け取ったデータそのままがほしければ gotData を利用する
     this.gotData(data, uuid);
     let ret = this.timestamp.getHz();

@@ -1,0 +1,86 @@
+/* 背景と全てのテキストの色を設定 */
+body {
+  background-color: #1B1B1B;
+  color: white;
+  font-family: Arial, sans-serif; /* フォントスタイルを追加しておきます */
+}
+
+/* toolkit_placeholder1 と toolkit_placeholder2 を横並びにするスタイル */
+#toolkit_placeholder1,
+#toolkit_placeholder2 {
+  display: inline-block; /* インラインブロック要素として配置 */
+  width: 20%; /* 余裕を持って幅を設定 */
+  vertical-align: top; /* 上端揃えにする */
+ 
+  margin-left: 30px;
+ 
+}
+
+
+.container {
+  display: flex; /* Flexbox を有効化 */
+  justify-content: space-evenly; /* 子要素を均等に配置 */
+
+}
+
+
+#a1,#a2 {
+ 
+
+  display: inline-block; /* インラインブロック要素として配置 */
+  width: 40%; /* 幅を40%に設定 */
+ 
+  /*子要素を中央揃えに*/
+  align-items: center; 
+}
+
+#en2{
+
+  /*テキストサイズを変更*/
+  font-size: 15px;
+    /* テキストの色を薄い灰色に設定 */
+  color: #919191;
+
+
+}
+#en3{
+/*テキストを中央揃えに*/
+  text-align: center;
+  /*テキストサイズを変更*/
+  font-size: 15px;
+    /* テキストの色を薄い灰色に設定 */
+  color: #919191;
+
+
+}
+
+
+h2{
+  margin-left: 30px;
+  margin-top: 5px;
+  /*テキストサイズを変更*/
+  font-size: 20px;
+    /* テキストの色を薄い灰色に設定 */
+  color: #919191;
+
+}
+
+#en{
+  margin-left: 30px;
+  margin-top: -10px;
+  /*テキストサイズを変更*/
+  font-size: 15px;
+    /* テキストの色を薄い灰色に設定 */
+  color: #919191;
+
+}
+/* h1とp要素のマージンを調整 */
+h1, p ,#rogo{
+  margin-left: 30px;
+  margin-top: 20px;
+
+}
+
+#p5Canvas{
+  margin-top: -30px;
+}

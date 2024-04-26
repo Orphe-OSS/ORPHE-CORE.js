@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<!-- このプログラムは　ORPHE CORE Workshop 第７回 　- フーリエ変換をORPHE COREで実装しよう- https://youtu.be/QZf1BP99_b0　で作成したサンプルプログラムです-->
+<!-- This program is a sample program created in ORPHE CORE Workshop #7 - Implementing Fourier Transforms in ORPHE CORE - https://youtu.be/QZf1BP99_b0 -->
+
+<head>
+    <meta charset="utf-8">
+    <title>CoreToolkit.js</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <h1>Discrete Fourier Transform (DFT)</h1>
+    <h3>This program is a sample program created in ORPHE CORE Workshop #7 - https://youtu.be/QZf1BP99_b0</h3>
+    <div id="toolkit_placeholder"></div>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
+        integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
+        crossorigin="anonymous"></script>
+    <script src="fft.js"></script>
+    <script>
+        var buffer_size = 2048;
+        var fft = new FFTJS(buffer_size);
+        var input = new Array(buffer_size);
+        var sampling_rate = 200;// Hz
+        var freq_step = sampling_rate / buffer_size;
+        var out = fft.createComplexArray();
+
+        window.onload = function () {
+            // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
+            bles[0].setup();
+            buildCoreToolkit(document.querySelector('#toolkit_placeholder'), '01', 0, 'RAW');
+            // alternatibe begin function call
+            // buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
+            //     '01', // name to be shown on the UI
+            //     0, // index of bles array
+            //     'ANALYSIS', // ANALYSIS, RAW, ANALYSIS_AND_RAW
+            //     { range: { acc: 8, gyro: 1000 } } // sensor range
+            // );
+            bles[0].gotAcc = function (acc) {
+                input.push(acc.x);
+                while (input.length > buffer_size) {
+                    input.shift();
+                    fft.realTransform(out, input);
+                }
+            }
+        }
+        function setup() {
+            createCanvas(600, 400);
+        }
+        function draw() {
+            background(220);
+            noFill();
+            beginShape();
+            for (let i = 0; i < out.length / 2; i++) {
+                vertex(i + 20, -pow(out[i], 2) + height - 20);
+            }
+            endShape();
+
+            fill(100);
+            textSize(7);
+            for (let i = 0; i < out.length / 2; i += 25) {
+                text((i * freq_step).toFixed(0), i + 20, height - 10);
+            }
+        }
+    </script>
+</body>
+
+</html>

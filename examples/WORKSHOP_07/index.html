@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<!-- このプログラムは　ORPHE CORE Workshop 第７回 　- フーリエ変換をORPHE COREで実装しよう- https://youtu.be/QZf1BP99_b0　で作成したサンプルプログラムです-->
+<!-- This program is a sample program created in ORPHE CORE Workshop #7 - Implementing Fourier Transforms in ORPHE CORE - https://youtu.be/QZf1BP99_b0 -->
+<head>
+    <meta charset="utf-8">
+    <title>CoreToolkit.js</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <h1>Hello, CoreToolkit.js</h1>
+    <div id="toolkit_placeholder"></div>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
+        integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.js"></script>
+
+    <script>
+        function dft(input) {
+            const n = input.length;
+            const output = [];
+            for (let k = 0; k < n; k++) {
+                let sumReal = 0;
+                let sumImag = 0;
+                for (let t = 0; t < n; t++) {
+                    const angle = (2 * Math.PI * k * t) / n;
+                    sumReal += input[t] * Math.cos(angle);
+                    sumImag -= input[t] * Math.sin(angle);
+                }
+                output.push(Math.sqrt(sumReal * sumReal + sumImag * sumImag));
+            }
+            return output;
+        }
+
+        var powers = [];
+        window.onload = function () {
+            // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
+            bles[0].setup();
+            buildCoreToolkit(document.querySelector('#toolkit_placeholder'), '01', 0, 'RAW');
+            // alternatibe begin function call
+            // buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
+            //     '01', // name to be shown on the UI
+            //     0, // index of bles array
+            //     'ANALYSIS', // ANALYSIS, RAW, ANALYSIS_AND_RAW
+            //     { range: { acc: 8, gyro: 1000 } } // sensor range
+            // );
+
+            bles[0].gotAcc = function (acc) {
+                acc_x.push(acc.x);
+                while (acc_x.length > 400) {
+                    acc_x.shift();
+                    powers = dft(acc_x);
+
+                }
+            }
+        }
+
+
+        function generateSineWave(amplitude, frequency, samplingFrequency, duration) {
+            let sineWave = [];
+            for (let i = 0; i < duration * samplingFrequency; i++) {
+                let t = i / samplingFrequency;
+                sineWave.push(amplitude * Math.sin(2 * Math.PI * frequency * t));
+            }
+            return sineWave;
+        }
+
+        let duration = 2;
+        let samplingFrequency = 200;
+        let frequency = 1.0;
+        let sineWave = generateSineWave(1.0, frequency, samplingFrequency, duration);
+
+        var acc_x = [];
+
+
+        function setup() {
+            createCanvas(400, 400);
+        }
+
+        function draw() {
+            background(220);
+
+            if (acc_x.length == 400) {
+                stroke(0);
+                noFill();
+                beginShape();
+                for (let i = 0; i < duration * samplingFrequency; i++) {
+                    vertex(i, height / 2 + acc_x[i] * 100);
+                }
+                endShape();
+
+                let sum = new Array(10).fill(0);
+                stroke(0, 0, 255);
+                for (let j = 0; j < 10; j++) {
+                    beginShape();
+                    for (let i = 0; i < duration * samplingFrequency; i++) {
+                        let t = i / samplingFrequency;
+                        let result = acc_x[i] * Math.sin(2 * Math.PI * (j + 1) * t);
+                        //vertex(i, height / 2 + 100 * Math.sin(2 * Math.PI * (j + 1) * t))
+                        sum[j] += result;
+                    }
+                    endShape();
+                }
+
+                stroke(255, 0, 0);
+                beginShape();
+                for (let j = 0; j < 10; j++) {
+                    vertex(j * 40, height / 2 - sum[j] * sum[j] * 0.01);
+                }
+                endShape();
+
+                stroke(0, 200, 0);
+                beginShape();
+                for (let j = 0; j < powers.length / 2; j++) {
+                    vertex(j * 2, height / 2 - powers[j]);
+                }
+                endShape();
+
+            }
+        }
+
+    </script>
+
+
+
+</body>
+
+</html>

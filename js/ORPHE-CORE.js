@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2023/11/04 23:49:44
+Last modified: 2024/05/01 11:50:00
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -103,6 +103,12 @@ function Orphe(_num) {
   this.acc = {
     x: 0.0, y: 0.0, z: 0.0
   }
+  this.converted_gyro = {
+    x: 0.0, y: 0.0, z: 0.0
+  }
+  this.converted_acc = {
+    x: 0.0, y: 0.0, z: 0.0
+  }
 
   // initial callBack register
   // this.onScan = function (deviceName) { console.log("onScan"); };
@@ -201,12 +207,13 @@ Orphe.prototype =
         // ここにresolveされたときに実行する共通のコードを書く
         // console.log("Common code executed upon resolution");
 
+        // console.log("settings changed:acc and gyro range");
+        let obj = await this.getDeviceInformation();  // ここでawaitが使える
+
         if (range.acc == -1 && range.gyro == -1) {
           // console.log("no settings changed:acc and gyro range");
         }
         else {
-          // console.log("settings changed:acc and gyro range");
-          let obj = await this.getDeviceInformation();  // ここでawaitが使える
           // console.log(obj);
           if (range.acc == 16) obj.range.acc = 3;
           if (range.acc == 8) obj.range.acc = 2;
@@ -750,6 +757,19 @@ Orphe.prototype =
           data.getUint16(6)
         )
 
+        let gyroRange = this.device_information.range.gyro;
+        let accRange = this.device_information.range.acc;
+
+        // 値を変換
+        if (gyroRange == 0) gyroRange = 250;
+        if (gyroRange == 1) gyroRange = 500;
+        if (gyroRange == 2) gyroRange = 1000;
+        if (gyroRange == 3) gyroRange = 2000;
+        if (accRange == 0) accRange = 2;
+        if (accRange == 1) accRange = 4;
+        if (accRange == 2) accRange = 8;
+        if (accRange == 3) accRange = 16;
+
         let t_start = timestamp;
         // それぞれの値は29毎で、4つ分ある
         for (let i = 3; i >= 0; i--) {
@@ -788,10 +808,29 @@ Orphe.prototype =
             serial_number: serial_number,
             packet_number: i
           }
+          // ジャイロと加速度補正をかけたものを別途作成
+          this.converted_gyro = {
+            x: this.gyro.x * gyroRange,
+            y: this.gyro.y * gyroRange,
+            z: this.gyro.z * gyroRange,
+            timestamp: timestamp,
+            serial_number: serial_number,
+            packet_number: i
+          };
+          this.converted_acc = {
+            x: this.acc.x * accRange,
+            y: this.acc.y * accRange,
+            z: this.acc.z * accRange,
+            timestamp: timestamp,
+            serial_number: serial_number,
+            packet_number: i
+          };
 
           this.gotAcc(this.acc);
           this.gotQuat(this.quat);
           this.gotGyro(this.gyro);
+          this.gotConvertedAcc(this.converted_acc);
+          this.gotConvertedGyro(this.converted_gyro);
           let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
           this.euler = q.toEuler();
           this.gotEuler(this.euler);
@@ -824,9 +863,22 @@ Orphe.prototype =
           y: data.getInt8(15) / 127,
           z: data.getInt8(16) / 127
         }
+        // ジャイロと加速度補正をかけたものを別途作成
+        this.converted_gyro = {
+          x: this.gyro.x * gyroRange,
+          y: this.gyro.y * gyroRange,
+          z: this.gyro.z * gyroRange,
+        };
+        this.converted_acc = {
+          x: this.acc.x * accRange,
+          y: this.acc.y * accRange,
+          z: this.acc.z * accRange,
+        };
         this.gotAcc(this.acc);
         this.gotQuat(this.quat);
         this.gotGyro(this.gyro);
+        this.gotConvertedAcc(this.converted_acc);
+        this.gotConvertedGyro(this.converted_gyro);
         let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
         this.euler = q.toEuler();
         this.gotEuler(this.euler);
@@ -900,6 +952,20 @@ Orphe.prototype =
    * @param {Object} acc {x,y,z}
    */
   gotAcc: function (acc) {
+    //console.log('prototype.gotAcc');
+  },
+  /**
+   * 
+   * @param {Object} gyro {x,y,z}
+   */
+  gotConvertedGyro: function (gyro) {
+    //console.log('prototype.gotGyro');
+  },
+  /**
+   * 
+   * @param {Object} acc {x,y,z}
+   */
+  gotConvertedAcc: function (acc) {
     //console.log('prototype.gotAcc');
   },
   /**

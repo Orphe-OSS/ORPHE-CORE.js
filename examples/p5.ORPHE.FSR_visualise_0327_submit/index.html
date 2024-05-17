@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/addons/p5.sound.min.js"></script>
+    <!-- CSS only -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <meta charset="utf-8" />
+  </head>
+
+  <body class="text-black">
+    <div class="container">
+      <nav class="navbar bg-light" style="font-size:1.2em;">
+        <div
+          id="toolkit_placeholder"
+          class="container-fluid justify-content-between"
+          style="padding:0px;margin:0px;"
+        ></div>
+      </nav>
+
+      <div class="row mt-4">
+        <div class="col-sm-8">
+          <h1>ORPHE INSOLE TEST PROGRAM Ver.1.0</h1>
+          <p>
+            This is a demonstration program using an ORPHE CORE 3.0 board and a pressure sensor FSR, applying the ORPHE CORE js program to divert the quaternion values (w,x,y,z) to the four FSR values, respectively.
+          </p>
+        </div>
+      </div>
+
+      <div class="row mt-4">
+        <div class="col-6">
+          <h3>CORE01</h3>
+          <span id="status0" class="bg-secondary text-white">OFFILINE</span>
+          <ul>
+            <li>FSR LEFT: <span id="quatw0"></span></li>
+            <li>FSR TOE: <span id="quatx0"></span></li>
+            <li>FSR RIGHT: <span id="quaty0"></span></li>
+            <li>FSR HEEL: <span id="quatz0"></span></li>
+            <li>FSR TOTAL: <span id="fsr_total0"></span></li>
+          </ul>
+        </div>
+        <div class="col-6">
+          <h3>CORE02</h3>
+          <span id="status1" class="bg-secondary text-white">OFFLINE</span>
+          <ul>
+            <li>FSR LEFT: <span id="quatw1"></span></li>
+            <li>FSR TOE: <span id="quatx1"></span></li>
+            <li>FSR RIGHT: <span id="quaty1"></span></li>
+            <li>FSR HEEL: <span id="quatz1"></span></li>
+            <li>FSR TOTAL: <span id="fsr_total1"></span></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-8 m-0 p-0" id="canvas_placeholder">
+          
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"
+      crossorigin="anonymous"
+      type="text/javascript"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/CoreToolkit.js"
+      crossorigin="anonymous"
+      type="text/javascript"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js"
+      crossorigin="anonymous"
+      type="text/javascript"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js"
+      crossorigin="anonymous"
+      type="text/javascript"
+    ></script>
+    <!-- JavaScript Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+    <script src="sketch.js"></script>
+    <script src="utils.js"></script>
+  </body>
+</html>

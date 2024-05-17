@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ping pong game</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+    
+
+</head>
+<body> <img id = "rogo"  src="rogo.png" widht="500px" height="25px">
+
+      <h1>ping pong game</h1>
+      
+      <div id="toolkit_placeholder1" class="my-4"></div>
+      <div id="toolkit_placeholder2" class="my-4"></div>
+
+  
+  <div id="p5Canvas"  ></div> <!-- p5.jsのキャンバスがここに挿入されます -->
+
+
+  <p id="setumei">ORPHE COREを使った3点制のピンポンゲームです。</title> </p>
+    <p id ="en"> This is a 3-point ping pong game using ORPHE CORE. </p> 
+  
+  
+    <p id="setumei">左右2人に分かれてORPHE COREを接続します。ORPHE COREを回転させてプレイヤーを操作し、相手自陣にボールを入れましょう。</title> </p>
+    <p id ="en"> Divide into two people on the left and right and connect the ORPHE CORE. Rotate the ORPHE CORE to control the player and send the ball into the opponent's own territory.</p> 
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"
+  type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
+  integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
+  crossorigin="anonymous"></script>
+  <!-- <script src="../js/ORPHE-CORE.js"></script> -->
+
+  <script>
+    var bles = [new Orphe(0), new Orphe(1)];
+
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'ANALYSIS');
+    bles[1].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'ANALYSIS');
+    var connectedDevices = 0;
+    var gamestage = 0;
+
+    /*
+    ble1.onConnect = function () {
+        console.log('ble1 connected');
+        if (connectedDevices == 3) {
+          mystart(ble1);
+          mystart(ble2);
+        }
+        connectedDevices++;
+      };
+    ble2.onConnect = function () {
+        console.log('ble1 connected');
+        if (connectedDevices == 3) {
+          mystart(ble1);
+          mystart(ble2);
+        }
+        connectedDevices++;
+      };
+
+      */
+      for (let ble of bles) {
+        ble.onConnect = function () {
+           
+            connectedDevices++;
+            if (connectedDevices === 3) {
+            //接続されたときの処理
+
+            mystart(bles[0]);
+            mystart(bles[1]);
+            
+            gamestage = 1;
+
+
+            }
+        
+      }
+    }
+
+
+    var devices = {
+      0: {
+        quats: { w: 0, x: 0, y: 0, z: 0 },
+        eulers: { pitch: 0, roll: 0, yaw: 0 },
+        gaits: {
+          type: 0,
+          direction: 0,
+          calorie: 0,
+          distance: 0,
+          steps: 0,
+          standing_phase_duration: 0,
+          swing_phase_duration: 0,
+        },
+        strides: { x: 0, y: 0, z: 0 },
+        stride_length: [0, 0, 0, 0, 0],
+        ave_stride_length: 0,
+        foot_angles: 0,
+        pronations: { landing_impact: 0, x: 0, y: 0, z: 0 },
+        duration: [0, 0, 0, 0, 0],
+        cadence: [0, 0, 0, 0, 0],
+        pace: [0, 0, 0, 0, 0],
+        speed: [0, 0, 0, 0, 0],
+        ave_duration: 0,
+        ave_cadence: 0,
+        ave_pace: 0,
+        ave_speed: 0,
+      },
+      1: {
+        quats: { w: 0, x: 0, y: 0, z: 0 },
+        eulers: { pitch: 0, roll: 0, yaw: 0 },
+        gaits: {
+          type: 0,
+          direction: 0,
+          calorie: 0,
+          distance: 0,
+          steps: 0,
+          standing_phase_duration: 0,
+          swing_phase_duration: 0,
+        },
+        strides: { x: 0, y: 0, z: 0 },
+        stride_length: [0, 0, 0, 0, 0],
+        ave_stride_length: 0,
+        foot_angles: 0,
+        pronations: { landing_impact: 0, x: 0, y: 0, z: 0 },
+        duration: [0, 0, 0, 0, 0],
+        cadence: [0, 0, 0, 0, 0],
+        pace: [0, 0, 0, 0, 0],
+        speed: [0, 0, 0, 0, 0],
+        ave_duration: 0,
+        ave_cadence: 0,
+        ave_pace: 0,
+        ave_speed: 0,
+      }
+    };
+
+
+    function mystart(ble_device) {
+      ble_device.gotQuat = function (_quat) {
+        devices[this.id].quats = _quat;
+      };
+      ble_device.gotEuler = function (_euler) {
+        devices[this.id].eulers = _euler;
+      };
+      ble_device.gotGait = function (_gait) {
+        devices[this.id].gaits = _gait;
+        updateMetrics(this.id, _gait);
+      };
+      ble_device.gotStride = function (_stride) {
+        devices[this.id].strides = _stride;
+        updateStrideLength(this.id, _stride);
+      };
+      ble_device.gotFootAngle = function (_foot_angle) {
+        devices[this.id].foot_angles = _foot_angle.value;
+      };
+      ble_device.gotPronation = function (_pronation) {
+        devices[this.id].pronations = _pronation;
+      };
+      ble_device.gotDuration = function (_duration) {
+        devices[this.id].duration = _duration;
+        updateMetrics(this.id, _duration);
+      };
+    }
+  </script>
+<script src="sketch.js"></script>
+</body>
+</html>

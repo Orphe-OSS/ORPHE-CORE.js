@@ -53,6 +53,9 @@ let cornerRadius = 8; // 角の丸み
 
 var pipisound;
 var punisound;
+
+let soundA;
+let soundB;
 function preload() {
   asiimg = loadImage('asi.png'); 
   udonimg = loadImage('udon.png');  // 画像を読み込む
@@ -60,6 +63,11 @@ function preload() {
 
   pipisound = loadSound('pipi.wav'); 
   punisound = loadSound('puni.wav'); 
+
+
+  
+    soundA = loadSound('soundA.mp3');
+    soundB = loadSound('soundB.mp3');
 
 
 
@@ -106,6 +114,8 @@ function setup() {
     
   pipisound.setVolume(0.3); // 音量を設定
   punisound.setVolume(0.1); // 音量を設定
+  soundA.setVolume(0.1); // 音量を設定
+  soundB.setVolume(0.1); // 音量を設定
 }
   
   var barW,barH;
@@ -154,7 +164,7 @@ function setup() {
         fill(28, 28, 28); // フォントカラー（青）
         text('Connected', width / 2, height / 2 +40);
 
-        button.position(270, height / 2 - button.height / 2 + 300);
+        button.position(270, height / 2 - button.height / 2 + 350);
         button.html('START');
         button.show();
 
@@ -296,16 +306,16 @@ soundcount1++;
         text('もちもち度', 70, 30);///-20);
 
         
-    let elapsedTime = millis() - startTime; // 経過時間を計算
-    let seconds = floor(elapsedTime / 1000); // ミリ秒を秒に変換
-
+        let elapsedTime = millis() - startTime; // 経過時間を計算
+        let seconds = (elapsedTime / 1000).toFixed(2); // ミリ秒を秒に変換し、小数点以下2桁で表示
+        
     
              // 経過時間を右上に表示
              //textAlign(RIGHT, TOP);
              textSize(50);
              fill(250,212,188);
 
-             text(seconds + "s", width - 60, 40);
+             text(Math.round(seconds) + "s", width - 60, 40);
     
         
         sc = seconds;
@@ -391,7 +401,26 @@ button.html('RETRY');
         
         break;
     }
+    //let someValue = 10; // この数値は何かの計算結果や条件によって変化すると仮定
 
+    if(gamepar != 0){
+      if (gamepar === 3) {
+        if (!soundA.isPlaying()) {
+          soundB.stop(); // soundBが再生中なら停止
+          soundA.play(); // soundAを再生
+        }
+      } else if(gamepar === 9){
+        if (!soundB.isPlaying()) {
+        soundA.stop();
+        soundB.stop();
+        }
+      }else {
+        if (!soundB.isPlaying()) {
+          soundA.stop(); // soundAが再生中なら停止
+          soundB.play(); // soundBを再生
+        }
+      }
+  }
 
      
   }
@@ -611,4 +640,3 @@ function UDON_UGOKU(){
       deformations[indexMinus] = maxDeformation * (5 - i) / 5;
     }
 }
-

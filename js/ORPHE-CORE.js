@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/02 15:43:39
+Last modified: 2024/05/24 08:54:10
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -133,6 +133,12 @@ Object.defineProperty(Orphe, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205
 Object.defineProperty(Orphe, 'ORPHE_REALTIME_ANALYSIS', { value: "adb7eb5a-ac8a-4f95-907b-45db4a71b45a", writable: false });
 Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
 
+/**
+ * @class Orphe prototype object 
+ * @type {Object} 
+ * @property {function} setup setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
+ * @property {function} begin begin BLE connection
+  */
 
 Orphe.prototype =
 {
@@ -172,8 +178,20 @@ Orphe.prototype =
     const {
       range = { acc: -1, gyro: -1 }
     } = options;
-    // console.log(range);
     this.notification_type = str_type;
+
+    let obj = await this.getDeviceInformation();  // ここでawaitが使える
+    if (range.acc == 16) obj.range.acc = 3;
+    if (range.acc == 8) obj.range.acc = 2;
+    if (range.acc == 4) obj.range.acc = 1;
+    if (range.acc == 2) obj.range.acc = 0;
+    if (range.gyro == 2000) obj.range.gyro = 3;
+    if (range.gyro == 1000) obj.range.gyro = 2;
+    if (range.gyro == 500) obj.range.gyro = 1;
+    if (range.gyro == 250) obj.range.gyro = 0;
+    // 設定値の書き換え
+    this.setDeviceInformation(obj);
+
 
     return new Promise((resolve, reject) => {
       //this.read('DEVICE_INFORMATION').then(() => {
@@ -208,26 +226,7 @@ Orphe.prototype =
         // console.log("Common code executed upon resolution");
 
         // console.log("settings changed:acc and gyro range");
-        let obj = await this.getDeviceInformation();  // ここでawaitが使える
 
-        if (range.acc == -1 && range.gyro == -1) {
-          // console.log("no settings changed:acc and gyro range");
-        }
-        else {
-          // console.log(obj);
-          if (range.acc == 16) obj.range.acc = 3;
-          if (range.acc == 8) obj.range.acc = 2;
-          if (range.acc == 4) obj.range.acc = 1;
-          if (range.acc == 2) obj.range.acc = 0;
-          if (range.gyro == 2000) obj.range.gyro = 3;
-          if (range.gyro == 1000) obj.range.gyro = 2;
-          if (range.gyro == 500) obj.range.gyro = 1;
-          if (range.gyro == 250) obj.range.gyro = 0;
-
-          // 設定値の書き換え
-          // console.log(obj)
-          this.setDeviceInformation(obj);
-        }
 
         return result;
       })

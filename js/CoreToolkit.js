@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2023/11/04 23:44:52
+Last modified: 2024/05/24 08:55:33
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -154,6 +154,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     else if (notification == 'ANALYSIS_AND_RAW') select_notify.options[2].selected = true;
 
 
+
     // console.log(div_form_check);
 }
 
@@ -163,9 +164,7 @@ async function toggleCoreModule(dom, options = {}) {
     let number = parseInt(dom.value);
     let ble = bles[number];
     let notification = dom.getAttribute('notification');
-
     if (checked == true) {
-
         let ret = await ble.begin(notification, options);
         if (!ret) {
             document.querySelector(`#switch_ble${number}`).checked = false;
@@ -181,7 +180,6 @@ async function toggleCoreModule(dom, options = {}) {
         ble.reset();
         document.querySelector(`#ui${number}`).style.visibility = 'hidden';
         //setHeaderStatusOffline(ble.id);
-
     }
 }
 

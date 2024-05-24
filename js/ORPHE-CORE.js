@@ -1,11 +1,13 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/24 08:59:52
+Last modified: 2024/05/24 16:22:57
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 @module Orphe
 @author Tetsuaki BABA
-@see https://orphe.io/
+@version 1.0.1
+
+@see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
 
 // float16.min.js を読み込む
@@ -40,7 +42,7 @@ function Orphe(_num) {
   this.array_device_information = new DataView(new ArrayBuffer(20));
 
   /**
-   * Associative array of device information
+   * Associative array of device information. begin()を呼び出すとデバイスから値を取得して初期化される． 
    * @param {uint8} battery
    *  this.device_information = {
         battery: data.getUint8(0),
@@ -54,11 +56,9 @@ function Orphe(_num) {
         }
       }
    */
-  this.device_information = '';
 
-  /**
-   * associative array for gait data
-   */
+  // 以下メンバ変数の初期化
+  this.device_information = '';
   this.gait = {
     type: 0,
     direction: 0,
@@ -83,9 +83,6 @@ function Orphe(_num) {
     steps: 0,
   }
   this.steps_number = 0;
-  /**
-  * associative array for quotanion
-  */
   this.quat = {
     w: 0.0, x: 0.0, y: 0.0, z: 0.0
   }
@@ -109,28 +106,25 @@ function Orphe(_num) {
   this.converted_acc = {
     x: 0.0, y: 0.0, z: 0.0
   }
+  // メンバ変数の初期化ここまで
+  //////////////////////////
 
-  // initial callBack register
-  // this.onScan = function (deviceName) { console.log("onScan"); };
-  // this.onConnectGATT = function (uuid) { console.log("onConnectGATT"); };
-  // this.onConnect = function (uuid) { console.log("onConnect"); };
-  // // this.onRead = function (data, uuid) { console.log("onRead"); };
-  // this.onWrite = function (uuid) { console.log("onWrite"); };
-  // this.onStartNotify = function (uuid) { console.log("onStartNotify"); };
-  // this.onStopNotify = function (uuid) { console.log("onStopNotify"); };
-  // this.onDisconnect = function () { console.log("onDisconnect"); };
-  // this.gotBLEFrequency = function (frequency) { }
-  // this.onClear = function () { console.log("onClear"); };
-  // this.onReset = function () { console.log("onReset"); };
-  // this.onError = function (error) { console.log("onError: ", error); };
 }
 
+/**
+ * @class Orphe static object この他にもいくつかUUIDがありますが，ここには記載していません．
+ * @type {Object} 
+ * @property {string} ORPHE_INFORMATION "01a9d6b5-ff6e-444a-b266-0be75e85c064" SERVICE_UUID
+ * @property {string} ORPHE_DEVICE_INFORMATION "24354f22-1c46-430e-a4ab-a1eeabbcdfc0" CHARACTERISTIC_UUID
+ * 
+ * @property {string} ORPHE_OTHER_SERVICE "db1b7aca-cda5-4453-a49b-33a53d3f0833" SERVICE_UUID
+ * @property {string} ORPHE_SENSOR_VALUES "f3f9c7ce-46ee-4205-89ac-abe64e626c0f" CHARACTERISTIC_UUID
+ * @property {string} ORPHE_STEP_ANALYSIS "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd"
+ */
 Object.defineProperty(Orphe, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
 Object.defineProperty(Orphe, 'ORPHE_DEVICE_INFORMATION', { value: "24354f22-1c46-430e-a4ab-a1eeabbcdfc0", writable: true });
-
 Object.defineProperty(Orphe, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
 Object.defineProperty(Orphe, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
-Object.defineProperty(Orphe, 'ORPHE_REALTIME_ANALYSIS', { value: "adb7eb5a-ac8a-4f95-907b-45db4a71b45a", writable: false });
 Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
 
 /**
@@ -139,12 +133,9 @@ Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7
  * @property {function} setup setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
  * @property {function} begin begin BLE connection
   */
-
 Orphe.prototype =
 {
   setUUID: function (name, serviceUUID, characteristicUUID) {
-    //console.log('Execute : setUUID');
-    //console.log(this.hashUUID);
     this.hashUUID[name] = { 'serviceUUID': serviceUUID, 'characteristicUUID': characteristicUUID };
   },
   /**
@@ -169,6 +160,7 @@ Orphe.prototype =
   /**
    *  begin BLE connection 
    *  If options is not specified, it follows the current settings of the device. 
+   * センサー値の取得を開始します。ANALYSIS, RAWと指定することで取得するデータの種類を指定することができます。
    * @param {string} [notification_type="ANALYSIS"] ANALYSIS, RAW, ANALYSIS_AND_RAW
    * @param {object} [options={range:{acc:-1, gyro:-1}}] {range:{acc:[2,4,8,16],gyro:[250,500,1000,2000]}
    * @async
@@ -180,7 +172,7 @@ Orphe.prototype =
     } = options;
     this.notification_type = str_type;
 
-    let obj = await this.getDeviceInformation();  // ここでawaitが使える
+    let obj = await this.getDeviceInformation();
     if (range.acc == 16) obj.range.acc = 3;
     if (range.acc == 8) obj.range.acc = 2;
     if (range.acc == 4) obj.range.acc = 1;
@@ -193,8 +185,9 @@ Orphe.prototype =
     this.setDeviceInformation(obj);
 
 
+    // ここで実際にnotifyを開始しています．
     return new Promise((resolve, reject) => {
-      //this.read('DEVICE_INFORMATION').then(() => {
+
       if (str_type == "ANALYSIS") {
         this.startNotify('STEP_ANALYSIS').then(() => {
           //console.log("analysis---")
@@ -223,19 +216,13 @@ Orphe.prototype =
     })
       .then(async (result) => {  // この関数をasyncで宣言
         // ここにresolveされたときに実行する共通のコードを書く
-        // console.log("Common code executed upon resolution");
-
-        // console.log("settings changed:acc and gyro range");
-
-
         return result;
       })
       .catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        // console.log('Error: ' + error);
         this.onError(error);
         return;
       });
-    //});
+
   },
   /**
    * stop and disconnect GATT connection
@@ -291,6 +278,7 @@ Orphe.prototype =
     let options = {
       /*
       ORPHE core module name: CR-2, CR-3
+      service UUIDを ORPHE_OTHER_SERVICE に指定することで，ORPHE core moduleのみを検出することができます．さらに，namePrefixを指定することで，CR-2, CR-3のみを検出することができます．
       */
       filters: [
         { services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833', '01a9d6b5-ff6e-444a-b266-0be75e85c064'] },
@@ -415,22 +403,6 @@ Orphe.prototype =
         console.error('startNotify: Error : ' + error);
         this.onError(error);
       });
-    // return (this.scan(uuid))
-    //   .then(() => {
-    //     return this.connectGATT(uuid);
-    //   })
-    //   .then(() => {
-    //     //console.log('Execute : startNotifications');
-    //     this.dataCharacteristic.startNotifications()
-    //   })
-    //   .then(() => {
-    //     this.onStartNotify(uuid);
-    //   })
-    //   .catch(error => {
-    //     console.log('startNotify: Error : ' + error);
-    //     this.onError(error);
-    //     throw error;
-    //   });
   },
   /**
    * Stop Notification
@@ -438,12 +410,6 @@ Orphe.prototype =
    * 
    */
   stopNotify: function (uuid) {
-    // return this.dataCharacteristic.stopNotifications()
-    //   .then(_ => {
-    //     log('> Notifications stopped');
-    //     return;
-    //   })
-
     return this.scan(uuid) // BLEデバイスのスキャンを開始します。
       .then(() => {
         return this.connectGATT(uuid); // GATTサーバーに接続します。
@@ -924,9 +890,12 @@ Orphe.prototype =
     });
   },
 
+
+  //--------------------------------------------------
+  //一般開発ユーザからアクセス可能な関数のプロトタイプ定義
   /**
    * 
-   * @param {dataview} data orphe terminal専用
+   * @param {dataview} data orphe terminal専用のとにかくonReadで来たデータをそのまま渡す
    */
   gotData: function (data) {
     //console.log('prototype.gotQuat');
@@ -934,63 +903,63 @@ Orphe.prototype =
 
   /**
    * 
-   * @param {Object} quat {w, x,y,z}
+   * @param {Object} quat {w,x,y,z} クオータニオンの取得
    */
   gotQuat: function (quat) {
     //console.log('prototype.gotQuat');
   },
   /**
    * 
-   * @param {Object} gyro {x,y,z}
+   * @param {Object} gyro {x,y,z} ジャイロの取得
    */
   gotGyro: function (gyro) {
     //console.log('prototype.gotGyro');
   },
   /**
    * 
-   * @param {Object} acc {x,y,z}
+   * @param {Object} acc {x,y,z} 加速度の取得
    */
   gotAcc: function (acc) {
     //console.log('prototype.gotAcc');
   },
   /**
    * 
-   * @param {Object} gyro {x,y,z}
+   * @param {Object} gyro {x,y,z} ジャイロレンジに応じて変換したジャイロの取得
    */
   gotConvertedGyro: function (gyro) {
     //console.log('prototype.gotGyro');
   },
   /**
    * 
-   * @param {Object} acc {x,y,z}
+   * @param {Object} acc {x,y,z} 加速度レンジに応じて変換した加速度の取得
    */
   gotConvertedAcc: function (acc) {
     //console.log('prototype.gotAcc');
   },
   /**
    * 
-   * @param {Object} delta {x,y,z}
+   * @param {Object} delta {x,y,z} x,y,zの変位
    */
   gotDelta: function (delta) {
     //console.log('prototype.gotDelta');
   },
   /**
    * 
-   * @param {Object} euler {pitch, roll, yaw}
+   * @param {Object} euler {pitch, roll, yaw} オイラー角の取得（破綻するので姿勢を取る場合はクオータニオンを利用すること）
    */
   gotEuler: function (euler) {
     //console.log('prototype.gotEuler');
   },
   /**
    * 
-   * @param {Object} gait {type, direction, calorie, distance}
+   * @param {Object} gait {type, direction, calorie, distance} 歩行解析の取得
    */
   gotGait: function (gait) {
     //console.log('prototype.gotGait');
   },
   /**
    * 
-   * @param {Object} type {value} 0:none, 1:walk, 2:run, 3:stand
+   * @param {Object} type {value} 0:none, 1:walk, 2:run, 3:stand 
    */
   gotType: function (type) {
   },
@@ -1009,7 +978,7 @@ Orphe.prototype =
 
   /**
    * 
-   * @param {Object} distance {value}
+   * @param {Object} distance {value} 
    */
   gotDistance: function (distance) {
   },
@@ -1050,12 +1019,9 @@ Orphe.prototype =
   gotStepsNumber: function (steps_number) {
   },
 
-
-
   onScan: function (deviceName) { console.log("onScan"); },
   onConnectGATT: function (uuid) { console.log("onConnectGATT"); },
   onConnect: function (uuid) { console.log("onConnect"); },
-  // this.onRead = function (data, uuid) { console.log("onRead"); };
   onWrite: function (uuid) { console.log("onWrite"); },
   onStartNotify: function (uuid) { console.log("onStartNotify", uuid); },
   onStopNotify: function (uuid) { console.log("onStopNotify", uuid); },
@@ -1064,4 +1030,7 @@ Orphe.prototype =
   onClear: function () { console.log("onClear"); },
   onReset: function () { console.log("onReset"); },
   onError: function (error) { console.log("onError: ", error); },
+
+  //一般開発ユーザからアクセス可能な関数の定義ここまで
+  //--------------------------------------------------
 }

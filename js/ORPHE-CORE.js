@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/24 16:22:57
+Last modified: 2024/05/24 17:19:26
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -166,9 +166,21 @@ Orphe.prototype =
    * @async
    * @return {Promise<string>} 
    */
-  begin: async function (str_type = 'ANALYSIS', options = {}) {
+  begin: async function (
+    str_type = 'ANALYSIS',
+    options = { range: { acc: -1, gyro: -1 }, is_raw_data_monitoring: false }
+  ) {
+
+    // 生データモニタリングモードの設定．この設定を行わないと生データモニタリングが行われません．また，生データモニタリングを行う場合は，センサーやステップ等のデータ処理は行われません（生データにはすべてのデータが含まれます）．
+    if (options.is_raw_data_monitoring == true) {
+      this.is_raw_data_monitoring = true;
+    }
+    else {
+      this.is_raw_data_monitoring = false;
+    }
+
     const {
-      range = { acc: -1, gyro: -1 }
+      range = { acc: -1, gyro: -1 },
     } = options;
     this.notification_type = str_type;
 
@@ -395,7 +407,6 @@ Orphe.prototype =
       .then(() => this.dataCharacteristic.startNotifications())
       .then(() => {
         this.dataChangedEventHandlerMap[uuid] = this.dataChanged(this, uuid);
-        // this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
         this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChangedEventHandlerMap[uuid]);
         this.onStartNotify(uuid);
       })
@@ -517,9 +528,14 @@ Orphe.prototype =
   onRead: function (data, uuid) {
     // console.log(uuid, data.byteLength, data.getUint8(0));
     // 受け取ったデータそのままがほしければ gotData を利用する
-    this.gotData(data, uuid);
+
     let ret = this.timestamp.getHz();
     if (ret > 0) this.gotBLEFrequency(ret);
+
+    if (this.is_raw_data_monitoring == true) {
+      this.gotData(data, uuid);
+      return;
+    }
     // デバイス情報Readの場合    
     if (uuid == 'DEVICE_INFORMATION') {
       /*
@@ -693,7 +709,7 @@ Orphe.prototype =
 
         // エラー処理
         if (data.byteLength != 92) {
-          console.error("SENSOR VALUES: Data length is not 92");
+          console.warn("SENSOR VALUES: Data length is not 92");
           return
         }
 

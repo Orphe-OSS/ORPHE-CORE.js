@@ -9,7 +9,7 @@ window.onload = function () {
 
     // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
     bles[0].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder'), 'CORE', 0, 'RAW');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder'), 'CORE', 0, 'RAW', { is_raw_data_monitoring: true });
     bles[0].onConnect = function () {
         is_connected = true;
         is_playing = true;

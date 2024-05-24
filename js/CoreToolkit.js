@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2024/05/24 08:55:33
+Last modified: 2024/05/24 17:41:27
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -184,19 +184,19 @@ async function toggleCoreModule(dom, options = {}) {
 }
 
 // notifyは複数同じものを呼び出せてしまうので，必ずすでに登録したnotificationはストップする
-// 必要がある．
+// 必要がある．モニタリングフラグがある場合はそれも引き継いで再開する
 function changeNotify(no, dom) {
     if (bles[no].notification_type == 'ANALYSIS') {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             setTimeout(function () {
-                bles[no].begin(dom.value);
+                bles[no].begin(dom.value, { is_raw_data_monitoring: bles[no].is_raw_data_monitoring });
             }, 500);
         });
     }
     else if (bles[no].notification_type == 'RAW') {
         bles[no].stopNotify('SENSOR_VALUES').then(() => {
             setTimeout(function () {
-                bles[no].begin(dom.value);
+                bles[no].begin(dom.value, { is_raw_data_monitoring: bles[no].is_raw_data_monitoring });
             }, 500);
         });
     }
@@ -204,7 +204,7 @@ function changeNotify(no, dom) {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             bles[no].stopNotify('SENSOR_VALUES').then(() => {
                 setTimeout(function () {
-                    bles[no].begin(dom.value);
+                    bles[no].begin(dom.value, { is_raw_data_monitoring: bles[no].is_raw_data_monitoring });
                 }, 500);
             });
         });

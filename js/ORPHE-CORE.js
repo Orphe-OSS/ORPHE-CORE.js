@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/24 17:19:26
+Last modified: 2024/05/25 07:10:48
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -130,6 +130,7 @@ Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7
 /**
  * @class Orphe prototype object 
  * @type {Object} 
+ * 
  * @property {function} setup setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
  * @property {function} begin begin BLE connection
   */
@@ -141,9 +142,18 @@ Orphe.prototype =
   /**
    * setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
    * @param {string[]} names DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
+   * @param {object} options is_raw_data_monitoring
    */
-  setup: function (names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS']) {
-    //console.log(names);
+  setup: function (
+    names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
+    options = { is_raw_data_monitoring: false }
+  ) {
+    if (options.is_raw_data_monitoring == true) {
+      this.is_raw_data_monitoring = true;
+    }
+    else {
+      this.is_raw_data_monitoring = false;
+    }
     for (const name of names) {
       if (name == 'DEVICE_INFORMATION') {
         this.setUUID(name, Orphe.ORPHE_INFORMATION, Orphe.ORPHE_DEVICE_INFORMATION);
@@ -168,16 +178,8 @@ Orphe.prototype =
    */
   begin: async function (
     str_type = 'ANALYSIS',
-    options = { range: { acc: -1, gyro: -1 }, is_raw_data_monitoring: false }
+    options = { range: { acc: -1, gyro: -1 } }
   ) {
-
-    // 生データモニタリングモードの設定．この設定を行わないと生データモニタリングが行われません．また，生データモニタリングを行う場合は，センサーやステップ等のデータ処理は行われません（生データにはすべてのデータが含まれます）．
-    if (options.is_raw_data_monitoring == true) {
-      this.is_raw_data_monitoring = true;
-    }
-    else {
-      this.is_raw_data_monitoring = false;
-    }
 
     const {
       range = { acc: -1, gyro: -1 },

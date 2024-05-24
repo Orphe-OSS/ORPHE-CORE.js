@@ -8,17 +8,16 @@ var is_playing = false;
 window.onload = function () {
 
     // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
-    bles[0].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder'), 'CORE', 0, 'RAW', { is_raw_data_monitoring: true });
+    bles[0].setup(['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'], { is_raw_data_monitoring: true });
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder'), 'CORE', 0, 'RAW');
     bles[0].onConnect = function () {
         is_connected = true;
         is_playing = true;
-        console.log(is_connected);
     }
     bles[0].onDisconnect = function () {
         is_connected = false;
         is_playing = false;
-        console.log(is_connected);
+        alert('ORPHE COREとの接続が切れました');
     }
     bles[0].gotData = function (data, uuid) {
 

@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2024/05/24 17:41:27
+Last modified: 2024/05/24 17:53:08
 `;
 
 var bles = [new Orphe(0), new Orphe(1)];
@@ -108,7 +108,7 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
       <option value="RAW">RAW</option>
       <option value="ANALYSIS_AND_RAW">ANALYSIS_AND_RAW</option>
     </select>
-    <label for="select_acc" class="small">Realtime data protocol[not available]</label>
+    <label for="select_notify${core_id}" class="small">Realtime data protocol[not available]</label>
   </div>
   <div class="form-floating mt-2">
     <select class="form-select text-black" id="select_acc${core_id}" aria-label="Floating label select example"

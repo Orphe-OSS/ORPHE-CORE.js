@@ -1,0 +1,362 @@
+<script>
+  var last_modified = `
+  Last modified: 2024/05/25 15:20:05
+  `;
+</script>
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORPHE-CORE.js Document</title>
+
+  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css" />
+  <link href="../css/orphe_custom.css" rel="stylesheet">
+</head>
+
+
+<body class="bg-dark">
+  <div class="container-sm mt-2">
+    <nav class="navbar fixed-top navbar-light bg-base position-relative navbar-expand-lg">
+      <span id="last_modified" class="position-absolute top-25 end-0 badge bg-base border-light p-1"
+        style="font-size:0.7em;">
+      </span>
+
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+          <a class="navbar-brand" href="https://orphe.io/">
+            <img src="../images/orphe.svg" alt="" height="24" class="d-inline-block align-text-top">
+          </a>
+          <script>
+            document.querySelector('#last_modified').innerText = last_modified;
+          </script>
+        </span>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <div class="container-sm mt-4">
+    <img class="img-fluid" src="../images/ORPHE_TRACK_scene_03.jpg">
+    <h1 class="mt-4"> ORPHE-CORE.js Basic Tutorial</h1>
+    <section class="ms-4">
+      <!-- warning -->
+      <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-circle"></i>
+        このチュートリアルページを読む前に必ず<a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank"
+          class="bg-primary fw-bold link-light">documentページ</a>のQuick
+        Start with VSCodeまでを読み，サンプルプログラムの実行環境を整えてください。
+      </div>
+      <p>
+        ORPHE-CORE.jsはORPHE CORE Module (以後コアモジュールと呼びます)をJavaScriptから制御するためのライブラリです。
+        コアモジュールには大きく分けてBLE、モーションセンサ、LED機能が実装されています。開発者の皆さんはこのライブラリを使って、手軽にコアモジュールのLEDを光らせたり、モーションセンサの値を取得したりすることができます。
+      </p>
+      <p>
+        このチュートリアルでは、ORPHE-CORE.jsの基本的な使用方法と知識について説明します。<a href="https://orphe-oss.github.io/ORPHE-CORE.js/"
+          target="_blank">documentページ</a>に記載されているサンプルプログラムで用いられているAPIについて簡潔に触れつつ，BLE通信とコアモジュールの振る舞いを理解することを目的とします．
+      </p>
+    </section>
+
+
+    <h2 class="mt-5">1. 最初のコードと初期化処理</h2>
+
+    <section class="row ms-4">
+      <div class="col-12">
+        <p>
+          ORPHE-CORE.js には、Orphe
+          というクラスが用意されています。このクラスを使って、コアモジュールを制御することができます。
+          次のコードは、ORPHE-CORE.jsを使ってコアモジュールのLEDを光らせるサンプルコードです。このコードを実行し、connectと書かれたボタンを押すとコアモジュール選択ダイアログが開き、コアモジュール接続に成功すると、LEDが光ります。
+        </p>
+      </div>
+      <div class="col-6">
+        <pre style="white-space:pre-wrap" class="">
+            <code class="language-html p-0 m-0" >
+            &lt;!doctype html&gt;
+            &lt;html lang=&quot;en&quot;&gt;
+              &lt;head&gt;
+                &lt;meta charset=&quot;utf-8&quot;&gt;
+                &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;
+              &lt;/head&gt;
+              &lt;body&gt;
+                &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;
+                &lt;button onclick=&quot;core.setLED(1,0);&quot;&gt;connect&lt;/button&gt;
+                &lt;script src=&quot;ORPHE-CORE.js&quot;&quot;&gt;&lt;/script&gt;
+                &lt;script&gt;
+                var core = new Orphe(0);
+                window.onload = function () {
+                  core.setup();
+                }
+                &lt;/script&gt;
+              &lt;/body&gt;
+            &lt;/html&gt;
+          </code>
+        </pre>
+      </div>
+      <div class="col-6">
+
+        <h3>var core = new <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#Orphe"
+            target="_blank">Orphe</a>(0);</h3>
+        <p>
+          これは、Orpheクラスのインスタンスを生成しています。引数にはコアモジュールのインデックス（コアモジュール番号）を指定します。コアモジュールは最大2つまで接続できます。インデックスには0または1を指定します。coreは様々な場所から呼び出される可能性があるので、グローバル変数として宣言するとプロトタイピングには便利でしょう。
+        </p>
+        <h3>core.<a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#setup"
+            target="_blank">setup</a>();</h3>
+        <p>
+          setup()関数は、コアモジュールの初期化を行います。このsetup()では具体的にはコアモジュールに接続するキャラクタリスティックを設定することができます。特に引数を指定しない場合、デフォルトの設定（DEVICE_INFORMATION,
+          SENSOR_VALUES,
+          STEP_ANALYSIS）が適用されます。この3つのキャラクタリスティックは、ORPHE-CORE.jsでアクセス可能なすべてのBLEキャラクタリスティックを含んでいます。setup()を忘れると、接続するキャラクタリスティックが設定されないため、正しく動作しません。
+        </p>
+      </div>
+
+    </section>
+
+    <h2 class="mt-5">2. コアモジュールのBLE通信</h2>
+    <section class="row ms-4">
+      <div class="col-sm-12">
+        <p>
+          コアモジュールはBLE（Bluetooth Low
+          Energy）を使ってスマートフォンやパソコンと通信します。BLE通信は、コアモジュールとスマートフォン（またはパソコン）の間でデータをやり取りするためのプロトコルです。コアモジュールではサービス（Service）とキャラクタリスティック（Characteristic）を使ってデータ通信を行い、これらサービスとキャラクタリスティックをまとめた通信プロトコルをGATT（Generic
+          Attribute Profile）と呼びます。
+        </p>
+        <p>
+          コアモジュールにおけるGATTプロトコルは、以下のサービスとキャラクタリスティックで構成されています。
+        <ul>
+          <li>ORPHE Information [Service]</li>
+          <ul>
+            <li>Device Information [Characteristic]</li>
+          </ul>
+          <li>Other Service [Service]</li>
+          <ul>
+            <li>Sensor Values (SENSOR_VALUES) [Characteristic]</li>
+            <li>Step Analysis (STEP_ANALYSIS) [Characteristic]</li>
+          </ul>
+        </ul>
+        </p>
+        <p>
+          先程のsetup()関数では、デフォルトでDevice Information, Sensor Values, Step
+          Analysisの3つのキャラクタリスティックが設定されるため、上記のデータを取得することができますが、例えばsetup(["DEVICE_INFORMATION"])のように引数を指定することで、特定のキャラクタリスティックのみを設定することもできます。通常はすべてアクセスできればよいので、引数を指定する必要はほとんどありません。
+        </p>
+      </div>
+    </section>
+
+    <h2 class="mt-5">3. モーションセンサ値と解析結果の取得</h2>
+    <section class="row ms-4">
+      <div class="col-sm-12">
+        <p>
+          ここまではORPHE-CORE.jsの初期設定について説明しました。次に、コアモジュールから取得したモーションセンサ及び解析結果を取得する方法について説明します。コアモジュールには、加速度センサ、ジャイロセンサが搭載されています。これらのセンサから取得した値は、Sensor
+          Valuesというキャラクタリスティックを通じて取得することができます。また、モーションセンサから得られた値を解析した結果は、Step
+          Analysisというキャラクタリスティックを通じて取得することができます。Step
+          Analysisはコアモジュールの歩行解析結果を含んでいます。
+        </p>
+        <h3>core.<a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#begin"
+            target="_blank">begin</a>();</h3>
+        <p>
+          Sensor Values及びStep
+          Analysisの値を取得するためには、begin()関数を呼び出す必要があります。それぞれのキャラクタリスティックはNotificationという形式で通信を行います。この関数を呼び出すことで、コアモジュールからの定期的にデータ送信が開始されます。begin()の引数は以下の通りです。
+        <ul>
+          <li>begin('STEP_ANALYSIS');</li>
+          <li>begin('SENSOR_VALUES');</li>
+          <li>begin('STEP_ANALYSIS_AND_SENSOR_VALUES');（引数が省略された場合これがデフォルト）</li>
+        </ul>
+        最初からSTEP_ANALYSIS_AND_SENSOR_VALUESを指定しておけば、両方のキャラクタリスティックの値を取得することができますが、BLE通信の負荷が大きくなるため、必要なデータのみを取得するようにしましょう。
+        </p>
+        <p>
+          以下にそれぞれのキャラクタリスティックで取得できる値を示します。gotQuat（クオータニオン）のようにどちらでも共通して取得できるデータもありますが、キャラクタリスティックを間違えると値が取得できない場合があることを注意してください。各値取得に対応している
+          gotHogeHogeという関数は、コアモジュールから値を取得した際に呼び出されるコールバック関数です。この関数をユーザ側で定義することで、コアモジュールから値が取得された場合に適時その関数が呼び出されるようになります。
+        </p>
+      </div>
+      <div class="col-sm-8 offset-sm-2">
+        <ul class="list-group">
+          <li class="list-group-item list-group-item-primary">Sensor Values Characteristic</li>
+          <ul>
+            <li>加速度：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotAcc"
+                target="_blank">gotAcc</a>
+            </li>
+            <li>レンジ変換加速度：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotConvertedAcc"
+                target="_blank">gotConvertedAcc</a>
+            </li>
+            <li>角速度：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotGyro"
+                target="_blank">
+                gotGyro</a>
+            </li>
+            <li>レンジ変換角速度：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotConvertedGyro"
+                target="_blank">
+                gotConvertedGyro</a>
+            </li>
+            <li>コアモジュール姿勢：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotQuat"
+                target="_blank">
+                gotQuat</a>
+            </li>
+            <li>コアモジュール姿勢（オイラー角）：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotEuler"
+                target="_blank">
+                gotEuler</a>
+            </li>
+          </ul>
+          <li class="list-group-item list-group-item-primary">Step Analysis characteristic</li>
+          <ul>
+            <li>歩数：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotStepsNumber"
+                target="_blank">
+                gotStepsNumber</a>
+              </a>
+            </li>
+            <li>コアモジュール姿勢：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotQuat"
+                target="_blank">
+                gotQuat
+              </a>
+            </li>
+            <li>コアモジュール姿勢（オイラー角）：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotEuler"
+                target="_blank">
+                gotEuler</a>
+            </li>
+            <li>歩容（type, direction, calorie, distanceを一つのオブジェクトにまとめたもの）：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotGait"
+                target="_blank">
+                gotGait</a>
+            </li>
+            <li>歩容タイプ（走ってるとか、歩いているというタイプ）：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotType"
+                target="_blank">
+                gotType</a>
+            </li>
+            <li>フットアングル：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotFootAngle"
+                target="_blank">
+                gotFootAngle</a>
+            </li>
+            <li>着地衝撃力：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotLandingImpact"
+                target="_blank">gotLandingImpact</a>
+            </li>
+            <li>消費カロリー：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotCalorie"
+                target="_blank">gotCalorie</a>
+            </li>
+            <li>プロネーション：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotPronation"
+                target="_blank">
+                gotPronation</a>
+            </li>
+            <li>ストライド：
+              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotStride"
+                target="_blank">
+                gotStride</a>
+            </li>
+            </u>
+          </ul>
+        </ul>
+
+      </div>
+
+
+
+      <h3 class="mt-5">加速度を取得するサンプル</h3>
+      <p>
+        では、実際にモーションセンサ値、具体的には加速度センサ値を取得するサンプルコードを示します。コアモジュールの初期化、setupを行った後、begin()関数を呼び出すことで、加速度センサ値を取得することができます。加速度センサ値の場合はSensor
+        Valuesのキャラクタリスティックを使用する必要があるため、begin() または
+        begin('SENSOR_VALUES')という引数を指定します。begin('STEP_ANALYSIS')で指定すると、STEP_ANALYSISキャラクタリスティック値しか取得できないため、コンソールには何も表示されなくなります。
+      </p>
+
+      <pre style="white-space:pre-wrap" class="">
+      <code class="language-html" >
+      &lt;!doctype html&gt;
+      &lt;html lang=&quot;en&quot;&gt;
+      &lt;head&gt;
+          &lt;meta charset=&quot;utf-8&quot;&gt;
+      &lt;/head&gt;
+      &lt;body&gt;
+          &lt;button onclick=&quot;mystart();&quot;&gt;connect&lt;/button&gt;
+          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js&quot;
+              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+          &lt;script&gt;
+              var core;
+              window.onload = function () {
+                  core = new Orphe(0);
+                  core.setup();                
+              }
+              function mystart() {
+                core.begin('SENSOR_VALUES');
+                core.gotAcc = function (acc) {
+                    console.log(acc);
+                }
+            }
+          &lt;/script&gt;
+      &lt;/body&gt;
+      &lt;/html&gt;
+    </code>
+      </pre>
+    </section>
+
+
+    <h3 class="mt-4"><i class="bi bi-book"></i> API Reference</h3>
+    <section class="ms-5">
+      クラス内の関数や変数についての詳細な説明は、以下のAPIリファレンスを参照してください。
+      <li><a href="./api_doc/" target="_blank">API Reference for ORPHE-CORE.js</a></li>
+    </section>
+
+
+    <footer class="text-center small mt-5 mb-5">
+      <hr>
+      &copy; 2024 Tetsuaki BABA
+    </footer>
+  </div>
+
+
+  <script src="../js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+  <script src="../js/run_prettify.js?skin=sunburst"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <!-- and it's easy to individually load additional languages -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/go.min.js"></script>
+  <script src="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.js"></script>
+
+  <script>
+    function copyInputValue(button_dom, id) {
+      console.log(id);
+      let dom = document.querySelector(id);
+      dom.select();
+      document.execCommand("copy");
+      dom.classList.remove('bg-secondary')
+      dom.classList.add('bg-primary')
+      let v_prev = dom.value;
+      button_dom.innerHTML = "COPIED";
+      //dom.value = 'COPIED!!' + v_prev;
+      setTimeout(function () {
+        //console.log(dom);
+        dom.classList.remove('bg-primary')
+        dom.classList.add('bg-secondary')
+        //dom.value = v_prev;
+        dom.blur();
+        button_dom.innerHTML = '<i class="bi bi-clipboard"></i>';
+
+      }, 1000, dom)
+
+
+    }
+
+  </script>
+  <script>
+    hljs.highlightAll();
+    hljs.addPlugin(new CopyButtonPlugin());
+  </script>
+
+</body>
+
+</html>

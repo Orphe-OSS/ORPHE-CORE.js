@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/25 07:10:48
+Last modified: 2024/05/25 09:42:01
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -140,9 +140,9 @@ Orphe.prototype =
     this.hashUUID[name] = { 'serviceUUID': serviceUUID, 'characteristicUUID': characteristicUUID };
   },
   /**
-   * setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
-   * @param {string[]} names DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
-   * @param {object} options is_raw_data_monitoring
+   * 最初に必要な初期化処理メソッドです。利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定の他、オプションを指定することができます。オプションでは生データの取得を指定することができます。通常利用では引数を省略して setup() が呼び出されることが多いです。
+   * @param {string[]} [string[]=["DEVICE_INFORMATION", "SENSOR_VALUES", "STEP_ANALYSIS"]] DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
+   * @param {object} [options = {is_raw_data_monitoring:false}] - is_raw_data_monitoring: trueの場合、生データを取得します。falseの場合、解析データを取得します。デフォルトはfalseです。
    */
   setup: function (
     names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
@@ -169,17 +169,34 @@ Orphe.prototype =
 
   /**
    *  begin BLE connection 
-   *  If options is not specified, it follows the current settings of the device. 
-   * センサー値の取得を開始します。ANALYSIS, RAWと指定することで取得するデータの種類を指定することができます。
-   * @param {string} [notification_type="ANALYSIS"] ANALYSIS, RAW, ANALYSIS_AND_RAW
+   * SENSOR_VALUESまたはSTEP_ANALYSISのセンサー値の取得を開始します。
+   * @param {string} [notification_type="STEP_ANALYSIS"] STEP_ANALYSIS, SENSOR_VALUES, STEP_ANALYSIS_AND_SENSOR_VALUES
    * @param {object} [options={range:{acc:-1, gyro:-1}}] {range:{acc:[2,4,8,16],gyro:[250,500,1000,2000]}
    * @async
    * @return {Promise<string>} 
    */
   begin: async function (
-    str_type = 'ANALYSIS',
+    str_type = 'STEP_ANALYSIS',
     options = { range: { acc: -1, gyro: -1 } }
   ) {
+
+    // ----------------------------------------------
+    // @Depricated beginの引数である RAW, ANALYSISに関して混乱を招くので、setup()でのUUID設定に合わせ
+    // RAW: SENSOR_VALUES, ANALYSIS: STEP_ANALYSIS に変更することとした。しばらくは両方の引数を受け付ける
+    if (str_type == 'RAW') {
+      str_type = 'SENSOR_VALUES';
+      console.warn("RAW is deprecated. Please use SENSOR_VALUES instead.");
+    }
+    if (str_type == 'ANALYSIS') {
+      str_type = 'STEP_ANALYSIS';
+      console.warn("ANALYSIS is deprecated. Please use STEP_ANALYSIS instead.");
+    }
+    if (str_type == 'ANALYSIS_AND_RAW') {
+      str_type = 'STEP_ANALYSIS_AND_SENSOR_VALUES';
+      console.warn("ANALYSIS_AND_RAW is deprecated. Please use STEP_ANALYSIS_AND_SENSOR_VALUES instead.");
+    }
+    // Deprecated開始: 2024/05/25
+    // ----------------------------------------------
 
     const {
       range = { acc: -1, gyro: -1 },
@@ -202,10 +219,10 @@ Orphe.prototype =
     // ここで実際にnotifyを開始しています．
     return new Promise((resolve, reject) => {
 
-      if (str_type == "ANALYSIS") {
+      if (str_type == "STEP_ANALYSIS") {
         this.startNotify('STEP_ANALYSIS').then(() => {
           //console.log("analysis---")
-          resolve("done begin(); ANALYSIS");
+          resolve("done begin(); STEP ANALYSIS");
         })
           .catch(err => {
             //alert(err)
@@ -213,17 +230,17 @@ Orphe.prototype =
           }
           );
       }
-      else if (str_type == "RAW") {
+      else if (str_type == "SENSOR_VALUES") {
         this.startNotify('SENSOR_VALUES').then(() => {
           //console.log("raw---")
-          resolve("done begin(); RAW");
+          resolve("done begin(); SENSOR VALUES");
         });
       }
-      else if (str_type == "ANALYSIS_AND_RAW") {
+      else if (str_type == "STEP_ANALYSIS_AND_SENSOR_VALUES") {
         this.startNotify('STEP_ANALYSIS').then(() => {
           this.startNotify('SENSOR_VALUES').then(() => {
             //console.log("analysis and raw---")
-            resolve("done begin(); RAW and ANALYSIS");
+            resolve("done begin(); STEP_ANALYSIS and SENSOR VALUES");
           });
         });
       }
@@ -523,7 +540,7 @@ Orphe.prototype =
 
   // Readコールバック
   /**
-   * Incoming byte callback function 
+   * Incoming byte callback function. コアモジュールから送信されるデータを受信するコールバック関数です。それぞれのUUIDに対応するデータを正しく整形して対応するコールバック関数に渡します。ユーザはコールバック関数を手元のコードでオーバーライドして利用します。
    * @param {dataView} data incoming bytes
    * @param {string} uuid 
    */
@@ -912,43 +929,44 @@ Orphe.prototype =
   //--------------------------------------------------
   //一般開発ユーザからアクセス可能な関数のプロトタイプ定義
   /**
-   * 
-   * @param {dataview} data orphe terminal専用のとにかくonReadで来たデータをそのまま渡す
+   * ORPHE TERMINAL用に作成した関数。onReadで受け取ったデータをそのまま渡す。この関数を利用する場合は setup() の is_raw_data_monitoring = true にする必要がある。dataview形式なので、取り扱い方法については ORPHE TERMINALのソースを参照するとよい。
+   * @param {dataview} data onReadで取得したすべてのデータ
    */
   gotData: function (data) {
     //console.log('prototype.gotQuat');
   },
 
   /**
-   * 
+   * コアモジュールのクオータニオン情報を取得する
    * @param {Object} quat {w,x,y,z} クオータニオンの取得
    */
   gotQuat: function (quat) {
     //console.log('prototype.gotQuat');
   },
   /**
-   * 
+   * ジャイロ（x,y,zの角速度）を取得する
    * @param {Object} gyro {x,y,z} ジャイロの取得
    */
   gotGyro: function (gyro) {
     //console.log('prototype.gotGyro');
   },
   /**
-   * 
+   * 加速度を取得する。加速度レンジに応じて変換された値がほしい場合は、gotConvertedAccを利用すること
+   * 対応CharacteristicはSENSOR_VALUES
    * @param {Object} acc {x,y,z} 加速度の取得
    */
   gotAcc: function (acc) {
     //console.log('prototype.gotAcc');
   },
   /**
-   * 
+   * ジャイロレンジに応じて変換された値を取得する。
    * @param {Object} gyro {x,y,z} ジャイロレンジに応じて変換したジャイロの取得
    */
   gotConvertedGyro: function (gyro) {
     //console.log('prototype.gotGyro');
   },
   /**
-   * 
+   * コアモジュールで設定されている加速度レンジに応じて変換された値を取得する。
    * @param {Object} acc {x,y,z} 加速度レンジに応じて変換した加速度の取得
    */
   gotConvertedAcc: function (acc) {
@@ -962,76 +980,86 @@ Orphe.prototype =
     //console.log('prototype.gotDelta');
   },
   /**
-   * 
-   * @param {Object} euler {pitch, roll, yaw} オイラー角の取得（破綻するので姿勢を取る場合はクオータニオンを利用すること）
+   * コアモジュールのオイラー角を取得する。オイラー角の取得は破綻する可能性があるため、姿勢を取る場合はクオータニオンを利用すること
+   * @param {Object} euler {pitch, roll, yaw} オイラー角
    */
   gotEuler: function (euler) {
     //console.log('prototype.gotEuler');
   },
   /**
-   * 
+   * 歩容解析の取得
    * @param {Object} gait {type, direction, calorie, distance} 歩行解析の取得
    */
   gotGait: function (gait) {
     //console.log('prototype.gotGait');
   },
   /**
-   * 
+   * 現在の歩容タイプを取得する
    * @param {Object} type {value} 0:none, 1:walk, 2:run, 3:stand 
    */
   gotType: function (type) {
   },
   /**
-   * 
+   * ランニングの方向を取得する
    * @param {Object} direction {value} 0:none, 1:foward, 2:backward, 3:inside, 4:outside
    */
   gotDirection: function (direction) {
   },
   /**
-   * 
+   * 総消費カロリーを取得する
    * @param {Object} calorie {value}
    */
   gotCalorie: function (calorie) {
   },
 
   /**
-   * 
+   * 総移動距離を取得する
    * @param {Object} distance {value} 
    */
   gotDistance: function (distance) {
   },
+
+  /**
+   * 立脚期継続時間[s]を取得する
+   * @param {*} standing_phase_duration 
+   */
   gotStandingPhaseDuration: function (standing_phase_duration) {
   },
+
+  /**
+   * 遊脚期継続時間[s]を取得する
+   * @param {*} swing_phase_duration 
+   */
   gotSwingPhaseDuration: function (swing_phase_duration) {
 
   },
   /**
-   * 
+   * ストライド[m]の取得
    * @param {Object} stride {x,y,z}
    */
   gotStride: function (stride) {
   },
   /**
-   * 
+   * 着地角度[degree]の取得
    * @param {Object} foot_angle {value}
    */
   gotFootAngle: function (foot_angle) {
   },
 
   /**
-   * 
+   * プロネーション[degree]の取得
    * @param {Object} pronation {x,y,z}
    */
   gotPronation: function (pronation) {
   },
   /**
-   * 
+   * 着地衝撃力[kgf/weight]の取得
    * @param {Object} landing_impact {value}
    */
   gotLandingImpact: function (landing_impact) {
   },
   /**
-   * 
+   * 現在までの歩数を取得する
    * @param {Object} steps_number {value}
    */
   gotStepsNumber: function (steps_number) {
@@ -1044,6 +1072,11 @@ Orphe.prototype =
   onStartNotify: function (uuid) { console.log("onStartNotify", uuid); },
   onStopNotify: function (uuid) { console.log("onStopNotify", uuid); },
   onDisconnect: function () { console.log("onDisconnect"); },
+
+  /**
+   * notification frequencyの実測値を取得する
+   * @param {float} frequency 
+   */
   gotBLEFrequency: function (frequency) { },
   onClear: function () { console.log("onClear"); },
   onReset: function () { console.log("onReset"); },

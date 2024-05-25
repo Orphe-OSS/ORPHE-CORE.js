@@ -1,11 +1,11 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/25 09:42:01
+Last modified: 2024/05/25 15:33:03
 `;
 /**
 ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 @module Orphe
 @author Tetsuaki BABA
-@version 1.0.1
+@version 1.1.0
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -973,8 +973,8 @@ Orphe.prototype =
     //console.log('prototype.gotAcc');
   },
   /**
-   * 
-   * @param {Object} delta {x,y,z} x,y,zの変位
+   * 加速度値を2回積分して各x,y,zの単位時間の移動距離を取得する。
+   * @param {Object} delta {x,y,z} x,y,zの前回フレームからの移動距離
    */
   gotDelta: function (delta) {
     //console.log('prototype.gotDelta');

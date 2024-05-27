@@ -7,7 +7,14 @@ Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/) for d
  * float16.js, https://github.com/petamoriken/float16
  * quaternion.js, https://github.com/infusion/Quaternion.js
 
-## jsdocのドキュメント生成
+## 環境構築
+Node.jsのインストール後、以下のコマンドを実行して環境を構築してください。
+```bash
+npm install
+```
+
+### jsdocのドキュメント生成
+ORPHE-CORE.jsのAPIドキュメントを生成するには、以下のコマンドを実行してください。ORPHE-CORE.jsファイルを直接jsdoc方式でコメントインして、以下のコマンドを実行するとapi_docにドキュメントが生成されます。jsdocの設定は、`jsdoc.json`に記述されています。
 ```
 npm run generate-docs
 ```

@@ -1,8 +1,8 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/25 15:33:03
+Last modified: 2024/05/28 18:26:47
 `;
 /**
-ORPHE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
+ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 @module Orphe
 @author Tetsuaki BABA
 @version 1.1.0
@@ -27,38 +27,51 @@ document.head.appendChild(quaternionScript);
 /**
  * @class
  * Orphe Constructor
- * @param {number} _num specifies id of your ORPHE CORE Module
+ * @param {number} id specifies id of your ORPHE CORE Module
  */
-function Orphe(_num) {
+function Orphe(id) {
+
+  // Initialize member variables
   this.bluetoothDevice = null;
   this.dataCharacteristic = null;// 通知を行うcharacteristicを保持する
-  this.dataChangedEventHandlerMap = {};
-  this.hashUUID = {};
-  this.hashUUID_lastConnected;
-  this.id = _num;
+  this.dataChangedEventHandlerMap = {}; // イベントハンドラを保持するマップ
+  this.hashUUID = {}; // UUIDを保持するハッシュ
+  this.hashUUID_lastConnected; // 最後に接続したUUIDを保持する
+  this.id = id;
 
 
-  // device information用の配列
-  this.array_device_information = new DataView(new ArrayBuffer(20));
+
+  this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
   /**
-   * Associative array of device information. begin()を呼び出すとデバイスから値を取得して初期化される． 
-   * @param {uint8} battery
-   *  this.device_information = {
-        battery: data.getUint8(0),
-        lr: data.getUint8(1),
-        rec_mode: data.getUint8(2),
-        rec_auto_run: data.getUint8(3),
-        led_brightness: data.getUint8(4),
-        range: {
-          acc: data.getUint8(8),
-          gyro: data.getUint8(9)
-        }
-      }
-   */
-
-  // 以下メンバ変数の初期化
+ * デバイスインフォメーションを取得して保存しておく連想配列です。begin()を呼び出すとデバイスから値を取得して初期化されます。
+ * @property {Object} device_information - デバイス情報
+ * @property {number} device_information.battery - バッテリー残量（少ない:0、普通:1、多い:2）
+ * @property {number} device_information.lr - コアモジュール取り付け位置（左右情報）
+bit0 : 左右
+bit1 : 0(足底) / 1(足背)
+足底 : 左、右：0=(0000 0000b), 1=(0000 0001b)、
+足背 : 左、右：2(=0000 0010b), 3(=0000 0011b)
+ * @property {number} device_information.rec_mode - 記録モード。記録してない, 記録中, 一時停止中：0, 1, 2
+ * @property {number} device_information.rec_auto_run - 自動RUN記録　Off, On：0, 1
+ * @property {number} device_information.led_brightness - LEDの明るさ（0-255）
+ * @property {Object} device_information.range - 加速度とジャイロセンサの感度設定
+ * @property {number} device_information.range.acc - 加速度レンジ（ 2, 4, 8, 16(g)：0, 1, 2, 3）
+ * @property {number} device_information.range.gyro - ジャイロレンジ（250, 500, 1000, 2000(°/s)：0, 1, 2, 3）
+*/
   this.device_information = '';
+
+  /**
+   * 歩容解析のデータを保存しておく連想配列です。
+   * @property {Object} gait - 歩容解析のデータ
+   * @property {number} gait.type - 歩容のタイプ（0: 通常歩行, 1: 走行, 2: ランニング）
+   * @property {number} gait.direction - 歩容の向き（0: 前進, 1: 後退, 2: 左, 3: 右）
+   * @property {number} gait.calorie - 消費カロリー
+   * @property {number} gait.distance - 移動距離
+   * @property {number} gait.steps - 歩数
+   * @property {number} gait.standing_phase_duration - 立ち上がり時間
+   * @property {number} gait.swing_phase_duration - 振り出し時間
+   */
   this.gait = {
     type: 0,
     direction: 0,
@@ -68,6 +81,16 @@ function Orphe(_num) {
     standing_phase_duration: 0,
     swing_phase_duration: 0
   }
+  /**
+   * ストライドのデータを保存しておく連想配列です。
+   * @property {Object} stride - ストライドのデータ
+   * @property {number} stride.foot_angle - 足首の角度
+   * @property {number} stride.x - X軸方向のストライド
+   * @property {number} stride.y - Y軸方向のストライド
+   * @property {number} stride.z - Z軸方向のストライド
+   * @property {number} stride.steps - 歩数
+   * 
+   */
   this.stride = {
     foot_angle: 0,
     x: 0,
@@ -75,6 +98,15 @@ function Orphe(_num) {
     z: 0,
     steps: 0,
   }
+  /**
+ * プロネーションのデータを保存しておく連想配列です。
+ * @property {Object} pronation - プロネーションのデータ
+ * @property {number} pronation.landing_impact - 着地衝撃
+ * @property {number} pronation.x - X軸方向のプロネーション
+ * @property {number} pronation.y - Y軸方向のプロネーション
+ * @property {number} pronation.z - Z軸方向のプロネーション
+ * @property {number} pronation.steps - 歩数
+ */
   this.pronation = {
     landing_impact: 0,
     x: 0,
@@ -82,27 +114,88 @@ function Orphe(_num) {
     z: 0,
     steps: 0,
   }
+  /**
+   * 歩数カウントを保存する変数
+   */
   this.steps_number = 0;
+
+  /**
+   * クォータニオンを保存する連想配列です。
+   * @property {Object} quat - クォータニオン
+   * @property {number} quat.w - w
+   * @property {number} quat.x - x
+   * @property {number} quat.y - y
+   * @property {number} quat.z - z
+   * 
+   */
   this.quat = {
     w: 0.0, x: 0.0, y: 0.0, z: 0.0
   }
+
+  /**
+   * 加速度値から2回積分で基準フレーム間の移動距離を求めた変数です
+   * @property {Object} delta - 距離
+   * @property {number} delta.x - X軸方向の距離
+   * @property {number} delta.y - Y軸方向の距離
+   * @property {number} delta.z - Z軸方向の距離
+   *    */
   this.delta = {
     x: 0.0, y: 0.0, z: 0.0
   }
+
+  /**
+   * オイラー角を保存する連想配列です。this.quatから計算されています。
+   * @property {Object} euler - オイラー角
+   * @property {number} euler.pitch - ピッチ
+   * @property {number} euler.roll - ロール
+   * @property {number} euler.yaw - ヨー
+   */
   this.euler = {
     pitch: 0.0,
     roll: 0.0,
     yaw: 0.0
   }
+
+  /**
+   * ジャイロセンサの値を保存する連想配列です。
+   * @property {Object} gyro - ジャイロセンサの値
+   * @property {number} gyro.x - X軸方向のジャイロセンサの値
+   * @property {number} gyro.y - Y軸方向のジャイロセンサの値
+   * @property {number} gyro.z - Z軸方向のジャイロセンサの値
+   */
   this.gyro = {
     x: 0.0, y: 0.0, z: 0.0
   }
+
+  /**
+   * 加速度センサの値を保存する連想配列です。
+   * @property {Object} acc - 加速度センサの値
+   * @property {number} acc.x - X軸方向の加速度センサの値
+   * @property {number} acc.y - Y軸方向の加速度センサの値
+   * @property {number} acc.z - Z軸方向の加速度センサの値
+   */
   this.acc = {
     x: 0.0, y: 0.0, z: 0.0
   }
+
+  /**
+   * ジャイロレンジに合わせて変換したジャイロセンサの値を保存する連想配列です。
+   * @property {Object} converted_gyro - ジャイロセンサの値
+   * @property {number} converted_gyro.x - X軸方向のジャイロセンサの値
+   * @property {number} converted_gyro.y - Y軸方向のジャイロセンサの値
+   * @property {number} converted_gyro.z - Z軸方向のジャイロセンサの値
+   */
   this.converted_gyro = {
     x: 0.0, y: 0.0, z: 0.0
   }
+
+  /**
+   * 加速度レンジに合わせて変換した加速度センサの値を保存する連想配列です。
+   * @property {Object} converted_acc - 加速度センサの値
+   * @property {number} converted_acc.x - X軸方向の加速度センサの値
+   * @property {number} converted_acc.y - Y軸方向の加速度センサの値
+   * @property {number} converted_acc.z - Z軸方向の加速度センサの値
+   */
   this.converted_acc = {
     x: 0.0, y: 0.0, z: 0.0
   }
@@ -864,6 +957,9 @@ Orphe.prototype =
           z: data.getInt8(16) / 127
         }
         // ジャイロと加速度補正をかけたものを別途作成
+        let gyroRange = this.device_information.range.gyro;
+        let accRange = this.device_information.range.acc;
+
         this.converted_gyro = {
           x: this.gyro.x * gyroRange,
           y: this.gyro.y * gyroRange,

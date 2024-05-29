@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/29 17:32:18
+Last modified: 2024/05/29 18:27:33
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -30,7 +30,7 @@ document.head.appendChild(quaternionScript);
 
 
 /**
- * Orpheクラス内部で利用されるタイムスタンプクラスです。BLE通信のデータ取得タイミングにおける実測周波数を取得するために利用されます。Orpheクラス内部で本当は宣言したかったのですが、jsdoc が暮らす内部クラス定義に対応していないため、外部に出しています。無念。
+ * Orpheクラス内部で利用されるタイムスタンプクラスです。BLE通信のデータ取得タイミングにおける実測周波数を取得するために利用されます。Orpheクラス内部で本当は宣言したかったのですが、jsdoc が暮らす内部クラス定義に対応していないため、外部に出しています。無念。  
  * @class
  */
 class OrpheTimestamp {
@@ -682,6 +682,25 @@ class Orphe {
 
     if (this.is_raw_data_monitoring == true) {
       this.gotData(data, uuid);
+
+      // データ欠損チェック
+      if (uuid == 'SENSOR_VALUES') {
+        // 魔改造200Hzの場合はヘッダが50
+        if (data.getUint8(0) == 50) {
+          if (this.serial_number) {
+            const serial_number_prev = this.serial_number;
+            this.serial_number = data.getUint16(1);
+            if (this.serial_number - serial_number_prev != 1) {
+              this.lostData(this.serial_number, serial_number_prev);
+            }
+          }
+          else {
+            this.serial_number = data.getUint16(1);
+          }
+        }
+      }
+
+
       return;
     }
     // デバイス情報Readの場合    
@@ -852,8 +871,21 @@ class Orphe {
     }
     else if (uuid == 'SENSOR_VALUES') {
 
+
       // 魔改造200Hzの場合はヘッダが50
       if (data.getUint8(0) == 50) {
+
+        // データ欠損チェック
+        if (this.serial_number) {
+          const serial_number_prev = this.serial_number;
+          this.serial_number = data.getUint16(1);
+          if (this.serial_number - serial_number_prev != 1) {
+            this.lostData(this.serial_number, serial_number_prev);
+          }
+        }
+        else {
+          this.serial_number = data.getUint16(1);
+        }
 
         // エラー処理
         if (data.byteLength != 92) {
@@ -861,9 +893,6 @@ class Orphe {
           return
         }
 
-        // 50Hzで毎でおくられてくるデータのタイムスタンプ。
-        // 200Hz分取り出す場合は、全て同じタイムスタンプになるので、packet_numberを付与して識別する
-        let serial_number = data.getUint16(1);
 
         // COREから送られてきたタイムスタンプをUNIXタイムスタンプに変換
         function toTimestamp(hours, minutes, seconds, milliseconds) {
@@ -900,10 +929,12 @@ class Orphe {
         if (accRange == 3) accRange = 16;
 
         let t_start = timestamp;
+
+
         // それぞれの値は29毎で、4つ分ある
         for (let i = 3; i >= 0; i--) {
 
-          serial_number = data.getUint16(1);
+
 
           // 2番目移行のtimestampは最初のタイムスタンプとの差分になっているため
           // t_startに数値を足す処理を行って、各パケットのtimestampを算出する
@@ -918,7 +949,7 @@ class Orphe {
             y: data.getInt16(12 + 21 * i) / 32768,
             z: data.getInt16(14 + 21 * i) / 32768,
             timestamp: timestamp,
-            serial_number: serial_number,
+            serial_number: this.serial_number,
             packet_number: i
           }
           this.gyro = {
@@ -926,7 +957,7 @@ class Orphe {
             y: data.getInt16(18 + 21 * i) / 32768,
             z: data.getInt16(20 + 21 * i) / 32768,
             timestamp: timestamp,
-            serial_number: serial_number,
+            serial_number: this.serial_number,
             packet_number: i
           }
           this.acc = {
@@ -934,7 +965,7 @@ class Orphe {
             y: data.getInt16(24 + 21 * i) / 32768,
             z: data.getInt16(26 + 21 * i) / 32768,
             timestamp: timestamp,
-            serial_number: serial_number,
+            serial_number: this.serial_number,
             packet_number: i
           }
           // ジャイロと加速度補正をかけたものを別途作成
@@ -943,7 +974,7 @@ class Orphe {
             y: this.gyro.y * gyroRange,
             z: this.gyro.z * gyroRange,
             timestamp: timestamp,
-            serial_number: serial_number,
+            serial_number: this.serial_number,
             packet_number: i
           };
           this.converted_acc = {
@@ -951,7 +982,7 @@ class Orphe {
             y: this.acc.y * accRange,
             z: this.acc.z * accRange,
             timestamp: timestamp,
-            serial_number: serial_number,
+            serial_number: this.serial_number,
             packet_number: i
           };
 
@@ -973,7 +1004,7 @@ class Orphe {
         // }
 
       }
-      // 通常のupdate sensor valuesであればヘッダは40
+      // 通常のupdate sensor valuesであればヘッダは40。このときにはserial_numberはパケットに含まれていない
       else if (data.getUint8(0) == 40) {
 
         this.quat = {
@@ -1194,6 +1225,14 @@ class Orphe {
    * @param {Object} steps_number {value}
    */
   gotStepsNumber(steps_number) {
+  }
+
+  /**
+   * 以前来たデータとのシリアルナンバーの差が1でない場合に呼び出される。SENSOR_VALUESのcharacteristicを利用し、かつ、200Hzのデータ取得のモデル（CR-3）のみで利用可能。50Hzの加速度センサーのデータ取得モデル（CR-2）では利用できない。
+   * @param {number} serial_number - 現在のシリアルナンバー
+   * @param {number} serial_number_prev - 一つ前に受診したデータのシリアルナンバー
+   */
+  lostData(serial_number, serial_number_prev) {
   }
 
   onScan(deviceName) { console.log("onScan"); }

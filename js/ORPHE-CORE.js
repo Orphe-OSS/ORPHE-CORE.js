@@ -1,11 +1,15 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/28 18:26:47
+Last modified: 2024/05/29 17:32:18
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
+Class形式で記述を変更したバージョン
+v1.2 クラス記述形式に変更
+v1.1 2024/05/29
+v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.1.0
+@version 1.2.0
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -24,221 +28,250 @@ quaternionScript.type = 'text/javascript';
 quaternionScript.crossOrigin = 'anonymous';
 document.head.appendChild(quaternionScript);
 
+
 /**
+ * Orpheクラス内部で利用されるタイムスタンプクラスです。BLE通信のデータ取得タイミングにおける実測周波数を取得するために利用されます。Orpheクラス内部で本当は宣言したかったのですが、jsdoc が暮らす内部クラス定義に対応していないため、外部に出しています。無念。
  * @class
- * Orphe Constructor
- * @param {number} id specifies id of your ORPHE CORE Module
  */
-function Orphe(id) {
-
-  // Initialize member variables
-  this.bluetoothDevice = null;
-  this.dataCharacteristic = null;// 通知を行うcharacteristicを保持する
-  this.dataChangedEventHandlerMap = {}; // イベントハンドラを保持するマップ
-  this.hashUUID = {}; // UUIDを保持するハッシュ
-  this.hashUUID_lastConnected; // 最後に接続したUUIDを保持する
-  this.id = id;
-
-
-
-  this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
-
+class OrpheTimestamp {
   /**
- * デバイスインフォメーションを取得して保存しておく連想配列です。begin()を呼び出すとデバイスから値を取得して初期化されます。
- * @property {Object} device_information - デバイス情報
- * @property {number} device_information.battery - バッテリー残量（少ない:0、普通:1、多い:2）
- * @property {number} device_information.lr - コアモジュール取り付け位置（左右情報）
-bit0 : 左右
-bit1 : 0(足底) / 1(足背)
-足底 : 左、右：0=(0000 0000b), 1=(0000 0001b)、
-足背 : 左、右：2(=0000 0010b), 3(=0000 0011b)
- * @property {number} device_information.rec_mode - 記録モード。記録してない, 記録中, 一時停止中：0, 1, 2
- * @property {number} device_information.rec_auto_run - 自動RUN記録　Off, On：0, 1
- * @property {number} device_information.led_brightness - LEDの明るさ（0-255）
- * @property {Object} device_information.range - 加速度とジャイロセンサの感度設定
- * @property {number} device_information.range.acc - 加速度レンジ（ 2, 4, 8, 16(g)：0, 1, 2, 3）
- * @property {number} device_information.range.gyro - ジャイロレンジ（250, 500, 1000, 2000(°/s)：0, 1, 2, 3）
-*/
-  this.device_information = '';
-
-  /**
-   * 歩容解析のデータを保存しておく連想配列です。
-   * @property {Object} gait - 歩容解析のデータ
-   * @property {number} gait.type - 歩容のタイプ（0: 通常歩行, 1: 走行, 2: ランニング）
-   * @property {number} gait.direction - 歩容の向き（0: 前進, 1: 後退, 2: 左, 3: 右）
-   * @property {number} gait.calorie - 消費カロリー
-   * @property {number} gait.distance - 移動距離
-   * @property {number} gait.steps - 歩数
-   * @property {number} gait.standing_phase_duration - 立ち上がり時間
-   * @property {number} gait.swing_phase_duration - 振り出し時間
+   * タイムスタンプクラスのコンストラクタです。
    */
-  this.gait = {
-    type: 0,
-    direction: 0,
-    calorie: 0,
-    distance: 0,
-    steps: 0,
-    standing_phase_duration: 0,
-    swing_phase_duration: 0
+  constructor() {
+    this.start = 0;
   }
   /**
-   * ストライドのデータを保存しておく連想配列です。
-   * @property {Object} stride - ストライドのデータ
-   * @property {number} stride.foot_angle - 足首の角度
-   * @property {number} stride.x - X軸方向のストライド
-   * @property {number} stride.y - Y軸方向のストライド
-   * @property {number} stride.z - Z軸方向のストライド
-   * @property {number} stride.steps - 歩数
-   * 
+   * 前回呼び出した時刻からの経過時間をミリ秒で返します。
+   * @returns {number} 前回呼び出した時刻からの経過時間をミリ秒で返します。
    */
-  this.stride = {
-    foot_angle: 0,
-    x: 0,
-    y: 0,
-    z: 0,
-    steps: 0,
+  millis() {
+    const blenow = performance.now();
+    let diff = (blenow - this.start);
+    this.start = blenow;
+    return diff;
   }
   /**
- * プロネーションのデータを保存しておく連想配列です。
- * @property {Object} pronation - プロネーションのデータ
- * @property {number} pronation.landing_impact - 着地衝撃
- * @property {number} pronation.x - X軸方向のプロネーション
- * @property {number} pronation.y - Y軸方向のプロネーション
- * @property {number} pronation.z - Z軸方向のプロネーション
- * @property {number} pronation.steps - 歩数
- */
-  this.pronation = {
-    landing_impact: 0,
-    x: 0,
-    y: 0,
-    z: 0,
-    steps: 0,
-  }
-  /**
-   * 歩数カウントを保存する変数
+   * 前回呼び出した時刻からの経過時間を周波数として返します。
+   * @returns {float} 周波数[Hz]
    */
-  this.steps_number = 0;
-
-  /**
-   * クォータニオンを保存する連想配列です。
-   * @property {Object} quat - クォータニオン
-   * @property {number} quat.w - w
-   * @property {number} quat.x - x
-   * @property {number} quat.y - y
-   * @property {number} quat.z - z
-   * 
-   */
-  this.quat = {
-    w: 0.0, x: 0.0, y: 0.0, z: 0.0
+  getHz() {
+    let t = this.millis();
+    if (t <= 15) return -1;
+    else return 1000 / t;
   }
-
-  /**
-   * 加速度値から2回積分で基準フレーム間の移動距離を求めた変数です
-   * @property {Object} delta - 距離
-   * @property {number} delta.x - X軸方向の距離
-   * @property {number} delta.y - Y軸方向の距離
-   * @property {number} delta.z - Z軸方向の距離
-   *    */
-  this.delta = {
-    x: 0.0, y: 0.0, z: 0.0
-  }
-
-  /**
-   * オイラー角を保存する連想配列です。this.quatから計算されています。
-   * @property {Object} euler - オイラー角
-   * @property {number} euler.pitch - ピッチ
-   * @property {number} euler.roll - ロール
-   * @property {number} euler.yaw - ヨー
-   */
-  this.euler = {
-    pitch: 0.0,
-    roll: 0.0,
-    yaw: 0.0
-  }
-
-  /**
-   * ジャイロセンサの値を保存する連想配列です。
-   * @property {Object} gyro - ジャイロセンサの値
-   * @property {number} gyro.x - X軸方向のジャイロセンサの値
-   * @property {number} gyro.y - Y軸方向のジャイロセンサの値
-   * @property {number} gyro.z - Z軸方向のジャイロセンサの値
-   */
-  this.gyro = {
-    x: 0.0, y: 0.0, z: 0.0
-  }
-
-  /**
-   * 加速度センサの値を保存する連想配列です。
-   * @property {Object} acc - 加速度センサの値
-   * @property {number} acc.x - X軸方向の加速度センサの値
-   * @property {number} acc.y - Y軸方向の加速度センサの値
-   * @property {number} acc.z - Z軸方向の加速度センサの値
-   */
-  this.acc = {
-    x: 0.0, y: 0.0, z: 0.0
-  }
-
-  /**
-   * ジャイロレンジに合わせて変換したジャイロセンサの値を保存する連想配列です。
-   * @property {Object} converted_gyro - ジャイロセンサの値
-   * @property {number} converted_gyro.x - X軸方向のジャイロセンサの値
-   * @property {number} converted_gyro.y - Y軸方向のジャイロセンサの値
-   * @property {number} converted_gyro.z - Z軸方向のジャイロセンサの値
-   */
-  this.converted_gyro = {
-    x: 0.0, y: 0.0, z: 0.0
-  }
-
-  /**
-   * 加速度レンジに合わせて変換した加速度センサの値を保存する連想配列です。
-   * @property {Object} converted_acc - 加速度センサの値
-   * @property {number} converted_acc.x - X軸方向の加速度センサの値
-   * @property {number} converted_acc.y - Y軸方向の加速度センサの値
-   * @property {number} converted_acc.z - Z軸方向の加速度センサの値
-   */
-  this.converted_acc = {
-    x: 0.0, y: 0.0, z: 0.0
-  }
-  // メンバ変数の初期化ここまで
-  //////////////////////////
-
 }
 
 /**
- * @class Orphe static object この他にもいくつかUUIDがありますが，ここには記載していません．
- * @type {Object} 
- * @property {string} ORPHE_INFORMATION "01a9d6b5-ff6e-444a-b266-0be75e85c064" SERVICE_UUID
- * @property {string} ORPHE_DEVICE_INFORMATION "24354f22-1c46-430e-a4ab-a1eeabbcdfc0" CHARACTERISTIC_UUID
- * 
- * @property {string} ORPHE_OTHER_SERVICE "db1b7aca-cda5-4453-a49b-33a53d3f0833" SERVICE_UUID
- * @property {string} ORPHE_SENSOR_VALUES "f3f9c7ce-46ee-4205-89ac-abe64e626c0f" CHARACTERISTIC_UUID
- * @property {string} ORPHE_STEP_ANALYSIS "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd"
- */
-Object.defineProperty(Orphe, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
-Object.defineProperty(Orphe, 'ORPHE_DEVICE_INFORMATION', { value: "24354f22-1c46-430e-a4ab-a1eeabbcdfc0", writable: true });
-Object.defineProperty(Orphe, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
-Object.defineProperty(Orphe, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
-Object.defineProperty(Orphe, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
+ * ORPHE CORE Module Javascript class
+* @class
+* @type {Object} 
+* @property {string} ORPHE_INFORMATION "01a9d6b5-ff6e-444a-b266-0be75e85c064" SERVICE_UUID
+* @property {string} ORPHE_DEVICE_INFORMATION "24354f22-1c46-430e-a4ab-a1eeabbcdfc0" CHARACTERISTIC_UUID
+* 
+* @property {string} ORPHE_OTHER_SERVICE "db1b7aca-cda5-4453-a49b-33a53d3f0833" SERVICE_UUID
+* @property {string} ORPHE_SENSOR_VALUES "f3f9c7ce-46ee-4205-89ac-abe64e626c0f" CHARACTERISTIC_UUID
+* @property {string} ORPHE_STEP_ANALYSIS "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd" CHARACTERISTIC_UUID
+*/
+class Orphe {
+  /**
+   * 初期化関数 
+   * @param {number} id コアの番号（0 or 1）を指定します。
+   */
+  constructor(id) {
 
-/**
- * @class Orphe prototype object 
- * @type {Object} 
- * 
- * @property {function} setup setup UUID by predefined name, DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
- * @property {function} begin begin BLE connection
+    this.timestamp = new OrpheTimestamp();
+
+    Object.defineProperty(this, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
+    Object.defineProperty(this, 'ORPHE_DEVICE_INFORMATION', { value: "24354f22-1c46-430e-a4ab-a1eeabbcdfc0", writable: true });
+    Object.defineProperty(this, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
+    Object.defineProperty(this, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
+    Object.defineProperty(this, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
+
+    // Initialize member variables
+    this.bluetoothDevice = null;
+    this.dataCharacteristic = null;// 通知を行うcharacteristicを保持する
+    this.dataChangedEventHandlerMap = {}; // イベントハンドラを保持するマップ
+    this.hashUUID = {}; // UUIDを保持するハッシュ
+    this.hashUUID_lastConnected; // 最後に接続したUUIDを保持する
+    this.id = id;
+    this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
+    /**
+   * デバイスインフォメーションを取得して保存しておく連想配列です。begin()を呼び出すとデバイスから値を取得して初期化されます。
+   * @property {Object} device_information - デバイス情報
+   * @property {number} device_information.battery - バッテリー残量（少ない:0、普通:1、多い:2）
+   * @property {number} device_information.lr - コアモジュール取り付け位置（左右情報）
+  bit0 : 左右
+  bit1 : 0(足底) / 1(足背)
+  足底 : 左、右：0=(0000 0000b), 1=(0000 0001b)、
+  足背 : 左、右：2(=0000 0010b), 3(=0000 0011b)
+   * @property {number} device_information.rec_mode - 記録モード。記録してない, 記録中, 一時停止中：0, 1, 2
+   * @property {number} device_information.rec_auto_run - 自動RUN記録　Off, On：0, 1
+   * @property {number} device_information.led_brightness - LEDの明るさ（0-255）
+   * @property {Object} device_information.range - 加速度とジャイロセンサの感度設定
+   * @property {number} device_information.range.acc - 加速度レンジ（ 2, 4, 8, 16(g)：0, 1, 2, 3）
+   * @property {number} device_information.range.gyro - ジャイロレンジ（250, 500, 1000, 2000(°/s)：0, 1, 2, 3）
   */
-Orphe.prototype =
-{
-  setUUID: function (name, serviceUUID, characteristicUUID) {
+    this.device_information = '';
+
+    /**
+     * 歩容解析のデータを保存しておく連想配列です。
+     * @property {Object} gait - 歩容解析のデータ
+     * @property {number} gait.type - 歩容のタイプ（0: 通常歩行, 1: 走行, 2: ランニング）
+     * @property {number} gait.direction - 歩容の向き（0: 前進, 1: 後退, 2: 左, 3: 右）
+     * @property {number} gait.calorie - 消費カロリー
+     * @property {number} gait.distance - 移動距離
+     * @property {number} gait.steps - 歩数
+     * @property {number} gait.standing_phase_duration - 立ち上がり時間
+     * @property {number} gait.swing_phase_duration - 振り出し時間
+     */
+    this.gait = {
+      type: 0,
+      direction: 0,
+      calorie: 0,
+      distance: 0,
+      steps: 0,
+      standing_phase_duration: 0,
+      swing_phase_duration: 0
+    }
+    /**
+     * ストライドのデータを保存しておく連想配列です。
+     * @property {Object} stride - ストライドのデータ
+     * @property {number} stride.foot_angle - 足首の角度
+     * @property {number} stride.x - X軸方向のストライド
+     * @property {number} stride.y - Y軸方向のストライド
+     * @property {number} stride.z - Z軸方向のストライド
+     * @property {number} stride.steps - 歩数
+     * 
+     */
+    this.stride = {
+      foot_angle: 0,
+      x: 0,
+      y: 0,
+      z: 0,
+      steps: 0,
+    }
+    /**
+   * プロネーションのデータを保存しておく連想配列です。
+   * @property {Object} pronation - プロネーションのデータ
+   * @property {number} pronation.landing_impact - 着地衝撃
+   * @property {number} pronation.x - X軸方向のプロネーション
+   * @property {number} pronation.y - Y軸方向のプロネーション
+   * @property {number} pronation.z - Z軸方向のプロネーション
+   * @property {number} pronation.steps - 歩数
+   */
+    this.pronation = {
+      landing_impact: 0,
+      x: 0,
+      y: 0,
+      z: 0,
+      steps: 0,
+    }
+    /**
+     * 歩数カウントを保存する変数
+     */
+    this.steps_number = 0;
+
+    /**
+     * クォータニオンを保存する連想配列です。
+     * @property {Object} quat - クォータニオン
+     * @property {number} quat.w - w
+     * @property {number} quat.x - x
+     * @property {number} quat.y - y
+     * @property {number} quat.z - z
+     * 
+     */
+    this.quat = {
+      w: 0.0, x: 0.0, y: 0.0, z: 0.0
+    }
+
+    /**
+     * 加速度値から2回積分で基準フレーム間の移動距離を求めた変数です
+     * @property {Object} delta - 距離
+     * @property {number} delta.x - X軸方向の距離
+     * @property {number} delta.y - Y軸方向の距離
+     * @property {number} delta.z - Z軸方向の距離
+     *    */
+    this.delta = {
+      x: 0.0, y: 0.0, z: 0.0
+    }
+
+    /**
+     * オイラー角を保存する連想配列です。this.quatから計算されています。
+     * @property {Object} euler - オイラー角
+     * @property {number} euler.pitch - ピッチ
+     * @property {number} euler.roll - ロール
+     * @property {number} euler.yaw - ヨー
+     */
+    this.euler = {
+      pitch: 0.0,
+      roll: 0.0,
+      yaw: 0.0
+    }
+
+    /**
+     * ジャイロセンサの値を保存する連想配列です。
+     * @property {Object} gyro - ジャイロセンサの値
+     * @property {number} gyro.x - X軸方向のジャイロセンサの値
+     * @property {number} gyro.y - Y軸方向のジャイロセンサの値
+     * @property {number} gyro.z - Z軸方向のジャイロセンサの値
+     */
+    this.gyro = {
+      x: 0.0, y: 0.0, z: 0.0
+    }
+
+    /**
+     * 加速度センサの値を保存する連想配列です。
+     * @property {Object} acc - 加速度センサの値
+     * @property {number} acc.x - X軸方向の加速度センサの値
+     * @property {number} acc.y - Y軸方向の加速度センサの値
+     * @property {number} acc.z - Z軸方向の加速度センサの値
+     */
+    this.acc = {
+      x: 0.0, y: 0.0, z: 0.0
+    }
+
+    /**
+     * ジャイロレンジに合わせて変換したジャイロセンサの値を保存する連想配列です。
+     * @property {Object} converted_gyro - ジャイロセンサの値
+     * @property {number} converted_gyro.x - X軸方向のジャイロセンサの値
+     * @property {number} converted_gyro.y - Y軸方向のジャイロセンサの値
+     * @property {number} converted_gyro.z - Z軸方向のジャイロセンサの値
+     */
+    this.converted_gyro = {
+      x: 0.0, y: 0.0, z: 0.0
+    }
+
+    /**
+     * 加速度レンジに合わせて変換した加速度センサの値を保存する連想配列です。
+     * @property {Object} converted_acc - 加速度センサの値
+     * @property {number} converted_acc.x - X軸方向の加速度センサの値
+     * @property {number} converted_acc.y - Y軸方向の加速度センサの値
+     * @property {number} converted_acc.z - Z軸方向の加速度センサの値
+     */
+    this.converted_acc = {
+      x: 0.0, y: 0.0, z: 0.0
+    }
+    // メンバ変数の初期化ここまで
+    //////////////////////////
+
+  }
+  /**
+   * UUIDを設定する関数です。UUIDはsetup()で利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定に利用されます。
+   * @param {string} name 
+   * @param {string} serviceUUID 
+   * @param {string} characteristicUUID 
+   * @memberof Orphe
+   */
+  setUUID(name, serviceUUID, characteristicUUID) {
     this.hashUUID[name] = { 'serviceUUID': serviceUUID, 'characteristicUUID': characteristicUUID };
-  },
+  }
   /**
    * 最初に必要な初期化処理メソッドです。利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定の他、オプションを指定することができます。オプションでは生データの取得を指定することができます。通常利用では引数を省略して setup() が呼び出されることが多いです。
    * @param {string[]} [string[]=["DEVICE_INFORMATION", "SENSOR_VALUES", "STEP_ANALYSIS"]] DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
    * @param {object} [options = {is_raw_data_monitoring:false}] - is_raw_data_monitoring: trueの場合、生データを取得します。falseの場合、解析データを取得します。デフォルトはfalseです。
+   * @memberof Orphe
    */
-  setup: function (
-    names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
+  setup(names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
     options = { is_raw_data_monitoring: false }
   ) {
     if (options.is_raw_data_monitoring == true) {
@@ -249,16 +282,16 @@ Orphe.prototype =
     }
     for (const name of names) {
       if (name == 'DEVICE_INFORMATION') {
-        this.setUUID(name, Orphe.ORPHE_INFORMATION, Orphe.ORPHE_DEVICE_INFORMATION);
+        this.setUUID(name, this.ORPHE_INFORMATION, this.ORPHE_DEVICE_INFORMATION);
       }
       else if (name == 'SENSOR_VALUES') {
-        this.setUUID(name, Orphe.ORPHE_OTHER_SERVICE, Orphe.ORPHE_SENSOR_VALUES);
+        this.setUUID(name, this.ORPHE_OTHER_SERVICE, this.ORPHE_SENSOR_VALUES);
       }
       else if (name == 'STEP_ANALYSIS') {
-        this.setUUID(name, Orphe.ORPHE_OTHER_SERVICE, Orphe.ORPHE_STEP_ANALYSIS);
+        this.setUUID(name, this.ORPHE_OTHER_SERVICE, this.ORPHE_STEP_ANALYSIS);
       }
     }
-  },
+  }
 
   /**
    *  begin BLE connection 
@@ -267,8 +300,9 @@ Orphe.prototype =
    * @param {object} [options={range:{acc:-1, gyro:-1}}] {range:{acc:[2,4,8,16],gyro:[250,500,1000,2000]}
    * @async
    * @return {Promise<string>} 
+   * @memberof Orphe
    */
-  begin: async function (
+  async begin(
     str_type = 'STEP_ANALYSIS',
     options = { range: { acc: -1, gyro: -1 } }
   ) {
@@ -347,58 +381,58 @@ Orphe.prototype =
         return;
       });
 
-  },
+  }
   /**
    * stop and disconnect GATT connection
    */
-  stop: function () {
+  stop() {
     this.reset();
-  },
+  }
 
   /**
    * set LED mode
    * @param {int} on_off 0: turning off the LED, 1: turning on the LED
    * @param {int} pattern 0-4
    */
-  setLED: function (on_off, pattern) {
+  setLED(on_off, pattern) {
     const data = new Uint8Array([0x02, on_off, pattern]);
     this.write('DEVICE_INFORMATION', data);
-  },
+  }
   /**
    * sets the LED Brightness
    * @param {uint8} value 0-255, 0:turning off the LED
    */
-  setLEDBrightness: function (value) {
+  setLEDBrightness(value) {
     this.array_device_information.setUint8(2, value);
     this.write('DEVICE_INFORMATION', this.array_device_information);
-  },
+  }
   /**
    * Reset motion sensor attitude, quaternion culculation.
    */
-  resetMotionSensorAttitude: function () {
+  resetMotionSensorAttitude() {
     const data = new Uint8Array([0x03]);
     this.write('DEVICE_INFORMATION', data);
-  },
+  }
   /**
    * Reset Analysis logs in the core module.
    */
-  resetAnalysisLogs: function () {
+  resetAnalysisLogs() {
     const data = new Uint8Array([0x04]);
     this.write('DEVICE_INFORMATION', data);
-  },
-  scan: function (uuid, options = {}) {
+  }
+  scan(uuid, options = {}) {
     return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))
       .catch(error => {
         //console.log('Error : ' + error);
         this.onError(error);
       });
-  },
+  }
   /**
    * Execute requestDevice()
    * @param {string} uuid 
    * 
    */
-  requestDevice: function (uuid) {
+  requestDevice(uuid) {
     let options = {
       /*
       ORPHE core module name: CR-2, CR-3
@@ -418,8 +452,13 @@ Orphe.prototype =
         this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
         this.onScan(this.bluetoothDevice.name);
       });
-  },
-  connectGATT: function (uuid) {
+  }
+  /**
+   * GATT通信を始めるための関数。read, write, startNotify, stopNotifyが呼び出されるとscanと一緒に呼び出されます。
+   * @param {string} uuid 
+   *
+   */
+  connectGATT(uuid) {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
       //console.log('Error : ' + error);
@@ -452,21 +491,24 @@ Orphe.prototype =
         //console.log('Error : ' + error);
         this.onError(error);
       });
-  },
-  //--------------------------------------------------
-  //dataChanged
-  //--------------------------------------------------
-  dataChanged: function (self, uuid) {
+  }
+  /**
+   * サーバからのデータを受信したときに呼び出される関数です。この関数は、characteristicvaluechangedイベントが発生したときに呼び出されます。
+   * @param {function} self 
+   * @param {string} uuid 
+   * 
+   */
+  dataChanged(self, uuid) {
     return function (event) {
       self.onRead(event.target.value, uuid);
     }
-  },
+  }
   /**
-   * Read BLE data
+   * サーバからデータを読み込む。notificationからはonReadで呼び出されるので、この関数を利用するのは DEVICE_INFORMATION characteristicのみです。
    * @param {string} uuid DEVICE_INFORMATION
    * 
    */
-  read: function (uuid) {
+  read(uuid) {
     //return this.dataCharacteristic.readValue();
     // console.log(uuid);
     return (this.scan(uuid))
@@ -482,14 +524,14 @@ Orphe.prototype =
         //throw 'read error';
         this.onError(error);
       });
-  },
+  }
   /**
-   * write data to the BLE device
+   * write data to the BLE device。実際にwriteを利用するのは DEVICE_INFORMATION characteristicのみです。
    * @param {string} uuid DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
    * @param {dataView} array_value write bytes
    * 
    */
-  write: function (uuid, array_value) {
+  write(uuid, array_value) {
     return (this.scan(uuid))
       .then(() => {
         return this.connectGATT(uuid);
@@ -506,14 +548,13 @@ Orphe.prototype =
         //console.log('Error : ' + error);
         this.onError(error);
       });
-  },
+  }
   /**
-   * Stop Notification
+   * Start Notification
    * @param {string} uuid 
    * 
    */
-  startNotify: function (uuid) {
-    // 
+  startNotify(uuid) {
     return this.scan(uuid)
       .then(() => this.connectGATT(uuid))
       .then(() => this.dataCharacteristic.startNotifications())
@@ -526,13 +567,13 @@ Orphe.prototype =
         console.error('startNotify: Error : ' + error);
         this.onError(error);
       });
-  },
+  }
   /**
    * Stop Notification
    * @param {string} uuid 
    * 
    */
-  stopNotify: function (uuid) {
+  stopNotify(uuid) {
     return this.scan(uuid) // BLEデバイスのスキャンを開始します。
       .then(() => {
         return this.connectGATT(uuid); // GATTサーバーに接続します。
@@ -562,18 +603,19 @@ Orphe.prototype =
         this.onError(error);
       });
 
-  },
-  isConnected: function () {
+  }
+  isConnected() {
     if (!this.bluetoothDevice) {
       return false;
     }
     return this.bluetoothDevice.gatt.connected;
-  },
+  }
 
-  //--------------------------------------------------
-  //disconnect
-  //--------------------------------------------------
-  disconnect: function () {
+  /**
+   * BLEデバイスとの接続を切断します。デバイス接続をマニュアルで切断する場合には reset() を利用してください。切断だけでなくクラス内のメンバ変数もクリア初期化する必要があり、reset()を利用するとそれらの処理が行われます。
+   * 
+   */
+  disconnect() {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
       //console.log('Error : ' + error);
@@ -590,46 +632,40 @@ Orphe.prototype =
       this.onError(error);
       return;
     }
-  },
-  setDeviceInformation: function (obj) {
+  }
+  /**
+   * this.device_informationの連想配列形式でデータを渡すことで、コアモジュールのデバイス設定ができます。
+   * @param {object} obj 
+   */
+  setDeviceInformation(obj) {
     const senddata = new Uint8Array([0x01, obj.lr, obj.led_brightness, 0, obj.rec_auto_run, obj.time01, obj.time02, obj.range.acc, obj.range.gyro]);
     //const senddata = new Uint8Array([0x01, 0, 128, 0, 0, 0, 60, 0, 0]);
     //console.log(senddata);
     this.write('DEVICE_INFORMATION', senddata);
-  },
-  //--------------------------------------------------
-  //clear
-  //--------------------------------------------------
-  clear: function () {
+  }
+
+  /**
+   * 接続情報をクリアします。
+   */
+  clear() {
     //console.log('Excute : Clear Device and Characteristic');
     this.bluetoothDevice = null;
     this.dataCharacteristic = null;
     this.onClear();
-  },
+  }
   /**
    * reset(disconnect & clear)
    */
-  reset: function () {
+  reset() {
     //console.log('Excute : reset');
     this.disconnect(); //disconnect() is not Promise Object
     this.clear();
     this.onReset();
-  },
+  }
 
-  timestamp: {
-    start: 0,
-    millis: function () {
-      const blenow = performance.now();
-      let diff = (blenow - this.start);
-      this.start = blenow;
-      return diff;
-    },
-    getHz: function () {
-      let t = this.millis();
-      if (t <= 15) return -1;
-      else return 1000 / t;
-    }
-  },
+
+
+
 
   // Readコールバック
   /**
@@ -637,7 +673,7 @@ Orphe.prototype =
    * @param {dataView} data incoming bytes
    * @param {string} uuid 
    */
-  onRead: function (data, uuid) {
+  onRead(data, uuid) {
     // console.log(uuid, data.byteLength, data.getUint8(0));
     // 受け取ったデータそのままがほしければ gotData を利用する
 
@@ -979,14 +1015,13 @@ Orphe.prototype =
         this.euler = q.toEuler();
         this.gotEuler(this.euler);
       }
-
-
-
-
     }
-
-  },
-  getDeviceInformation: async function () {
+  }
+  /**
+   * 呼び出すと現在のデバイス設定を取得します。連想配列形式でリターンされます。asyncに対応させているので、awaitを利用して呼び出すことをおすすめします。
+   * @returns {Promise<object>} device_informationを連想配列形式で返す
+   */
+  async getDeviceInformation() {
     return new Promise((resolve, reject) => {
       this.read('DEVICE_INFORMATION').then((data) => {
         this.array_device_information.setUint8(0, 1);
@@ -1019,7 +1054,7 @@ Orphe.prototype =
         reject(error);
       });
     });
-  },
+  }
 
 
   //--------------------------------------------------
@@ -1028,155 +1063,155 @@ Orphe.prototype =
    * ORPHE TERMINAL用に作成した関数。onReadで受け取ったデータをそのまま渡す。この関数を利用する場合は setup() の is_raw_data_monitoring = true にする必要がある。dataview形式なので、取り扱い方法については ORPHE TERMINALのソースを参照するとよい。
    * @param {dataview} data onReadで取得したすべてのデータ
    */
-  gotData: function (data) {
+  gotData(data) {
     //console.log('prototype.gotQuat');
-  },
+  }
 
   /**
    * コアモジュールのクオータニオン情報を取得する
    * @param {Object} quat {w,x,y,z} クオータニオンの取得
    */
-  gotQuat: function (quat) {
+  gotQuat(quat) {
     //console.log('prototype.gotQuat');
-  },
+  }
   /**
    * ジャイロ（x,y,zの角速度）を取得する
    * @param {Object} gyro {x,y,z} ジャイロの取得
    */
-  gotGyro: function (gyro) {
+  gotGyro(gyro) {
     //console.log('prototype.gotGyro');
-  },
+  }
   /**
    * 加速度を取得する。加速度レンジに応じて変換された値がほしい場合は、gotConvertedAccを利用すること
    * 対応CharacteristicはSENSOR_VALUES
    * @param {Object} acc {x,y,z} 加速度の取得
    */
-  gotAcc: function (acc) {
+  gotAcc(acc) {
     //console.log('prototype.gotAcc');
-  },
+  }
   /**
    * ジャイロレンジに応じて変換された値を取得する。
    * @param {Object} gyro {x,y,z} ジャイロレンジに応じて変換したジャイロの取得
    */
-  gotConvertedGyro: function (gyro) {
+  gotConvertedGyro(gyro) {
     //console.log('prototype.gotGyro');
-  },
+  }
   /**
    * コアモジュールで設定されている加速度レンジに応じて変換された値を取得する。
    * @param {Object} acc {x,y,z} 加速度レンジに応じて変換した加速度の取得
    */
-  gotConvertedAcc: function (acc) {
+  gotConvertedAcc(acc) {
     //console.log('prototype.gotAcc');
-  },
+  }
   /**
    * 加速度値を2回積分して各x,y,zの単位時間の移動距離を取得する。
    * @param {Object} delta {x,y,z} x,y,zの前回フレームからの移動距離
    */
-  gotDelta: function (delta) {
+  gotDelta(delta) {
     //console.log('prototype.gotDelta');
-  },
+  }
   /**
    * コアモジュールのオイラー角を取得する。オイラー角の取得は破綻する可能性があるため、姿勢を取る場合はクオータニオンを利用すること
    * @param {Object} euler {pitch, roll, yaw} オイラー角
    */
-  gotEuler: function (euler) {
+  gotEuler(euler) {
     //console.log('prototype.gotEuler');
-  },
+  }
   /**
    * 歩容解析の取得
    * @param {Object} gait {type, direction, calorie, distance} 歩行解析の取得
    */
-  gotGait: function (gait) {
+  gotGait(gait) {
     //console.log('prototype.gotGait');
-  },
+  }
   /**
    * 現在の歩容タイプを取得する
    * @param {Object} type {value} 0:none, 1:walk, 2:run, 3:stand 
    */
-  gotType: function (type) {
-  },
+  gotType(type) {
+  }
   /**
    * ランニングの方向を取得する
    * @param {Object} direction {value} 0:none, 1:foward, 2:backward, 3:inside, 4:outside
    */
-  gotDirection: function (direction) {
-  },
+  gotDirection(direction) {
+  }
   /**
    * 総消費カロリーを取得する
    * @param {Object} calorie {value}
    */
-  gotCalorie: function (calorie) {
-  },
+  gotCalorie(calorie) {
+  }
 
   /**
    * 総移動距離を取得する
    * @param {Object} distance {value} 
    */
-  gotDistance: function (distance) {
-  },
+  gotDistance(distance) {
+  }
 
   /**
    * 立脚期継続時間[s]を取得する
    * @param {*} standing_phase_duration 
    */
-  gotStandingPhaseDuration: function (standing_phase_duration) {
-  },
+  gotStandingPhaseDuration(standing_phase_duration) {
+  }
 
   /**
    * 遊脚期継続時間[s]を取得する
    * @param {*} swing_phase_duration 
    */
-  gotSwingPhaseDuration: function (swing_phase_duration) {
+  gotSwingPhaseDuration(swing_phase_duration) {
 
-  },
+  }
   /**
    * ストライド[m]の取得
    * @param {Object} stride {x,y,z}
    */
-  gotStride: function (stride) {
-  },
+  gotStride(stride) {
+  }
   /**
    * 着地角度[degree]の取得
    * @param {Object} foot_angle {value}
    */
-  gotFootAngle: function (foot_angle) {
-  },
+  gotFootAngle(foot_angle) {
+  }
 
   /**
    * プロネーション[degree]の取得
    * @param {Object} pronation {x,y,z}
    */
-  gotPronation: function (pronation) {
-  },
+  gotPronation(pronation) {
+  }
   /**
    * 着地衝撃力[kgf/weight]の取得
    * @param {Object} landing_impact {value}
    */
-  gotLandingImpact: function (landing_impact) {
-  },
+  gotLandingImpact(landing_impact) {
+  }
   /**
    * 現在までの歩数を取得する
    * @param {Object} steps_number {value}
    */
-  gotStepsNumber: function (steps_number) {
-  },
+  gotStepsNumber(steps_number) {
+  }
 
-  onScan: function (deviceName) { console.log("onScan"); },
-  onConnectGATT: function (uuid) { console.log("onConnectGATT"); },
-  onConnect: function (uuid) { console.log("onConnect"); },
-  onWrite: function (uuid) { console.log("onWrite"); },
-  onStartNotify: function (uuid) { console.log("onStartNotify", uuid); },
-  onStopNotify: function (uuid) { console.log("onStopNotify", uuid); },
-  onDisconnect: function () { console.log("onDisconnect"); },
+  onScan(deviceName) { console.log("onScan"); }
+  onConnectGATT(uuid) { console.log("onConnectGATT"); }
+  onConnect(uuid) { console.log("onConnect"); }
+  onWrite(uuid) { console.log("onWrite"); }
+  onStartNotify(uuid) { console.log("onStartNotify", uuid); }
+  onStopNotify(uuid) { console.log("onStopNotify", uuid); }
+  onDisconnect() { console.log("onDisconnect"); }
 
   /**
    * notification frequencyの実測値を取得する
    * @param {float} frequency 
    */
-  gotBLEFrequency: function (frequency) { },
-  onClear: function () { console.log("onClear"); },
-  onReset: function () { console.log("onReset"); },
-  onError: function (error) { console.log("onError: ", error); },
+  gotBLEFrequency(frequency) { }
+  onClear() { console.log("onClear"); }
+  onReset() { console.log("onReset"); }
+  onError(error) { console.log("onError: ", error); }
 
   //一般開発ユーザからアクセス可能な関数の定義ここまで
   //--------------------------------------------------

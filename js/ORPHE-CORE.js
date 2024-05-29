@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/29 18:27:33
+Last modified: 2024/05/29 22:21:49
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -260,7 +260,7 @@ class Orphe {
    * @param {string} name 
    * @param {string} serviceUUID 
    * @param {string} characteristicUUID 
-   * @memberof Orphe
+   * 
    */
   setUUID(name, serviceUUID, characteristicUUID) {
     this.hashUUID[name] = { 'serviceUUID': serviceUUID, 'characteristicUUID': characteristicUUID };
@@ -269,7 +269,7 @@ class Orphe {
    * 最初に必要な初期化処理メソッドです。利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定の他、オプションを指定することができます。オプションでは生データの取得を指定することができます。通常利用では引数を省略して setup() が呼び出されることが多いです。
    * @param {string[]} [string[]=["DEVICE_INFORMATION", "SENSOR_VALUES", "STEP_ANALYSIS"]] DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
    * @param {object} [options = {is_raw_data_monitoring:false}] - is_raw_data_monitoring: trueの場合、生データを取得します。falseの場合、解析データを取得します。デフォルトはfalseです。
-   * @memberof Orphe
+   *
    */
   setup(names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
     options = { is_raw_data_monitoring: false }
@@ -300,7 +300,7 @@ class Orphe {
    * @param {object} [options={range:{acc:-1, gyro:-1}}] {range:{acc:[2,4,8,16],gyro:[250,500,1000,2000]}
    * @async
    * @return {Promise<string>} 
-   * @memberof Orphe
+   * 
    */
   async begin(
     str_type = 'STEP_ANALYSIS',
@@ -674,15 +674,12 @@ class Orphe {
    * @param {string} uuid 
    */
   onRead(data, uuid) {
-    // console.log(uuid, data.byteLength, data.getUint8(0));
-    // 受け取ったデータそのままがほしければ gotData を利用する
-
     let ret = this.timestamp.getHz();
     if (ret > 0) this.gotBLEFrequency(ret);
 
+    // 生データモニタリングの場合はそのままデータをgotDataで渡して、returnする（データ欠損以外の他の処理は行わない）
     if (this.is_raw_data_monitoring == true) {
       this.gotData(data, uuid);
-
       // データ欠損チェック
       if (uuid == 'SENSOR_VALUES') {
         // 魔改造200Hzの場合はヘッダが50
@@ -699,10 +696,9 @@ class Orphe {
           }
         }
       }
-
-
       return;
     }
+
     // デバイス情報Readの場合    
     if (uuid == 'DEVICE_INFORMATION') {
       /*

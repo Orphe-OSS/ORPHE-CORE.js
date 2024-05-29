@@ -1,6 +1,6 @@
 <script>
   var last_modified = `
-  Last modified: 2024/05/28 18:36:08
+  Last modified: 2024/05/29 23:00:13
   `;
 </script>
 
@@ -92,23 +92,21 @@
       </div>
       <div class="col-6">
 
-        <h3>var core = new <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#Orphe"
-            target="_blank">Orphe</a>(0);</h3>
+        <h3>var core = new <cite>Orphe</cite>(0);</h3>
+
         <p>
           これは、Orpheクラスのインスタンスを生成しています。引数にはコアモジュールのインデックス（コアモジュール番号）を指定します。コアモジュールは最大2つまで接続できます。インデックスには0または1を指定します。coreは様々な場所から呼び出される可能性があるので、グローバル変数として宣言するとプロトタイピングには便利でしょう。
         </p>
-        <h3>core.<a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#setup"
-            target="_blank">setup</a>();</h3>
+        <h3>core.<cite>setup</cite>();</h3>
         <p>
-          setup()関数は、コアモジュールの初期化を行います。このsetup()では具体的にはコアモジュールに接続するキャラクタリスティックを設定することができます。特に引数を指定しない場合、デフォルトの設定（DEVICE_INFORMATION,
+          <cite>setup</cite>()関数は、コアモジュールの初期化を行います。この<cite>setup</cite>()では具体的にはコアモジュールに接続するキャラクタリスティックを設定することができます。特に引数を指定しない場合、デフォルトの設定（DEVICE_INFORMATION,
           SENSOR_VALUES,
-          STEP_ANALYSIS）が適用されます。この3つのキャラクタリスティックは、ORPHE-CORE.jsでアクセス可能なすべてのBLEキャラクタリスティックを含んでいます。setup()を忘れると、接続するキャラクタリスティックが設定されないため、正しく動作しません。
+          STEP_ANALYSIS）が適用されます。この3つのキャラクタリスティックは、ORPHE-CORE.jsでアクセス可能なすべてのBLEキャラクタリスティックを含んでいます。<cite>setup</cite>()を忘れると、接続するキャラクタリスティックが設定されないため、正しく動作しません。
         </p>
 
-        <h3>core.<a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#setLED"
-            target="_blank">setLED</a>();</h3>
+        <h3>core.<cite>setLED</cite>(on/off, 発光パターン)</h3>
         <p>
-          setLED()関数は、コアモジュールのLEDを制御するための関数です。最初の引数で点灯の有無、次の引数で5種類の発酵パターンを指定します。
+          <cite>setLED</cite>()関数は、コアモジュールのLEDを制御するための関数です。最初の引数で点灯の有無、次の引数で5種類の発酵パターンを指定します。
         </p>
       </div>
 
@@ -137,7 +135,7 @@
         </ul>
         </p>
         <p>
-          先程のsetup()関数では、デフォルトでDevice Information, Sensor Values, Step
+          先程の<cite>setup</cite>()関数では、デフォルトでDevice Information, Sensor Values, Step
           Analysisの3つのキャラクタリスティックが設定されるため、上記のデータを取得することができますが、例えばsetup(["DEVICE_INFORMATION"])のように引数を指定することで、特定のキャラクタリスティックのみを設定することもできます。通常はすべてアクセスできればよいので、引数を指定する必要はほとんどありません。
         </p>
       </div>
@@ -152,15 +150,14 @@
           Analysisというキャラクタリスティックを通じて取得することができます。Step
           Analysisはコアモジュールの歩行解析結果を含んでいます。
         </p>
-        <h3>core.<a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#begin"
-            target="_blank">begin</a>();</h3>
+        <h3>core.<cite>begin</cite>();</h3>
         <p>
           Sensor Values及びStep
-          Analysisの値を取得するためには、begin()関数を呼び出す必要があります。それぞれのキャラクタリスティックはNotificationという形式で通信を行います。この関数を呼び出すことで、コアモジュールからの定期的にデータ送信が開始されます。begin()の引数は以下の通りです。
+          Analysisの値を取得するためには、<cite>begin</cite>()関数を呼び出す必要があります。それぞれのキャラクタリスティックはNotificationという形式で通信を行います。この関数を呼び出すことで、コアモジュールからの定期的にデータ送信が開始されます。<cite>begin</cite>()の引数は以下の通りです。
         <ul>
-          <li>begin('STEP_ANALYSIS');</li>
-          <li>begin('SENSOR_VALUES');</li>
-          <li>begin('STEP_ANALYSIS_AND_SENSOR_VALUES');（引数が省略された場合これがデフォルト）</li>
+          <li><cite>begin</cite>('STEP_ANALYSIS');</li>
+          <li><cite>begin</cite>('SENSOR_VALUES');</li>
+          <li><cite>begin</cite>('STEP_ANALYSIS_AND_SENSOR_VALUES');（引数が省略された場合これがデフォルト）</li>
         </ul>
         最初からSTEP_ANALYSIS_AND_SENSOR_VALUESを指定しておけば、両方のキャラクタリスティックの値を取得することができますが、BLE通信の負荷が大きくなるため、必要なデータのみを取得するようにしましょう。コアモジュールには実際にはその他のキャラスタリスティックも存在しますが、ORPHE-CORE.js
         ではこれら3つに限定しています。
@@ -175,85 +172,56 @@
           <li class=""><mark>Sensor Values Characteristic</mark></li>
           <ul>
             <li>加速度：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotAcc"
-                target="_blank">gotAcc</a>
+              <cite>gotAcc</cite>
             </li>
             <li>レンジ変換加速度：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotConvertedAcc"
-                target="_blank">gotConvertedAcc</a>
+              <cite>gotConvertedAcc</cite>
             </li>
             <li>角速度：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotGyro"
-                target="_blank">
-                gotGyro</a>
+              <cite>gotGyro</cite>
             </li>
             <li>レンジ変換角速度：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotConvertedGyro"
-                target="_blank">
-                gotConvertedGyro</a>
+              <cite>gotConvertedGyro</cite>
             </li>
             <li>コアモジュール姿勢：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotQuat"
-                target="_blank">
-                gotQuat</a>
+              <cite>gotQuat</cite>
             </li>
             <li>コアモジュール姿勢（オイラー角）：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotEuler"
-                target="_blank">
-                gotEuler</a>
+              <cite>gotEuler</cite>
             </li>
           </ul>
           <li class=""><mark>Step Analysis characteristic</mark></li>
           <ul>
             <li>歩数：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotStepsNumber"
-                target="_blank">
-                gotStepsNumber</a>
+              <cite>gotStepsNumber</cite>
               </a>
             </li>
             <li>コアモジュール姿勢：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotQuat"
-                target="_blank">
-                gotQuat
-              </a>
+              <cite>gotQuat</cite>
             </li>
             <li>コアモジュール姿勢（オイラー角）：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotEuler"
-                target="_blank">
-                gotEuler</a>
+              <cite>gotEuler</cite>
             </li>
             <li>歩容（type, direction, calorie, distanceを一つのオブジェクトにまとめたもの）：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotGait"
-                target="_blank">
-                gotGait</a>
+              <cite>gotGait</cite>
             </li>
             <li>歩容タイプ（走ってるとか、歩いているというタイプ）：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotType"
-                target="_blank">
-                gotType</a>
+              <cite>gotType</cite>
             </li>
             <li>フットアングル：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotFootAngle"
-                target="_blank">
-                gotFootAngle</a>
+              <cite>gotFootAngle</cite>
             </li>
             <li>着地衝撃力：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotLandingImpact"
-                target="_blank">gotLandingImpact</a>
+              <cite>gotLandingImpact</cite>
             </li>
             <li>消費カロリー：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotCalorie"
-                target="_blank">gotCalorie</a>
+              <cite>gotCalorie</cite>
             </li>
             <li>プロネーション：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotPronation"
-                target="_blank">
-                gotPronation</a>
+              <cite>gotPronation</cite>
             </li>
             <li>ストライド：
-              <a href="https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html#gotStride"
-                target="_blank">
-                gotStride</a>
+              <cite>gotStride</cite>
             </li>
             </u>
           </ul>
@@ -265,9 +233,9 @@
 
       <h3 class="mt-5">加速度を取得するサンプル</h3>
       <p>
-        では、実際にモーションセンサ値、具体的には加速度センサ値を取得するサンプルコードを示します。コアモジュールの初期化、setupを行った後、begin()関数を呼び出すことで、加速度センサ値を取得することができます。加速度センサ値の場合はSensor
-        Valuesのキャラクタリスティックを使用する必要があるため、begin() または
-        begin('SENSOR_VALUES')という引数を指定します。begin('STEP_ANALYSIS')で指定すると、STEP_ANALYSISキャラクタリスティック値しか取得できないため、コンソールには何も表示されなくなります。
+        では、実際にモーションセンサ値、具体的には加速度センサ値を取得するサンプルコードを示します。コアモジュールの初期化、<cite>setup</cite>を行った後、<cite>begin</cite>()関数を呼び出すことで、加速度センサ値を取得することができます。加速度センサ値の場合はSensor
+        Valuesのキャラクタリスティックを使用する必要があるため、<cite>begin</cite>() または
+        <cite>begin</cite>('SENSOR_VALUES')という引数を指定します。<cite>begin</cite>('STEP_ANALYSIS')で指定すると、STEP_ANALYSISキャラクタリスティック値しか取得できないため、コンソールには何も表示されなくなります。
       </p>
 
       <pre style="white-space:pre-wrap" class="">
@@ -300,6 +268,53 @@
       </pre>
     </section>
 
+    <h2 class="mt-4">4. データの欠損</h2>
+    <section class="ms-5">
+      <p>
+        コアモジュールは無線通信をし、リアルタイム処理を重視してデータを送信しているためデータの欠損が発生することがあります。ORPHE-CORE.jsでは、欠損が発生した場合に<cite></cite>lostData
+        ()関数が呼び出されます。<cite>lostData</cite>()関数は、欠損が発生した時に呼び出されるコールバック関数です。<cite>lostData</cite>()関数は、欠損が発生した前後のデータ番号を引数として受け取ります。これにより、欠損が発生したデータの前後のデータを比較することができます。プロトタイプやリアルタイム性を重視するアプリケーション開発においては<cite>lostData</cite>()関数の利用価値はそれほど高くありませんが、計測値結果の保存や、計測値を解析する場合はデータ欠損については注意深く観察する必要があります。コアモジュールの性能と関係なく、<mark>BLE通信環境やコアモジュールのバッテリー残量が少ない場合にもデータ欠損が発生することがあります</mark>ので通信状況が悪い場合は電波状況の改善やコアモジュールの充電等も考慮してください。
+      </p>
+      <p>
+        どうしても計測値の欠損が許容できない場合は、iOSやandroidアプリケーションを利用して、コアモジュール内部に保存された計測値を取得することもできます。PCを利用したい場合は <a
+          href="https://orphe.io/analytics" target="_blank">ORPHE
+          ANALYTICS</a>をご検討ください。ORPHE-CORE.jsではコアモジュール内部に保存された計測値（ログデータ）を取得するためのAPIは提供していません。
+      </p>
+      <p>
+        以下にデータ欠損が発生した場合に<cite>lostData</cite>()関数が呼び出されるサンプルコードを示します。実際にコアモジュールをPCから離したり、コアモジュールとPCの間に遮蔽物を置いて電波状況を変えるなどしてデータ欠損が発生する様子を観察してみましょう。<mark><cite>lostData</cite>()関数は200Hz対応のコアモジュール3（CR-3）のみで利用可能です。</mark>
+        CR-2で接続した場合はエラーにはなりませんが、<cite>lostData</cite>()関数が呼び出されることはありません。また、データパケットにデータ番号が含まれているものだけが対象となるため、SENSOR_VALUESまたはSTEP_ANALYSIS_AND_SENSOR_VALUESを指定して<cite>begin</cite>()関数を呼び出す必要があります。
+      </p>
+      <pre style="white-space:pre-wrap" class="">
+        <code class="language-html" >
+        &lt;!doctype html&gt;
+        &lt;html lang=&quot;en&quot;&gt;
+        &lt;head&gt;
+            &lt;meta charset=&quot;utf-8&quot;&gt;
+        &lt;/head&gt;
+        &lt;body&gt;
+            &lt;button onclick=&quot;mystart();&quot;&gt;connect&lt;/button&gt;
+            &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js&quot;
+                crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+            &lt;script&gt;
+                var core;
+                window.onload = function () {
+                    core = new Orphe(0);
+                    core.setup();                
+                }
+                function mystart() {
+                  core.begin('SENSOR_VALUES');
+                  core.gotAcc = function (acc) {
+                      console.log(acc);
+                  }
+                  core.lostData = function (num, num_prev) {
+                      console.error(`lostdata: ${num_prev} から ${num}の間でデータ欠損が発生しました`);
+                  }
+              }
+            &lt;/script&gt;
+        &lt;/body&gt;
+        &lt;/html&gt;
+      </code>
+        </pre>
+    </section>
 
     <h3 class="mt-4"><i class="bi bi-book"></i> API Reference</h3>
     <section class="ms-5">
@@ -354,6 +369,26 @@
   <script>
     hljs.highlightAll();
     hljs.addPlugin(new CopyButtonPlugin());
+
+    // domのロードが終わったら
+    document.addEventListener('DOMContentLoaded', function () {
+      // 全ての <link> 要素を取得
+      const links = document.getElementsByTagName('cite');
+      // const baseURL = 'https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/module-Orphe-Orphe.html';
+      const baseURL = '../api_doc/module-Orphe-Orphe.html';
+      const target = "_blank"
+
+      // 取得した <cite> 要素を <a> 要素に置換
+      while (links.length > 0) {
+        const link = links[0];
+        const text = link.innerHTML;
+        const a = document.createElement('a');
+        a.href = `${baseURL}#${text}`;
+        a.innerHTML = text;
+        a.setAttribute('target', target);
+        link.parentNode.replaceChild(a, link);
+      }
+    });
   </script>
 
 </body>

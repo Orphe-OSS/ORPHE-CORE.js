@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2024/05/31 13:49:05
+Last modified: 2024/05/31 14:04:37
 `;
 // coreToolkit_version_dateから改行を削除
 coreToolkit_version_date = coreToolkit_version_date.replace(/\n/g, '');
@@ -19,7 +19,7 @@ var cores = bles;
  * @param {Element} parent_element - CoreToolkitを追加する親要素
  * @param {string} title - CoreToolkitのタイトル。トグルボタンの横に表示される
  * @param {int}[0] core_id  - 0,1のどちらかを指定する.コアモジュールは最大2つまで
- * @param {string}[STEP_ANALYSIS_AND_SENSOR_VALUES] notification characteristics - ノーティフィケーションに登録するキャラクタリスティックを指定する
+ * @param {string}[STEP_ANALYSIS_AND_SENSOR_VALUES] notification characteristics - ノーティフィケーションに登録するキャラクタリスティックを指定する 
  */
 function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'STEP_ANALYSIS_AND_SENSOR_VALUES', options = {}) {
     // デフォルト値を設定

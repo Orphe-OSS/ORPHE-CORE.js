@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/31 13:48:46
+Last modified: 2024/05/31 13:57:45
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -14,19 +14,19 @@ v1.0 2021/05/01
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
 
-// float16.min.js を読み込む
-var float16Script = document.createElement('script');
-float16Script.src = 'https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js';
-float16Script.type = 'text/javascript';
-float16Script.crossOrigin = 'anonymous';
-document.head.appendChild(float16Script);
+// 外部スクリプトを読み込む関数
+function loadScript(src) {
+  const script = document.createElement('script');
+  script.src = src;
+  script.type = 'text/javascript';
+  script.crossOrigin = 'anonymous';
+  document.head.appendChild(script);
+}
 
-// quaternion.js を読み込む
-var quaternionScript = document.createElement('script');
-quaternionScript.src = 'https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js';
-quaternionScript.type = 'text/javascript';
-quaternionScript.crossOrigin = 'anonymous';
-document.head.appendChild(quaternionScript);
+// 外部スクリプトの読み込み
+loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js');
+loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js');
+
 
 
 /**

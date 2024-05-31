@@ -928,7 +928,7 @@ class Orphe {
 
 
         // それぞれの値は29毎で、4つ分ある
-        for (let i = 3; i >= 0; i--) {
+        for (let i = 0; i < 4; i++) {
 
 
 

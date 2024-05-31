@@ -1,0 +1,42 @@
+body {
+  background-color: #1B1B1B;
+  color: white;
+  font-family: Arial, sans-serif; /* フォントスタイルを追加 */
+  display: flex;
+  height: 100vh; /* 画面全体の高さに合わせる */
+  margin: 10; /* デフォルトのマージンを削除 */
+}
+h2,  p, #rogo {
+  margin: 20px 0; /* 縦方向のマージンを設定 */
+}
+h2, #en {
+  color: #919191; /* テキストの色を薄い灰色に設定 */
+}
+
+h2 {
+  font-size: 20px; /* h2のフォントサイズを設定 */
+}
+
+#en {
+  font-size: 15px; /* #enのフォントサイズを設定 */
+}
+
+#toolkit_placeholder1{
+  width: 100%; /* 左側のコンテナの幅を100%に設定 */
+  margin-bottom: 20px; /* 要素間のスペースを設定 */
+}
+
+#p5Canvas{
+  position: fixed; /* キャンバスを画面全体に固定 */
+  top: 0;
+  left: 0;
+  z-index: -1; /* キャンバスを最背面に設定 */
+}
+
+
+#content {
+  position: relative;
+  z-index: 10; /* コンテンツを前面に設定 */
+  color: white; /* 見やすくするためのテキスト色 */
+  padding: 20px;
+}

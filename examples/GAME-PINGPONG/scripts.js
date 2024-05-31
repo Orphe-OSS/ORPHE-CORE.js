@@ -1,4 +1,5 @@
 /*
+テスト
 var bles = [new Orphe(0), new Orphe(1)];
 var connectedDevices = 0;  // 接続されたデバイスの数を追跡
 

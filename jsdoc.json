@@ -1,7 +1,8 @@
 {
     "source": {
         "include": [
-            "js/ORPHE-CORE.js"
+            "js/ORPHE-CORE.js",
+            "js/CoreToolkit.js"
         ],
         "excludePattern": "(node_modules/|docs)"
     },

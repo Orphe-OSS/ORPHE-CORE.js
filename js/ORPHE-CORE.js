@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/29 22:21:49
+Last modified: 2024/05/31 13:48:46
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -30,7 +30,7 @@ document.head.appendChild(quaternionScript);
 
 
 /**
- * Orpheクラス内部で利用されるタイムスタンプクラスです。BLE通信のデータ取得タイミングにおける実測周波数を取得するために利用されます。Orpheクラス内部で本当は宣言したかったのですが、jsdoc が暮らす内部クラス定義に対応していないため、外部に出しています。無念。  
+ * Orpheクラス内部で利用されるタイムスタンプクラスです。BLE通信のデータ取得タイミングにおける実測周波数を取得するために利用されます。Orpheクラス内部で本当は宣言したかったのですが、jsdoc がクラス内部クラス定義に対応していないため、外部に出しています。無念。  
  * @class
  */
 class OrpheTimestamp {

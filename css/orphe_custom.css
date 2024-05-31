@@ -57,3 +57,9 @@ code {
     width: 100%;
     height: 100%;
 }
+
+mark {
+    background-color: #ff6040;
+    color: white;
+    font-weight: 400;
+}

@@ -1,17 +1,27 @@
 var coreToolkit_version_date = `
-Last modified: 2023/11/04 23:44:52
+Last modified: 2024/05/31 14:04:37
 `;
+// coreToolkit_version_dateから改行を削除
+coreToolkit_version_date = coreToolkit_version_date.replace(/\n/g, '');
 
+/**
+ * bles = [new Orphe(0), new Orphe(1)];
+ * 2024/05/30 時点から depricated 対象とし、cores を利用することを推奨する
+ */
 var bles = [new Orphe(0), new Orphe(1)];
 
 /**
- * 
- * @param {html element} parent_element 
- * @param {string} title 
- * @param {int} core_id 
- * @param {string} notification 
+ * blesと参照先は同じ。
  */
-function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ANALYSIS_AND_RAW', options = {}) {
+var cores = bles;
+/**
+ * コアモジュール操作GUIを生成する。ユーザはこれを呼び出すだけでよい。
+ * @param {Element} parent_element - CoreToolkitを追加する親要素
+ * @param {string} title - CoreToolkitのタイトル。トグルボタンの横に表示される
+ * @param {int}[0] core_id  - 0,1のどちらかを指定する.コアモジュールは最大2つまで
+ * @param {string}[STEP_ANALYSIS_AND_SENSOR_VALUES] notification characteristics - ノーティフィケーションに登録するキャラクタリスティックを指定する 
+ */
+function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'STEP_ANALYSIS_AND_SENSOR_VALUES', options = {}) {
     // デフォルト値を設定
     options.range = options.range || { acc: -1, gyro: -1 };
 
@@ -104,11 +114,11 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
     let div_modal_body = CTbuildElement('div', `<div class="form-floating mt-2">
     <select class="form-select text-black" id="select_notify${core_id}" aria-label="Floating label select example"
       onchange="changeNotify(${core_id}, this);">
-      <option value="ANALYSIS" selected>ANALYSIS</option>
-      <option value="RAW">RAW</option>
-      <option value="ANALYSIS_AND_RAW">ANALYSIS_AND_RAW</option>
+      <option value="STEP_ANALYSIS">STEP_ANALYSIS</option>
+      <option value="SENSOR_VALUES">SENSOR_VALUES</option>
+      <option value="STEP_ANALYSIS_AND_SENSOR_VALUES" selected>STEP_ANALYSIS_AND_SENSOR_VALUES</option>
     </select>
-    <label for="select_acc" class="small">Realtime data protocol[not available]</label>
+    <label for="select_notify${core_id}" class="small">Realtime data protocol[not available]</label>
   </div>
   <div class="form-floating mt-2">
     <select class="form-select text-black" id="select_acc${core_id}" aria-label="Floating label select example"
@@ -149,23 +159,24 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'AN
 
     // div_modal_bodyにある notificationセレクタを設定値にあわせる
     let select_notify = div_modal_body.querySelector(`#select_notify${core_id}`);
-    if (notification == 'ANALYSIS') select_notify.options[0].selected = true;
-    else if (notification == 'RAW') select_notify.options[1].selected = true;
-    else if (notification == 'ANALYSIS_AND_RAW') select_notify.options[2].selected = true;
-
-
-    // console.log(div_form_check);
+    if (notification == 'STEP_ANALYSIS') select_notify.options[0].selected = true;
+    else if (notification == 'SENSOR_VALUES') select_notify.options[1].selected = true;
+    else if (notification == 'STEP_ANALYSIS_AND_SENSOR_VALURS') select_notify.options[2].selected = true;
 }
 
+/**
+ * BLE接続のトグルボタンが切り替わったときに呼び出される関数
+ * @param {Element} dom 
+ * @param {object} options 
+ * 
+ */
 async function toggleCoreModule(dom, options = {}) {
     // console.log("toggleCoreModule", options);
     let checked = dom.checked;
     let number = parseInt(dom.value);
     let ble = bles[number];
     let notification = dom.getAttribute('notification');
-
     if (checked == true) {
-
         let ret = await ble.begin(notification, options);
         if (!ret) {
             document.querySelector(`#switch_ble${number}`).checked = false;
@@ -181,28 +192,33 @@ async function toggleCoreModule(dom, options = {}) {
         ble.reset();
         document.querySelector(`#ui${number}`).style.visibility = 'hidden';
         //setHeaderStatusOffline(ble.id);
-
     }
 }
 
-// notifyは複数同じものを呼び出せてしまうので，必ずすでに登録したnotificationはストップする
-// 必要がある．
+
+/**
+ *  コアモジュールに接続しながらnotificationを変更場合に利用する関数。
+ *  notifyは複数同じものを呼び出せてしまうので，必ずすでに登録したnotificationはストップする
+ *  必要がある．
+ * @param {number} no - core_id(0,1)
+ * @param {dom} dom  - notificationのセレクタ
+ */
 function changeNotify(no, dom) {
-    if (bles[no].notification_type == 'ANALYSIS') {
+    if (bles[no].notification_type == 'STEP_ANALYSIS') {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             setTimeout(function () {
                 bles[no].begin(dom.value);
             }, 500);
         });
     }
-    else if (bles[no].notification_type == 'RAW') {
+    else if (bles[no].notification_type == 'SENSOR_VALUES') {
         bles[no].stopNotify('SENSOR_VALUES').then(() => {
             setTimeout(function () {
                 bles[no].begin(dom.value);
             }, 500);
         });
     }
-    else if (bles[no].notification_type == 'ANALYSIS_AND_RAW') {
+    else if (bles[no].notification_type == 'STEP_ANALYSIS_AND_SENSOR_VALUES') {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             bles[no].stopNotify('SENSOR_VALUES').then(() => {
                 setTimeout(function () {
@@ -214,6 +230,11 @@ function changeNotify(no, dom) {
     }
 }
 
+/**
+ * CoreToolkitから加速度センサの範囲が変更された場合に呼び出される関数
+ * @param {int} no (0,1)
+ * @param {dom} dom セレクタ
+ */
 async function changeAccRange(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.range.acc = parseInt(dom.value);
@@ -221,24 +242,43 @@ async function changeAccRange(no, dom) {
     bles[no].setDeviceInformation(obj);
 }
 
+/**
+ * CoreToolkitからジャイロセンサの範囲が変更された場合に呼び出される関数
+ * @param {int} no - (0,1)
+ * @param {dom} dom - セレクタ
+ */
 async function changeGryoRange(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.range.gyro = parseInt(dom.value);
     obj.lr = 0xFF;
     bles[no].setDeviceInformation(obj);
 }
+/**
+ * CoreToolkitからLEDの明るさが変更された場合に呼び出される関数
+ * @param {int} no 
+ * @param {dom} dom セレクタ
+ */
 async function changeLEDBrightness(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.led_brightness = parseInt(dom.value);
     obj.lr = 0xFF;
     bles[no].setDeviceInformation(obj);
 }
+
+/**
+ * CoreToolkitから左右の設定が変更された場合に呼び出される関数
+ * @param {int} no (0,1)
+ * @param {dom} dom セレクタ
+ */
 async function changeLR(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.lr = parseInt(dom.value);
     bles[no].setDeviceInformation(obj);
 }
-
+/**
+ * 設定モーダルのパラメータを更新する関数
+ * @param {int} no (0,1)
+ */
 async function updateModalParameters(no) {
     var obj = await bles[no].getDeviceInformation();
 
@@ -267,11 +307,19 @@ async function updateModalParameters(no) {
     }
 }
 
+/**
+ * コアモジュールをリセットする関数
+ * @param {int} id - コアのID(0,1)
+ */
 function resetCoreModule(id) {
     bles[id].resetMotionSensorAttitude();
     bles[id].resetAnalysisLogs();
 }
 
+/**
+ * バッテリー情報を更新する関数。device_informationの3段階に応じてアイコンを変更する
+ * @param {dom} dom セレクタ
+ */
 async function updateBatteryInfo(dom) {
     let number = parseInt(dom.getAttribute('core_id'));
     var obj = await bles[number].getDeviceInformation();
@@ -293,6 +341,10 @@ async function updateBatteryInfo(dom) {
     }
 }
 
+/**
+ * コアモジュールのLED発光パターンを切り替える関数。発光パターンは1~5の5パターン。numberが0の場合はLEDを消灯する
+ * @param {dom} dom セレクタ
+ */
 function toggleLED(dom) {
 
     let number = parseInt(dom.getAttribute('number'));
@@ -308,24 +360,24 @@ function toggleLED(dom) {
     dom.setAttribute('number', number);
 }
 
+/**
+ * CoreToolkitのトグルボタンをオフに変更する
+ * @param {int} id - (0,1)
+ */
 function setHeaderStatusOffline(id) {
     document.querySelector(`#switch_ble${id} `).checked = false;
 }
 
-
+/**
+ * CoreToolkit.js内でUIを生成するのに利用するbuildElementのラッパー関数
+ * @param {string} name_tag - タグ名
+ * @param {string} innerHTML - タグ内のテキスト
+ * @param {string} str_class - タグ内に適応するクラス
+ * @param {string} str_style - タグ内に適応するスタイル
+ * @param {dom} element_appended - セレクタ
+ * 
+ */
 function CTbuildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
-    let element = document.createElement(name_tag);
-
-
-    element.innerHTML = innerHTML;
-    element.classList = str_class;
-    if (str_style != '') {
-        element.setAttribute('style', str_style);
-    }
-    element_appended.appendChild(element);
-    return element;
-}
-function buildElement(name_tag, innerHTML, str_class, str_style, element_appended) {
     let element = document.createElement(name_tag);
     element.innerHTML = innerHTML;
     element.classList = str_class;

@@ -5,20 +5,30 @@ var ar_data_textarea_buffer = [];
 var ar_data_buffer = [];
 var is_connected = false;
 var is_playing = false;
+var number_of_lost_data = 0;
+function formatNumber(number) {
+    return number.toString().padStart(4, '0');
+}
+
 window.onload = function () {
 
     // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
-    bles[0].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder'), 'CORE', 0, 'RAW');
+    bles[0].setup(['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'], { is_raw_data_monitoring: true });
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder'), 'CORE', 0, 'SENSOR_VALUES');
     bles[0].onConnect = function () {
         is_connected = true;
         is_playing = true;
-        console.log(is_connected);
     }
     bles[0].onDisconnect = function () {
         is_connected = false;
         is_playing = false;
-        console.log(is_connected);
+        alert('ORPHE COREとの接続が切れました');
+    }
+    bles[0].lostData = function (num, num_prev) {
+        let str = document.querySelector('#textarea_lost_data').innerHTML;
+        str += `[${formatNumber(number_of_lost_data)}]: ${num_prev} <-> ${num}\n`;
+        number_of_lost_data++;
+        document.querySelector('#textarea_lost_data').innerHTML = str;
     }
     bles[0].gotData = function (data, uuid) {
 
@@ -79,6 +89,7 @@ window.onload = function () {
 
                 document.querySelector('#ar_textarea_recv').innerHTML = str;
                 document.querySelector("#ar_textarea_recv").scrollTop = document.querySelector("#ar_textarea_recv").scrollHeight;
+                document.querySelector("#textarea_lost_data").scrollTop = document.querySelector("#textarea_lost_data").scrollHeight;
                 document.querySelector('#ar_textarea_buffer_size').innerHTML = ar_data_textarea_buffer.length;
                 document.querySelector('#ar_buffer_size').innerHTML = ar_data_buffer.length;
             }
@@ -107,6 +118,12 @@ window.onload = function () {
         document.querySelector('#ar_textarea_recv').innerHTML = '';
         document.querySelector('#ar_textarea_buffer_size').innerHTML = ar_data_textarea_buffer.length;
         document.querySelector('#ar_buffer_size').innerHTML = ar_data_buffer.length;
+    })
+
+    // analysis/raw notify のlostDataバッファやdom内テキストのクリア
+    document.querySelector('#button_lost_data_clear').addEventListener('click', function () {
+        document.querySelector('#textarea_lost_data').innerHTML = '';
+        number_of_lost_data = 0;
     })
 
     // device informationのバッファをCSV形式でダウンロード

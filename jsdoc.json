@@ -2,8 +2,7 @@
     "source": {
         "include": [
             "js/ORPHE-CORE.js",
-            "package.json",
-            "README.md"
+            "js/CoreToolkit.js"
         ],
         "excludePattern": "(node_modules/|docs)"
     },
@@ -12,8 +11,8 @@
     ],
     "opts": {
         "encoding": "utf8",
-        "readme": "./README.md",
-        "destination": "./api_doc/",
+        "readme": "./README.jsdoc.md",
+        "destination": "./api_doc",
         "recurse": true,
         "verbose": true,
         "template": "./node_modules/clean-jsdoc-theme",

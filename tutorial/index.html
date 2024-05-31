@@ -1,0 +1,130 @@
+<script>
+  var last_modified = `
+  Last modified: 2024/05/29 23:01:59
+  `;
+</script>
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORPHE-CORE.js Document</title>
+
+  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css" />
+  <link href="../css/orphe_custom.css" rel="stylesheet">
+</head>
+
+
+<body class="bg-dark">
+  <div class="container-sm mt-2">
+    <nav class="navbar fixed-top navbar-light bg-base position-relative navbar-expand-lg">
+      <span id="last_modified" class="position-absolute top-25 end-0 badge bg-base border-light p-1"
+        style="font-size:0.7em;">
+      </span>
+
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+          <a class="navbar-brand" href="https://orphe.io/">
+            <img src="../images/orphe.svg" alt="" height="24" class="d-inline-block align-text-top">
+          </a>
+          <script>
+            document.querySelector('#last_modified').innerText = last_modified;
+          </script>
+        </span>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <div class="container-sm mt-4">
+    <img class="img-fluid" src="../images/ORPHE_TRACK_scene_03.jpg">
+    <h1 class="mt-4"> ORPHE-CORE.js Tutorial</h1>
+    <section class="ms-4">
+      <!-- warning -->
+      <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-circle"></i>
+        このチュートリアルページを読む前に必ず<a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank"
+          class="bg-primary fw-bold link-light">documentページ</a>のQuick
+        Start with VSCodeまでを読み，サンプルプログラムの実行環境を整えてください。手元で動作させながら学習することでORPHE-CORE.jsの理解が深まります。
+      </div>
+      <p>
+        ORPHE-CORE.js Tutorialは ORPHE-CORE.js
+        を初めて扱う方向けのチュートリアルです。<a href="../index.html"
+          target="_blank">ドキュメントページ</a>でまずは使ってみることを体験した後、アプリケーション開発時に必要となるコアモジュールに関する基礎的知識やORPHE-CORE.jsの基礎理解を深めることを目的としています。<mark>以下のチュートリアルは番号順に学習してください。</mark>
+      </p>
+      <p>
+      <ol>
+        <li>
+          <a href="./basic.html" target="_blank">ORPHE-CORE.js Basic</a>
+          <p>
+            ORPHE-CORE.jsとBLE通信における基礎概念とOrpheクラスの理解を深めます。
+          </p>
+        </li>
+        <li>
+          <a href="" target="_blank">CoreToolkit.js Basic（準備中）</a>
+          <p>
+            CoreToolkit.jsの基本的な使い方を学びます。CoreToolkit.jsはORPHE-CORE.jsのコアモジュールを使いやすくするためのユーティリティモジュールです。
+          </p>
+        </li>
+      </ol>
+      </p>
+    </section>
+
+
+    <footer class="text-center small mt-5 mb-5">
+      <hr>
+      &copy; 2024 Tetsuaki BABA
+    </footer>
+  </div>
+
+
+  <script src="../js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+  <script src="../js/run_prettify.js?skin=sunburst"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <!-- and it's easy to individually load additional languages -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/go.min.js"></script>
+  <script src="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.js"></script>
+
+  <script>
+    function copyInputValue(button_dom, id) {
+      console.log(id);
+      let dom = document.querySelector(id);
+      dom.select();
+      document.execCommand("copy");
+      dom.classList.remove('bg-secondary')
+      dom.classList.add('bg-primary')
+      let v_prev = dom.value;
+      button_dom.innerHTML = "COPIED";
+      //dom.value = 'COPIED!!' + v_prev;
+      setTimeout(function () {
+        //console.log(dom);
+        dom.classList.remove('bg-primary')
+        dom.classList.add('bg-secondary')
+        //dom.value = v_prev;
+        dom.blur();
+        button_dom.innerHTML = '<i class="bi bi-clipboard"></i>';
+
+      }, 1000, dom)
+
+
+    }
+
+  </script>
+  <script>
+    hljs.highlightAll();
+    hljs.addPlugin(new CopyButtonPlugin());
+  </script>
+
+</body>
+
+</html>

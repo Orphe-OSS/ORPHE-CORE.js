@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
+    <title>ORPHE TERMINAL</title>
     <link href="../../css/custom.css" rel="stylesheet">
     <link href="../../css/orphe_custom.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
@@ -24,13 +24,11 @@
 
 
         <div class="row">
-            <p class="pt-4 fs-3 fw-bold">ORPHE TERMINAL % <span class="bg-light">&nbsp;</span><span
-                    class="ms-2 text-muted" style="font-size:0.5em;">HEX and
-                    the CORE</span></p>
+            <p class="pt-4 fs-3 fw-bold">ORPHE TERMINAL % <span class="bg-light">&nbsp;&nbsp;</span></p>
             <div class="col-12">
                 <div class="card bg-dark border">
                     <div class="card-body bg-dark">
-                        <div class="card-title">Device Information</div>
+                        <div class="card-title fw-bold">Device Information</div>
                         <div class="input-group mb-3">
                             <input type="text" id="send_message" class="text-dark form-control"
                                 placeholder="01,02,03 [Hex]">
@@ -38,7 +36,7 @@
                                 onclick="send(this);">Send</button>
                         </div>
                         <div class="mb-3">
-                            <label for="exampleFormControlTextarea1" class="form-label">
+                            <label for="di_textarea_recv" class="form-label">
                                 textarea_buffer_size : <span id="di_textarea_buffer_size"></span>,
                                 buffer_size : <span id="di_buffer_size"></span>
                             </label>
@@ -58,9 +56,9 @@
             <div class="col-12 mt-4">
                 <div class="card bg-dark border">
                     <div class="card-body">
-                        <div class="card-title">Update Sensor Values/Raw notify</div>
+                        <div class="card-title fw-bold">Update Sensor Values/Update Step Analysis</div>
                         <div class="mb-3">
-                            <label for="exampleFormControlTextarea1" class="form-label">
+                            <label for="ar_textarea_recv" class="form-label">
                                 textarea_buffer_size : <span id="ar_textarea_buffer_size"></span>,
                                 buffer_size : <span id="ar_buffer_size"></span>
                             </label>
@@ -76,20 +74,30 @@
                                     csv</button>
                             </div>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="textarea_lost_data" class="form-label">
+                                lost_data : <span id="span_lost_data"></span>
+                            </label>
+                            <textarea readonly placeholder="lost data will be shown here" class="form-control text-dark"
+                                style="font-size:0.8em" id="textarea_lost_data" rows="4"></textarea>
+                            <div class="d-grid gap-2 mt-2 d-md-flex justify-content-md-end">
+                                <button class="btn btn-warning me-md-0" id="button_lost_data_clear"
+                                    type="button">clear</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <script src="../../js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
         <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-        <script src="../../js/float16.min.js" crossorigin="anonymous" type="text/javascript"></script>
-        <script src="../../js/quaternion.js" crossorigin="anonymous" type="text/javascript"></script>
         <script src="../../js/CoreToolkit.js"></script>
         <script src="./index.js"></script>
 
         <hr>
         <footer class="text-center small text-muted">
-            2023 &copy; ORPHE.inc <br>
+            2024 &copy; ORPHE.inc <br>
             Coded by Tetsuaki BABA
         </footer>
 </body>

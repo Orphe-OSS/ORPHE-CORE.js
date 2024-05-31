@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/31 13:57:45
+Last modified: 2024/05/31 18:15:49
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -9,7 +9,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.2.0
+@version 1.2.1
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -849,12 +849,6 @@ class Orphe {
         this.gotQuat(this.quat);
         this.gotDelta(this.delta);
         this.gotEuler(this.euler);
-
-        // if (this.notification_type == 'ANALYSIS' || this.notification_type == 'ANALYSIS_AND_RAW') {
-        //   let ret = this.timestamp.getHz();
-        //   if (ret > 0) this.gotBLEFrequency(ret);
-        // }
-
       }
       // Sensor test
       else if (data.getUint8(1) == 5) {
@@ -926,16 +920,16 @@ class Orphe {
 
         let t_start = timestamp;
 
-
-        // それぞれの値は29毎で、4つ分ある
+        // それぞれの値は29毎で、4つ分ある。データの順番は古いデータから順番にpushされている。なので、最新が4番目、最古が1番目となる。
         for (let i = 3; i >= 0; i--) {
 
-
-
-          // 2番目移行のtimestampは最初のタイムスタンプとの差分になっているため
+          // 2番目以降のtimestampは最初のタイムスタンプとの差分になっているため
           // t_startに数値を足す処理を行って、各パケットのtimestampを算出する
-          if (i > 0) {
-            timestamp = t_start + data.getUint8(28 + 21 * (i - 1));
+          if (i == 3) {
+            timestamp = t_start;
+          }
+          else {
+            timestamp = timestamp + data.getUint8(28 + 21 * i);
           }
 
 
@@ -946,7 +940,7 @@ class Orphe {
             z: data.getInt16(14 + 21 * i) / 32768,
             timestamp: timestamp,
             serial_number: this.serial_number,
-            packet_number: i
+            packet_number: 3 - i
           }
           this.gyro = {
             x: data.getInt16(16 + 21 * i) / 32768,
@@ -954,7 +948,7 @@ class Orphe {
             z: data.getInt16(20 + 21 * i) / 32768,
             timestamp: timestamp,
             serial_number: this.serial_number,
-            packet_number: i
+            packet_number: 3 - i
           }
           this.acc = {
             x: data.getInt16(22 + 21 * i) / 32768,
@@ -962,7 +956,7 @@ class Orphe {
             z: data.getInt16(26 + 21 * i) / 32768,
             timestamp: timestamp,
             serial_number: this.serial_number,
-            packet_number: i
+            packet_number: 3 - i
           }
           // ジャイロと加速度補正をかけたものを別途作成
           this.converted_gyro = {
@@ -971,7 +965,7 @@ class Orphe {
             z: this.gyro.z * gyroRange,
             timestamp: timestamp,
             serial_number: this.serial_number,
-            packet_number: i
+            packet_number: 3 - i
           };
           this.converted_acc = {
             x: this.acc.x * accRange,
@@ -979,7 +973,7 @@ class Orphe {
             z: this.acc.z * accRange,
             timestamp: timestamp,
             serial_number: this.serial_number,
-            packet_number: i
+            packet_number: 3 - i
           };
 
           this.gotAcc(this.acc);
@@ -991,13 +985,6 @@ class Orphe {
           this.euler = q.toEuler();
           this.gotEuler(this.euler);
         }
-
-
-        // 実際のBLE受信頻度の計算処理
-        // if (this.notification_type == 'RAW') {
-        //   let ret = this.timestamp.getHz();
-        //   if (ret > 0) this.gotBLEFrequency(ret);
-        // }
 
       }
       // 通常のupdate sensor valuesであればヘッダは40。このときにはserial_numberはパケットに含まれていない

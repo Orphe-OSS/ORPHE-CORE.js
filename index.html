@@ -1,7 +1,12 @@
 <script>
   var last_modified = `
-  Last modified: 2024/05/25 08:54:38
+  Last modified: 2024/06/01 17:15:31
   `;
+  // last_modifiedから改行を削除して、Last modified:の文字列を <i class="bi bi-arrow-clockwise"></i> に変換する
+  last_modified = last_modified.replace(/\n/g, '').replace('Last modified:', '<i class="bi bi-arrow-clockwise"></i>');
+
+
+
 </script>
 
 <!doctype html>
@@ -18,27 +23,46 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css">
   <link rel="stylesheet" href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css" />
   <link href="./css/orphe_custom.css" rel="stylesheet">
+  <style>
+    .lang {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .lang.active {
+      display: block;
+      opacity: 1;
+    }
+  </style>
 </head>
 
 
 <body class="bg-dark">
   <div class="container-sm mt-2">
     <nav class="navbar fixed-top navbar-light bg-base position-relative navbar-expand-lg">
-      <span id="last_modified" class="position-absolute top-25 end-0 badge bg-base border-light p-1"
-        style="font-size:0.7em;">
-      </span>
+
+
 
       <div class="container-fluid">
         <span class="navbar-brand mb-0 h1">
           <a class="navbar-brand" href="https://orphe.io/">
             <img src="./images/orphe.svg" alt="" height="24" class="d-inline-block align-text-top">
           </a>
+          <span id="last_modified" class="position-absolute top-25 end-0 badge bg-base border-light p-1"
+            style="font-size:0.5em;">
+          </span>
+          <button class="btn btn-sm rounded-pill" onclick="toggleLanguage()"><i class="bi bi-translate"></i></button>
+
+
           <script>
-            document.querySelector('#last_modified').innerText = last_modified;
+            document.querySelector('#last_modified').innerHTML = last_modified;
           </script>
         </span>
 
       </div>
+
+
     </nav>
 
   </div>
@@ -46,44 +70,60 @@
   <div class="container-sm mt-4">
     <img class="img-fluid" src="./images/ORPHE_TRACK_scene_08.jpeg">
     <h2 class="mt-4"> <i class="bi bi-card-text"></i> ORPHE-CORE.js</h2>
-    <p>This page contains information on how to hack the ORPHE CORE module with js, along with basic information on BLE
-      and sample code. ORPHE-CORE.js uses BLE, so please be sure to check its compatibility with a CHROME browser. The
-      environment that has been tested in this document is ,
-      <span class="bg-warning">Chrome browser on macOS, Windows, Linux and Android.</span>
-
+    <p>
+      <span class="lang en">
+        This page contains information on how to hack the ORPHE CORE module with js, along with
+        basic information on BLE and sample code. ORPHE-CORE.js uses BLE, so please be sure to check its compatibility
+        with a CHROME browser. The environment that has been tested in this document is ,Chrome browser on macOS,
+        Windows, Linux and Android.</span>
+      <span class="lang ja active">
+        このページには、ORPHE
+        COREモジュールをjsでハックする方法、BLEに関する基本情報、サンプルコードが含まれています。ORPHE-CORE.jsではWEB Bluetooth
+        APIを利用してBLE通信を利用するため、ブラウザとの互換性に注意してください。ORPHE-CORE.jsはmacOS、Windows、Linux、Android上のChromeブラウザのみで動作します。SafariやFirefoxでは動作しません。対応ブラウザの詳細は
+        <a href="https://developer.mozilla.org/ja/docs/Web/API/Web_Bluetooth_API"
+          target="_blank">https://developer.mozilla.org/ja/docs/Web/API/Web_Bluetooth_API</a> を参照してください。
+      </span>
     </p>
-    <p class="bg-warning text-light" style="padding:0.5em;">
-      <strong>[known issue] For AndroidOS Users</strong>: In the case of an example that uses
-      multiple graphs displayed
-      by chartjs, the BLE data update speed may become slow due to performance degradation.
-    </p>
-    <p class="bg-warning text-light" style="padding:0.5em;">
-      <strong>[known issue] For AndroidOS Users</strong>: ANALYSIS and RAW Starter Template won't work.
-    </p>
-    <p>Happy hacking with ORPHE CORE Module and javascript.</p>
+
+    <p class="lang en">Happy hacking with ORPHE CORE Module and javascript.</p>
+    <p class="lang ja active">javascriptでORPHEコアモジュールをハックしよう！</p>
 
 
-    <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with p5.js
+
+    <h3 class="mt-4">
+
+      <span class="lang en"><i class="bi bi-geo-alt-fill"></i>Quick Start with p5.js</span>
+      <span class="lang ja active"><i class="bi bi-geo-alt-fill"></i>p5.jsではじめてみよう</span>
+
     </h3>
     <section class="ms-4 mb-4">
       <div class="row">
         <div class="col-md">
           <figure class="text-start">
-            <p>If you want to try ORPHE CORE JS very quickly, open the link below in your chrome browser and use p5.js.
+            <p class="lang en">If you want to try ORPHE CORE JS very quickly, open the link below in your chrome browser
+              and use p5.js.
               Please be sure to remember that you will need to allow pop-up windows when you run the program for the
               first
               time.</p>
+            <p class="lang ja active">ORPHE CORE
+              JSをすぐに試してみたい場合は、下記リンクをクリックしてChromeブラウザでp5.jsを使ってください。プログラムを初めて実行する際には、ポップアップウィンドウを許可する必要があることを覚えておいてください。
+            </p>
             <ul>
               <li><a href="https://editor.p5js.org/tetsuakibaba/sketches/qQPilLD-i" target="_blank">P5.js Quick Start
                   with
                   ORPHE-CORE.js</a></li>
             </ul>
 
-            <p class="ms-4">p5.js is a JavaScript library for creative coding, with a focus on making coding accessible
+            <p class=" lang en ms-4">p5.js is a JavaScript library for creative coding, with a focus on making coding
+              accessible
               and
               inclusive
               for artists, designers, educators, beginners, and anyone else! p5.js is free and open-source because we
               believe software, and the tools to learn it, should be accessible to everyone.</p>
+            <p class=" lang ja active ms-4">
+              p5.jsは、アーティスト、デザイナー、教育者、初心者、その他のすべての人々にとって、コーディングをアクセス可能で包括的にすることに焦点を当てたクリエイティブコーディング用のJavaScriptライブラリです！
+              p5.jsは無料でオープンソースです。ソフトウェアとそれを学ぶためのツールは、誰にでもアクセス可能であるべきだと考えているからです。
+            </p>
             <figcaption class="blockquote-footer text-end">
               from top page <cite title="Source Title">https://p5js.org/</cite>
             </figcaption>
@@ -102,10 +142,21 @@
 
     <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with VSCode</h3>
     <section class="ms-4 mb-4">
-      Get started by including ORPHE-CORE.js Javascript via CDN without the need for any build steps.
-
+      <p class="lang en">
+        Get started by including ORPHE-CORE.js Javascript via CDN without the need for any build steps.
+      </p>
+      <p class="lang ja active">
+        ビルドステップなしでCDN経由でORPHE-CORE.js Javascriptを含めることで、すぐに始めることができます。本格的な開発には、VSCodeを使って開発することをお勧めします。
+      </p>
       <ol>
-        <li>Create a new index.html file in your project root. </li>
+        <li>
+          <span class="lang en">
+            Create a new index.html file in your project root.
+          </span>
+          <span class="lang ja active">
+            適当なディレクトリを作成して、その中に新しいindex.htmlファイルを作成します。index.htmlの中身は以下の通りです。
+          </span>
+        </li>
         <pre style="white-space:pre-wrap" class="p-2 m-2">
             <code class="language-html p-0 m-0" >
             &lt;!doctype html&gt;
@@ -130,15 +181,28 @@
             &lt;/html&gt;
           </code>
         </pre>
-        <li>Check the index.html on your browser via local live server, such as Live Server, php -S localhost:8000,
-          etc. Then click connect button and connect ORPHE CORE Module (CR-2). You will see light emitting on your ORPHE
-          CORE Module like a below video.
+        <li>
+          <span class="lang en">
+            Check the index.html on your browser via local live server, such as Live Server, php -S localhost:8000,
+            etc. Then click connect button and connect ORPHE CORE Module (CR-2). You will see light emitting on your
+            ORPHE
+            CORE Module like a below video.
+          </span>
+          <span class="lang ja active">
+            ローカルライブサーバー（Live Serverやphp -S localhost:8000など）を使って、ブラウザでindex.htmlを開いてください。その後、connectボタンをクリックしてORPHE
+            COREモジュール（CR-2/CR-3）を接続します。以下のビデオのように、ORPHE COREモジュールが点灯するのを確認できます。
+          </span>
         </li>
         <li>
-          You can check running the test program on <a href="./quick_start_with_vscode.html"
-            target="_blank">quick_start_with_vscode.html
-            page</a>,
-          or VSCode like a below video
+          <span class="lang en">
+            You can check running the test program on <a href="./quick_start_with_vscode.html"
+              target="_blank">quick_start_with_vscode.html
+              page</a>,
+            or VSCode like a below video
+          </span>
+          <span class="lang ja active">
+            <a href="./quick_start_with_vscode.html" target="_blank">quick_start_with_vscode.html
+              ページ</a>でテストプログラムを実行するか、VSCodeで以下のビデオのように実行できます。 </span>
           <div class="mt-2" style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
               src="https://www.loom.com/embed/3c7093d5c5414799bbc6db1a32776cbe" frameborder="0" webkitallowfullscreen
               mozallowfullscreen allowfullscreen
@@ -148,16 +212,28 @@
       </ol>
     </section>
 
-    <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> BLINKING LED</h3>
+    <h3 class="mt-4">
+      <span class="lang en"><i class="bi bi-geo-alt-fill"></i> BLINKING LED</span>
+      <span class="lang ja active"><i class="bi bi-geo-alt-fill"></i> LED点滅</span>
+    </h3>
     <section class="ms-4">
       <div class="row">
         <div class="col-sm-8">
-          <p>If you make LEDs glow, you'll be tempted to make them blink.Don't you ever do that? Let's make
-            LED BLINKING happen with this code. Hello ORPHE-CORE World!!</p>
-          <p>
+          <p class="lang en">
+            If you make LEDs glow, you'll be tempted to make them blink.Don't you ever do that? Let's make
+            LED BLINKING happen with this code. Hello ORPHE-CORE World!!
+          </p>
+          <p class="lang ja active">
+            LEDを点灯させると、点滅させたくなりますよね。そういうことありませんか？このコードでLED点滅を実現しましょう。Hello
+            ORPHE-CORE World!!
+          </p>
+          <p class="lang en">
             The sample code below also describes how to set the notificaiton type and sensor sensitivity from the
             beginning when calling ble.begin. Normally, the begin() function can be used by calling it without any
             arguments, but if you have detailed specifications, please refer to it.
+          </p>
+          <p class="lang ja active">
+            下記のサンプルコードでは、ble.beginを呼び出す際に、通知タイプやセンサー感度を最初から設定する方法も記載しています。通常、begin()関数は引数なしで呼び出すことで使用できますが、詳細な仕様がある場合は参考にしてください。
           </p>
 
           API Reference:
@@ -192,21 +268,17 @@
               &lt;button onclick=&quot;mystart()&quot;&gt;connect&lt;/button&gt;
               &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js&quot; crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
               &lt;script&gt;
-                  var ble = new Orphe(0);
+                  var core = new Orphe(0);
                   window.onload = function () {
-                      ble.setup();
+                      core.setup();
                   }
                   async function mystart() {
-                      await ble.begin();
-                      // alternative begin function call
-                      // ANALYSIS, RAW, ANALYSIS_AND_RAW
-                      // await ble.begin('ANALYSIS', { range: { acc: 16, gyro: 2000 } }); 
-
-                      ble.setLED(1, 0);
+                      await core.begin();
+                      core.setLED(1, 0);
                       let flg = true;
                       setInterval(function () {
-                          if (flg == true) ble.setLED(0, 0);
-                          else ble.setLED(1, 0);
+                          if (flg == true) core.setLED(0, 0);
+                          else core.setLED(1, 0);
                           flg = !flg;
                       }, 1000);
                   }
@@ -219,8 +291,12 @@
 
     <h3 class="mt-4"><i class="bi bi-link-45deg"></i> CDN Link</h3>
     <section class="ms-4">
-      As reference, here is ORPHE-CORE.js CDN file.
-
+      <p class="lang en">
+        As reference, here is ORPHE-CORE.js CDN file.
+      </p>
+      <p class="lang ja active">
+        参考までに、ORPHE-CORE.jsのCDNファイルを以下に示します。
+      </p>
       <div class="input-group mb-3 mt-2">
         <button class="btn btn-outline-primary" type="button" id="button_copy_cdn"
           onclick="copyInputValue(this, '#cdn')">
@@ -228,8 +304,12 @@
         <input type="text" class="form-control bg-secondary" id="cdn"
           value='<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous" type="text/javascript"></script>'>
       </div>
-
-      CoreToolkit.js CDN file.
+      <p class="lang en">
+        CoreToolkit.js CDN file.
+      </p>
+      <p class="lang ja active">
+        CoreToolkit.jsのCDNファイルを以下に示します。CoreToolkit.jsについては下のQuick Start with CoreToolkit.jsを参照してください。
+      </p>
       <div class="input-group mb-3 mt-2">
         <button class="btn btn-outline-primary" type="button" id="button_copy_cdn_toolkit"
           onclick="copyInputValue(this, '#cdn_toolkit')">
@@ -240,13 +320,16 @@
     </section>
 
 
-    <h3 class="mt-4">Quick Start with CoreToolkit.js</h3>
+    <h3 class="mt-5">Quick Start with CoreToolkit.js</h3>
     <section class="ms-4">
-      <p>
+      <p class="lang en">
         ORPHE-CORE.js can be run with a few lines of code, but it can be somewhat cumbersome to configure detailed
         settings
         such as sensor sensitivity and data reception format. coretoolkit.js can add an integrated UI, including module
         settings, with a single line of code. This may be useful when developing large scale applications.
+      </p>
+      <p class="lang ja active">
+        ORPHE-CORE.jsは数行のコードで動作させることができますが、センサー感度やデータ受信形式などの詳細な設定を行うのはやや手間がかかるかもしれません。coretoolkit.jsを使うと、1行のコードでモジュールの設定を含む統合UIを追加することができます。ユーザ体験を考慮したアプリケーションを開発する際に便利かもしれません。
       </p>
 
       <pre style="white-space:pre-wrap" class="p-2 m-2">
@@ -272,18 +355,10 @@
               crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
           &lt;script&gt;
               window.onload = function () {
-                  // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
-                  bles[0].setup();
-                  buildCoreToolkit(document.querySelector(&#039;#toolkit_placeholder&#039;), &#039;01&#039;, 0, &#039;RAW&#039;);
-                  // alternatibe begin function call
-                  // buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
-                  //     '01', // name to be shown on the UI
-                  //     0, // index of bles array
-                  //     'ANALYSIS', // ANALYSIS, RAW, ANALYSIS_AND_RAW
-                  //     { range: { acc: 8, gyro: 1000 } } // sensor range
-                  // );
+                  cores[0].setup();
+                  buildCoreToolkit(document.querySelector(&#039;#toolkit_placeholder&#039;), &#039;01&#039;, 0, &#039;SENSOR_VALUES&#039;);
                   
-                  bles[0].gotAcc = function (acc) {
+                  cores[0].gotAcc = function (acc) {
                   }
               }
           &lt;/script&gt;
@@ -296,7 +371,12 @@
     <h3 class="mt-4"><i class="bi bi-youtube"></i> ORPHE-CORE Workshop </h3>
 
     <section class="ms-4">
-      <p>Programming workshops using ORPHE CORE are available on youtube. have a fun, enjoy!!</p>
+      <p class="lang en">
+        Programming workshops using ORPHE CORE are available on youtube. have a fun, enjoy!!
+      </p>
+      <p class="lang ja active">
+        ORPHE COREを使ったプログラミングワークショップがyoutubeで公開されています。楽しんでください！
+      </p>
       <div class="video-container">
         <iframe
           src="https://www.youtube.com/embed/videoseries?si=GTdszBEqVzfJ3fym&amp;list=PLP_ql9XSx6s2Dex83_jkLLz28Mw2X9P_2"
@@ -309,9 +389,14 @@
 
     <h3 class="mt-4"><i class="bi bi-code"></i> Application Examples </h3>
     <section class="ms-4">
-      We have prepared several examples using ORPHE-CORE.js. All examples are located under the
-      /ORPHE-CORE.js/examples
-      directory.
+      <p class="lang en">
+        We have prepared several examples using ORPHE-CORE.js. All examples are located under the
+        /ORPHE-CORE.js/examples
+        directory.
+      </p>
+      <p class="lang ja active">
+        ORPHE-CORE.jsを使ったいくつかの例を用意しました。すべての例は/ORPHE-CORE.js/examplesディレクトリにあります。
+      </p>
       <!-- The following is a list of BLE Advertising by ORPHE CORE Module. Not all advertisements are listed in this page.
       <table class="table table-dark table-striped table-hover">
         <thead>
@@ -355,7 +440,8 @@
       </table> -->
 
       <ul class="mt-4">
-        <li><span class="bg-warning">INFORMATION</span>: shows device information [
+        <li><span class="bg-warning">INFORMATION</span>: shows device
+          information [
           <a href="./examples/INFORMATION" target="_blank">
             DEMO</a>
           ][
@@ -456,10 +542,37 @@
         </div>
         <div class="col-md-6">
           <ol>
-            <li>Create a directory, test or something like that.</li>
-            <li>Open "test" directory with VSCode</li>
-            <li>Open Terminal on VSCode</li>
-            <li>type "git clone https://orphe-oss.github.io/ORPHE-CORE.js.git" on the terminal.
+            <li>
+              <span class="lang en">
+                Create a directory, test or something like that.
+              </span>
+              <span class="lang ja active">
+                例えば、testというディレクトリを作成します。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Open "test" directory with VSCode
+              </span>
+              <span class="lang ja active">
+                VSCodeで"test"ディレクトリを開きます。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Open Terminal on VSCode
+              </span>
+              <span class="lang ja active">
+                VSCodeでターミナルを開きます。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                type "git clone https://orphe-oss.github.io/ORPHE-CORE.js.git" on the terminal.
+              </span>
+              <span class="lang ja active">
+                ターミナルに"git clone https://orphe-oss.github.io/ORPHE-CORE.js.git"と入力します。
+              </span>
               <div class="mt-2 input-group mb-3">
                 <button class="btn btn-outline-primary" type="button" id="button_copy_clone"
                   onclick="copyInputValue(this, '#input_clone')"> <i class="bi bi-clipboard"></i></button>
@@ -468,9 +581,30 @@
                   type="text/javascript"></script>
               </div>
             </li>
-            <li>Open ORPHE-CORE.js/examples/LIGHT/index.html via VSCode explorer.</li>
-            <li>Install "live server" extension</li>
-            <li>Click "Go Live" button at the bottom of VSCode window</li>
+            <li>
+              <span class="lang en">
+                Open ORPHE-CORE.js/examples/LIGHT/index.html via VSCode explorer.
+              </span>
+              <span class="lang ja active">
+                VSCodeのエクスプローラーからORPHE-CORE.js/examples/LIGHT/index.htmlを開きます。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Install "live server" extension
+              </span>
+              <span class="lang ja active">
+                "live server"拡張機能をインストールします。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Click "Go Live" button at the bottom of VSCode window
+              </span>
+              <span class="lang ja active">
+                VSCodeウィンドウの下部にある"Go Live"ボタンをクリックします。
+              </span>
+            </li>
           </ol>
         </div>
       </div>
@@ -479,11 +613,17 @@
 
     <h3 class="mt-4"><i class="bi bi-star"></i> Starter Templates </h3>
     <section class="ms-4">
-      Although we have provided an ORPHE-like example in the Examples section, it would be better to have a simpler
-      example if users want to create their own applications using ORPHE-CORE. In this section, as Starter Templates,
-      we
-      provide a very simple working example without css. All starter templates are located under the
-      /ORPHE-CORE.js/starter-templates/ directory.
+      <p class="lang en">
+        Although we have provided an ORPHE-like example in the Examples section, it would be better to have a simpler
+        example if users want to create their own applications using ORPHE-CORE. In this section, as Starter Templates,
+        we
+        provide a very simple working example without css. All starter templates are located under the
+        /ORPHE-CORE.js/starter-templates/ directory.
+      </p>
+      <p class="lang ja active">
+        ExamplesセクションにORPHE風の例を提供していますが、ORPHE-COREを使って独自のアプリケーションを作成したい場合は、よりシンプルな例があると良いでしょう。このセクションでは、Starter
+        Templatesとして、非常にシンプルな動作する例を提供します。すべてのスターターテンプレートは/ORPHE-CORE.js/starter-templates/ディレクトリにあります。
+      </p>
       <ul>
         <li><span class="bg-warning">TWO COREs</span>: template of connecting two core modules
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/XHZ2lHQtN" target="_blank">p5.js</a> ]
@@ -569,9 +709,15 @@
 
     <h3 class="mt-4"><i class="bi bi-stars"></i> Playful Examples</h3>
     <section class="ms-4">
-      Are you a creative coder? If so or not, why don't you try the playful examples. Graphics, Sounds makes your
-      ORPHE-CORE
-      colorful and playful!!
+      <p class="lang en">
+        Are you a creative coder? If so or not, why don't you try the playful examples. Graphics, Sounds makes your
+        ORPHE-CORE
+        colorful and playful!!
+      </p>
+      <p class="lang ja active">
+        クリエイティブコーダーですか？そうでない場合でも、遊び心のある例を試してみませんか。グラフィック、サウンドがあなたのORPHE-COREをカラフルで遊び心のあるものにします！
+      </p>
+
       <ul>
         <li><span class="bg-warning">3DBOX</span>: Control a 3D box with ORPHE CORE Module
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/waUWo6ZZN" target="_blank">p5.js</a> ]
@@ -593,8 +739,13 @@
 
     <h3 class="mt-4"><i class="bi bi-wrench-adjustable-circle"></i> Technical Examples</h3>
     <section class="ms-4">
-      Are you interested in gesture recognition, frequency analysis, or something more engineering and difficult? Then
-      give it a try.
+      <p class="lang en">
+        Are you interested in gesture recognition, frequency analysis, or something more engineering and difficult? Then
+        give it a try.
+      </p>
+      <p class="lang ja active">
+        ジェスチャー認識、周波数解析、またはよりエンジニアリング的で難しいものに興味がありますか？それでは、試してみてください。
+      </p>
       <ul>
         <li>
           <span class="bg-warning">FFT</span>: X-axis motion FFT
@@ -621,24 +772,35 @@
 
     <h3 class="mt-4"><i class="bi bi-book"></i> API</h3>
     <section class="ms-4">
-      Here is a ORPHE class API reference which is generated by jsdoc.
+      <p class="lang en">
+        Here is a ORPHE class API reference which is generated by jsdoc.
+      </p>
+      <p class="lang ja active">
+        以下はjsdocによって生成されたORPHEクラスのAPIリファレンスです。
+      </p>
       <li><a href="./api_doc/" target="_blank">API Reference for ORPHE-CORE.js</a></li>
     </section>
 
 
     <h2 class="mt-4"><img height="30em" src="images/electron_logo.svg"> Electron</h2>
     <section class="ms-4">
-      <p>
+      <p class="lang en">
         Using the previous contents, you already have easy and speedy access to the ORPHE CORE module. Still not
         enough?
         In this section, we will use Electron to make the ORPHE CORE module even more fun.
       </p>
+      <p class="lang ja active">
+        これまでの内容を使って、ORPHE COREモジュールに簡単かつ迅速にアクセスできるようになりました。それでも足りませんか？このセクションでは、Electronを使ってORPHE COREモジュールをさらに楽しくします。
+      </p>
 
-      <p class="ms-4">
+      <p class="lang en ms-4">
         Electron is a framework for building desktop applications using JavaScript, HTML, and CSS. By embedding
         Chromium
         and Node.js into its binary, Electron allows you to maintain one JavaScript codebase and create cross-platform
         apps that work on Windows, macOS, and Linux — no native development experience required.
+      </p>
+      <p class="lang ja active ms-4">
+        Electronは、JavaScript、HTML、およびCSSを使用してデスクトップアプリケーションを構築するためのフレームワークです。ChromiumとNode.jsをバイナリに埋め込むことで、Electronは1つのJavaScriptコードベースを維持し、Windows、macOS、Linuxで動作するクロスプラットフォームアプリケーションを作成できます。ネイティブ開発の経験は必要ありません。
       </p>
       <figcaption class="blockquote-footer text-end">
         What is Electron? <cite title="Source Title">https://www.electronjs.org/docs/latest/</cite>
@@ -702,6 +864,29 @@
   <script>
     hljs.highlightAll();
     hljs.addPlugin(new CopyButtonPlugin());
+  </script>
+  <script>
+    let lang = 'ja';
+    function toggleLanguage() {
+      if (lang == 'ja') {
+        lang = 'en';
+      } else {
+        lang = 'ja';
+      }
+      document.querySelectorAll('.lang').forEach(element => {
+        if (element.classList.contains(lang)) {
+          element.style.display = 'block';
+          setTimeout(() => {
+            element.classList.add('active');
+          }, 10); // 少し遅らせてからクラスを追加
+        } else {
+          element.classList.remove('active');
+          setTimeout(() => {
+            element.style.display = 'none';
+          }, 500); // フェードアウトの後に非表示
+        }
+      });
+    }
   </script>
 
 </body>

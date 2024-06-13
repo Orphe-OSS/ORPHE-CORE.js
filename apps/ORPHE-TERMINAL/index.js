@@ -13,7 +13,7 @@ function formatNumber(number) {
 window.onload = function () {
 
     // ORPHE CORE Init; bles[0] and bles[1] are used by CoreToolkit.js
-    bles[0].setup(['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'], { is_raw_data_monitoring: true });
+    bles[0].setup();
     buildCoreToolkit(document.querySelector('#toolkit_placeholder'), 'CORE', 0, 'SENSOR_VALUES');
     bles[0].onConnect = function () {
         is_connected = true;

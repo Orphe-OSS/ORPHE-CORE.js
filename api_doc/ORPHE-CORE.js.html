@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en" style="font-size:16px"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ORPHE-CORE.js</title><!--[if lt IE 9]>
       <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.js"></script><script>var baseURL="/",locationPathname="",baseURL=(locationPathname=document.location.pathname).substr(0,locationPathname.lastIndexOf("/")+1)</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body class="dark" data-theme="dark"><div class="sidebar-container"><div class="sidebar" id="sidebar"><a href="/" class="sidebar-title sidebar-title-anchor">Home</a><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="AC8yPw8my4I4NRsem3q5R"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe.html">Orphe</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="F7bR69LYClkFLHW_yeCbJ"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe-Orphe.html">Orphe</a></div><div class="sidebar-section-children"><a href="module-Orphe-OrpheTimestamp.html">OrpheTimestamp</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="-AcgIsxJ2Z_xYZxqU2o9y"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#bles">bles</a></div><div class="sidebar-section-children"><a href="global.html#buildCoreToolkit">buildCoreToolkit</a></div><div class="sidebar-section-children"><a href="global.html#changeAccRange">changeAccRange</a></div><div class="sidebar-section-children"><a href="global.html#changeGryoRange">changeGryoRange</a></div><div class="sidebar-section-children"><a href="global.html#changeLEDBrightness">changeLEDBrightness</a></div><div class="sidebar-section-children"><a href="global.html#changeLR">changeLR</a></div><div class="sidebar-section-children"><a href="global.html#changeNotify">changeNotify</a></div><div class="sidebar-section-children"><a href="global.html#cores">cores</a></div><div class="sidebar-section-children"><a href="global.html#CTbuildElement">CTbuildElement</a></div><div class="sidebar-section-children"><a href="global.html#resetCoreModule">resetCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#setHeaderStatusOffline">setHeaderStatusOffline</a></div><div class="sidebar-section-children"><a href="global.html#toggleCoreModule">toggleCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#toggleLED">toggleLED</a></div><div class="sidebar-section-children"><a href="global.html#updateBatteryInfo">updateBatteryInfo</a></div><div class="sidebar-section-children"><a href="global.html#updateModalParameters">updateModalParameters</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">ORPHE-CORE.js</h1></header><article><pre class="prettyprint source lang-js"><code>var orphe_js_version_date = `
-Last modified: 2024/05/31 18:27:36
+    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.js"></script><script>var baseURL="/",locationPathname="",baseURL=(locationPathname=document.location.pathname).substr(0,locationPathname.lastIndexOf("/")+1)</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body class="dark" data-theme="dark"><div class="sidebar-container"><div class="sidebar" id="sidebar"><a href="/" class="sidebar-title sidebar-title-anchor">Home</a><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="DFDWe5YlKqz3ZiV6iWBQf"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe.html">Orphe</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="Mud9uABOTSqDdIfBAvBMa"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe-FixedSizeArray.html">FixedSizeArray</a></div><div class="sidebar-section-children"><a href="module-Orphe-Orphe.html">Orphe</a></div><div class="sidebar-section-children"><a href="module-Orphe-OrpheTimestamp.html">OrpheTimestamp</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="fwS1wD_533bL4WAy52_sJ"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#bles">bles</a></div><div class="sidebar-section-children"><a href="global.html#buildCoreToolkit">buildCoreToolkit</a></div><div class="sidebar-section-children"><a href="global.html#changeAccRange">changeAccRange</a></div><div class="sidebar-section-children"><a href="global.html#changeGryoRange">changeGryoRange</a></div><div class="sidebar-section-children"><a href="global.html#changeLEDBrightness">changeLEDBrightness</a></div><div class="sidebar-section-children"><a href="global.html#changeLR">changeLR</a></div><div class="sidebar-section-children"><a href="global.html#changeNotify">changeNotify</a></div><div class="sidebar-section-children"><a href="global.html#cores">cores</a></div><div class="sidebar-section-children"><a href="global.html#CTbuildElement">CTbuildElement</a></div><div class="sidebar-section-children"><a href="global.html#resetCoreModule">resetCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#setHeaderStatusOffline">setHeaderStatusOffline</a></div><div class="sidebar-section-children"><a href="global.html#toggleCoreModule">toggleCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#toggleLED">toggleLED</a></div><div class="sidebar-section-children"><a href="global.html#updateBatteryInfo">updateBatteryInfo</a></div><div class="sidebar-section-children"><a href="global.html#updateModalParameters">updateModalParameters</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">ORPHE-CORE.js</h1></header><article><pre class="prettyprint source lang-js"><code>var orphe_js_version_date = `
+Last modified: 2024/06/13 16:48:45
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -11,7 +11,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.2.1
+@version 1.2.2
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -30,6 +30,32 @@ loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.
 loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js');
 
 
+/**
+ * 自動的に決められた配列サイズでunshiftしてくれるクラス
+ * sensor valuesのデータを保持するクラスです。sensor valuesのデータは、加速度、ジャイロ、クォータニオンの3つのデータを保持します。interpotion処理を行うために、過去のデータを保持する用途に使用します。
+ */
+class FixedSizeArray {
+  constructor(size) {
+    this.size = size;
+    this.array = [];
+  }
+  setSize(size) {
+    this.size = size;
+  }
+  push(element) {
+    if (this.array.length >= this.size) {
+      this.array.shift(); // 先頭の要素を削除
+    }
+    this.array.push(element); // 新しい要素を追加
+  }
+
+  getArray() {
+    return this.array;
+  }
+}
+
+
+
 
 /**
  * Orpheクラス内部で利用されるタイムスタンプクラスです。BLE通信のデータ取得タイミングにおける実測周波数を取得するために利用されます。Orpheクラス内部で本当は宣言したかったのですが、jsdoc がクラス内部クラス定義に対応していないため、外部に出しています。無念。  
@@ -42,6 +68,7 @@ class OrpheTimestamp {
   constructor() {
     this.start = 0;
   }
+
   /**
    * 前回呼び出した時刻からの経過時間をミリ秒で返します。
    * @returns {number} 前回呼び出した時刻からの経過時間をミリ秒で返します。
@@ -81,6 +108,7 @@ class Orphe {
    */
   constructor(id) {
 
+    this.defaultGotData = this.gotData;
     this.timestamp = new OrpheTimestamp();
 
     Object.defineProperty(this, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
@@ -88,6 +116,7 @@ class Orphe {
     Object.defineProperty(this, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
     Object.defineProperty(this, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
     Object.defineProperty(this, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
+
 
     // Initialize member variables
     this.bluetoothDevice = null;
@@ -97,6 +126,7 @@ class Orphe {
     this.hashUUID_lastConnected; // 最後に接続したUUIDを保持する
     this.id = id;
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
+
     /**
    * デバイスインフォメーションを取得して保存しておく連想配列です。begin()を呼び出すとデバイスから値を取得して初期化されます。
    * @property {Object} device_information - デバイス情報
@@ -253,9 +283,37 @@ class Orphe {
     this.converted_acc = {
       x: 0.0, y: 0.0, z: 0.0
     }
+
+    /**
+     * データ欠損時に線形補完をするかどうかのオプション設定（beginのオプションで設定可能）。この設定は200Hz sensor_valuesのacc, gyro, quatのみに適用されます。
+     * 
+     * @property {Object} interpolation - 線形補間の設定
+     * @property {boolean} interpolation.enabled - 線形補間の有効化/無効化　true: 有効, false: 無効
+     * @property {number} interpolation.max_consecutive_missing - 線形補間する最大の連続欠損数
+     */
+    this.interpolation = {
+      enabled: false,
+      max_consecutive_missing: 1
+    }
+
+    this.history_sensor_values = {
+      acc: new FixedSizeArray(4),
+      gyro: new FixedSizeArray(4),
+      quat: new FixedSizeArray(4),
+      converted_acc: new FixedSizeArray(4),
+      converted_gyro: new FixedSizeArray(4)
+    }
     // メンバ変数の初期化ここまで
     //////////////////////////
 
+  }
+
+  /**
+  * 
+  * 
+ */
+  isGotDataOverridden() {
+    return this.gotData !== this.defaultGotData;
   }
   /**
    * UUIDを設定する関数です。UUIDはsetup()で利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定に利用されます。
@@ -270,18 +328,25 @@ class Orphe {
   /**
    * 最初に必要な初期化処理メソッドです。利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定の他、オプションを指定することができます。オプションでは生データの取得を指定することができます。通常利用では引数を省略して setup() が呼び出されることが多いです。
    * @param {string[]} [string[]=["DEVICE_INFORMATION", "SENSOR_VALUES", "STEP_ANALYSIS"]] DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
-   * @param {object} [options = {is_raw_data_monitoring:false}] - is_raw_data_monitoring: trueの場合、生データを取得します。falseの場合、解析データを取得します。デフォルトはfalseです。
+   * @param {object} [options = {interpolation}] - interpolationは未実装
    *
    */
   setup(names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
-    options = { is_raw_data_monitoring: false }
+    options = {
+      interpolation: {
+        enabled: false, // 線形補間の有効化/無効化
+        max_consecutive_missing: 1 // 線形補間する最大の連続欠損数
+      }
+    }
   ) {
-    if (options.is_raw_data_monitoring == true) {
-      this.is_raw_data_monitoring = true;
-    }
-    else {
-      this.is_raw_data_monitoring = false;
-    }
+
+    this.interpolation = options.interpolation;
+    this.history_sensor_values.acc.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.gyro.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.quat.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.converted_acc.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.converted_gyro.setSize(this.interpolation.max_consecutive_missing);
+
     for (const name of names) {
       if (name == 'DEVICE_INFORMATION') {
         this.setUUID(name, this.ORPHE_INFORMATION, this.ORPHE_DEVICE_INFORMATION);
@@ -306,8 +371,12 @@ class Orphe {
    */
   async begin(
     str_type = 'STEP_ANALYSIS',
-    options = { range: { acc: -1, gyro: -1 } }
+    options = {
+      range: { acc: -1, gyro: -1 }
+    }
   ) {
+
+
 
     // ----------------------------------------------
     // @Depricated beginの引数である RAW, ANALYSISに関して混乱を招くので、setup()でのUUID設定に合わせ
@@ -328,7 +397,7 @@ class Orphe {
     // ----------------------------------------------
 
     const {
-      range = { acc: -1, gyro: -1 },
+      range = { acc: -1, gyro: -1 }
     } = options;
     this.notification_type = str_type;
 
@@ -463,7 +532,6 @@ class Orphe {
   connectGATT(uuid) {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      //console.log('Error : ' + error);
       this.onError(error);
       return;
     }
@@ -473,24 +541,19 @@ class Orphe {
     }
     this.hashUUID_lastConnected = uuid;
 
-    //console.log('Execute : connect');
     return this.bluetoothDevice.gatt.connect()
       .then(server => {
-        //console.log('Execute : getPrimaryService');
         return server.getPrimaryService(this.hashUUID[uuid].serviceUUID);
       })
       .then(service => {
-        //console.log('Execute : getCharacteristic');
         return service.getCharacteristic(this.hashUUID[uuid].characteristicUUID);
       })
       .then(characteristic => {
         this.dataCharacteristic = characteristic;
-        // this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
         this.onConnectGATT(uuid);
         this.onConnect(uuid);
       })
       .catch(error => {
-        //console.log('Error : ' + error);
         this.onError(error);
       });
   }
@@ -601,7 +664,6 @@ class Orphe {
         this.onStopNotify(uuid);
       })
       .catch(error => {
-        // どこかのステップでエラーが発生した場合、そのエラーを処理する関数を呼び出します。
         this.onError(error);
       });
 
@@ -620,7 +682,6 @@ class Orphe {
   disconnect() {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      //console.log('Error : ' + error);
       this.onError(error);
       return;
     }
@@ -630,7 +691,6 @@ class Orphe {
       this.bluetoothDevice.gatt.disconnect();
     } else {
       var error = "Bluetooth Device is already disconnected";
-      //console.log('Error : ' + error);
       this.onError(error);
       return;
     }
@@ -671,7 +731,7 @@ class Orphe {
 
   // Readコールバック
   /**
-   * Incoming byte callback function. コアモジュールから送信されるデータを受信するコールバック関数です。それぞれのUUIDに対応するデータを正しく整形して対応するコールバック関数に渡します。ユーザはコールバック関数を手元のコードでオーバーライドして利用します。
+   * Incoming byte callback function. コアモジュールから送信されるデータを受信するコールバック関数です。それぞれのUUIDに対応するデータを正しく整形して対応するコールバック関数に渡します。ユーザはコールバック関数を手元のコードでオーバーライドして利用します。gotData()がユーザによってオーバーライドされている場合は、gotData以外のnotifyに伴うコールバック関数はすべて呼び出されないことに注意してください。
    * @param {dataView} data incoming bytes
    * @param {string} uuid 
    */
@@ -680,7 +740,7 @@ class Orphe {
     if (ret > 0) this.gotBLEFrequency(ret);
 
     // 生データモニタリングの場合はそのままデータをgotDataで渡して、returnする（データ欠損以外の他の処理は行わない）
-    if (this.is_raw_data_monitoring == true) {
+    if (this.isGotDataOverridden() == true) {
       this.gotData(data, uuid);
       // データ欠損チェック
       if (uuid == 'SENSOR_VALUES') {
@@ -689,9 +749,19 @@ class Orphe {
           if (this.serial_number) {
             const serial_number_prev = this.serial_number;
             this.serial_number = data.getUint16(1);
+
+            // データ欠損が生じた場合
             if (this.serial_number - serial_number_prev != 1) {
+
+              // 線形補完を有効にしている場合
+              if (this.interpolation.enabled == true) {
+
+              }
+              // ユーザ用コールバック関数の呼び出し
               this.lostData(this.serial_number, serial_number_prev);
+
             }
+
           }
           else {
             this.serial_number = data.getUint16(1);
@@ -933,8 +1003,6 @@ class Orphe {
           else {
             timestamp = timestamp + data.getUint8(28 + 21 * i);
           }
-
-
           this.quat = {
             w: data.getInt16(8 + 21 * i) / 32768,
             x: data.getInt16(10 + 21 * i) / 32768,
@@ -944,6 +1012,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           }
+          this.history_sensor_values.quat.push(this.quat);
+
           this.gyro = {
             x: data.getInt16(16 + 21 * i) / 32768,
             y: data.getInt16(18 + 21 * i) / 32768,
@@ -952,6 +1022,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           }
+          this.history_sensor_values.gyro.push(this.gyro);
+
           this.acc = {
             x: data.getInt16(22 + 21 * i) / 32768,
             y: data.getInt16(24 + 21 * i) / 32768,
@@ -960,6 +1032,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           }
+          this.history_sensor_values.acc.push(this.acc);
+
           // ジャイロと加速度補正をかけたものを別途作成
           this.converted_gyro = {
             x: this.gyro.x * gyroRange,
@@ -969,6 +1043,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           };
+          this.history_sensor_values.converted_gyro.push(this.converted_gyro);
+
           this.converted_acc = {
             x: this.acc.x * accRange,
             y: this.acc.y * accRange,
@@ -977,6 +1053,7 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           };
+          this.history_sensor_values.converted_acc.push(this.converted_acc);
 
           this.gotAcc(this.acc);
           this.gotQuat(this.quat);
@@ -1076,149 +1153,118 @@ class Orphe {
   //--------------------------------------------------
   //一般開発ユーザからアクセス可能な関数のプロトタイプ定義
   /**
-   * ORPHE TERMINAL用に作成した関数。onReadで受け取ったデータをそのまま渡す。この関数を利用する場合は setup() の is_raw_data_monitoring = true にする必要がある。dataview形式なので、取り扱い方法については ORPHE TERMINALのソースを参照するとよい。
+   * ORPHE TERMINAL用に作成した関数。onReadで受け取ったデータをそのまま渡す。このメソッドがユーザ側でオーバーライドされると、その他のnotifyに伴うコールバック関数（gotAcc等）はすべて呼び出されなくなるので注意してください。dataview形式なので、取り扱い方法については ORPHE TERMINALのソースを参照するとよい。
    * @param {dataview} data onReadで取得したすべてのデータ
    */
-  gotData(data) {
-    //console.log('prototype.gotQuat');
-  }
+  gotData(data) { }
 
   /**
    * コアモジュールのクオータニオン情報を取得する
    * @param {Object} quat {w,x,y,z} クオータニオンの取得
    */
-  gotQuat(quat) {
-    //console.log('prototype.gotQuat');
-  }
+  gotQuat(quat) { }
   /**
    * ジャイロ（x,y,zの角速度）を取得する
    * @param {Object} gyro {x,y,z} ジャイロの取得
    */
-  gotGyro(gyro) {
-    //console.log('prototype.gotGyro');
-  }
+  gotGyro(gyro) { }
   /**
    * 加速度を取得する。加速度レンジに応じて変換された値がほしい場合は、gotConvertedAccを利用すること
    * 対応CharacteristicはSENSOR_VALUES
    * @param {Object} acc {x,y,z} 加速度の取得
    */
-  gotAcc(acc) {
-    //console.log('prototype.gotAcc');
-  }
+  gotAcc(acc) { }
   /**
    * ジャイロレンジに応じて変換された値を取得する。
    * @param {Object} gyro {x,y,z} ジャイロレンジに応じて変換したジャイロの取得
    */
-  gotConvertedGyro(gyro) {
-    //console.log('prototype.gotGyro');
-  }
+  gotConvertedGyro(gyro) { }
   /**
    * コアモジュールで設定されている加速度レンジに応じて変換された値を取得する。
    * @param {Object} acc {x,y,z} 加速度レンジに応じて変換した加速度の取得
    */
-  gotConvertedAcc(acc) {
-    //console.log('prototype.gotAcc');
-  }
+  gotConvertedAcc(acc) { }
   /**
    * 加速度値を2回積分して各x,y,zの単位時間の移動距離を取得する。
    * @param {Object} delta {x,y,z} x,y,zの前回フレームからの移動距離
    */
-  gotDelta(delta) {
-    //console.log('prototype.gotDelta');
-  }
+  gotDelta(delta) { }
   /**
    * コアモジュールのオイラー角を取得する。オイラー角の取得は破綻する可能性があるため、姿勢を取る場合はクオータニオンを利用すること
    * @param {Object} euler {pitch, roll, yaw} オイラー角
    */
-  gotEuler(euler) {
-    //console.log('prototype.gotEuler');
-  }
+  gotEuler(euler) { }
   /**
    * 歩容解析の取得
    * @param {Object} gait {type, direction, calorie, distance} 歩行解析の取得
    */
-  gotGait(gait) {
-    //console.log('prototype.gotGait');
-  }
+  gotGait(gait) { }
   /**
    * 現在の歩容タイプを取得する
    * @param {Object} type {value} 0:none, 1:walk, 2:run, 3:stand 
    */
-  gotType(type) {
-  }
+  gotType(type) { }
   /**
    * ランニングの方向を取得する
    * @param {Object} direction {value} 0:none, 1:foward, 2:backward, 3:inside, 4:outside
    */
-  gotDirection(direction) {
-  }
+  gotDirection(direction) { }
   /**
    * 総消費カロリーを取得する
    * @param {Object} calorie {value}
    */
-  gotCalorie(calorie) {
-  }
+  gotCalorie(calorie) { }
 
   /**
    * 総移動距離を取得する
    * @param {Object} distance {value} 
    */
-  gotDistance(distance) {
-  }
+  gotDistance(distance) { }
 
   /**
    * 立脚期継続時間[s]を取得する
    * @param {*} standing_phase_duration 
    */
-  gotStandingPhaseDuration(standing_phase_duration) {
-  }
+  gotStandingPhaseDuration(standing_phase_duration) { }
 
   /**
    * 遊脚期継続時間[s]を取得する
    * @param {*} swing_phase_duration 
    */
-  gotSwingPhaseDuration(swing_phase_duration) {
-
-  }
+  gotSwingPhaseDuration(swing_phase_duration) { }
   /**
    * ストライド[m]の取得
    * @param {Object} stride {x,y,z}
    */
-  gotStride(stride) {
-  }
+  gotStride(stride) { }
   /**
    * 着地角度[degree]の取得
    * @param {Object} foot_angle {value}
    */
-  gotFootAngle(foot_angle) {
-  }
+  gotFootAngle(foot_angle) { }
 
   /**
    * プロネーション[degree]の取得
    * @param {Object} pronation {x,y,z}
    */
-  gotPronation(pronation) {
-  }
+  gotPronation(pronation) { }
   /**
    * 着地衝撃力[kgf/weight]の取得
    * @param {Object} landing_impact {value}
    */
-  gotLandingImpact(landing_impact) {
-  }
+  gotLandingImpact(landing_impact) { }
   /**
    * 現在までの歩数を取得する
    * @param {Object} steps_number {value}
    */
-  gotStepsNumber(steps_number) {
-  }
+  gotStepsNumber(steps_number) { }
 
   /**
    * 以前来たデータとのシリアルナンバーの差が1でない場合に呼び出される。SENSOR_VALUESのcharacteristicを利用し、かつ、200Hzのデータ取得のモデル（CR-3）のみで利用可能。50Hzの加速度センサーのデータ取得モデル（CR-2）では利用できない。
    * @param {number} serial_number - 現在のシリアルナンバー
    * @param {number} serial_number_prev - 一つ前に受診したデータのシリアルナンバー
    */
-  lostData(serial_number, serial_number_prev) {
-  }
+  lostData(serial_number, serial_number_prev) { }
 
   onScan(deviceName) { console.log("onScan"); }
   onConnectGATT(uuid) { console.log("onConnectGATT"); }
@@ -1239,4 +1285,4 @@ class Orphe {
 
   //一般開発ユーザからアクセス可能な関数の定義ここまで
   //--------------------------------------------------
-}</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN">Type anything to view search result</div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><a href="/" class="sidebar-title sidebar-title-anchor">Home</a><div class="mobile-nav-links"></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="AC8yPw8my4I4NRsem3q5R"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe.html">Orphe</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="F7bR69LYClkFLHW_yeCbJ"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe-Orphe.html">Orphe</a></div><div class="sidebar-section-children"><a href="module-Orphe-OrpheTimestamp.html">OrpheTimestamp</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="-AcgIsxJ2Z_xYZxqU2o9y"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#bles">bles</a></div><div class="sidebar-section-children"><a href="global.html#buildCoreToolkit">buildCoreToolkit</a></div><div class="sidebar-section-children"><a href="global.html#changeAccRange">changeAccRange</a></div><div class="sidebar-section-children"><a href="global.html#changeGryoRange">changeGryoRange</a></div><div class="sidebar-section-children"><a href="global.html#changeLEDBrightness">changeLEDBrightness</a></div><div class="sidebar-section-children"><a href="global.html#changeLR">changeLR</a></div><div class="sidebar-section-children"><a href="global.html#changeNotify">changeNotify</a></div><div class="sidebar-section-children"><a href="global.html#cores">cores</a></div><div class="sidebar-section-children"><a href="global.html#CTbuildElement">CTbuildElement</a></div><div class="sidebar-section-children"><a href="global.html#resetCoreModule">resetCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#setHeaderStatusOffline">setHeaderStatusOffline</a></div><div class="sidebar-section-children"><a href="global.html#toggleCoreModule">toggleCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#toggleLED">toggleLED</a></div><div class="sidebar-section-children"><a href="global.html#updateBatteryInfo">updateBatteryInfo</a></div><div class="sidebar-section-children"><a href="global.html#updateModalParameters">updateModalParameters</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>
+}</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN">Type anything to view search result</div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><a href="/" class="sidebar-title sidebar-title-anchor">Home</a><div class="mobile-nav-links"></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="DFDWe5YlKqz3ZiV6iWBQf"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe.html">Orphe</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="Mud9uABOTSqDdIfBAvBMa"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Orphe-FixedSizeArray.html">FixedSizeArray</a></div><div class="sidebar-section-children"><a href="module-Orphe-Orphe.html">Orphe</a></div><div class="sidebar-section-children"><a href="module-Orphe-OrpheTimestamp.html">OrpheTimestamp</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="fwS1wD_533bL4WAy52_sJ"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#bles">bles</a></div><div class="sidebar-section-children"><a href="global.html#buildCoreToolkit">buildCoreToolkit</a></div><div class="sidebar-section-children"><a href="global.html#changeAccRange">changeAccRange</a></div><div class="sidebar-section-children"><a href="global.html#changeGryoRange">changeGryoRange</a></div><div class="sidebar-section-children"><a href="global.html#changeLEDBrightness">changeLEDBrightness</a></div><div class="sidebar-section-children"><a href="global.html#changeLR">changeLR</a></div><div class="sidebar-section-children"><a href="global.html#changeNotify">changeNotify</a></div><div class="sidebar-section-children"><a href="global.html#cores">cores</a></div><div class="sidebar-section-children"><a href="global.html#CTbuildElement">CTbuildElement</a></div><div class="sidebar-section-children"><a href="global.html#resetCoreModule">resetCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#setHeaderStatusOffline">setHeaderStatusOffline</a></div><div class="sidebar-section-children"><a href="global.html#toggleCoreModule">toggleCoreModule</a></div><div class="sidebar-section-children"><a href="global.html#toggleLED">toggleLED</a></div><div class="sidebar-section-children"><a href="global.html#updateBatteryInfo">updateBatteryInfo</a></div><div class="sidebar-section-children"><a href="global.html#updateModalParameters">updateModalParameters</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>

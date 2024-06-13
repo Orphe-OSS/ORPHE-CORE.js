@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/05/31 18:27:36
+Last modified: 2024/06/13 16:48:45
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -9,7 +9,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.2.1
+@version 1.2.2
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -28,6 +28,32 @@ loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.
 loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js');
 
 
+/**
+ * 自動的に決められた配列サイズでunshiftしてくれるクラス
+ * sensor valuesのデータを保持するクラスです。sensor valuesのデータは、加速度、ジャイロ、クォータニオンの3つのデータを保持します。interpotion処理を行うために、過去のデータを保持する用途に使用します。
+ */
+class FixedSizeArray {
+  constructor(size) {
+    this.size = size;
+    this.array = [];
+  }
+  setSize(size) {
+    this.size = size;
+  }
+  push(element) {
+    if (this.array.length >= this.size) {
+      this.array.shift(); // 先頭の要素を削除
+    }
+    this.array.push(element); // 新しい要素を追加
+  }
+
+  getArray() {
+    return this.array;
+  }
+}
+
+
+
 
 /**
  * Orpheクラス内部で利用されるタイムスタンプクラスです。BLE通信のデータ取得タイミングにおける実測周波数を取得するために利用されます。Orpheクラス内部で本当は宣言したかったのですが、jsdoc がクラス内部クラス定義に対応していないため、外部に出しています。無念。  
@@ -40,6 +66,7 @@ class OrpheTimestamp {
   constructor() {
     this.start = 0;
   }
+
   /**
    * 前回呼び出した時刻からの経過時間をミリ秒で返します。
    * @returns {number} 前回呼び出した時刻からの経過時間をミリ秒で返します。
@@ -79,6 +106,7 @@ class Orphe {
    */
   constructor(id) {
 
+    this.defaultGotData = this.gotData;
     this.timestamp = new OrpheTimestamp();
 
     Object.defineProperty(this, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
@@ -86,6 +114,7 @@ class Orphe {
     Object.defineProperty(this, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
     Object.defineProperty(this, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
     Object.defineProperty(this, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
+
 
     // Initialize member variables
     this.bluetoothDevice = null;
@@ -95,6 +124,7 @@ class Orphe {
     this.hashUUID_lastConnected; // 最後に接続したUUIDを保持する
     this.id = id;
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
+
     /**
    * デバイスインフォメーションを取得して保存しておく連想配列です。begin()を呼び出すとデバイスから値を取得して初期化されます。
    * @property {Object} device_information - デバイス情報
@@ -251,9 +281,37 @@ class Orphe {
     this.converted_acc = {
       x: 0.0, y: 0.0, z: 0.0
     }
+
+    /**
+     * データ欠損時に線形補完をするかどうかのオプション設定（beginのオプションで設定可能）。この設定は200Hz sensor_valuesのacc, gyro, quatのみに適用されます。
+     * 
+     * @property {Object} interpolation - 線形補間の設定
+     * @property {boolean} interpolation.enabled - 線形補間の有効化/無効化　true: 有効, false: 無効
+     * @property {number} interpolation.max_consecutive_missing - 線形補間する最大の連続欠損数
+     */
+    this.interpolation = {
+      enabled: false,
+      max_consecutive_missing: 1
+    }
+
+    this.history_sensor_values = {
+      acc: new FixedSizeArray(4),
+      gyro: new FixedSizeArray(4),
+      quat: new FixedSizeArray(4),
+      converted_acc: new FixedSizeArray(4),
+      converted_gyro: new FixedSizeArray(4)
+    }
     // メンバ変数の初期化ここまで
     //////////////////////////
 
+  }
+
+  /**
+  * 
+  * 
+ */
+  isGotDataOverridden() {
+    return this.gotData !== this.defaultGotData;
   }
   /**
    * UUIDを設定する関数です。UUIDはsetup()で利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定に利用されます。
@@ -268,18 +326,25 @@ class Orphe {
   /**
    * 最初に必要な初期化処理メソッドです。利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定の他、オプションを指定することができます。オプションでは生データの取得を指定することができます。通常利用では引数を省略して setup() が呼び出されることが多いです。
    * @param {string[]} [string[]=["DEVICE_INFORMATION", "SENSOR_VALUES", "STEP_ANALYSIS"]] DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
-   * @param {object} [options = {is_raw_data_monitoring:false}] - is_raw_data_monitoring: trueの場合、生データを取得します。falseの場合、解析データを取得します。デフォルトはfalseです。
+   * @param {object} [options = {interpolation}] - interpolationは未実装
    *
    */
   setup(names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
-    options = { is_raw_data_monitoring: false }
+    options = {
+      interpolation: {
+        enabled: false, // 線形補間の有効化/無効化
+        max_consecutive_missing: 1 // 線形補間する最大の連続欠損数
+      }
+    }
   ) {
-    if (options.is_raw_data_monitoring == true) {
-      this.is_raw_data_monitoring = true;
-    }
-    else {
-      this.is_raw_data_monitoring = false;
-    }
+
+    this.interpolation = options.interpolation;
+    this.history_sensor_values.acc.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.gyro.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.quat.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.converted_acc.setSize(this.interpolation.max_consecutive_missing);
+    this.history_sensor_values.converted_gyro.setSize(this.interpolation.max_consecutive_missing);
+
     for (const name of names) {
       if (name == 'DEVICE_INFORMATION') {
         this.setUUID(name, this.ORPHE_INFORMATION, this.ORPHE_DEVICE_INFORMATION);
@@ -304,8 +369,12 @@ class Orphe {
    */
   async begin(
     str_type = 'STEP_ANALYSIS',
-    options = { range: { acc: -1, gyro: -1 } }
+    options = {
+      range: { acc: -1, gyro: -1 }
+    }
   ) {
+
+
 
     // ----------------------------------------------
     // @Depricated beginの引数である RAW, ANALYSISに関して混乱を招くので、setup()でのUUID設定に合わせ
@@ -326,7 +395,7 @@ class Orphe {
     // ----------------------------------------------
 
     const {
-      range = { acc: -1, gyro: -1 },
+      range = { acc: -1, gyro: -1 }
     } = options;
     this.notification_type = str_type;
 
@@ -461,7 +530,6 @@ class Orphe {
   connectGATT(uuid) {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      //console.log('Error : ' + error);
       this.onError(error);
       return;
     }
@@ -471,24 +539,19 @@ class Orphe {
     }
     this.hashUUID_lastConnected = uuid;
 
-    //console.log('Execute : connect');
     return this.bluetoothDevice.gatt.connect()
       .then(server => {
-        //console.log('Execute : getPrimaryService');
         return server.getPrimaryService(this.hashUUID[uuid].serviceUUID);
       })
       .then(service => {
-        //console.log('Execute : getCharacteristic');
         return service.getCharacteristic(this.hashUUID[uuid].characteristicUUID);
       })
       .then(characteristic => {
         this.dataCharacteristic = characteristic;
-        // this.dataCharacteristic.addEventListener('characteristicvaluechanged', this.dataChanged(this, uuid));
         this.onConnectGATT(uuid);
         this.onConnect(uuid);
       })
       .catch(error => {
-        //console.log('Error : ' + error);
         this.onError(error);
       });
   }
@@ -599,7 +662,6 @@ class Orphe {
         this.onStopNotify(uuid);
       })
       .catch(error => {
-        // どこかのステップでエラーが発生した場合、そのエラーを処理する関数を呼び出します。
         this.onError(error);
       });
 
@@ -618,7 +680,6 @@ class Orphe {
   disconnect() {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      //console.log('Error : ' + error);
       this.onError(error);
       return;
     }
@@ -628,7 +689,6 @@ class Orphe {
       this.bluetoothDevice.gatt.disconnect();
     } else {
       var error = "Bluetooth Device is already disconnected";
-      //console.log('Error : ' + error);
       this.onError(error);
       return;
     }
@@ -669,7 +729,7 @@ class Orphe {
 
   // Readコールバック
   /**
-   * Incoming byte callback function. コアモジュールから送信されるデータを受信するコールバック関数です。それぞれのUUIDに対応するデータを正しく整形して対応するコールバック関数に渡します。ユーザはコールバック関数を手元のコードでオーバーライドして利用します。
+   * Incoming byte callback function. コアモジュールから送信されるデータを受信するコールバック関数です。それぞれのUUIDに対応するデータを正しく整形して対応するコールバック関数に渡します。ユーザはコールバック関数を手元のコードでオーバーライドして利用します。gotData()がユーザによってオーバーライドされている場合は、gotData以外のnotifyに伴うコールバック関数はすべて呼び出されないことに注意してください。
    * @param {dataView} data incoming bytes
    * @param {string} uuid 
    */
@@ -678,7 +738,7 @@ class Orphe {
     if (ret > 0) this.gotBLEFrequency(ret);
 
     // 生データモニタリングの場合はそのままデータをgotDataで渡して、returnする（データ欠損以外の他の処理は行わない）
-    if (this.is_raw_data_monitoring == true) {
+    if (this.isGotDataOverridden() == true) {
       this.gotData(data, uuid);
       // データ欠損チェック
       if (uuid == 'SENSOR_VALUES') {
@@ -687,9 +747,19 @@ class Orphe {
           if (this.serial_number) {
             const serial_number_prev = this.serial_number;
             this.serial_number = data.getUint16(1);
+
+            // データ欠損が生じた場合
             if (this.serial_number - serial_number_prev != 1) {
+
+              // 線形補完を有効にしている場合
+              if (this.interpolation.enabled == true) {
+
+              }
+              // ユーザ用コールバック関数の呼び出し
               this.lostData(this.serial_number, serial_number_prev);
+
             }
+
           }
           else {
             this.serial_number = data.getUint16(1);
@@ -931,8 +1001,6 @@ class Orphe {
           else {
             timestamp = timestamp + data.getUint8(28 + 21 * i);
           }
-
-
           this.quat = {
             w: data.getInt16(8 + 21 * i) / 32768,
             x: data.getInt16(10 + 21 * i) / 32768,
@@ -942,6 +1010,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           }
+          this.history_sensor_values.quat.push(this.quat);
+
           this.gyro = {
             x: data.getInt16(16 + 21 * i) / 32768,
             y: data.getInt16(18 + 21 * i) / 32768,
@@ -950,6 +1020,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           }
+          this.history_sensor_values.gyro.push(this.gyro);
+
           this.acc = {
             x: data.getInt16(22 + 21 * i) / 32768,
             y: data.getInt16(24 + 21 * i) / 32768,
@@ -958,6 +1030,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           }
+          this.history_sensor_values.acc.push(this.acc);
+
           // ジャイロと加速度補正をかけたものを別途作成
           this.converted_gyro = {
             x: this.gyro.x * gyroRange,
@@ -967,6 +1041,8 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           };
+          this.history_sensor_values.converted_gyro.push(this.converted_gyro);
+
           this.converted_acc = {
             x: this.acc.x * accRange,
             y: this.acc.y * accRange,
@@ -975,6 +1051,7 @@ class Orphe {
             serial_number: this.serial_number,
             packet_number: 3 - i
           };
+          this.history_sensor_values.converted_acc.push(this.converted_acc);
 
           this.gotAcc(this.acc);
           this.gotQuat(this.quat);
@@ -1074,149 +1151,118 @@ class Orphe {
   //--------------------------------------------------
   //一般開発ユーザからアクセス可能な関数のプロトタイプ定義
   /**
-   * ORPHE TERMINAL用に作成した関数。onReadで受け取ったデータをそのまま渡す。この関数を利用する場合は setup() の is_raw_data_monitoring = true にする必要がある。dataview形式なので、取り扱い方法については ORPHE TERMINALのソースを参照するとよい。
+   * ORPHE TERMINAL用に作成した関数。onReadで受け取ったデータをそのまま渡す。このメソッドがユーザ側でオーバーライドされると、その他のnotifyに伴うコールバック関数（gotAcc等）はすべて呼び出されなくなるので注意してください。dataview形式なので、取り扱い方法については ORPHE TERMINALのソースを参照するとよい。
    * @param {dataview} data onReadで取得したすべてのデータ
    */
-  gotData(data) {
-    //console.log('prototype.gotQuat');
-  }
+  gotData(data) { }
 
   /**
    * コアモジュールのクオータニオン情報を取得する
    * @param {Object} quat {w,x,y,z} クオータニオンの取得
    */
-  gotQuat(quat) {
-    //console.log('prototype.gotQuat');
-  }
+  gotQuat(quat) { }
   /**
    * ジャイロ（x,y,zの角速度）を取得する
    * @param {Object} gyro {x,y,z} ジャイロの取得
    */
-  gotGyro(gyro) {
-    //console.log('prototype.gotGyro');
-  }
+  gotGyro(gyro) { }
   /**
    * 加速度を取得する。加速度レンジに応じて変換された値がほしい場合は、gotConvertedAccを利用すること
    * 対応CharacteristicはSENSOR_VALUES
    * @param {Object} acc {x,y,z} 加速度の取得
    */
-  gotAcc(acc) {
-    //console.log('prototype.gotAcc');
-  }
+  gotAcc(acc) { }
   /**
    * ジャイロレンジに応じて変換された値を取得する。
    * @param {Object} gyro {x,y,z} ジャイロレンジに応じて変換したジャイロの取得
    */
-  gotConvertedGyro(gyro) {
-    //console.log('prototype.gotGyro');
-  }
+  gotConvertedGyro(gyro) { }
   /**
    * コアモジュールで設定されている加速度レンジに応じて変換された値を取得する。
    * @param {Object} acc {x,y,z} 加速度レンジに応じて変換した加速度の取得
    */
-  gotConvertedAcc(acc) {
-    //console.log('prototype.gotAcc');
-  }
+  gotConvertedAcc(acc) { }
   /**
    * 加速度値を2回積分して各x,y,zの単位時間の移動距離を取得する。
    * @param {Object} delta {x,y,z} x,y,zの前回フレームからの移動距離
    */
-  gotDelta(delta) {
-    //console.log('prototype.gotDelta');
-  }
+  gotDelta(delta) { }
   /**
    * コアモジュールのオイラー角を取得する。オイラー角の取得は破綻する可能性があるため、姿勢を取る場合はクオータニオンを利用すること
    * @param {Object} euler {pitch, roll, yaw} オイラー角
    */
-  gotEuler(euler) {
-    //console.log('prototype.gotEuler');
-  }
+  gotEuler(euler) { }
   /**
    * 歩容解析の取得
    * @param {Object} gait {type, direction, calorie, distance} 歩行解析の取得
    */
-  gotGait(gait) {
-    //console.log('prototype.gotGait');
-  }
+  gotGait(gait) { }
   /**
    * 現在の歩容タイプを取得する
    * @param {Object} type {value} 0:none, 1:walk, 2:run, 3:stand 
    */
-  gotType(type) {
-  }
+  gotType(type) { }
   /**
    * ランニングの方向を取得する
    * @param {Object} direction {value} 0:none, 1:foward, 2:backward, 3:inside, 4:outside
    */
-  gotDirection(direction) {
-  }
+  gotDirection(direction) { }
   /**
    * 総消費カロリーを取得する
    * @param {Object} calorie {value}
    */
-  gotCalorie(calorie) {
-  }
+  gotCalorie(calorie) { }
 
   /**
    * 総移動距離を取得する
    * @param {Object} distance {value} 
    */
-  gotDistance(distance) {
-  }
+  gotDistance(distance) { }
 
   /**
    * 立脚期継続時間[s]を取得する
    * @param {*} standing_phase_duration 
    */
-  gotStandingPhaseDuration(standing_phase_duration) {
-  }
+  gotStandingPhaseDuration(standing_phase_duration) { }
 
   /**
    * 遊脚期継続時間[s]を取得する
    * @param {*} swing_phase_duration 
    */
-  gotSwingPhaseDuration(swing_phase_duration) {
-
-  }
+  gotSwingPhaseDuration(swing_phase_duration) { }
   /**
    * ストライド[m]の取得
    * @param {Object} stride {x,y,z}
    */
-  gotStride(stride) {
-  }
+  gotStride(stride) { }
   /**
    * 着地角度[degree]の取得
    * @param {Object} foot_angle {value}
    */
-  gotFootAngle(foot_angle) {
-  }
+  gotFootAngle(foot_angle) { }
 
   /**
    * プロネーション[degree]の取得
    * @param {Object} pronation {x,y,z}
    */
-  gotPronation(pronation) {
-  }
+  gotPronation(pronation) { }
   /**
    * 着地衝撃力[kgf/weight]の取得
    * @param {Object} landing_impact {value}
    */
-  gotLandingImpact(landing_impact) {
-  }
+  gotLandingImpact(landing_impact) { }
   /**
    * 現在までの歩数を取得する
    * @param {Object} steps_number {value}
    */
-  gotStepsNumber(steps_number) {
-  }
+  gotStepsNumber(steps_number) { }
 
   /**
    * 以前来たデータとのシリアルナンバーの差が1でない場合に呼び出される。SENSOR_VALUESのcharacteristicを利用し、かつ、200Hzのデータ取得のモデル（CR-3）のみで利用可能。50Hzの加速度センサーのデータ取得モデル（CR-2）では利用できない。
    * @param {number} serial_number - 現在のシリアルナンバー
    * @param {number} serial_number_prev - 一つ前に受診したデータのシリアルナンバー
    */
-  lostData(serial_number, serial_number_prev) {
-  }
+  lostData(serial_number, serial_number_prev) { }
 
   onScan(deviceName) { console.log("onScan"); }
   onConnectGATT(uuid) { console.log("onConnectGATT"); }

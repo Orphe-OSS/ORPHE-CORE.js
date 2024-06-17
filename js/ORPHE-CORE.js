@@ -1,9 +1,10 @@
 var orphe_js_version_date = `
-Last modified: 2024/06/16 01:49:14
+Last modified: 2024/06/17 13:39:14
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 Class形式で記述を変更したバージョン
+v1.3 Date Time機能の追加（予定）
 v1.2 クラス記述形式に変更
 v1.1 2024/05/29
 v1.0 2021/05/01

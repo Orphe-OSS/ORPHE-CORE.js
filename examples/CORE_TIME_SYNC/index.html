@@ -8,15 +8,13 @@
 
 <body>
     <h1>Adjust Core Time</h1>
-    <p>
-        syncボタンを押すと、ORPHE COREの時刻をデータ取得にかかる時間を考慮して補正します。
-    </p>
-    <button onclick="getCoreTime();">時刻を取得する</button><br>
+
+    <button onclick="getCoreTime();">時刻を取得する</button> COREモジュールからDateTimeを利用して時刻を取得します<br>
     <p>
         結果：<br><span id="timestamp"></span>
     </p>
     <hr>
-    <button onclick="doAdjustCoreTime();">時刻補正実行</button>
+    <button onclick="doAdjustCoreTime();">時刻補正実行</button> COREから時刻を取得して，データを読み出して完了するまでの時間の半分だけCOREの時刻を進めます<br>
     <p>結果:<br> <span id="result"></span></p>
     <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
     <script>

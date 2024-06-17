@@ -8,7 +8,9 @@
 
 <body>
     <h1>Adjust Core Time</h1>
-
+    <button onclick="activateNotify();">通知を有効化</button> COREから加速度センサの値を取得します<br>
+    <p>結果:<br> <span id="acc"></span></p>
+    <hr>
     <button onclick="getCoreTime();">時刻を取得する</button> COREモジュールからDateTimeを利用して時刻を取得します<br>
     <p>
         結果：<br><span id="timestamp"></span>
@@ -22,6 +24,8 @@
         window.onload = function () {
             // ORPHE CORE Init
             core.setup();
+
+
         }
         async function getCoreTime() {
             let ret = await core.getDateTime();
@@ -34,32 +38,26 @@
             }
             str_timestamp += "00";
             e.innerHTML += "<br>";
-            e.innerHTML += `${str_timestamp}`;
-
+        }
+        function activateNotify() {
+            core.begin("SENSOR_VALUES");
+            core.gotAcc = function (acc) {
+                document.querySelector('#acc').innerText = `x:${acc.x}, y:${acc.y}, z:${acc.z}`;
+            }
         }
         async function doAdjustCoreTime() {
-            let ret = await core.getDateTime();
+
+            let s = await core.syncCoreTime();
+
             let e = document.getElementById("result");
-            let adjust_time = [];
-            for (let i = 0; i < ret.data.byteLength; i++) {
-                adjust_time.push(ret.data.getUint8(i));
-            }
-            // 各要素を2桁の文字列に変換して連結
-            let formattedArray = adjust_time.map(num => num.toString().padStart(2, '0')).join(' ');
+            e.innerHTML = `Result: <br>
+            取得した各round trip値[${s.round_trip_times}]<br>
+            round trip合計値：${s.sum_round_trip_time}[ms]<br>
+            round trip平均値：${s.average_round_trip_time}[ms]<br>
+            round trip平均値/2：${s.average_round_trip_time / 2}[ms]<br>
+            PC現在時刻：${s.standard_time}<br>
+            CR設定時刻：${s.adjusted_time}`
 
-            e.innerHTML = "補正前の時刻: " + String(formattedArray) + "<br>";
-            e.innerHTML += `データの取得にかかった時間：${ret.round_trip_time}[ms]<br>`;
-            e.innerHTML += `設定するラグ時間：${ret.round_trip_time / 2}[ms]<br>`;
-
-            const half_trip = ret.round_trip_time / 2;
-            timestamp = adjust_time[5] * 1000 + adjust_time[6] * 10;
-            adjust_time[5] = Math.floor((timestamp + half_trip) / 1000);
-            adjust_time[6] = Math.floor((timestamp + half_trip) % 1000 / 10);
-            e.innerHTML += "補正後の時刻: ";
-            formattedArray = adjust_time.map(num => num.toString().padStart(2, '0')).join(' ');
-            e.innerHTML += String(formattedArray) + "<br>";
-
-            core.setDateTime(adjust_time);
         }
     </script>
 </body>

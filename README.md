@@ -4,11 +4,15 @@ Happy hacking for ORPHE CORE module on javascript.
 Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/) for document and Demos.
 
 ## Version
-* 1.2(main): ES6 class based version.
+機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。
+
+* v1.3: Date Timeキャラクタリスティック対応
+  * COREモジュールの時刻を取得，設定する setDateTime(), getDateTime() を追加しました。この機能を利用して，begin()メソッドを利用した際に必ず最初にコアモジュールの時刻合わせが実行されます．PCの現在時刻にgetDateTime()にかかった時間の1/2を加算して，コアモジュールに時刻設定します．ただしgetDataTime()は3回取得し，その取得時間平均値/2としています．
+* [v1.2](https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/v1.2): ES6 class based version.
   * プロトタイプだけでなく、プロダクトとして利用されることが多くなったため、本格的なリファクタリングを行いました。ES6のクラスベースの構造に変更し、より理解しやすく読みやすいコードになりました。v1.1互換なので、従来どおりの記述でコアモジュールにアクセスできます。
-* 1.1: bug fixes, last update 29th/May/2024
+* [v1.1](https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/v1.1): bug fixes, last update 29th/May/2024
   * 最初のリリースからシステムの安定性、バグフックス、最低限必要な機能追加などを継続してきました。いくつかのアプリケーション等でも利用されるようになりました。生データを取得可能な gotData() が利用可能となりました。"RAW", "ANALYSIS"としていたコア内での名称をCharacteristicsと同じ"SENSOR_VALUES"、"STEP_ANALYSIS"に統一しました。
-* 1.0: First release on 13rd/Sep/2022
+* v1.0: First release on 13rd/Sep/2022
   * 最初のリリース（https://orphe.io/news/orphe-releases-orphe-core-javascript-library）このversionではブランチを切っていません。
 
 # 開発者向け情報

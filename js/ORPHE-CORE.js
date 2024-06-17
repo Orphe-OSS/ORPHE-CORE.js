@@ -1,16 +1,16 @@
 var orphe_js_version_date = `
-Last modified: 2024/06/17 13:39:14
+Last modified: 2024/06/17 16:17:49
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 Class形式で記述を変更したバージョン
-v1.3 Date Time機能の追加（予定）
+v1.3 Date Time機能の追加
 v1.2 クラス記述形式に変更
 v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.2.2
+@version 1.3.0
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -303,13 +303,15 @@ class Orphe {
       converted_acc: new FixedSizeArray(4),
       converted_gyro: new FixedSizeArray(4)
     }
+
+    this.half_round_trip_time = 0;
     // メンバ変数の初期化ここまで
     //////////////////////////
 
   }
 
   /**
-  * 
+  * gotData()がユーザ側でオーバーライドされているかどうかを返す関数です。これを見て，デバッグモード（ORPHE TERMINAL）を有効にするかどうかを判断します。オーバーライドするとgotData()以外の関数はコールバックされません．
   * 
  */
   isGotDataOverridden() {
@@ -378,9 +380,6 @@ class Orphe {
       range: { acc: -1, gyro: -1 }
     }
   ) {
-
-
-
     // ----------------------------------------------
     // @Depricated beginの引数である RAW, ANALYSISに関して混乱を招くので、setup()でのUUID設定に合わせ
     // RAW: SENSOR_VALUES, ANALYSIS: STEP_ANALYSIS に変更することとした。しばらくは両方の引数を受け付ける
@@ -399,6 +398,7 @@ class Orphe {
     // Deprecated開始: 2024/05/25
     // ----------------------------------------------
 
+
     const {
       range = { acc: -1, gyro: -1 }
     } = options;
@@ -414,33 +414,34 @@ class Orphe {
     if (range.gyro == 500) obj.range.gyro = 1;
     if (range.gyro == 250) obj.range.gyro = 0;
     // 設定値の書き換え
-    this.setDeviceInformation(obj);
+    await this.setDeviceInformation(obj);
 
+    // コアの書き込みを待つため，200ms待つ
+    await new Promise(resolve => setTimeout(resolve, 200));
 
+    // DateTimeキャラクタリスティックを利用して時刻を同期する．現在のPC時間とデータ取得にかかる統計値からその分コアの時計を進めておく．
+    await this.syncCoreTime();
+    console.log("begin() : Sync Core Time");
     // ここで実際にnotifyを開始しています．
     return new Promise((resolve, reject) => {
 
       if (str_type == "STEP_ANALYSIS") {
         this.startNotify('STEP_ANALYSIS').then(() => {
-          //console.log("analysis---")
           resolve("done begin(); STEP ANALYSIS");
         })
           .catch(err => {
-            //alert(err)
             reject('User cancel.')
           }
           );
       }
       else if (str_type == "SENSOR_VALUES") {
         this.startNotify('SENSOR_VALUES').then(() => {
-          //console.log("raw---")
           resolve("done begin(); SENSOR VALUES");
         });
       }
       else if (str_type == "STEP_ANALYSIS_AND_SENSOR_VALUES") {
         this.startNotify('STEP_ANALYSIS').then(() => {
           this.startNotify('SENSOR_VALUES').then(() => {
-            //console.log("analysis and raw---")
             resolve("done begin(); STEP_ANALYSIS and SENSOR VALUES");
           });
         });
@@ -500,7 +501,6 @@ class Orphe {
   scan(uuid, options = {}) {
     return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))
       .catch(error => {
-        //console.log('Error : ' + error);
         this.onError(error);
       });
   }
@@ -580,19 +580,14 @@ class Orphe {
    * 
    */
   read(uuid) {
-    //return this.dataCharacteristic.readValue();
-    // console.log(uuid);
     return (this.scan(uuid))
       .then(() => {
         return this.connectGATT(uuid);
       })
       .then(() => {
-        //      console.log('Execute : readValue', this.dataCharacteristic.readValue());
         return this.dataCharacteristic.readValue();
       })
       .catch(error => {
-        // console.log('Error : ' + error);
-        //throw 'read error';
         this.onError(error);
       });
   }
@@ -608,7 +603,6 @@ class Orphe {
         return this.connectGATT(uuid);
       })
       .then(() => {
-        //console.log('Execute : writeValue');
         const data = Uint8Array.from(array_value);
         return this.dataCharacteristic.writeValue(data);
       })
@@ -616,7 +610,6 @@ class Orphe {
         this.onWrite(uuid);
       })
       .catch(error => {
-        //console.log('Error : ' + error);
         this.onError(error);
       });
   }
@@ -652,7 +645,6 @@ class Orphe {
       .then(() => {
         // stopNotificationsメソッドを呼び出してNotificationを停止します。
         // このメソッドはPromiseを返すため、その完了を待つ必要があります。
-
         return this.dataCharacteristic.stopNotifications();
       })
       .then(() => {
@@ -693,7 +685,6 @@ class Orphe {
     }
 
     if (this.bluetoothDevice.gatt.connected) {
-      //console.log('Execute : disconnect');
       this.bluetoothDevice.gatt.disconnect();
     } else {
       var error = "Bluetooth Device is already disconnected";
@@ -707,24 +698,57 @@ class Orphe {
    */
   setDeviceInformation(obj) {
     const senddata = new Uint8Array([0x01, obj.lr, obj.led_brightness, 0, obj.rec_auto_run, obj.time01, obj.time02, obj.range.acc, obj.range.gyro]);
-    //const senddata = new Uint8Array([0x01, 0, 128, 0, 0, 0, 60, 0, 0]);
-    //console.log(senddata);
     this.write('DEVICE_INFORMATION', senddata);
   }
 
   /**
+   * COREモジュールの時刻をPCの時刻 + random_trip_time/2 で同期します。
+   * 
+   * @param {number}[n=3] n - 平均値算出のためのサンプル数
+   * @return {object} {sum_round_trip_time, average_round_trip_time, standard_time, adjusted_time, round_trip_times}
+   */
+  async syncCoreTime(n = 3) {
+    let average_round_trip_time = 0;
+    let sum_round_trip_time = 0;
+    let core_time;
+    let round_trip_times = [];
+    for (let i = 0; i < n; i++) {
+      core_time = await this.getDateTime();
+      sum_round_trip_time += core_time.round_trip_time;
+      round_trip_times.push(core_time.round_trip_time);
+    }
+    average_round_trip_time = sum_round_trip_time / n;
+    const now = new Date();
+    const standard_time = now.getTime();
+    const adjusted_time = parseInt(now.getTime() + Math.round(average_round_trip_time / 2));
+    core_time.date.setTime(adjusted_time);
+
+    await this.setDateTime(core_time.date);
+    this.half_round_trip_time = Math.round(average_round_trip_time / 2);
+    // console.log('設定した遅延値:', this.half_round_trip_time, 'ms', round_trip_times);
+    return { sum_round_trip_time, average_round_trip_time, standard_time, adjusted_time, round_trip_times };
+
+  }
+  /**
    * [YY, MM, DD, hh, mm, ss, (sub)ss]の配列を渡すことで、コアモジュールの日時設定ができます。
    */
-  setDateTime(array) {
+  async setDateTime(set_date) {
+    const array = new Uint8Array(7);
+    array[0] = set_date.getFullYear() - 2000;
+    array[1] = set_date.getMonth() + 1;
+    array[2] = set_date.getDate();
+    array[3] = set_date.getHours();
+    array[4] = set_date.getMinutes();
+    array[5] = set_date.getSeconds();
+    array[6] = parseInt(set_date.getMilliseconds() / 10);
     const senddata = new Uint8Array([array[0], array[1], array[2], array[3], array[4], array[5], array[6]]);
-    this.write('DATE_TIME', senddata);
+    await this.write('DATE_TIME', senddata);
   }
 
   /**
    * 接続情報をクリアします。
    */
   clear() {
-    //console.log('Excute : Clear Device and Characteristic');
     this.bluetoothDevice = null;
     this.dataCharacteristic = null;
     this.onClear();
@@ -733,7 +757,6 @@ class Orphe {
    * reset(disconnect & clear)
    */
   reset() {
-    //console.log('Excute : reset');
     this.disconnect(); //disconnect() is not Promise Object
     this.clear();
     this.onReset();
@@ -837,9 +860,6 @@ class Orphe {
           gyro: data.getUint8(9)
         }
       }
-      // デバイスインフォメーションを取得したら確認の為LEDの発光パターンを1にしておく
-      // const senddata = new Uint8Array([0x02, 1, 0]);
-      // this.write('DEVICE_INFORMATION', senddata);
     }
     else if (uuid == 'STEP_ANALYSIS') {
       const buffer = new ArrayBuffer(20);
@@ -882,7 +902,6 @@ class Orphe {
       }
       // Stride
       else if (data.getUint8(1) == 1 && steps_now > this.stride.steps) {
-        //console.log(steps_now, this.stride.steps);
         this.stride.foot_angle = data.getFloat32(4);
         this.stride.x = data.getFloat32(8);
         this.stride.y = data.getFloat32(12);
@@ -1141,7 +1160,7 @@ class Orphe {
     return new Promise((resolve, reject) => {
       const startTime = performance.now(); // 関数開始時の時間を取得
       this.read('DATE_TIME').then((data) => {
-        const endTime = performance.now(); // resolve直前の時間を取得
+        const endTime = performance.now(); // データの取得が完了したので，時間を記録
         const date = new Date(
           data.getUint8(0) + 2000,
           data.getUint8(1),
@@ -1153,7 +1172,7 @@ class Orphe {
         );
         const elapsedTime = endTime - startTime; // 経過時間を計算
         this.date_time = {
-          timestamp: date,
+          date: date,
           data: data,
           round_trip_time: Math.floor(elapsedTime)
         };

@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/06/17 16:17:49
+Last modified: 2024/06/17 17:28:02
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -416,12 +416,12 @@ class Orphe {
     // 設定値の書き換え
     await this.setDeviceInformation(obj);
 
-    // コアの書き込みを待つため，200ms待つ
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // コアの書き込みを待つため，500ms待つ．特に次で速度計測するのでやや長めに設定している
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // DateTimeキャラクタリスティックを利用して時刻を同期する．現在のPC時間とデータ取得にかかる統計値からその分コアの時計を進めておく．
     await this.syncCoreTime();
-    console.log("begin() : Sync Core Time");
+
     // ここで実際にnotifyを開始しています．
     return new Promise((resolve, reject) => {
 
@@ -702,7 +702,7 @@ class Orphe {
   }
 
   /**
-   * COREモジュールの時刻をPCの時刻 + random_trip_time/2 で同期します。
+   * COREモジュールの時刻を PCの時刻 + random_trip_time/2 で同期します。
    * 
    * @param {number}[n=3] n - 平均値算出のためのサンプル数
    * @return {object} {sum_round_trip_time, average_round_trip_time, standard_time, adjusted_time, round_trip_times}
@@ -720,12 +720,11 @@ class Orphe {
     average_round_trip_time = sum_round_trip_time / n;
     const now = new Date();
     const standard_time = now.getTime();
-    const adjusted_time = parseInt(now.getTime() + Math.round(average_round_trip_time / 2));
+    const adjusted_time = parseInt(standard_time + Math.round(average_round_trip_time / 2));
     core_time.date.setTime(adjusted_time);
 
     await this.setDateTime(core_time.date);
     this.half_round_trip_time = Math.round(average_round_trip_time / 2);
-    // console.log('設定した遅延値:', this.half_round_trip_time, 'ms', round_trip_times);
     return { sum_round_trip_time, average_round_trip_time, standard_time, adjusted_time, round_trip_times };
 
   }

@@ -11,6 +11,11 @@ Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/) for d
 * 1.0: First release on 13rd/Sep/2022
   * 最初のリリース（https://orphe.io/news/orphe-releases-orphe-core-javascript-library）このversionではブランチを切っていません。
 
+# 開発者向け情報
+
+## ブランチ
+開発用は dev ブランチを利用します。
+
 ## 環境構築
 Node.jsのインストール後、以下のコマンドを実行して環境を構築してください。
 ```bash

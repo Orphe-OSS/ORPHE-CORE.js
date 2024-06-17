@@ -25,7 +25,7 @@
 
         <div class="row">
             <p class="pt-4 fs-3 fw-bold">ORPHE TERMINAL % <span class="bg-light">&nbsp;&nbsp;</span></p>
-            <div class="col-12">
+            <div class="col-md-12 col-lg-6 mb-3">
                 <div class="card bg-dark border">
                     <div class="card-body bg-dark">
                         <div class="card-title fw-bold">Device Information</div>
@@ -34,6 +34,8 @@
                                 placeholder="01,02,03 [Hex]">
                             <button class="btn btn-warning" type="button" id="button-addon2"
                                 onclick="send(this);">Send</button>
+                            <button class="btn btn-primary ms-2" type="button" id="button-addon2"
+                                onclick="read(this);">Read</button>
                         </div>
                         <div class="mb-3">
                             <label for="di_textarea_recv" class="form-label">
@@ -53,7 +55,37 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 mt-4">
+            <div class="col-md-12 col-lg-6 mb-3">
+                <div class="card bg-dark border">
+                    <div class="card-body bg-dark">
+                        <div class="card-title fw-bold">Date Time</div>
+                        <div class="input-group mb-3">
+                            <input type="text" id="send_date_time_message" class="text-dark form-control"
+                                placeholder="01,02,03 [Hex]">
+                            <button class="btn btn-warning" type="button" id="button-addon2"
+                                onclick="send(this, 'DATE_TIME');">Send</button>
+                            <button class="btn btn-primary ms-2" type="button" id="button-addon2"
+                                onclick="read(this, 'DATE_TIME');">Read</button>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dt_textarea_recv" class="form-label">
+                                textarea_buffer_size : <span id="dt_textarea_buffer_size"></span>,
+                                buffer_size : <span id="dt_buffer_size"></span>
+                            </label>
+                            <textarea readonly placeholder="Please connect orphe core to your computer...."
+                                class="form-control text-dark" style="font-size:0.8em" id="dt_textarea_recv"
+                                rows="3"></textarea>
+                            <div class="d-grid gap-2 mt-2 d-md-flex justify-content-md-end">
+                                <button class="btn btn-warning me-md-0" id="button_dt_clear"
+                                    type="button">clear</button>
+                                <button class="btn btn-warning me-md-0" id="button_dt_download" type="button">download
+                                    csv</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12 col-lg-12 mb-3">
                 <div class="card bg-dark border">
                     <div class="card-body">
                         <div class="card-title fw-bold">Update Sensor Values/Update Step Analysis</div>

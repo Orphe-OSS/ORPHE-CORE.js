@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/06/13 16:48:45
+Last modified: 2024/06/16 01:49:14
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -102,15 +102,16 @@ class OrpheTimestamp {
 class Orphe {
   /**
    * 初期化関数 
-   * @param {number} id コアの番号（0 or 1）を指定します。
+   * @param {number}[id=0] id コアの番号（0 or 1）を指定します。
    */
-  constructor(id) {
+  constructor(id = 0) {
 
     this.defaultGotData = this.gotData;
     this.timestamp = new OrpheTimestamp();
 
     Object.defineProperty(this, 'ORPHE_INFORMATION', { value: "01a9d6b5-ff6e-444a-b266-0be75e85c064", writable: true });
     Object.defineProperty(this, 'ORPHE_DEVICE_INFORMATION', { value: "24354f22-1c46-430e-a4ab-a1eeabbcdfc0", writable: true });
+    Object.defineProperty(this, 'ORPHE_DATE_TIME', { value: "f53eeeb1-b2e8-492a-9673-10e0f1c29026", writable: true });
     Object.defineProperty(this, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
     Object.defineProperty(this, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
     Object.defineProperty(this, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
@@ -329,7 +330,7 @@ class Orphe {
    * @param {object} [options = {interpolation}] - interpolationは未実装
    *
    */
-  setup(names = ['DEVICE_INFORMATION', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
+  setup(names = ['DEVICE_INFORMATION', 'DATE_TIME', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
     options = {
       interpolation: {
         enabled: false, // 線形補間の有効化/無効化
@@ -348,6 +349,9 @@ class Orphe {
     for (const name of names) {
       if (name == 'DEVICE_INFORMATION') {
         this.setUUID(name, this.ORPHE_INFORMATION, this.ORPHE_DEVICE_INFORMATION);
+      }
+      else if (name == 'DATE_TIME') {
+        this.setUUID(name, this.ORPHE_INFORMATION, this.ORPHE_DATE_TIME);
       }
       else if (name == 'SENSOR_VALUES') {
         this.setUUID(name, this.ORPHE_OTHER_SERVICE, this.ORPHE_SENSOR_VALUES);
@@ -451,6 +455,9 @@ class Orphe {
       });
 
   }
+
+
+
   /**
    * stop and disconnect GATT connection
    */
@@ -702,6 +709,14 @@ class Orphe {
     //const senddata = new Uint8Array([0x01, 0, 128, 0, 0, 0, 60, 0, 0]);
     //console.log(senddata);
     this.write('DEVICE_INFORMATION', senddata);
+  }
+
+  /**
+   * [YY, MM, DD, hh, mm, ss, (sub)ss]の配列を渡すことで、コアモジュールの日時設定ができます。
+   */
+  setDateTime(array) {
+    const senddata = new Uint8Array([array[0], array[1], array[2], array[3], array[4], array[5], array[6]]);
+    this.write('DATE_TIME', senddata);
   }
 
   /**
@@ -1108,6 +1123,48 @@ class Orphe {
       }
     }
   }
+
+  /**
+   * Date Timeを取得する
+   * 0	year	0-255	西暦から2000を引いた数
+   * 1	month		
+   * 2	day		
+   * 3	hour		
+   * 4	minute		
+   * 5	second		
+   * 6	subsecond
+   * 
+   * @returns {Promise<object>} date_timeを連想配列形式{timestamp, data,round_trip_time}で返す。dataにはCOREから直接送信されてきたdataviewが格納されている。round_trip_timeはデータを取得にかかった時間[ms]。
+   */
+  async getDateTime() {
+    return new Promise((resolve, reject) => {
+      const startTime = performance.now(); // 関数開始時の時間を取得
+      this.read('DATE_TIME').then((data) => {
+        const endTime = performance.now(); // resolve直前の時間を取得
+        const date = new Date(
+          data.getUint8(0) + 2000,
+          data.getUint8(1),
+          data.getUint8(2),
+          data.getUint8(3),
+          data.getUint8(4),
+          data.getUint8(5),
+          data.getUint8(6) * 10 // 10ms単位で送られてくる
+        );
+        const elapsedTime = endTime - startTime; // 経過時間を計算
+        this.date_time = {
+          timestamp: date,
+          data: data,
+          round_trip_time: Math.floor(elapsedTime)
+        };
+        resolve(this.date_time);
+      }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
+        console.log('Error: ' + error);
+        this.onError(error);
+        reject(error);
+      });
+    });
+  }
+
   /**
    * 呼び出すと現在のデバイス設定を取得します。連想配列形式でリターンされます。asyncに対応させているので、awaitを利用して呼び出すことをおすすめします。
    * @returns {Promise<object>} device_informationを連想配列形式で返す
@@ -1136,7 +1193,8 @@ class Orphe {
           range: {
             acc: data.getUint8(8),
             gyro: data.getUint8(9)
-          }
+          },
+          data: data
         }
         resolve(this.device_information);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる

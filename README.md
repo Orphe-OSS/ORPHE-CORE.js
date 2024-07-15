@@ -2,6 +2,10 @@
 Happy hacking for ORPHE CORE module on javascript.
 
 Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/) for document and Demos.
+ドキュメントとデモは[githubページ](https://orphe-oss.github.io/ORPHE-CORE.js/)をご覧ください。
+
+Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/tutorial/) for tutorial.
+チュートリアルは[githubページ](https://orphe-oss.github.io/ORPHE-CORE.js/tutorial/)をご覧ください。
 
 ## Version
 機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。

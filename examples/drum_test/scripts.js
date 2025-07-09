@@ -101,73 +101,49 @@ function rms(){
         });
 }
 
+let gesture = ""; // 現在のジェスチャー内容を保持
 function soundplay() {
     let currentTime = millis();
-    let gesture = ""; // ジェスチャーを保持する変数
-
     if (currentTime - lastGestureTime > debounceInterval) {
         for (let i = 0; i < bles.length; i++) {
-          //  console.log(acc_rms[i].x);
-          let val = 0.01;
-          let valminus = -0.01; 
+            let val = 0.01;
+            let valminus = -0.01; 
             if (acc_rms[i].x > threshold) {
                 let latestPitch = euler_vals[i].pitch[euler_vals[i].pitch.length - 1];
-             //   let latestRoll = euler_vals[i].roll[euler_vals[i].roll.length - 1];
-              //  let latestYaw = euler_vals[i].yaw[euler_vals[i].yaw.length - 1];
-
-              //  console.log(latestPitch);
                 if (latestPitch < valminus) {
-                 //   gesture = "Z axis and Pitch < -0.1";
-                    console.log("x < -0.1");
-                    // 音再生のロジックが必要
+                    gesture = "X軸大 & ピッチ小";
                     sounds[2].play();
                     currentWaveform = floor(random(waveformStyles.length));
                 } else if (latestPitch > val) {
-                  //  gesture = "Z axis and Pitch > 0.1";
-                    console.log("x > 0.1");
-                    // 音再生のロジックが必要
+                    gesture = "X軸大 & ピッチ大";
                     sounds[5].play();
                     currentWaveform = floor(random(waveformStyles.length));
                 }
-                lastGestureTime = currentTime; // Update the last gesture time
-                
-
-
+                lastGestureTime = currentTime;
             } else if(acc_rms[i].y > threshold){
                 let latestRoll = euler_vals[i].roll[euler_vals[i].roll.length - 1];
                 if (latestRoll  < valminus) {
-                 //   gesture = "Z axis and Pitch < -0.1";
-                    console.log("y < -0.1");
+                    gesture = "Y軸大 & ロール小";
                     sounds[10].play();
                     currentWaveform = floor(random(waveformStyles.length));
-                    // 音再生のロジックが必要
                 } else if (latestRoll  > val) {
-                 //   gesture = "Z axis and Pitch > 0.1";
-                    console.log("y > 0.1");
+                    gesture = "Y軸大 & ロール大";
                     sounds[12].play();
                     currentWaveform = floor(random(waveformStyles.length));
-                    // 音再生のロジックが必要
                 }
-                lastGestureTime = currentTime; // Update the last gesture time
-
-
+                lastGestureTime = currentTime;
             }else if(acc_rms[i].z > threshold){
-
                 let latestYaw = euler_vals[i].yaw[euler_vals[i].yaw.length - 1];
                 if (latestYaw  < valminus) {
-                   // gesture = "Z axis and Pitch < -0.1";
-                    console.log("Z  < -0.1");
+                    gesture = "Z軸大 & ヨー小";
                     sounds[8].play();
                     currentWaveform = floor(random(waveformStyles.length));
-                    // 音再生のロジックが必要
                 } else if (latestYaw  > val) {
-                   // gesture = "Z axis and Pitch > 0.1";
-                    console.log("Z  > 0.1");
+                    gesture = "Z軸大 & ヨー大";
                     sounds[9].play();
                     currentWaveform = floor(random(waveformStyles.length));
-                    // 音再生のロジックが必要
                 }
-                lastGestureTime = currentTime; // Update the last gesture time
+                lastGestureTime = currentTime;
             }else{
                 gesture = "";
             }
@@ -197,6 +173,12 @@ function draw() {
     let waveform = fft.waveform();
     translate(width / 2, height / 2);
     drawWaveform(waveform);
+
+    // gesture内容をUIに反映
+    let gestureElem = document.getElementById('gesture_status');
+    if (gestureElem) {
+        gestureElem.textContent = gesture;
+    }
 
     switch (gamepar) {
         case 0:

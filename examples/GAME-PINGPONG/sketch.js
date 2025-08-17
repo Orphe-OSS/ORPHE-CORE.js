@@ -5,6 +5,14 @@ let leftScore = 0, rightScore = 0;
 let maxScore = 3;
 let gameStarted = false;
 
+// 設定用変数
+let ballSpeedConfig = 4;
+let ballSizeConfig = 20;
+let leftPaddleSizeConfig = 60;
+let rightPaddleSizeConfig = 60;
+let leftSensitivityConfig = 1;
+let rightSensitivityConfig = 1;
+
 let counter3 = 4; // カウントダウン開始値
 let lastUpdateTime = 0; // 最後にカウンターが更新された時刻を記録する変数
 let counterVisible = true; // カウンターが表示されているかどうかのフラグ
@@ -20,6 +28,9 @@ let bgmA,bgmB;
 let p1,p2;
 let orpheimg;
 let invertedImage;
+let paddleHitSound; // パドル衝突音用の変数
+let wallHitSound; // 壁衝突音用の変数
+let whistleSound; // 勝利時の音用の変数
 var bgmcont1 = 0;
 var bgmcont2= 0;
 var imgcount = 0;
@@ -29,6 +40,9 @@ function preload() {
     bgmB = loadSound('BGMB.mp3');
     p1 = loadSound('p1.mp3');
     p2 = loadSound('p2.mp3');
+    paddleHitSound = loadSound('sound-hockey1.mp3'); // パドル衝突音を読み込み
+    wallHitSound = loadSound('sound-hockey2.mp3'); // 壁衝突音を読み込み
+    whistleSound = loadSound('sound-whistle.mp3'); // 勝利時の音を読み込み
     orpheimg = loadImage("orpheimg.png");
 }
 
@@ -141,6 +155,7 @@ function draw() {
       //gameStarted = false;
       ball.reset();
       if (leftScore >= maxScore || rightScore >= maxScore) {
+        whistleSound.play(); // 勝利時にホイッスル音を再生
         gamestage = 2;
       } else {
         //setTimeout(startGame, 1000);
@@ -274,14 +289,18 @@ function drawMiddleLine() {
 class Paddle {
   constructor(isLeft) {
     this.width = 10;
-    this.height = 60;
+    this.height = isLeft ? leftPaddleSizeConfig : rightPaddleSizeConfig;
     this.x = isLeft ? 10 : width - 20;
     this.y = height / 2 - this.height / 2;
     this.speed = 10;
+    this.isLeft = isLeft;
   }
 
   update(euler) {
-    this.y = map(euler, -1, 1, height - this.height, 0);
+    // 左右別々の設定を適用
+    this.height = this.isLeft ? leftPaddleSizeConfig : rightPaddleSizeConfig;
+    let sensitivity = this.isLeft ? leftSensitivityConfig : rightSensitivityConfig;
+    this.y = map(euler * sensitivity, -1, 1, height - this.height, 0);
     this.y = constrain(this.y, 0, height - this.height);
   }
 
@@ -301,9 +320,9 @@ class Ball {
   reset() {
     this.x = width / 2;
     this.y = height / 2;
-    this.diameter = 20;
-    this.xSpeed = random(4, 4) * (random() > 0.5 ? 1 : -1);
-    this.ySpeed = random(4, 4) * (random() > 0.5 ? 1 : -1);
+    this.diameter = ballSizeConfig;
+    this.xSpeed = random(ballSpeedConfig, ballSpeedConfig) * (random() > 0.5 ? 1 : -1);
+    this.ySpeed = random(ballSpeedConfig, ballSpeedConfig) * (random() > 0.5 ? 1 : -1);
   }
 
   update() {
@@ -312,6 +331,7 @@ class Ball {
     // 上端または下端に当たった場合に反射
     if (this.y <= 0 || this.y >= height - this.diameter) {
       this.ySpeed *= -1; // Y軸の速度を反転させることで反射を実現
+      wallHitSound.play(); // 壁に当たったときに音を再生
     }
   }
 
@@ -325,6 +345,7 @@ class Ball {
     if (this.x < paddle.x + paddle.width && this.x > paddle.x &&
         this.y < paddle.y + paddle.height && this.y > paddle.y) {
       this.xSpeed *= -1;
+      paddleHitSound.play(); // パドルとボールが衝突したときに音を再生
     }
   }
 
@@ -419,3 +440,31 @@ function getColor(t, colors) {
     }
     return color(colors[0].r, colors[0].g, colors[0].b); // 最初の色に戻る
   }
+
+// 設定更新用の関数
+function updateBallSpeed(speed) {
+  ballSpeedConfig = speed;
+}
+
+function updateBallSize(size) {
+  ballSizeConfig = size;
+  if (ball) ball.diameter = size;
+}
+
+function updateLeftPaddleSize(size) {
+  leftPaddleSizeConfig = size;
+  if (leftPaddle) leftPaddle.height = size;
+}
+
+function updateRightPaddleSize(size) {
+  rightPaddleSizeConfig = size;
+  if (rightPaddle) rightPaddle.height = size;
+}
+
+function updateLeftSensitivity(sensitivity) {
+  leftSensitivityConfig = sensitivity;
+}
+
+function updateRightSensitivity(sensitivity) {
+  rightSensitivityConfig = sensitivity;
+}

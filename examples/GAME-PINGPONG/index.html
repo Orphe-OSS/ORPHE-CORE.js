@@ -28,6 +28,55 @@
     <p id="setumei">左右2人に分かれてORPHE COREを接続します。ORPHE COREを回転させてプレイヤーを操作し、相手自陣にボールを入れましょう。</title> </p>
     <p id ="en"> Divide into two people on the left and right and connect the ORPHE CORE. Rotate the ORPHE CORE to control the player and send the ball into the opponent's own territory.</p> 
   
+  <!-- ゲーム設定用のコントロールパネル -->
+  <div id="config-panel" style="margin: 20px auto; padding: 20px; background-color: #353434; border-radius: 10px; max-width: 800px;">
+    <h3 style="text-align: center; margin-bottom: 20px;">ゲーム設定 / Game Settings</h3>
+    
+    <div class="config-item" style="margin-bottom: 15px;">
+      <label for="ballSpeed" style="display: inline-block; width: 200px;">ボール速度 / Ball Speed:</label>
+      <input type="range" id="ballSpeed" min="2" max="10" value="4" step="0.5" style="width: 300px;">
+      <span id="ballSpeedValue" style="margin-left: 10px;">4</span>
+    </div>
+    
+    <div class="config-item" style="margin-bottom: 15px;">
+      <label for="ballSize" style="display: inline-block; width: 200px;">ボールサイズ / Ball Size:</label>
+      <input type="range" id="ballSize" min="10" max="40" value="20" step="5" style="width: 300px;">
+      <span id="ballSizeValue" style="margin-left: 10px;">20</span>
+    </div>
+    
+    <hr style="margin: 20px 0; border-color: #555;">
+    
+    <h4 style="margin-bottom: 15px;">左プレイヤー設定 / Left Player Settings</h4>
+    
+    <div class="config-item" style="margin-bottom: 15px;">
+      <label for="leftPaddleSize" style="display: inline-block; width: 200px;">左パドルサイズ / Left Paddle:</label>
+      <input type="range" id="leftPaddleSize" min="30" max="120" value="60" step="10" style="width: 300px;">
+      <span id="leftPaddleSizeValue" style="margin-left: 10px;">60</span>
+    </div>
+    
+    <div class="config-item" style="margin-bottom: 15px;">
+      <label for="leftSensitivity" style="display: inline-block; width: 200px;">左センサー感度 / Left Sensitivity:</label>
+      <input type="range" id="leftSensitivity" min="0.5" max="2" value="1" step="0.1" style="width: 300px;">
+      <span id="leftSensitivityValue" style="margin-left: 10px;">1.0</span>
+    </div>
+    
+    <hr style="margin: 20px 0; border-color: #555;">
+    
+    <h4 style="margin-bottom: 15px;">右プレイヤー設定 / Right Player Settings</h4>
+    
+    <div class="config-item" style="margin-bottom: 15px;">
+      <label for="rightPaddleSize" style="display: inline-block; width: 200px;">右パドルサイズ / Right Paddle:</label>
+      <input type="range" id="rightPaddleSize" min="30" max="120" value="60" step="10" style="width: 300px;">
+      <span id="rightPaddleSizeValue" style="margin-left: 10px;">60</span>
+    </div>
+    
+    <div class="config-item" style="margin-bottom: 15px;">
+      <label for="rightSensitivity" style="display: inline-block; width: 200px;">右センサー感度 / Right Sensitivity:</label>
+      <input type="range" id="rightSensitivity" min="0.5" max="2" value="1" step="0.1" style="width: 300px;">
+      <span id="rightSensitivityValue" style="margin-left: 10px;">1.0</span>
+    </div>
+  </div>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
 
@@ -41,7 +90,6 @@
 
   <script>
     var bles = [new Orphe(0), new Orphe(1)];
-
     bles[0].setup();
     buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'ANALYSIS');
     bles[1].setup();
@@ -169,6 +217,49 @@
         updateMetrics(this.id, _duration);
       };
     }
+    
+    // スライダーの値変更イベントリスナー
+    document.getElementById('ballSpeed').addEventListener('input', function(e) {
+      document.getElementById('ballSpeedValue').textContent = e.target.value;
+      if (typeof updateBallSpeed === 'function') {
+        updateBallSpeed(parseFloat(e.target.value));
+      }
+    });
+    
+    document.getElementById('ballSize').addEventListener('input', function(e) {
+      document.getElementById('ballSizeValue').textContent = e.target.value;
+      if (typeof updateBallSize === 'function') {
+        updateBallSize(parseInt(e.target.value));
+      }
+    });
+    
+    document.getElementById('leftPaddleSize').addEventListener('input', function(e) {
+      document.getElementById('leftPaddleSizeValue').textContent = e.target.value;
+      if (typeof updateLeftPaddleSize === 'function') {
+        updateLeftPaddleSize(parseInt(e.target.value));
+      }
+    });
+    
+    document.getElementById('rightPaddleSize').addEventListener('input', function(e) {
+      document.getElementById('rightPaddleSizeValue').textContent = e.target.value;
+      if (typeof updateRightPaddleSize === 'function') {
+        updateRightPaddleSize(parseInt(e.target.value));
+      }
+    });
+    
+    document.getElementById('leftSensitivity').addEventListener('input', function(e) {
+      document.getElementById('leftSensitivityValue').textContent = parseFloat(e.target.value).toFixed(1);
+      if (typeof updateLeftSensitivity === 'function') {
+        updateLeftSensitivity(parseFloat(e.target.value));
+      }
+    });
+    
+    document.getElementById('rightSensitivity').addEventListener('input', function(e) {
+      document.getElementById('rightSensitivityValue').textContent = parseFloat(e.target.value).toFixed(1);
+      if (typeof updateRightSensitivity === 'function') {
+        updateRightSensitivity(parseFloat(e.target.value));
+      }
+    });
   </script>
 <script src="sketch.js"></script>
 </body>

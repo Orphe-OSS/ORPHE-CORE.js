@@ -1,5 +1,5 @@
 var coreToolkit_version_date = `
-Last modified: 2024/05/31 14:04:37
+Last modified: 2025/08/20 17:14:14
 `;
 // coreToolkit_version_dateから改行を削除
 coreToolkit_version_date = coreToolkit_version_date.replace(/\n/g, '');
@@ -143,8 +143,10 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ST
   <div class="form-floating mt-2">
     <select class="form-select text-black" id="select_lr${core_id}" aria-label="lr"
     onchange="changeLR(${core_id},this);">
-      <option value="0" selected>LEFT</option>
-      <option value="1">RIGTH</option>
+      <option value="0" selected>LEFT instep</option>
+      <option value="1">RIGHT instep</option>
+      <option value="2">LEFT plantar</option>
+      <option value="3">RIGHT plantar</option>
     </select>
     <label for="select_gyro${core_id}" class="small">LEFT/RIGHT</label>
   </div>
@@ -267,11 +269,12 @@ async function changeLEDBrightness(no, dom) {
 
 /**
  * CoreToolkitから左右の設定が変更された場合に呼び出される関数
- * @param {int} no (0,1)
+ * @param {int} no (0,1,2,3)
  * @param {dom} dom セレクタ
  */
 async function changeLR(no, dom) {
     var obj = await bles[no].getDeviceInformation();
+    console.log(obj);
     obj.lr = parseInt(dom.value);
     bles[no].setDeviceInformation(obj);
 }

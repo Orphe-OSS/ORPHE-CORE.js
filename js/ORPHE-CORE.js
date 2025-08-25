@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2024/06/17 17:28:02
+Last modified: 2025/08/25 16:19:43
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -132,7 +132,7 @@ class Orphe {
    * @property {Object} device_information - デバイス情報
    * @property {number} device_information.battery - バッテリー残量（少ない:0、普通:1、多い:2）
    * @property {number} device_information.lr - コアモジュール取り付け位置（左右情報）
-  bit0 : 左右
+  bit0 : left(0) / right(1)
   bit1 : 0(足底) / 1(足背)
   足底 : 左、右：0=(0000 0000b), 1=(0000 0001b)、
   足背 : 左、右：2(=0000 0010b), 3(=0000 0011b)
@@ -485,6 +485,20 @@ class Orphe {
     this.write('DEVICE_INFORMATION', this.array_device_information);
   }
   /**
+   * set Mount Position of Core module
+   * @param {int} position 0-3, 0:left-instep, 1:right-instep, 2:left-plantar, 3:right-plantar
+   */
+  async setMountPosition(position) {
+    if (position < 0 || position > 3) {
+      throw new Error("Invalid position");
+    }
+    let obj = await this.getDeviceInformation();
+    console.log(obj);
+    obj.lr = parseInt(position);
+    this.setDeviceInformation(obj);
+  }
+
+  /**
    * Reset motion sensor attitude, quaternion culculation.
    */
   resetMotionSensorAttitude() {
@@ -517,7 +531,7 @@ class Orphe {
       */
       filters: [
         { services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833', '01a9d6b5-ff6e-444a-b266-0be75e85c064'] },
-        { namePrefix: 'CR-' }
+        { namePrefix: ['CR-'] }
       ],
       //acceptAllDevices: true,
       optionalServices: [this.hashUUID[uuid].serviceUUID]
@@ -809,6 +823,8 @@ class Orphe {
 
     // デバイス情報Readの場合    
     if (uuid == 'DEVICE_INFORMATION') {
+      console.log(this.array_device_information);
+
       /*
       read pay load
                   0: バッテリー残量

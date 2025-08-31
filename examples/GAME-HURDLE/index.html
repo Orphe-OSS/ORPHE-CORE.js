@@ -243,8 +243,8 @@
     const PLAYER_EYE_H = 1.7;
     const JUMP_V0 = 5.0;
     const GRAVITY = 11.5;
-    const BASE_SPEED = 7.8;
-    const MAX_SPEED = 10.5;
+    const BASE_SPEED = 0.0;
+    const MAX_SPEED = 13.0;
     const SLOWDOWN_FACTOR = 0.40;
     const RECOVER_SEC = 1.0;
     const ACCEL_RATE = 15.0;
@@ -258,7 +258,7 @@
     let stamina = STAMINA_MAX;
 
     // ORPHE parameters (configurable)
-    window.accThresholdAccel = 0.3;
+    window.accThresholdAccel = 1.6;
     window.pitchThresholdJump = 0.1;  // ラジアンで設定
 
     // 3D scene setup
@@ -480,6 +480,21 @@
       src.start(t); src.stop(t + dur + 0.02);
     }
     function playCheer() {
+      // Try to play the audience sound file first
+      try {
+        const audio = new Audio('sound/sound-audience.mp3');
+        audio.volume = 0.7;
+        audio.play().catch(() => {
+          // If file loading fails, fallback to generated sound
+          playGeneratedCheer();
+        });
+      } catch (e) {
+        // If Audio API fails, fallback to generated sound
+        playGeneratedCheer();
+      }
+    }
+    
+    function playGeneratedCheer() {
       if (!audioCtx) return;
       const dur = 2.5;
       const noise = audioCtx.createBufferSource();
@@ -541,8 +556,7 @@
     addEventListener('keyup', e => {
       if (e.code === 'ArrowDown') accelPressedKeyboard = false;
     });
-    addEventListener('mousedown', startGame);
-    addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, { passive: false });
+    // Removed global click/touch handlers - now only start button triggers game start
     // Jump routine
     function jump() {
       if (state !== 'running') return;
@@ -606,8 +620,12 @@
       if (windGain) windGain.gain.value = 0.0;
     }
     
+    // Add event listeners for buttons
     const retryBtn = document.getElementById('retry');
     if (retryBtn) retryBtn.addEventListener('click', resetGame);
+    
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.addEventListener('click', startGame);
     // Update loop: integrates ORPHE and keyboard input
     function update(dt) {
       if (state !== 'running') return;
@@ -739,8 +757,10 @@
   <h1>🏃 ORPHE CORE 100m ハードル / 100m Hurdles 🏃</h1>
   
   <!-- CoreToolkit connection UI -->
-  <div id="toolkit_placeholder1" class="my-4" style="max-width: 600px; margin: 0 auto;"></div>
-  <div id="toolkit_placeholder2" class="my-4" style="max-width: 600px; margin: 0 auto;"></div>
+  <div class="my-4" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+    <div id="toolkit_placeholder1" style="max-width: 600px;"></div>
+    <div id="toolkit_placeholder2" style="max-width: 600px;"></div>
+  </div>
   
   <!-- Game description -->
   <div class="description">
@@ -759,9 +779,9 @@
     <canvas id="game-canvas"></canvas>
     <div id="ui">
       <div class="hud">
-        <div class="row">距離 / Distance: <span id="dist">100.0</span> m</div>
+        <div class="row">距離 / Distance: <span id="dist">100.0</span>&nbsp;m</div>
         <div class="row">ハードル接触 / Hits: <span id="hcount">0</span></div>
-        <div class="row">速度 / Speed: <span id="speed">0.0</span> m/s</div>
+        <div class="row">速度 / Speed: <span id="speed">0.0</span>&nbsp;m/s</div>
       </div>
       <div id="staminaWrap"><div id="staminaBar"></div></div>
       <div id="staminaLabel">STAMINA</div>
@@ -772,7 +792,7 @@
           <p>↑キーでジャンプ / Press ↑ to Jump</p>
           <p>↓キーで加速（スタミナ消費） / Press ↓ to Accelerate</p>
           <p>ORPHE COREで足の動きで操作 / Control with ORPHE CORE</p>
-          <div class="btn">スタート / START</div>
+          <div class="btn" id="start-btn">スタート / START</div>
         </div>
       </div>
       <div class="center" id="finish-layer" style="display:none;">
@@ -849,8 +869,8 @@
     <h4>⚡ 加速設定 / Acceleration Settings</h4>
     <div class="config-item">
       <label for="accelThreshold">加速度閾値 / Acceleration Threshold (G):</label>
-      <input type="range" id="accelThreshold" min="0.1" max="2.0" value="0.3" step="0.1">
-      <span id="accelThresholdValue">0.3</span>
+      <input type="range" id="accelThreshold" min="1.1" max="5.1" value="1.6" step="0.5">
+      <span id="accelThresholdValue">1.6</span>
     </div>
     
     <h4>⬆️ ジャンプ設定 / Jump Settings</h4>
@@ -894,6 +914,10 @@
     let basePitch = [null, null];
     let lastJumpTime = 0;
     const jumpCooldownMs = 700;
+
+    // ★ ここが追加・重要：加速オンのクールダウン（250ms）
+    let lastAccelTime = 0;
+    const accelCooldownMs = 100;
     
     // Connection handlers for both devices
     for (let ble of bles) {
@@ -923,8 +947,19 @@
           maxAccel = Math.max(maxAccel, mag);
         }
         
+        // ★ setAccelPressed(true) は前回オンから 250ms 経過している場合のみ許可
         if (window.setAccelPressed) {
-          window.setAccelPressed(maxAccel > window.accThresholdAccel);
+          const now = performance.now();
+          const shouldAccel = maxAccel > window.accThresholdAccel;
+
+          if (shouldAccel && (now - lastAccelTime) > accelCooldownMs) {
+            window.setAccelPressed(true);
+            lastAccelTime = now;
+          } else if (!shouldAccel) {
+            // 閾値を下回ったらオフに戻す
+            window.setAccelPressed(false);
+          }
+          // 閾値以上が連続しても 250ms 内には再オンしない（連打防止）
         }
       };
       

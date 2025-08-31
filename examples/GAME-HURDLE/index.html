@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ORPHE CORE 100m ハードル / 100m Hurdles</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <style>
+    body { 
+      margin: 0; 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      overflow-x: hidden;
+    }
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      background: linear-gradient(45deg, #00bcd4, #4caf50);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: bold;
+    }
+    #game-container {
+      position: relative;
+      margin: 0 auto;
+      max-width: 100%;
+      height: calc(100vh - 600px);
+      min-height: 400px;
+    }
+    #game-canvas { 
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #ui { 
+      position: absolute; 
+      inset: 0; 
+      pointer-events: none; 
+      color: #fff; 
+      text-shadow: 0 2px 8px rgba(0,0,0,.6); 
+    }
+    .hud { 
+      position: absolute; 
+      top: 16px; 
+      left: 16px; 
+      font-weight: 600; 
+      font-size: 18px; 
+      line-height: 1.5;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .hud .row { margin-bottom: 6px; }
+    .center { 
+      position: absolute; 
+      inset: 0; 
+      display: grid; 
+      place-items: center; 
+    }
+    .card { 
+      pointer-events: auto; 
+      background: rgba(0,0,0,.75); 
+      padding: 30px 40px; 
+      border-radius: 15px; 
+      text-align: center;
+      border: 2px solid rgba(0,188,212,0.5);
+    }
+    .card h1 { 
+      margin: 0 0 20px; 
+      font-size: 36px;
+      color: #00bcd4;
+    }
+    .card p { 
+      margin: 10px 0; 
+      font-size: 16px; 
+      opacity: .95; 
+    }
+    .card .btn { 
+      display: inline-block; 
+      margin-top: 15px; 
+      padding: 12px 24px; 
+      border-radius: 10px; 
+      background: linear-gradient(45deg, #00bcd4, #4caf50);
+      color: #fff; 
+      font-weight: 700; 
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s;
+    }
+    .card .btn:hover {
+      transform: scale(1.05);
+    }
+    .big-timer { 
+      position: absolute; 
+      bottom: 20px; 
+      right: 20px; 
+      font-size: 40px; 
+      font-weight: 800;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    /* スタミナバー */
+    #staminaWrap { 
+      position: absolute; 
+      top: 16px; 
+      right: 16px; 
+      width: 200px; 
+      height: 20px; 
+      border-radius: 10px; 
+      background: rgba(255,255,255,.2); 
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    #staminaBar { 
+      height: 100%; 
+      width: 100%; 
+      background: linear-gradient(90deg,#7CFC00,#FFD700,#FF4500); 
+      transform-origin: left center;
+      transition: transform 0.2s;
+    }
+    #staminaLabel { 
+      position:absolute; 
+      top: 40px; 
+      right: 16px; 
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .description {
+      text-align: center;
+      margin: 20px auto;
+      padding: 0 20px;
+      max-width: 800px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .description-ja {
+      margin-bottom: 10px;
+    }
+    .description-en {
+      color: #aaa;
+      font-size: 14px;
+    }
+    #config-panel {
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #2a2a3e;
+      border-radius: 15px;
+      max-width: 900px;
+      border: 1px solid rgba(0,188,212,0.3);
+    }
+    #config-panel h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00bcd4;
+    }
+    #config-panel h4 {
+      margin: 20px 0 15px 0;
+      color: #4caf50;
+    }
+    .config-item {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .config-item label {
+      display: inline-block;
+      width: 350px;
+      color: #fff;
+    }
+    .config-item input[type="range"] {
+      width: 250px;
+      margin: 0 10px;
+    }
+    .config-item span {
+      color: #00bcd4;
+      font-family: monospace;
+      font-weight: bold;
+      min-width: 60px;
+      display: inline-block;
+    }
+    .sensor-monitor {
+      background-color: #1a1a2e;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .sensor-box {
+      flex: 1;
+      padding: 10px;
+      background-color: #2a2a3e;
+      border-radius: 8px;
+      margin: 0 10px;
+    }
+    .sensor-box h5 {
+      color: #4caf50;
+      margin: 0 0 10px 0;
+    }
+    .progress-bar {
+      height: 20px;
+      background: #333;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar .bar {
+      position: absolute;
+      height: 100%;
+      background: #4caf50;
+      border-radius: 3px;
+      transition: all 0.1s;
+    }
+    .progress-bar .threshold {
+      position: absolute;
+      height: 100%;
+      width: 2px;
+      background: #ff9800;
+      opacity: 0.7;
+    }
+  </style>
+  <!-- ORPHE CORE ライブラリと依存関係 -->
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/float16.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/quaternion.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    window.THREE = THREE;
+
+    // Game constants
+    const COURSE_LEN_M = 150;  // 1.5倍の長さに変更
+    const HURDLES = 10;
+    const FIRST_HURDLE_M = 19.5;  // 1.5倍の距離に変更 (13.0 * 1.5)
+    const HURDLE_SPACING_M = 12.75;  // 1.5倍の間隔に変更 (8.5 * 1.5)
+    const HURDLE_HEIGHT_M = 0.84;
+    const HURDLE_TOP_THICK = 0.06;
+    const PLAYER_EYE_H = 1.7;
+    const JUMP_V0 = 5.0;
+    const GRAVITY = 11.5;
+    const BASE_SPEED = 7.8;
+    const MAX_SPEED = 10.5;
+    const SLOWDOWN_FACTOR = 0.40;
+    const RECOVER_SEC = 1.0;
+    const ACCEL_RATE = 15.0;
+    const FRICTION = 8.0;
+    const LANE_WIDTH = 1.22 * 2;
+    // Stamina parameters
+    const STAMINA_MAX = 1.0;
+    const STAMINA_USE_PER_SEC = 0.45;
+    const STAMINA_REGEN_PER_SEC = 0.30;
+    const STAMINA_BLOCK_THRESHOLD = 0.08;
+    let stamina = STAMINA_MAX;
+
+    // ORPHE parameters (configurable)
+    window.accThresholdAccel = 0.3;
+    window.pitchThresholdJump = 0.1;  // ラジアンで設定
+
+    // 3D scene setup
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x87ceeb, 60, 260);
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 800);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+    
+    function updateRendererSize() {
+      const container = document.getElementById('game-container');
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+    }
+    
+    updateRendererSize();
+    window.addEventListener('resize', updateRendererSize);
+    
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setClearColor(0x87ceeb);
+    renderer.shadowMap.enabled = true;
+    // Lighting
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x668866, 0.55);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+    sun.position.set(10, 20, 8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    scene.add(sun);
+    // Ground (track)
+    const groundGeo = new THREE.PlaneGeometry(LANE_WIDTH * 3, COURSE_LEN_M + 100);
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0xd24d57 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.z = -COURSE_LEN_M / 2 - 30;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    // Lane lines
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    for (let i = -1; i <= 1; i += 2) {
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(0.05, COURSE_LEN_M + 100), lineMat);
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(i * LANE_WIDTH / 2, 0.002, -COURSE_LEN_M / 2 - 30);
+      scene.add(line);
+    }
+    // Arms (swing)
+    const skin = new THREE.MeshLambertMaterial({ color: 0xffd2b8 });
+    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.9, 0.20), skin);
+    rightArm.position.set(-0.35, -0.45, -0.8);
+    const leftArm = rightArm.clone();
+    leftArm.position.x = 0.35;
+    camera.add(rightArm, leftArm);
+    scene.add(camera);
+    // Hurdles
+    const hurdles = [];
+    const hitMarkers = new Set();
+    function makeHurdle(z) {
+      const hurdle_group = new THREE.Group();
+      const base_material = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+      const bar_material = new THREE.MeshLambertMaterial({ color: 0xDC143C });
+      const leg1_vert = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.5, 0.2), base_material);
+      leg1_vert.position.set(-2.5, 0.75, 0);
+      const leg1_horz = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), base_material);
+      leg1_horz.position.set(-2.5, 0.1, 0.4);
+      const leg2_vert = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.5, 0.2), base_material);
+      leg2_vert.position.set(2.5, 0.75, 0);
+      const leg2_horz = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), base_material);
+      leg2_horz.position.set(2.5, 0.1, 0.4);
+      const top_bar = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.2, 0.2), bar_material);
+      top_bar.position.set(0, 1.4, 0);
+      hurdle_group.add(leg1_vert, leg1_horz, leg2_vert, leg2_horz, top_bar);
+      hurdle_group.position.set(0, 0, z);
+      hurdle_group.userData = { topY: 1.4, z };
+      scene.add(hurdle_group);
+      hurdles.push(hurdle_group);
+    }
+    for (let i = 0; i < HURDLES; i++) {
+      const z = -(FIRST_HURDLE_M + i * HURDLE_SPACING_M);
+      makeHurdle(z);
+    }
+    // Distance markers (20 m increments)
+    function makeRoadStencil(text, isFinish = false) {
+      const W = 512, H = 512;
+      const cvs = document.createElement('canvas');
+      cvs.width = W; cvs.height = H;
+      const ctx = cvs.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '900 150px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      if (isFinish) {
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 22;
+        ctx.strokeText(text, W / 2, H / 2);
+        ctx.fillText(text, W / 2, H / 2);
+      } else {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 18;
+        ctx.strokeText(text, W / 2, H / 2);
+        ctx.fillText(text, W / 2, H / 2);
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.anisotropy = 8; tex.needsUpdate = true;
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+      const geo = new THREE.PlaneGeometry(2.6, 3.4);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.003;
+      return mesh;
+    }
+    // Distance markers adjusted for 150m course
+    for (let d = 15; d <= 150; d += 15) {
+      const isFinish = (d === 150);
+      // Display 2/3 values to maintain visual 100m (since we use 1.5x physical distance)
+      const displayDistance = Math.round(d / 1.5);
+      const m = makeRoadStencil(`${displayDistance}m`, isFinish);
+      m.position.set(0, 0.003, -d);
+      scene.add(m);
+    }
+    // Finish line (red/white stripes)
+    (() => {
+      const cvs = document.createElement('canvas');
+      cvs.width = 256; cvs.height = 128;
+      const ctx = cvs.getContext('2d');
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#ffffff' : '#ff0000';
+        ctx.fillRect(i * 32, 0, 32, 128);
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.ClampToEdgeWrapping;
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: false });
+      const geo = new THREE.PlaneGeometry(3.2, 0.5);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(0, 0.002, -150.25);  // 1.5倍の位置に変更
+      scene.add(mesh);
+    })();
+    // Clouds (movement visualisation)
+    const clouds = [];
+    const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    function makeCloud(x, y, z) {
+      const g = new THREE.Group();
+      for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) {
+        const s = 1.5 + Math.random() * 2.5;
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(s, 12, 10), cloudMat);
+        puff.position.set((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 1, 0);
+        g.add(puff);
+      }
+      g.position.set(x, y, z);
+      g.scale.set(1.2, 1, 1);
+      scene.add(g);
+      clouds.push(g);
+    }
+    for (let i = 0; i < 16; i++) {
+      const x = (Math.random() * 2 - 1) * 18;
+      const y = 6 + Math.random() * 8;
+      const z = -Math.random() * (COURSE_LEN_M + 200);
+      makeCloud(x, y, z);
+    }
+    // WebAudio variables
+    let audioCtx = null;
+    let stepGain;
+    let windGain;
+    let nextStepAt = 0;
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      stepGain = audioCtx.createGain();
+      stepGain.gain.value = 0.6;
+      stepGain.connect(audioCtx.destination);
+      const bufferSize = 2 * audioCtx.sampleRate;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const n = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) n[i] = Math.random() * 2 - 1;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer; noise.loop = true;
+      const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
+      windGain = audioCtx.createGain(); windGain.gain.value = 0.0;
+      noise.connect(lp).connect(windGain).connect(audioCtx.destination);
+      noise.start();
+    }
+    function triggerFootstep(at) {
+      if (!audioCtx) return;
+      const dur = 0.06;
+      const src = audioCtx.createBufferSource();
+      const buf = audioCtx.createBuffer(1, Math.floor(dur * audioCtx.sampleRate), audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      src.buffer = buf;
+      const hp = audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 450;
+      const g = audioCtx.createGain(); g.gain.value = 0.0;
+      src.connect(hp).connect(g).connect(stepGain);
+      const t = at || audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0, t);
+      g.gain.linearRampToValueAtTime(0.7, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.start(t); src.stop(t + dur);
+    }
+    function triggerJumpWhoosh() {
+      if (!audioCtx) return;
+      const src = audioCtx.createBufferSource();
+      const dur = 0.22;
+      const buf = audioCtx.createBuffer(1, Math.floor(dur * audioCtx.sampleRate), audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      src.buffer = buf;
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1200;
+      bp.Q.value = 0.7;
+      const g = audioCtx.createGain();
+      g.gain.value = 0.0;
+      src.connect(bp).connect(g).connect(audioCtx.destination);
+      const t = audioCtx.currentTime;
+      try { bp.frequency.linearRampToValueAtTime(1800, t + dur); } catch (e) {}
+      g.gain.linearRampToValueAtTime(0.6, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.start(t); src.stop(t + dur + 0.02);
+    }
+    function playCheer() {
+      if (!audioCtx) return;
+      const dur = 2.5;
+      const noise = audioCtx.createBufferSource();
+      const buf = audioCtx.createBuffer(1, Math.floor(dur * audioCtx.sampleRate), audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.6;
+      noise.buffer = buf;
+      const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200;
+      const g = audioCtx.createGain(); g.gain.value = 0.0;
+      noise.connect(lp).connect(g).connect(audioCtx.destination);
+      const tones = [440, 554.37, 659.25].map(freq => {
+        const osc = audioCtx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
+        const tg = audioCtx.createGain(); tg.gain.value = 0.0;
+        osc.connect(tg).connect(audioCtx.destination);
+        return { osc, tg };
+      });
+      const t = audioCtx.currentTime;
+      g.gain.linearRampToValueAtTime(0.9, t + 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      noise.start(t); noise.stop(t + dur + 0.1);
+      tones.forEach(({ osc, tg }, i) => {
+        const dt = t + 0.05 * i;
+        osc.start(dt);
+        tg.gain.linearRampToValueAtTime(0.15, dt + 0.3);
+        tg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.stop(t + dur + 0.1);
+      });
+    }
+    // Game state
+    let state = 'ready';
+    let clock = new THREE.Clock();
+    let runTime = 0;
+    let startEpoch = 0;
+    let vz = BASE_SPEED;
+    let vy = 0;
+    let isGround = true;
+    let slowRemain = 0;
+    let hits = 0;
+    // Pressed states – used for keyboard and ORPHE input
+    let accelPressedKeyboard = false;
+    let accelPressedOrphe = false;
+    // UI elements
+    const $start = document.getElementById('start-layer');
+    const $finish = document.getElementById('finish-layer');
+    const $timer = document.getElementById('timer');
+    const $dist = document.getElementById('dist');
+    const $hcount = document.getElementById('hcount');
+    const $speed = document.getElementById('speed');
+    const $final = document.getElementById('final-time');
+    const $finalHits = document.getElementById('final-hits');
+    const $staminaBar = document.getElementById('staminaBar');
+    // Utility for formatting numbers
+    function fmt(n, d = 2) { return n.toFixed(d); }
+    // Keyboard controls remain available
+    addEventListener('keydown', e => {
+      if (e.code === 'ArrowUp') jump();
+      if (e.code === 'ArrowDown') accelPressedKeyboard = true;
+    });
+    addEventListener('keyup', e => {
+      if (e.code === 'ArrowDown') accelPressedKeyboard = false;
+    });
+    addEventListener('mousedown', startGame);
+    addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, { passive: false });
+    // Jump routine
+    function jump() {
+      if (state !== 'running') return;
+      if (isGround) { vy = JUMP_V0; isGround = false; triggerJumpWhoosh(); }
+    }
+    function startGame() {
+      if (state !== 'ready') return;
+      state = 'running';
+      clock.start();
+      startEpoch = performance.now();
+      if ($start) $start.style.display = 'none';
+      initAudio();
+    }
+    // Reset game function (preserves ORPHE CORE connection)
+    function resetGame() {
+      // Reset game state
+      state = 'ready';
+      clock = new THREE.Clock();
+      runTime = 0;
+      startEpoch = 0;
+      vz = BASE_SPEED;
+      vy = 0;
+      isGround = true;
+      slowRemain = 0;
+      hits = 0;
+      stamina = STAMINA_MAX;
+      
+      // Reset camera position
+      camera.position.set(0, PLAYER_EYE_H, 0);
+      camera.rotation.set(0, 0, 0);
+      
+      // Reset UI
+      if ($start) $start.style.display = 'grid';
+      if ($finish) $finish.style.display = 'none';
+      if ($timer) $timer.textContent = '0.00';
+      if ($dist) $dist.textContent = fmt(COURSE_LEN_M / 1.5, 1);
+      if ($hcount) $hcount.textContent = '0';
+      if ($speed) $speed.textContent = fmt(0, 1);
+      if ($staminaBar) {
+        $staminaBar.style.transform = 'scaleX(1)';
+        $staminaBar.style.filter = 'none';
+      }
+      
+      // Reset hit markers
+      hitMarkers.clear();
+      
+      // Reset cloud positions
+      for (let i = 0; i < clouds.length; i++) {
+        const c = clouds[i];
+        c.position.x = (Math.random() * 2 - 1) * 18;
+        c.position.y = 6 + Math.random() * 8;
+        c.position.z = -Math.random() * (COURSE_LEN_M + 200);
+      }
+      
+      // Reset acceleration states
+      accelPressedKeyboard = false;
+      accelPressedOrphe = false;
+      
+      // Reset audio
+      nextStepAt = 0;
+      if (windGain) windGain.gain.value = 0.0;
+    }
+    
+    const retryBtn = document.getElementById('retry');
+    if (retryBtn) retryBtn.addEventListener('click', resetGame);
+    // Update loop: integrates ORPHE and keyboard input
+    function update(dt) {
+      if (state !== 'running') return;
+      // Determine whether acceleration key is considered pressed
+      const canAccel = (accelPressedKeyboard || accelPressedOrphe) && (stamina > STAMINA_BLOCK_THRESHOLD);
+      if (canAccel) {
+        stamina -= STAMINA_USE_PER_SEC * dt;
+        if (stamina < 0) stamina = 0;
+        vz += ACCEL_RATE * dt;
+      } else {
+        stamina += STAMINA_REGEN_PER_SEC * dt;
+        if (stamina > STAMINA_MAX) stamina = STAMINA_MAX;
+        if (vz > BASE_SPEED) {
+          vz -= FRICTION * dt;
+          if (vz < BASE_SPEED) vz = BASE_SPEED;
+        }
+      }
+      if (vz > MAX_SPEED) vz = MAX_SPEED;
+      // Recover from slow-down
+      if (slowRemain > 0) {
+        slowRemain -= dt;
+        const t = Math.max(0, slowRemain) / RECOVER_SEC;
+        vz = vz * (1 - t) + (vz * SLOWDOWN_FACTOR) * t;
+      }
+      // Audio: adjust wind noise and schedule footsteps
+      if (audioCtx) {
+        const targetWind = (canAccel ? 0.12 : 0.02) * (vz / MAX_SPEED);
+        // Only apply wind noise if above threshold to avoid small continuous noise
+        const WIND_THRESHOLD = 0.005;
+        const actualWind = targetWind < WIND_THRESHOLD ? 0 : targetWind;
+        windGain.gain.linearRampToValueAtTime(actualWind, audioCtx.currentTime + 0.05);
+        const stepRate = 1.4 + 2.6 * (vz / MAX_SPEED);
+        const interval = 1 / stepRate;
+        const now = audioCtx.currentTime;
+        if (now > nextStepAt) nextStepAt = now + 0.01;
+        while (nextStepAt < now + 0.1) {
+          if (isGround && vz > 3.0) { triggerFootstep(nextStepAt); }
+          nextStepAt += interval;
+        }
+      }
+      // Forward motion
+      camera.position.z -= vz * dt;
+      // Vertical motion
+      camera.position.y += vy * dt;
+      vy -= GRAVITY * dt;
+      if (camera.position.y <= PLAYER_EYE_H) {
+        camera.position.y = PLAYER_EYE_H; vy = 0; isGround = true;
+      }
+      // Arm swing
+      const swingAmp = 0.7 * (vz / MAX_SPEED);
+      const swing = Math.sin(performance.now() * 0.012) * swingAmp;
+      rightArm.rotation.x = swing; leftArm.rotation.x = -swing;
+      // Move clouds
+      for (const c of clouds) {
+        c.position.z += 0.4 * dt * vz;
+        if (c.position.z > 5) {
+          c.position.z = -(COURSE_LEN_M + 200) - Math.random() * 80;
+          c.position.x = (Math.random() * 2 - 1) * 18;
+          c.position.y = 6 + Math.random() * 8;
+        }
+      }
+      // Timer and distance display
+      runTime = (performance.now() - startEpoch) / 1000;
+      // Display as 100m course but use 1.5x physical distance
+      const remaining = Math.max(0, (COURSE_LEN_M + camera.position.z) / 1.5);
+      if ($timer) $timer.textContent = fmt(runTime, 2);
+      if ($dist) $dist.textContent = fmt(remaining, 1);
+      if ($speed) $speed.textContent = fmt(vz, 1);
+      // Stamina bar
+      if ($staminaBar) {
+        $staminaBar.style.transform = `scaleX(${stamina})`;
+        $staminaBar.style.filter = stamina < STAMINA_BLOCK_THRESHOLD ? 'grayscale(1)' : 'none';
+      }
+      // Hurdle collisions
+      for (const h of hurdles) {
+        if (hitMarkers.has(h)) continue;
+        const dzToBar = Math.abs(camera.position.z - h.userData.z);
+        if (dzToBar < 0.35) {
+          const lift = camera.position.y - PLAYER_EYE_H;
+          const neededLift = 0.35;
+          if (lift < neededLift) {
+            hits++;
+            if ($hcount) $hcount.textContent = hits;
+            vz = Math.max(2.5, vz * SLOWDOWN_FACTOR);
+            slowRemain = RECOVER_SEC;
+            camera.rotation.z = 0.08;
+            setTimeout(() => { camera.rotation.z = 0; }, 160);
+          }
+          hitMarkers.add(h);
+        }
+      }
+      // Finish line
+      if (camera.position.z <= -COURSE_LEN_M) {
+        state = 'finish';
+        if ($final) $final.textContent = fmt(runTime, 2) + ' s';
+        if ($finalHits) $finalHits.textContent = String(hits);
+        if ($finish) $finish.style.display = 'grid';
+        playCheer();
+      }
+    }
+    // Animation loop
+    function loop() {
+      const dt = clock.getDelta();
+      if (state === 'running') update(dt);
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    }
+    // Initialize display values
+    if ($hcount) $hcount.textContent = '0';
+    if ($speed) $speed.textContent = fmt(0, 1);
+    if ($dist) $dist.textContent = fmt(COURSE_LEN_M / 1.5, 1);
+    loop();
+    
+    // Export reset function for potential external use
+    window.resetGame = resetGame;
+
+    // ---------------------------------------------------------------------------
+    // ORPHE CORE integration with CoreToolkit
+    // Note: This will be initialized outside the module script
+    
+    // Export functions for external access
+    window.gameJump = jump;
+    window.setAccelPressed = function(pressed) { 
+      accelPressedOrphe = pressed;
+    };
+  </script>
+</head>
+<body>
+  <h1>🏃 ORPHE CORE 100m ハードル / 100m Hurdles 🏃</h1>
+  
+  <!-- CoreToolkit connection UI -->
+  <div id="toolkit_placeholder1" class="my-4" style="max-width: 600px; margin: 0 auto;"></div>
+  <div id="toolkit_placeholder2" class="my-4" style="max-width: 600px; margin: 0 auto;"></div>
+  
+  <!-- Game description -->
+  <div class="description">
+    <div class="description-ja">
+      ORPHE COREを使った100mハードル走ゲームです。<br>
+      足踏みで加速、足を上げてジャンプ！10個のハードルを越えてゴールを目指そう！
+    </div>
+    <div class="description-en">
+      100m hurdles game using ORPHE CORE.<br>
+      Stamp your feet to accelerate, lift your foot to jump! Clear 10 hurdles and reach the goal!
+    </div>
+  </div>
+  
+  <!-- Game canvas container -->
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="ui">
+      <div class="hud">
+        <div class="row">距離 / Distance: <span id="dist">100.0</span> m</div>
+        <div class="row">ハードル接触 / Hits: <span id="hcount">0</span></div>
+        <div class="row">速度 / Speed: <span id="speed">0.0</span> m/s</div>
+      </div>
+      <div id="staminaWrap"><div id="staminaBar"></div></div>
+      <div id="staminaLabel">STAMINA</div>
+      <!-- Start overlay -->
+      <div class="center" id="start-layer">
+        <div class="card">
+          <h1>100m ハードル走</h1>
+          <p>↑キーでジャンプ / Press ↑ to Jump</p>
+          <p>↓キーで加速（スタミナ消費） / Press ↓ to Accelerate</p>
+          <p>ORPHE COREで足の動きで操作 / Control with ORPHE CORE</p>
+          <div class="btn">スタート / START</div>
+        </div>
+      </div>
+      <div class="center" id="finish-layer" style="display:none;">
+        <div class="card">
+          <h1>FINISH!</h1>
+          <p>公式タイム / Official Time: <b id="final-time">—</b></p>
+          <p>ハードル接触 / Hurdle Hits: <b id="final-hits">0</b> 回</p>
+          <div class="btn" id="retry">もう一度 / RETRY</div>
+        </div>
+      </div>
+      <div class="big-timer" id="timer">0.00</div>
+    </div>
+  </div>
+  
+  <!-- Sensor configuration panel -->
+  <div id="config-panel">
+    <h3>📊 センサー値モニター / Sensor Monitor</h3>
+    
+    <div class="sensor-monitor">
+      <div style="display: flex; gap: 20px;">
+        <div class="sensor-box">
+          <h5>左足 / Left (Device 0)</h5>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Pitch:</span>
+            <span id="pitch0" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="pitchBar0" class="bar" style="width: 2px; left: 50%;"></div>
+              <div id="pitchThreshold0" class="threshold"></div>
+            </div>
+          </div>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Accel:</span>
+            <span id="acc0" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="accBar0" class="bar"></div>
+              <div id="accThreshold0" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sensor-box">
+          <h5>右足 / Right (Device 1)</h5>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Pitch:</span>
+            <span id="pitch1" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="pitchBar1" class="bar" style="width: 2px; left: 50%;"></div>
+              <div id="pitchThreshold1" class="threshold"></div>
+            </div>
+          </div>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Accel:</span>
+            <span id="acc1" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="accBar1" class="bar"></div>
+              <div id="accThreshold1" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <div style="flex: 1; padding: 10px; background-color: #2a2a3e; border-radius: 8px; text-align: center;">
+          <p style="margin: 10px 0; color: #aaa;">現在の動作 / Current Action</p>
+          <p id="actionStatus" style="font-size: 18px; font-weight: bold; margin: 10px 0;">待機中 / Waiting</p>
+        </div>
+      </div>
+    </div>
+    
+    <hr style="margin: 20px 0; border-color: #555;">
+    
+    <h3>⚙️ センサー設定 / Sensor Settings</h3>
+    
+    <h4>⚡ 加速設定 / Acceleration Settings</h4>
+    <div class="config-item">
+      <label for="accelThreshold">加速度閾値 / Acceleration Threshold (G):</label>
+      <input type="range" id="accelThreshold" min="0.1" max="2.0" value="0.3" step="0.1">
+      <span id="accelThresholdValue">0.3</span>
+    </div>
+    
+    <h4>⬆️ ジャンプ設定 / Jump Settings</h4>
+    <div class="config-item">
+      <label for="jumpPitchThreshold">ジャンプPITCH閾値 / Jump Pitch Threshold (rad):</label>
+      <input type="range" id="jumpPitchThreshold" min="0.05" max="0.5" value="0.1" step="0.05">
+      <span id="jumpPitchThresholdValue">0.1</span>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background-color: #1a1a2e; border-radius: 10px;">
+      <p style="margin: 5px 0; color: #fff;">🎮 操作方法 / Controls:</p>
+      <p style="margin: 5px 0; color: #ccc;">• 足踏み（加速度 > 0.3G） → 前進加速</p>
+      <p style="margin: 5px 0; color: #ccc;">• つま先を上げる（PITCH < -0.1 rad） → ジャンプ</p>
+      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Stamp feet (Accel > 0.3G) → Accelerate forward</p>
+      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Lift toe up (Pitch < -0.1 rad) → Jump</p>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize ORPHE CORE devices
+    var bles = [new Orphe(0), new Orphe(1)];
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
+    bles[1].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'SENSOR_VALUES');
+    
+    var connectedDevices = 0;
+    
+    // Global variables for sensor data
+    window.devices = {
+      0: {
+        acc: { x: 0, y: 0, z: 0 },
+        eulers: { pitch: 0, roll: 0, yaw: 0 }
+      },
+      1: {
+        acc: { x: 0, y: 0, z: 0 },
+        eulers: { pitch: 0, roll: 0, yaw: 0 }
+      }
+    };
+    
+    let basePitch = [null, null];
+    let lastJumpTime = 0;
+    const jumpCooldownMs = 700;
+    
+    // Connection handlers for both devices
+    for (let ble of bles) {
+      ble.onConnect = function() {
+        connectedDevices++;
+        console.log('ORPHE CORE Device ' + this.id + ' connected');
+        
+        if (connectedDevices === 2) {
+          // Both devices connected, start data streaming
+          for (let device of bles) {
+            device.begin('SENSOR_VALUES');
+            setupDataCallbacks(device);
+          }
+        }
+      };
+    }
+    
+    function setupDataCallbacks(ble_device) {
+      ble_device.gotConvertedAcc = function(_acc) {
+        window.devices[this.id].acc = _acc;
+        
+        // Check if either foot has acceleration for movement
+        let maxAccel = 0;
+        for (let i = 0; i < 2; i++) {
+          const acc = window.devices[i].acc;
+          const mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+          maxAccel = Math.max(maxAccel, mag);
+        }
+        
+        if (window.setAccelPressed) {
+          window.setAccelPressed(maxAccel > window.accThresholdAccel);
+        }
+      };
+      
+      ble_device.gotEuler = function(_euler) {
+        window.devices[this.id].eulers = _euler;
+        
+        if (basePitch[this.id] === null) {
+          basePitch[this.id] = _euler.pitch;
+          return;
+        }
+        
+        // Check if either foot toe is lifted for jump (negative pitch means toe up)
+        const currentPitch = _euler.pitch;
+        const now = performance.now();
+        // Jump when pitch goes negative (toe up)
+        if (currentPitch < -window.pitchThresholdJump && (now - lastJumpTime) > jumpCooldownMs) {
+          if (window.gameJump) {
+            window.gameJump();
+            lastJumpTime = now;
+          }
+        }
+      };
+    }
+    
+    // Sensor value display update
+    function updateSensorDisplay() {
+      let maxAccel = 0;
+      let maxPitchDelta = 0;
+      
+      for (let i = 0; i < 2; i++) {
+        const device = window.devices[i];
+        const pitch = device.eulers ? device.eulers.pitch : 0;
+        const pitchElem = document.getElementById(`pitch${i}`);
+        
+        if (pitchElem) {
+          pitchElem.textContent = pitch.toFixed(3) + ' rad';
+          
+          const pitchBar = document.getElementById(`pitchBar${i}`);
+          if (pitchBar) {
+            const position = ((pitch + 2) / 4) * 100;
+            pitchBar.style.left = Math.max(0, Math.min(100, position)) + '%';
+            
+            // Check for toe-up position (negative pitch)
+            const isToeUp = pitch < -window.pitchThresholdJump;
+            if (isToeUp) {
+              maxPitchDelta = Math.abs(pitch);
+            }
+            
+            if (isToeUp) {
+              pitchBar.style.background = '#ff9800';
+            } else {
+              pitchBar.style.background = '#4caf50';
+            }
+          }
+        }
+        
+        let accMag = 0;
+        if (device.acc) {
+          accMag = Math.sqrt(
+            device.acc.x * device.acc.x +
+            device.acc.y * device.acc.y +
+            device.acc.z * device.acc.z
+          );
+          maxAccel = Math.max(maxAccel, accMag);
+        }
+        
+        const accElem = document.getElementById(`acc${i}`);
+        if (accElem) {
+          accElem.textContent = accMag.toFixed(2) + ' G';
+          
+          const accBar = document.getElementById(`accBar${i}`);
+          if (accBar) {
+            const width = (accMag / 2) * 100;
+            accBar.style.width = Math.min(100, width) + '%';
+            
+            if (accMag > window.accThresholdAccel) {
+              accBar.style.background = '#ff9800';
+            } else {
+              accBar.style.background = '#2196f3';
+            }
+          }
+        }
+      }
+      
+      // Update action status
+      const actionElem = document.getElementById('actionStatus');
+      if (actionElem) {
+        if (maxAccel > window.accThresholdAccel) {
+          actionElem.textContent = '⚡ 加速中 / Accelerating';
+          actionElem.style.color = '#4caf50';
+        } else if (maxPitchDelta > 0) {
+          actionElem.textContent = '⬆ ジャンプ準備 / Jump Ready';
+          actionElem.style.color = '#ff9800';
+        } else {
+          actionElem.textContent = '待機中 / Waiting';
+          actionElem.style.color = '#aaa';
+        }
+      }
+    }
+    
+    // Update threshold displays
+    function updateThresholdVisuals() {
+      for (let i = 0; i < 2; i++) {
+        const pitchLine = document.getElementById(`pitchThreshold${i}`);
+        if (pitchLine) {
+          // Display negative threshold position (toe up)
+          pitchLine.style.left = ((2 - window.pitchThresholdJump) / 4 * 100) + '%';
+        }
+        
+        const accLine = document.getElementById(`accThreshold${i}`);
+        if (accLine) {
+          accLine.style.left = (window.accThresholdAccel / 2 * 100) + '%';
+        }
+      }
+    }
+    
+    // DOM ready function
+    document.addEventListener('DOMContentLoaded', function() {
+      // Slider event listeners
+      const accelSlider = document.getElementById('accelThreshold');
+      if (accelSlider) {
+        accelSlider.addEventListener('input', function(e) {
+          window.accThresholdAccel = parseFloat(e.target.value);
+          document.getElementById('accelThresholdValue').textContent = e.target.value;
+          updateThresholdVisuals();
+        });
+      }
+      
+      const pitchSlider = document.getElementById('jumpPitchThreshold');
+      if (pitchSlider) {
+        pitchSlider.addEventListener('input', function(e) {
+          window.pitchThresholdJump = parseFloat(e.target.value);
+          document.getElementById('jumpPitchThresholdValue').textContent = e.target.value;
+          updateThresholdVisuals();
+        });
+      }
+      
+      // Start sensor display updates
+      setInterval(updateSensorDisplay, 16);
+      updateThresholdVisuals();
+    });
+  </script>
+</body>
+</html>

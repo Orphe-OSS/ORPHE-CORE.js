@@ -894,10 +894,11 @@ class Orphe {
       // Gait Overview
       if (data.getUint8(1) == 0 && steps_now > this.gait.steps) {
         let type = data.getUint8(4);
-        type = type & 0b00000011;
+        type = type & 0b11000000;
+        type = type >>> 6;
         let direction = data.getUint8(4);
-        direction = direction & 0b00011100;
-        direction = direction >>> 2;
+        direction = direction & 0b00111000;
+        direction = direction >>> 3;
         const calorie = getFloat16(data, 6);
         const dist = data.getFloat32(8);
         this.gait.type = type;

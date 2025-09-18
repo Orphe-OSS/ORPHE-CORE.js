@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2025/09/08 23:19:29
+Last modified: 2025/09/18 16:07:48
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -10,7 +10,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.3.0
+@version 1.3.1
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -310,6 +310,7 @@ class Orphe {
 
   }
 
+
   /**
   * gotData()がユーザ側でオーバーライドされているかどうかを返す関数です。これを見て，デバッグモード（ORPHE TERMINAL）を有効にするかどうかを判断します。オーバーライドするとgotData()以外の関数はコールバックされません．
   * 
@@ -493,7 +494,6 @@ class Orphe {
       throw new Error("Invalid position");
     }
     let obj = await this.getDeviceInformation();
-    console.log(obj);
     obj.lr = parseInt(position);
     this.setDeviceInformation(obj);
   }
@@ -509,8 +509,35 @@ class Orphe {
    * Reset Analysis logs in the core module.
    */
   resetAnalysisLogs() {
-    const data = new Uint8Array([0x04]);
-    this.write('DEVICE_INFORMATION', data);
+    const data = new Uint8Array([4]);
+    this.write('DEVICE_INFORMATION', [4]);
+    this.gait = {
+      type: 0,
+      direction: 0,
+      calorie: 0,
+      distance: 0,
+      steps: 0,
+      standing_phase_duration: 0,
+      swing_phase_duration: 0
+    };
+
+    this.stride = {
+      foot_angle: 0,
+      x: 0,
+      y: 0,
+      z: 0,
+      steps: 0
+    };
+
+    this.pronation = {
+      landing_impact: 0,
+      x: 0,
+      y: 0,
+      z: 0,
+      steps: 0
+    };
+
+    this.steps_number = 0;
   }
   scan(uuid, options = {}) {
     return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))
@@ -891,6 +918,7 @@ class Orphe {
         this.gotStepsNumber({ value: steps_now });
         this.steps_number = steps_now;
       }
+
       // Gait Overview
       if (data.getUint8(1) == 0 && steps_now > this.gait.steps) {
         let type = data.getUint8(4);

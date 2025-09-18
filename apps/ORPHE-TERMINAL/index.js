@@ -93,6 +93,13 @@ window.onload = function () {
         }
         else {
             if (is_playing) {
+                const use_subheader = document.querySelector('#ar_use_subheader').checked;
+                const value_subheader = document.querySelector('#ar_subheader_id').value;
+                if (use_subheader) {
+                    if (data.getUint8(1) != value_subheader) {
+                        return;
+                    }
+                }
                 document.querySelector('#ar_textarea_recv').innerHTML = '';
                 for (let i = 0; i < data.byteLength; i++) {
                     ar_data_textarea_buffer.push(data.getUint8(i).toString(16).toUpperCase());

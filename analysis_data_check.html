@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>ORPHE CORE JS DEMO</title>
+</head>
+
+<body>
+    <h1>Analysis data check</h1>
+    <p>
+        This page connects in STEP_ANALYSIS mode and receives gait analysis data through the gotGait() callback
+        function. Additionally, quaternion data is received through the gotQuat() callback function. Please refer to the
+        source code for more details. Follow the steps below to verify functionality.
+    <ol>
+        <li>
+            Press the connect button to connect to ORPHE CORE. Once connected successfully, the Quaternion data will be
+            displayed.
+        </li>
+        <li>
+            Wear the ORPHE CORE on your foot and start walking. As you begin walking, values will appear in the
+            gotGait() table.
+        </li>
+        <li>
+            Press the resetAnalysisLogs() button to reset the gait analysis data. Walk a little and confirm that the
+            value of steps changes to 1.
+        </li>
+        <li>
+            Press the stopNotify() button to stop notifications for gait analysis data. The values in the gotGait()
+            table will not update even if you walk.
+        </li>
+        <li>
+            Press the startNotify() button to resume notifications for gait analysis data. As you walk, the values in
+            the gotGait() table will update.
+        </li>
+    </ol>
+    </p>
+
+    <button onclick="mystart()">connect</button>
+    <button onclick="ble.resetAnalysisLogs();">resetAnalysisLogs()</button>
+    <button onclick="ble.stopNotify();">stopNotify()</button>
+    <button onclick="ble.startNotify();">startNotify()</button>
+
+    <div id="gait_display" style="margin-top:12px">
+        <h2 style="font-size:1.1em;margin:6px 0">gotGait()</h2>
+        <table id="gait_table"
+            style="border-collapse:collapse;width:100%;max-width:480px;font-family:system-ui,-apple-system,Roboto,Helvetica,Arial">
+            <thead>
+                <tr>
+                    <th style="border:1px solid #ccc;padding:6px 8px;background:#f6f8fa;text-align:left">key</th>
+                    <th style="border:1px solid #ccc;padding:6px 8px;background:#f6f8fa;text-align:left">value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">type</td>
+                    <td id="gait_type" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">direction</td>
+                    <td id="gait_direction" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">calorie</td>
+                    <td id="gait_calorie" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">distance</td>
+                    <td id="gait_distance" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">steps</td>
+                    <td id="gait_steps" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">standing_phase_duration</td>
+                    <td id="gait_standing_phase_duration" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">swing_phase_duration</td>
+                    <td id="gait_swing_phase_duration" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="quat_display" style="margin-top:12px">
+        <h2 style="font-size:1.1em;margin:6px 0">Quaternion</h2>
+        <table id="quat_table"
+            style="border-collapse:collapse;width:100%;max-width:480px;font-family:system-ui,-apple-system,Roboto,Helvetica,Arial">
+            <thead>
+                <tr>
+                    <th style="border:1px solid #ccc;padding:6px 8px;background:#f6f8fa;text-align:left">key</th>
+                    <th style="border:1px solid #ccc;padding:6px 8px;background:#f6f8fa;text-align:left">value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">w</td>
+                    <td id="gquat_w" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">x</td>
+                    <td id="gquat_x" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">y</td>
+                    <td id="gquat_y" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+                <tr>
+                    <td style="border:1px solid #ccc;padding:6px 8px">z</td>
+                    <td id="gquat_z" style="border:1px solid #ccc;padding:6px 8px"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@1140ee7/js/ORPHE-CORE.js"
+        crossorigin="anonymous"></script> -->
+    <script src="./js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+
+    <script>
+        var ble = new Orphe(0);
+        window.onload = function () {
+            ble.setup();
+        }
+        async function mystart() {
+            // alternative begin function call
+            // ANALYSIS, RAW, ANALYSIS_AND_RAW
+            await ble.begin('STEP_ANALYSIS', { range: { acc: 16, gyro: 2000 } });
+            ble.gotGait = function (gait) {
+                try {
+                    const set = (id, v) => {
+                        const el = document.getElementById(id);
+                        if (!el) return;
+                        if (typeof v === 'number') {
+                            if (!Number.isInteger(v)) el.textContent = v.toFixed(3);
+                            else el.textContent = String(v);
+                        } else {
+                            el.textContent = (v === undefined || v === null) ? '' : String(v);
+                        }
+                    };
+                    set('gait_type', gait.type);
+                    set('gait_direction', gait.direction);
+                    set('gait_calorie', gait.calorie);
+                    set('gait_distance', gait.distance);
+                    set('gait_steps', gait.steps);
+                    set('gait_standing_phase_duration', gait.standing_phase_duration);
+                    set('gait_swing_phase_duration', gait.swing_phase_duration);
+                } catch (e) {
+                    console.error('gotGait error', e);
+                }
+            }
+            ble.gotQuat = function (quat) {
+                try {
+                    const set = (id, v) => {
+                        const el = document.getElementById(id);
+                        if (!el) return;
+                        if (typeof v === 'number') {
+                            // show 3 decimals
+                            el.textContent = Number.isInteger(v) ? String(v) : v.toFixed(3);
+                        } else {
+                            el.textContent = (v === undefined || v === null) ? '' : String(v);
+                        }
+                    };
+                    set('gquat_w', quat.w);
+                    set('gquat_x', quat.x);
+                    set('gquat_y', quat.y);
+                    set('gquat_z', quat.z);
+                } catch (e) {
+                    console.error('gotQuat error', e);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -560,6 +560,7 @@
     }
     // Game state
     let state = 'ready';
+    let countdownValue = 0;
     let clock = new THREE.Clock();
     let runTime = 0;
     let startEpoch = 0;
@@ -606,27 +607,132 @@
     }
     function startGame() {
       if (state !== 'ready') return;
-      state = 'running';
-      clock.start();
-      startEpoch = performance.now();
-      if ($start) $start.style.display = 'none';
+      
+      // Initialize audio and 3D scene first
       initAudio();
       
-      // Play start whistle sound
+      // Set camera to start position and ensure 3D scene is ready
+      camera.position.set(0, PLAYER_EYE_H, 0);
+      camera.rotation.set(0, 0, 0);
+      
+      // Force a render to ensure 3D scene is displayed
+      renderer.render(scene, camera);
+      
+      // Hide start screen and show countdown
+      if ($start) $start.style.display = 'none';
+      const $countdown = document.getElementById('countdown-layer');
+      const $countdownNumber = document.getElementById('countdown-number');
+      
+      if ($countdown) {
+        $countdown.style.display = 'grid';
+        countdownValue = 3;
+        $countdownNumber.textContent = '3';
+        
+        // Countdown timer
+        const countdownInterval = setInterval(() => {
+          countdownValue--;
+          
+          if (countdownValue > 0) {
+            $countdownNumber.textContent = countdownValue;
+            // Play beep sound for each count
+            playCountdownBeep();
+          } else {
+            // countdownValue === 0: Show GO! and start game immediately
+            $countdownNumber.textContent = 'GO!';
+            $countdownNumber.style.color = '#00ff00';
+            
+            // Start the actual game immediately
+            clearInterval(countdownInterval);
+            state = 'running';
+            clock.start();
+            startEpoch = performance.now();
+            
+            // Play start whistle sound
+            try {
+              const whistle = new Audio('sound/笛1.mp3');
+              whistle.volume = 0.7;
+              whistle.play().catch(err => {
+                console.log('Could not play whistle sound:', err);
+              });
+            } catch (e) {
+              console.log('Error loading whistle sound:', e);
+              // Fallback to generated beep
+              playStartBeep();
+            }
+            
+            // Hide countdown after a short delay to show "GO!"
+            setTimeout(() => {
+              $countdown.style.display = 'none';
+            }, 500);
+          }
+        }, 1000);
+      }
+    }
+    
+    // Countdown beep sound
+    function playCountdownBeep() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.frequency.value = 800;
+      osc.type = 'sine';
+      gainNode.gain.value = 0.3;
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      const t = audioCtx.currentTime;
+      osc.start(t);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+      osc.stop(t + 0.1);
+    }
+    
+    // Start beep sound (fallback if whistle doesn't load)
+    function playStartBeep() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.frequency.value = 1200;
+      osc.type = 'sine';
+      gainNode.gain.value = 0.5;
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      const t = audioCtx.currentTime;
+      osc.start(t);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.stop(t + 0.3);
+    }
+    
+    // Stop all audio function
+    function stopAllAudio() {
+      if (!audioCtx) return;
+      
+      // Stop wind noise
+      if (windGain) {
+        windGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      }
+      
+      // Stop step sounds
+      if (stepGain) {
+        stepGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      }
+      
+      // Suspend the audio context to stop all sounds
       try {
-        const whistle = new Audio('sound/笛1.mp3');
-        whistle.volume = 0.7;
-        whistle.play().catch(err => {
-          console.log('Could not play whistle sound:', err);
-        });
+        audioCtx.suspend();
       } catch (e) {
-        console.log('Error loading whistle sound:', e);
+        console.log('Could not suspend audio context:', e);
       }
     }
     // Reset game function (preserves ORPHE CORE connection)
     function resetGame() {
       // Reset game state
       state = 'ready';
+      countdownValue = 0;
       clock = new THREE.Clock();
       runTime = 0;
       startEpoch = 0;
@@ -672,6 +778,11 @@
       // Reset audio
       nextStepAt = 0;
       if (windGain) windGain.gain.value = 0.0;
+      
+      // Resume audio context if it was suspended
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
     }
     
     // Add event listeners for buttons
@@ -783,7 +894,16 @@
         if ($final) $final.textContent = fmt(runTime, 2) + ' s';
         if ($finalHits) $finalHits.textContent = String(hits);
         if ($finish) $finish.style.display = 'grid';
+        
+        // Stop wind noise immediately when finishing
+        if (windGain) windGain.gain.value = 0.0;
+        
         playCheer();
+        
+        // Stop all audio after 5 seconds
+        setTimeout(() => {
+          stopAllAudio();
+        }, 5000);
       }
     }
     // Animation loop
@@ -858,6 +978,12 @@
           <p>←キーで加速（スタミナ消費） / Press ← to Accelerate</p>
           <p>ORPHE COREで足の動きで操作 / Control with ORPHE CORE</p>
           <div class="btn" id="start-btn">スタート / START</div>
+        </div>
+      </div>
+      <!-- Countdown overlay -->
+      <div class="center" id="countdown-layer" style="display:none; background: transparent; pointer-events: none;">
+        <div style="font-size: 200px; font-weight: 900; color: #FFD700; text-shadow: 0 0 40px rgba(255, 215, 0, 0.5); animation: pulse 1s infinite; pointer-events: none;">
+          <span id="countdown-number">3</span>
         </div>
       </div>
       <div class="center" id="finish-layer" style="display:none;">

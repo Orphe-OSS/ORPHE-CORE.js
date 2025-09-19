@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ORPHE CORE 110m ハードル / 110m Hurdles</title>
+  <title>世界バーチャルハードル走　110m</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <style>
@@ -19,9 +19,10 @@
       margin: 20px 0;
       font-size: 2.5rem;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-      background: linear-gradient(45deg, #00bcd4, #4caf50);
+      background: linear-gradient(90deg, #00ff00, #7fff00, #ffff00, #ff8800, #ff0000);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
       font-weight: bold;
     }
     #game-container {
@@ -72,12 +73,48 @@
     .card h1 { 
       margin: 0 0 20px; 
       font-size: 36px;
-      color: #00bcd4;
+      color: #ffffff;
     }
     .card p { 
       margin: 10px 0; 
       font-size: 16px; 
       opacity: .95; 
+    }
+    /* Finish card specific styling */
+    #finish-layer .card {
+      padding: 50px 60px;
+      animation: scaleIn 0.5s ease-out;
+    }
+    #finish-layer .card h1 {
+      font-size: 64px;
+      color: #FFD700;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    #finish-layer .card p {
+      font-size: 24px;
+      margin: 20px 0;
+    }
+    #finish-layer .card #final-time {
+      font-size: 96px;
+      color: #00ff00;
+      text-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+      display: block;
+      margin: 20px 0;
+      font-weight: 900;
+      line-height: 1;
+    }
+    #finish-layer .card #final-hits {
+      font-size: 32px;
+      color: #ff9800;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
     .card .btn { 
       display: inline-block; 
@@ -245,7 +282,7 @@
     const GRAVITY = 16.0;  // 重力を強くしてジャンプ時間を短縮
     const BASE_SPEED = 0.0;
     const MAX_SPEED = 12.0;
-    const SLOWDOWN_FACTOR = 0.40;
+    const SLOWDOWN_FACTOR = 0.20;  // Reduced from 0.40 for gentler slowdown
     const RECOVER_SEC = 1.0;
     const ACCEL_RATE = 15.0;
     const FRICTION = 8.0;
@@ -258,7 +295,7 @@
     let stamina = STAMINA_MAX;
 
     // ORPHE parameters (configurable)
-    window.accThresholdAccel = 1.6;
+    window.accThresholdAccel = 0.3;
     window.pitchThresholdJump = 0.1;  // ラジアンで設定
 
     // 3D scene setup
@@ -529,6 +566,7 @@
     let vz = BASE_SPEED;
     let vy = 0;
     let isGround = true;
+    let jumpStartTime = 0;  // Track jump timing for status display
     let slowRemain = 0;
     let hits = 0;
     // Pressed states – used for keyboard and ORPHE input
@@ -559,7 +597,12 @@
     // Jump routine
     function jump() {
       if (state !== 'running') return;
-      if (isGround) { vy = JUMP_V0; isGround = false; triggerJumpWhoosh(); }
+      if (isGround) { 
+        vy = JUMP_V0; 
+        isGround = false; 
+        jumpStartTime = performance.now();
+        triggerJumpWhoosh(); 
+      }
     }
     function startGame() {
       if (state !== 'ready') return;
@@ -590,6 +633,7 @@
       vz = BASE_SPEED;
       vy = 0;
       isGround = true;
+      jumpStartTime = 0;  // Reset jump timing
       slowRemain = 0;
       hits = 0;
       stamina = STAMINA_MAX;
@@ -683,6 +727,7 @@
       vy -= GRAVITY * dt;
       if (camera.position.y <= PLAYER_EYE_H) {
         camera.position.y = PLAYER_EYE_H; vy = 0; isGround = true;
+        jumpStartTime = 0;  // Reset jump timing
       }
       // Arm swing
       const swingAmp = 0.7 * (vz / MAX_SPEED);
@@ -708,6 +753,11 @@
       if ($staminaBar) {
         $staminaBar.style.transform = `scaleX(${stamina})`;
         $staminaBar.style.filter = stamina < STAMINA_BLOCK_THRESHOLD ? 'grayscale(1)' : 'none';
+      }
+      // Update stamina percentage
+      const $staminaPercent = document.getElementById('staminaPercent');
+      if ($staminaPercent) {
+        $staminaPercent.textContent = Math.floor(stamina * 100) + '%';
       }
       // Hurdle collisions
       for (const h of hurdles) {
@@ -764,7 +814,7 @@
   </script>
 </head>
 <body>
-  <h1>🏃 ORPHE CORE 110m ハードル / 110m Hurdles 🏃</h1>
+  <h1>🏃 世界バーチャルハードル走　110m 🏃</h1>
   
   <!-- CoreToolkit connection UI -->
   <div class="my-4" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
@@ -775,11 +825,11 @@
   <!-- Game description -->
   <div class="description">
     <div class="description-ja">
-      ORPHE COREを使った110mハードル走ゲームです。<br>
+      ORPHE COREを使った110mハードル走ゲームです（キーボードでも操作可）。<br>
       足踏みで加速、足を上げてジャンプ！10個のハードルを越えてゴールを目指そう！
     </div>
     <div class="description-en">
-      110m hurdles game using ORPHE CORE.<br>
+      110m hurdles game using ORPHE CORE (keyboard controls also available).<br>
       Stamp your feet to accelerate, lift your foot to jump! Clear 10 hurdles and reach the goal!
     </div>
   </div>
@@ -793,12 +843,17 @@
         <div class="row">ハードル接触 / Hits: <span id="hcount">0</span></div>
         <div class="row">速度 / Speed: <span id="speed">0.0</span>&nbsp;m/s</div>
       </div>
-      <div id="staminaWrap"><div id="staminaBar"></div></div>
-      <div id="staminaLabel">STAMINA</div>
+      <div id="staminaWrap">
+        <div id="staminaBar"></div>
+        <div style="position: absolute; width: 100%; text-align: center; line-height: 20px; font-size: 12px; font-weight: bold; color: #000; text-shadow: 0 0 3px #fff;">
+          <span id="staminaPercent">100%</span>
+        </div>
+      </div>
+      <div id="staminaLabel" title="消費: 45%/秒 | 回復: 45%/秒">STAMINA</div>
       <!-- Start overlay -->
       <div class="center" id="start-layer">
         <div class="card">
-          <h1>110m ハードル走</h1>
+          <h1 style="color: #ffffff !important;">ORPHE 110m ハードル走</h1>
           <p>→キーでジャンプ / Press → to Jump</p>
           <p>←キーで加速（スタミナ消費） / Press ← to Accelerate</p>
           <p>ORPHE COREで足の動きで操作 / Control with ORPHE CORE</p>
@@ -819,7 +874,15 @@
   
   <!-- Sensor configuration panel -->
   <div id="config-panel">
-    <h3>📊 センサー値モニター / Sensor Monitor</h3>
+    <h3 style="color: #ffffff;">📊 センサー値モニター / Sensor Monitor</h3>
+    <p style="text-align: center; font-size: 12px; color: #aaa; margin: -10px 0 15px 0;">
+      このゲームをセンサーでプレイするには<a href="https://orphe.io/core" target="_blank" style="color: #00bcd4;">ORPHE CORE </a>が2個必要です。またブラウザはGoogle Chromeをご使用ください。<br>
+      このプログラムはオープンソースの<a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" style="color: #00bcd4;">ORPHE-CORE.js</a>を利用して作成されています。誰でも利用して自作の運動ゲームを作ることができます。<br>
+      <span style="font-size: 11px; color: #999; margin-top: 5px; display: inline-block;">
+        To play with sensors, you need two <a href="https://orphe.io/core" target="_blank" style="color: #00bcd4;">ORPHE CORE</a> devices. Please use Google Chrome browser.<br>
+        This program is built using the open-source <a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" style="color: #00bcd4;">ORPHE-CORE.js</a>. Anyone can use it to create their own exercise games.
+      </span>
+    </p>
     
     <div class="sensor-monitor">
       <div style="display: flex; gap: 20px;">
@@ -878,16 +941,16 @@
     
     <h4>⚡ 加速設定 / Acceleration Settings</h4>
     <div class="config-item">
-      <label for="accelThreshold">加速度閾値 / Acceleration Threshold (G):</label>
-      <input type="range" id="accelThreshold" min="0.1" max="5.1" value="0.1" step="0.2">
-      <span id="accelThresholdValue">1.1</span>
+      <label for="accelThreshold">加速度閾値 / Acceleration Threshold:</label>
+      <input type="range" id="accelThreshold" min="0.1" max="5.1" value="0.3" step="0.2">
+      <span id="accelThresholdValue" style="background: #2a2a3e; padding: 5px 10px; border-radius: 5px; border: 1px solid #00bcd4;">0.3 G</span>
     </div>
     
     <h4>⬆️ ジャンプ設定 / Jump Settings</h4>
     <div class="config-item">
-      <label for="jumpPitchThreshold">ジャンプPITCH閾値 / Jump Pitch Threshold (rad):</label>
+      <label for="jumpPitchThreshold">ジャンプPITCH閾値 / Jump Pitch Threshold:</label>
       <input type="range" id="jumpPitchThreshold" min="0.05" max="0.5" value="0.1" step="0.05">
-      <span id="jumpPitchThresholdValue">0.1</span>
+      <span id="jumpPitchThresholdValue" style="background: #2a2a3e; padding: 5px 10px; border-radius: 5px; border: 1px solid #00bcd4;">0.10 rad</span>
     </div>
     
     <div style="margin-top: 20px; padding: 15px; background-color: #1a1a2e; border-radius: 10px;">
@@ -1059,7 +1122,13 @@
       // Update action status
       const actionElem = document.getElementById('actionStatus');
       if (actionElem) {
-        if (maxAccel > window.accThresholdAccel) {
+        // Check if currently jumping (within 700ms of jump start)
+        const isJumping = jumpStartTime > 0 && (performance.now() - jumpStartTime) < 700;
+        
+        if (isJumping) {
+          actionElem.textContent = '🚀 ジャンプ中 / Jumping';
+          actionElem.style.color = '#00bcd4';
+        } else if (maxAccel > window.accThresholdAccel) {
           actionElem.textContent = '⚡ 加速中 / Accelerating';
           actionElem.style.color = '#4caf50';
         } else if (maxPitchDelta > 0) {
@@ -1095,7 +1164,7 @@
       if (accelSlider) {
         accelSlider.addEventListener('input', function(e) {
           window.accThresholdAccel = parseFloat(e.target.value);
-          document.getElementById('accelThresholdValue').textContent = e.target.value;
+          document.getElementById('accelThresholdValue').textContent = e.target.value + ' G';
           updateThresholdVisuals();
         });
       }
@@ -1104,7 +1173,8 @@
       if (pitchSlider) {
         pitchSlider.addEventListener('input', function(e) {
           window.pitchThresholdJump = parseFloat(e.target.value);
-          document.getElementById('jumpPitchThresholdValue').textContent = e.target.value;
+          const val = parseFloat(e.target.value);
+          document.getElementById('jumpPitchThresholdValue').textContent = val.toFixed(2) + ' rad';
           updateThresholdVisuals();
         });
       }
@@ -1114,5 +1184,15 @@
       updateThresholdVisuals();
     });
   </script>
+  
+  <!-- Footer -->
+  <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #333; color: #aaa;">
+    <p style="margin: 10px 0;">
+      © 2024 ORPHE Inc. All rights reserved. ORPHE CORE is a registered trademark of ORPHE Inc.
+    </p>
+    <p style="margin: 10px 0;">
+      Visit us at <a href="https://orphe.io/" target="_blank" style="color: #00bcd4; text-decoration: none;">https://orphe.io/</a>
+    </p>
+  </footer>
 </body>
 </html>

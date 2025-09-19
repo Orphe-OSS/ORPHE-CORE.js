@@ -131,6 +131,122 @@
     .card .btn:hover {
       transform: scale(1.05);
     }
+    #ranking-layer {
+      position: absolute; 
+      inset: 0; 
+      display: grid; 
+      place-items: center;
+      pointer-events: none;
+    }
+    .ranking-container {
+      pointer-events: auto; 
+      background: rgba(0,0,0,.75); 
+      padding: 30px 40px; 
+      border-radius: 15px; 
+      text-align: center;
+      border: 2px solid rgba(0,188,212,0.5);
+      position: relative;
+      width: 600px;
+      max-width: 90vw;
+      max-height: 80%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .ranking-container h2 {
+      text-align: center;
+      color: #00bcd4;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+    .back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .back-button:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.1);
+    }
+    .ranking-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 10px;
+      text-align: left;
+      min-height: 0;
+    }
+    .ranking-list::-webkit-scrollbar {
+      width: 8px;
+    }
+    .ranking-list::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+    }
+    .ranking-list::-webkit-scrollbar-thumb {
+      background: rgba(0,188,212,0.5);
+      border-radius: 4px;
+    }
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      transition: background 0.3s;
+    }
+    .ranking-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .ranking-rank {
+      font-size: 1.5rem;
+      font-weight: bold;
+      width: 60px;
+      text-align: center;
+      color: #4caf50;
+    }
+    .ranking-rank.top3 {
+      color: #ffd700;
+    }
+    .ranking-details {
+      flex: 1;
+      padding-left: 20px;
+    }
+    .ranking-name {
+      font-size: 1.2rem;
+      color: #fff;
+      margin-bottom: 5px;
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+    .ranking-score {
+      font-size: 1rem;
+      color: #00bcd4;
+    }
+    .ranking-date {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 5px;
+    }
+    .loading-message {
+      text-align: center;
+      color: #aaa;
+      padding: 40px;
+      font-size: 1.2rem;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
     .big-timer { 
       position: absolute; 
       bottom: 20px; 
@@ -266,6 +382,76 @@
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+  import { getFirestore, collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDimrSblIDOusCS6fXwrTE_qLGN0qjYLRY",
+    authDomain: "orphecorejsgamehurdle.firebaseapp.com",
+    projectId: "orphecorejsgamehurdle",
+    storageBucket: "orphecorejsgamehurdle.firebasestorage.app",
+    messagingSenderId: "677931367183",
+    appId: "1:677931367183:web:09d0e6ce8c80c862badc7a"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  
+  // Export to global scope for access from other scripts
+  window.firebaseAuth = auth;
+  window.firebaseDb = db;
+  window.signInAnonymously = signInAnonymously;
+  window.onAuthStateChanged = onAuthStateChanged;
+  window.collection = collection;
+  window.query = query;
+  window.orderBy = orderBy;
+  window.limit = limit;
+  window.getDocs = getDocs;
+  window.addDoc = addDoc;
+  window.serverTimestamp = serverTimestamp;
+  
+  // Anonymous authentication state
+  window.currentUser = null;
+  
+  // Automatically sign in anonymously when the page loads
+  signInAnonymously(auth)
+    .then(() => {
+      console.log("Anonymous authentication successful");
+    })
+    .catch((error) => {
+      console.error("Anonymous authentication failed:", error);
+      // Hide ranking button if auth fails
+      const rankingBtn = document.getElementById('btn-ranking');
+      if (rankingBtn) {
+        rankingBtn.style.display = 'none';
+      }
+    });
+    
+  // Monitor auth state changes
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      window.currentUser = user;
+      // Show ranking button if authenticated
+      const rankingBtn = document.getElementById('btn-ranking');
+      if (rankingBtn) {
+        rankingBtn.style.display = 'inline-block';
+      }
+    } else {
+      window.currentUser = null;
+      // Hide ranking button if not authenticated
+      const rankingBtn = document.getElementById('btn-ranking');
+      if (rankingBtn) {
+        rankingBtn.style.display = 'none';
+      }
+    }
+  });
+  </script>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     window.THREE = THREE;
@@ -573,8 +759,11 @@
     // Pressed states – used for keyboard and ORPHE input
     let accelPressedKeyboard = false;
     let accelPressedOrphe = false;
+    // Track where ranking was opened from
+    let rankingReturnTo = 'start'; // 'start' or 'finish'
     // UI elements
     const $start = document.getElementById('start-layer');
+    const $ranking = document.getElementById('ranking-layer');
     const $finish = document.getElementById('finish-layer');
     const $timer = document.getElementById('timer');
     const $dist = document.getElementById('dist');
@@ -728,6 +917,132 @@
         console.log('Could not suspend audio context:', e);
       }
     }
+    function showRanking(from = 'start') {
+      rankingReturnTo = from;
+      $ranking.style.display = 'grid';
+      $start.style.display = 'none';
+      $finish.style.display = 'none';
+    }
+    
+    function hideRanking() {
+      $ranking.style.display = 'none';
+      if (rankingReturnTo === 'finish') {
+        $finish.style.display = 'grid';
+      } else {
+        $start.style.display = 'grid';
+      }
+    }
+    
+    // Load and display ranking data from Firestore
+    async function loadRankingData() {
+      const rankingList = document.getElementById('ranking-list');
+      if (!rankingList) return;
+      
+      // Show loading message
+      rankingList.innerHTML = '<div class="loading-message">読み込み中... / Loading...</div>';
+      
+      try {
+        // Check if user is authenticated
+        if (!window.currentUser) {
+          rankingList.innerHTML = '<div class="loading-message">認証エラー / Authentication Error</div>';
+          return;
+        }
+        
+        // Query Firestore for top 100 rankings (sorted by time ascending)
+        const rankingRef = window.collection(window.firebaseDb, 'ranking');
+        const q = window.query(rankingRef, window.orderBy('time', 'asc'), window.limit(100));
+        const querySnapshot = await window.getDocs(q);
+        
+        // Clear loading message
+        rankingList.innerHTML = '';
+        
+        if (querySnapshot.empty) {
+          rankingList.innerHTML = '<div class="loading-message">ランキングデータがありません / No ranking data</div>';
+          return;
+        }
+        
+        // Display ranking data
+        let rank = 1;
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const rankingItem = createRankingItem(rank, data);
+          rankingList.appendChild(rankingItem);
+          rank++;
+        });
+      } catch (error) {
+        console.error('Error loading ranking data:', error);
+        rankingList.innerHTML = '<div class="loading-message">読み込みエラー / Loading Error</div>';
+      }
+    }
+    
+    // Create a ranking item element
+    function createRankingItem(rank, data) {
+      const item = document.createElement('div');
+      item.className = 'ranking-item';
+      
+      const rankDiv = document.createElement('div');
+      rankDiv.className = 'ranking-rank' + (rank <= 3 ? ' top3' : '');
+      rankDiv.textContent = rank + '位';
+      
+      const detailsDiv = document.createElement('div');
+      detailsDiv.className = 'ranking-details';
+      
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'ranking-name';
+      nameDiv.textContent = data.name || 'Unknown Player';
+      
+      const scoreDiv = document.createElement('div');
+      scoreDiv.className = 'ranking-score';
+      const time = data.time || 0;
+      const hurdles = data.hurdles || 0;
+      scoreDiv.textContent = `${time.toFixed(2)}秒 / ${hurdles}回ヒット`;
+      
+      const dateDiv = document.createElement('div');
+      dateDiv.className = 'ranking-date';
+      if (data.date && data.date.toDate) {
+        const date = data.date.toDate();
+        dateDiv.textContent = date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      } else {
+        dateDiv.textContent = '-';
+      }
+      
+      detailsDiv.appendChild(nameDiv);
+      detailsDiv.appendChild(scoreDiv);
+      detailsDiv.appendChild(dateDiv);
+      
+      item.appendChild(rankDiv);
+      item.appendChild(detailsDiv);
+      
+      return item;
+    }
+    
+    // Save score to Firestore
+    async function saveScoreToRanking(name, timeSeconds, hurdles) {
+      try {
+        if (!window.currentUser) {
+          console.error('User not authenticated');
+          return false;
+        }
+        
+        const rankingData = {
+          name: name || 'Anonymous',
+          time: timeSeconds,
+          hurdles: hurdles,
+          date: window.serverTimestamp(),
+          userId: window.currentUser.uid
+        };
+        
+        await window.addDoc(window.collection(window.firebaseDb, 'ranking'), rankingData);
+        console.log('Score saved successfully');
+        return true;
+      } catch (error) {
+        console.error('Error saving score:', error);
+        return false;
+      }
+    }
+    
+    // Export save function for use in game
+    window.saveScoreToRanking = saveScoreToRanking;
     // Reset game function (preserves ORPHE CORE connection)
     function resetGame() {
       // Reset game state
@@ -774,6 +1089,8 @@
       // Reset acceleration states
       accelPressedKeyboard = false;
       accelPressedOrphe = false;
+      // Reset ranking return state
+      rankingReturnTo = 'start';
       
       // Reset audio
       nextStepAt = 0;
@@ -791,6 +1108,24 @@
     
     const startBtn = document.getElementById('start-btn');
     if (startBtn) startBtn.addEventListener('click', startGame);
+    const rankingBtn = document.getElementById('btn-ranking');
+    if (rankingBtn) {
+      rankingBtn.addEventListener('click', () => {
+        showRanking('start');
+        loadRankingData();
+      });
+    }
+    
+    const rankingBtnFinish = document.getElementById('btn-ranking-finish');
+    if (rankingBtnFinish) {
+      rankingBtnFinish.addEventListener('click', () => {
+        showRanking('finish');
+        loadRankingData();
+      });
+    }
+    
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) backBtn.addEventListener('click', hideRanking);
     // Update loop: integrates ORPHE and keyboard input
     function update(dt) {
       if (state !== 'running') return;
@@ -900,6 +1235,15 @@
         
         playCheer();
         
+        // Prompt for name and save score
+        setTimeout(() => {
+          if (window.currentUser && window.saveScoreToRanking) {
+            const playerName = prompt('ランキングに登録する名前を入力してください / Enter your name for ranking:', 'Player');
+            if (playerName) {
+              window.saveScoreToRanking(playerName, runTime, hits);
+            }
+          }
+        }, 1000);
         // Stop all audio after 5 seconds
         setTimeout(() => {
           stopAllAudio();
@@ -978,6 +1322,7 @@
           <p>←キーで加速（スタミナ消費） / Press ← to Accelerate</p>
           <p>ORPHE COREで足の動きで操作 / Control with ORPHE CORE</p>
           <div class="btn" id="start-btn">スタート / START</div>
+          <div class="btn" id="btn-ranking" style="display: none; margin: 15px auto 0 auto; padding: 8px 16px; border-radius: 10px; font-size: 14px; width: 240px; background: linear-gradient(45deg, #11cce9, #0039d4); color: #fff; font-weight: 500; cursor: pointer; border: none; transition: transform 0.2s;">ランキング / RANKING</div>
         </div>
       </div>
       <!-- Countdown overlay -->
@@ -992,6 +1337,19 @@
           <p>公式タイム / Official Time: <b id="final-time">—</b></p>
           <p>ハードル接触 / Hurdle Hits: <b id="final-hits">0</b> 回</p>
           <div class="btn" id="retry">もう一度 / RETRY</div>
+          <div class="btn" id="btn-ranking-finish" style="margin: 15px auto 0 auto; padding: 8px 16px; border-radius: 10px; font-size: 14px; width: 240px; background: linear-gradient(45deg, #11cce9, #0039d4); color: #fff; font-weight: 500; cursor: pointer; border: none; transition: transform 0.2s;">ランキング / RANKING</div>
+        </div>
+      </div>
+      <!-- Ranking overlay -->
+      <div class="center" id="ranking-layer" style="display:none;">
+        <div class="ranking-container">
+          <div class="back-button" id="back-btn" title="戻る / Back">
+            <i class="bi bi-arrow-left" style="font-size: 1.2rem; color: #fff;"></i>
+          </div>
+          <h2>🏆 ランキング / RANKING</h2>
+          <div class="ranking-list" id="ranking-list">
+            <div class="loading-message">読み込み中... / Loading...</div>
+          </div>
         </div>
       </div>
       <div class="big-timer" id="timer">0.00</div>

@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>世界バーチャルハードル走　110m VS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      overflow-x: hidden;
+    }
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      background: linear-gradient(90deg, #00ff00, #7fff00, #ffff00, #ff8800, #ff0000);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: bold;
+    }
+    #game-container {
+      position: relative;
+      margin: 20px auto;
+      max-width: 100%;
+      height: 70vh;
+      min-height: 600px;
+      display: flex;
+    }
+    .player-canvas-container {
+      flex: 1;
+      position: relative;
+      border-right: 2px solid #FFD700;
+    }
+    .player-canvas-container:last-child {
+      border-right: none;
+    }
+    .game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .player-ui {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,.6);
+    }
+    .player-label {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      font-weight: bold;
+      background: rgba(0,0,0,0.7);
+      padding: 5px 15px;
+      border-radius: 10px;
+    }
+    .hud {
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 1.5;
+      background: rgba(0,0,0,0.5);
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .hud .row { margin-bottom: 4px; }
+    .center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+    }
+    .card {
+      pointer-events: auto;
+      background: rgba(0,0,0,.75);
+      padding: 30px 40px;
+      border-radius: 15px;
+      text-align: center;
+      border: 2px solid rgba(0,188,212,0.5);
+    }
+    .card h1 {
+      margin: 0 0 20px;
+      font-size: 36px;
+      color: #ffffff;
+    }
+    .card p {
+      margin: 10px 0;
+      font-size: 16px;
+      opacity: .95;
+    }
+    #finish-layer .card {
+      padding: 50px 60px;
+      animation: scaleIn 0.5s ease-out;
+    }
+    #finish-layer .card h1 {
+      font-size: 64px;
+      color: #FFD700;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      background: linear-gradient(45deg, #00bcd4, #4caf50);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s;
+    }
+    .btn:hover {
+      transform: scale(1.05);
+    }
+    .big-timer {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 32px;
+      font-weight: 800;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 15px;
+      border-radius: 8px;
+    }
+    .staminaWrap {
+      position: absolute;
+      top: 50px;
+      right: 10px;
+      width: 150px;
+      height: 15px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.2);
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .staminaBar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg,#7CFC00,#FFD700,#FF4500);
+      transform-origin: left center;
+      transition: transform 0.2s;
+    }
+    .staminaLabel {
+      position:absolute;
+      top: 70px;
+      right: 10px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .description {
+      text-align: center;
+      margin: 20px auto;
+      padding: 0 20px;
+      max-width: 900px;
+      font-size: 16px;
+      line-height: 1.1;
+    }
+    .description-ja {
+      margin-bottom: 10px;
+    }
+    .description-en {
+      color: #aaa;
+      font-size: 14px;
+    }
+    #config-panel {
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #2a2a3e;
+      border-radius: 15px;
+      max-width: 1200px;
+      border: 1px solid rgba(0,188,212,0.3);
+    }
+    #config-panel h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00bcd4;
+    }
+    .toolkit-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .player-toolkits {
+      background: #1a1a2e;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .player-toolkits h4 {
+      color: #4caf50;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .sensor-monitor {
+      background-color: #1a1a2e;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .sensor-box {
+      flex: 1;
+      padding: 10px;
+      background-color: #2a2a3e;
+      border-radius: 8px;
+      margin: 0 5px;
+    }
+    .sensor-box h5 {
+      color: #4caf50;
+      margin: 0 0 10px 0;
+      font-size: 14px;
+    }
+    .progress-bar {
+      height: 20px;
+      background: #333;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar .bar {
+      position: absolute;
+      height: 100%;
+      background: #4caf50;
+      border-radius: 3px;
+      transition: all 0.1s;
+    }
+    .progress-bar .threshold {
+      position: absolute;
+      height: 100%;
+      width: 2px;
+      background: #ff9800;
+      opacity: 0.7;
+    }
+    .config-item {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .config-item label {
+      display: inline-block;
+      width: 280px;
+      color: #fff;
+      font-size: 14px;
+    }
+    .config-item input[type="range"] {
+      width: 200px;
+      margin: 0 10px;
+    }
+    .config-item span {
+      color: #00bcd4;
+      font-family: monospace;
+      font-weight: bold;
+      min-width: 60px;
+      display: inline-block;
+      background: #2a2a3e;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid #00bcd4;
+    }
+  </style>
+  <!-- ORPHE CORE ライブラリと依存関係 -->
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/float16.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/quaternion.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script type="module">
+  import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+  window.THREE = THREE;
+
+  // Game constants
+  const COURSE_LEN_M = 110;
+  const HURDLES = 10;
+  const FIRST_HURDLE_M = 13.72;
+  const HURDLE_SPACING_M = 9.14;
+  const HURDLE_HEIGHT_M = 0.84;
+  const PLAYER_EYE_H = 1.7;
+  const JUMP_V0 = 5.0;
+  const GRAVITY = 16.0;
+  const BASE_SPEED = 0.0;
+  const MAX_SPEED = 12.0;
+  const SLOWDOWN_FACTOR = 0.20;
+  const RECOVER_SEC = 1.0;
+  const ACCEL_RATE = 15.0;
+  const FRICTION = 8.0;
+  const LANE_WIDTH = 1.22 * 2;
+  const STAMINA_MAX = 1.0;
+  const STAMINA_USE_PER_SEC = 0.45;
+  const STAMINA_REGEN_PER_SEC = 0.45;
+  const STAMINA_BLOCK_THRESHOLD = 0.08;
+
+  // ORPHE parameters - per player
+  window.player1Thresholds = {
+    accel: 0.3,
+    pitch: 0.1
+  };
+  window.player2Thresholds = {
+    accel: 0.3,
+    pitch: 0.1
+  };
+
+  // Player class to encapsulate each player's state
+  class Player {
+    constructor(id, canvasId, scene, camera, renderer) {
+      this.id = id;
+      this.canvasId = canvasId;
+      this.scene = scene;
+      this.camera = camera;
+      this.renderer = renderer;
+
+      // Game state
+      this.state = 'ready';
+      this.runTime = 0;
+      this.startEpoch = 0;
+      this.vz = BASE_SPEED;
+      this.vy = 0;
+      this.isGround = true;
+      this.slowRemain = 0;
+      this.hits = 0;
+      this.stamina = STAMINA_MAX;
+      this.finishTime = 0;
+      this.finished = false;
+
+      // Input state
+      this.accelPressedOrphe = false;
+      this.accelPressedKeyboard = false;
+
+      // 3D objects
+      this.hurdles = [];
+      this.hitMarkers = new Set();
+      this.clouds = [];
+
+      // Audio
+      this.audioCtx = null;
+      this.stepGain = null;
+      this.windGain = null;
+      this.nextStepAt = 0;
+
+      this.clock = new THREE.Clock();
+      this.setupScene();
+    }
+
+    setupScene() {
+      // Camera position
+      this.camera.position.set(0, PLAYER_EYE_H, 0);
+      this.camera.rotation.set(0, 0, 0);
+
+      // Lighting
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x668866, 0.55);
+      this.scene.add(hemi);
+      const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+      sun.position.set(10, 20, 8);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      this.scene.add(sun);
+
+      // Ground
+      const groundGeo = new THREE.PlaneGeometry(LANE_WIDTH * 3, COURSE_LEN_M + 100);
+      const groundMat = new THREE.MeshLambertMaterial({ color: 0xd24d57 });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.z = -COURSE_LEN_M / 2 - 30;
+      ground.receiveShadow = true;
+      this.scene.add(ground);
+
+      // Lane lines
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      for (let i = -1; i <= 1; i += 2) {
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.05, COURSE_LEN_M + 100), lineMat);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(i * LANE_WIDTH / 2, 0.002, -COURSE_LEN_M / 2 - 30);
+        this.scene.add(line);
+      }
+
+      // Arms
+      const skin = new THREE.MeshLambertMaterial({ color: 0xffd2b8 });
+      const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.9, 0.20), skin);
+      rightArm.position.set(-0.35, -0.45, -0.8);
+      const leftArm = rightArm.clone();
+      leftArm.position.x = 0.35;
+      this.camera.add(rightArm, leftArm);
+      this.scene.add(this.camera);
+      this.rightArm = rightArm;
+      this.leftArm = leftArm;
+
+      // Hurdles
+      for (let i = 0; i < HURDLES; i++) {
+        const z = -(FIRST_HURDLE_M + i * HURDLE_SPACING_M);
+        this.makeHurdle(z);
+      }
+
+      // Distance markers
+      for (let d = 10; d <= 110; d += 10) {
+        const isFinish = (d === 110);
+        const m = this.makeRoadStencil(`${d}m`, isFinish);
+        m.position.set(0, 0.003, -d);
+        this.scene.add(m);
+      }
+
+      // Finish line
+      const cvs = document.createElement('canvas');
+      cvs.width = 256; cvs.height = 128;
+      const ctx = cvs.getContext('2d');
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#ffffff' : '#ff0000';
+        ctx.fillRect(i * 32, 0, 32, 128);
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping;
+      const mat = new THREE.MeshBasicMaterial({ map: tex });
+      const geo = new THREE.PlaneGeometry(3.2, 0.5);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(0, 0.002, -110.25);
+      this.scene.add(mesh);
+
+      // Clouds
+      const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      for (let i = 0; i < 12; i++) {
+        const g = new THREE.Group();
+        for (let j = 0; j < 3 + Math.floor(Math.random() * 3); j++) {
+          const s = 1.5 + Math.random() * 2.5;
+          const puff = new THREE.Mesh(new THREE.SphereGeometry(s, 12, 10), cloudMat);
+          puff.position.set((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 1, 0);
+          g.add(puff);
+        }
+        g.position.set((Math.random() * 2 - 1) * 18, 6 + Math.random() * 8, -Math.random() * (COURSE_LEN_M + 200));
+        g.scale.set(1.2, 1, 1);
+        this.scene.add(g);
+        this.clouds.push(g);
+      }
+    }
+
+    makeHurdle(z) {
+      const hurdle_group = new THREE.Group();
+      const base_material = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+      const bar_material = new THREE.MeshLambertMaterial({ color: 0xDC143C });
+      const leg1_vert = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.5, 0.2), base_material);
+      leg1_vert.position.set(-2.5, 0.75, 0);
+      const leg1_horz = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), base_material);
+      leg1_horz.position.set(-2.5, 0.1, 0.4);
+      const leg2_vert = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.5, 0.2), base_material);
+      leg2_vert.position.set(2.5, 0.75, 0);
+      const leg2_horz = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), base_material);
+      leg2_horz.position.set(2.5, 0.1, 0.4);
+      const top_bar = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.2, 0.2), bar_material);
+      top_bar.position.set(0, 1.4, 0);
+      hurdle_group.add(leg1_vert, leg1_horz, leg2_vert, leg2_horz, top_bar);
+      hurdle_group.position.set(0, 0, z);
+      hurdle_group.userData = { topY: 1.4, z };
+      this.scene.add(hurdle_group);
+      this.hurdles.push(hurdle_group);
+    }
+
+    makeRoadStencil(text, isFinish = false) {
+      const W = 512, H = 512;
+      const cvs = document.createElement('canvas');
+      cvs.width = W; cvs.height = H;
+      const ctx = cvs.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '900 150px system-ui';
+      if (isFinish) {
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 22;
+        ctx.strokeText(text, W / 2, H / 2);
+        ctx.fillText(text, W / 2, H / 2);
+      } else {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 18;
+        ctx.strokeText(text, W / 2, H / 2);
+        ctx.fillText(text, W / 2, H / 2);
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.anisotropy = 8; tex.needsUpdate = true;
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+      const geo = new THREE.PlaneGeometry(2.6, 3.4);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.003;
+      return mesh;
+    }
+
+    initAudio() {
+      if (this.audioCtx) return;
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      this.stepGain = this.audioCtx.createGain();
+      this.stepGain.gain.value = 0.6;
+      this.stepGain.connect(this.audioCtx.destination);
+
+      const bufferSize = 2 * this.audioCtx.sampleRate;
+      const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+      const n = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) n[i] = Math.random() * 2 - 1;
+      const noise = this.audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer; noise.loop = true;
+      const lp = this.audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
+      this.windGain = this.audioCtx.createGain(); this.windGain.gain.value = 0.0;
+      noise.connect(lp).connect(this.windGain).connect(this.audioCtx.destination);
+      noise.start();
+      this.noiseSource = noise;
+    }
+
+    stopAllAudio() {
+      if (!this.audioCtx) return;
+
+      if (this.windGain) {
+        this.windGain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+      }
+
+      if (this.stepGain) {
+        this.stepGain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+      }
+
+      try {
+        this.audioCtx.suspend();
+      } catch (e) {
+        console.log('Could not suspend audio context:', e);
+      }
+    }
+
+    jump() {
+      if (this.state !== 'running') return;
+      if (this.isGround) {
+        this.vy = JUMP_V0;
+        this.isGround = false;
+      }
+    }
+
+    setAccelPressed(pressed) {
+      this.accelPressedOrphe = pressed;
+    }
+
+    start() {
+      this.state = 'running';
+      this.clock.start();
+      this.startEpoch = performance.now();
+      this.initAudio();
+    }
+
+    update(dt) {
+      if (this.state !== 'running' || this.finished) return;
+
+      const canAccel = (this.accelPressedKeyboard || this.accelPressedOrphe) && (this.stamina > STAMINA_BLOCK_THRESHOLD);
+      if (canAccel) {
+        this.stamina -= STAMINA_USE_PER_SEC * dt;
+        if (this.stamina < 0) this.stamina = 0;
+        this.vz += ACCEL_RATE * dt;
+      } else {
+        this.stamina += STAMINA_REGEN_PER_SEC * dt;
+        if (this.stamina > STAMINA_MAX) this.stamina = STAMINA_MAX;
+        if (this.vz > BASE_SPEED) {
+          this.vz -= FRICTION * dt;
+          if (this.vz < BASE_SPEED) this.vz = BASE_SPEED;
+        }
+      }
+      if (this.vz > MAX_SPEED) this.vz = MAX_SPEED;
+
+      if (this.slowRemain > 0) {
+        this.slowRemain -= dt;
+        const t = Math.max(0, this.slowRemain) / RECOVER_SEC;
+        this.vz = this.vz * (1 - t) + (this.vz * SLOWDOWN_FACTOR) * t;
+      }
+
+      // Audio
+      if (this.audioCtx) {
+        const targetWind = (canAccel ? 0.12 : 0.02) * (this.vz / MAX_SPEED);
+        const WIND_THRESHOLD = 0.005;
+        const actualWind = targetWind < WIND_THRESHOLD ? 0 : targetWind;
+        this.windGain.gain.linearRampToValueAtTime(actualWind, this.audioCtx.currentTime + 0.05);
+      }
+
+      // Forward motion
+      this.camera.position.z -= this.vz * dt;
+
+      // Vertical motion
+      this.camera.position.y += this.vy * dt;
+      this.vy -= GRAVITY * dt;
+      if (this.camera.position.y <= PLAYER_EYE_H) {
+        this.camera.position.y = PLAYER_EYE_H;
+        this.vy = 0;
+        this.isGround = true;
+      }
+
+      // Arm swing
+      const swingAmp = 0.7 * (this.vz / MAX_SPEED);
+      const swing = Math.sin(performance.now() * 0.012) * swingAmp;
+      this.rightArm.rotation.x = swing;
+      this.leftArm.rotation.x = -swing;
+
+      // Move clouds
+      for (const c of this.clouds) {
+        c.position.z += 0.4 * dt * this.vz;
+        if (c.position.z > 5) {
+          c.position.z = -(COURSE_LEN_M + 200) - Math.random() * 80;
+          c.position.x = (Math.random() * 2 - 1) * 18;
+          c.position.y = 6 + Math.random() * 8;
+        }
+      }
+
+      // Timer
+      this.runTime = (performance.now() - this.startEpoch) / 1000;
+
+      // Hurdle collisions
+      for (const h of this.hurdles) {
+        if (this.hitMarkers.has(h)) continue;
+        const dzToBar = Math.abs(this.camera.position.z - h.userData.z);
+        if (dzToBar < 0.35) {
+          const lift = this.camera.position.y - PLAYER_EYE_H;
+          const neededLift = 0.35;
+          if (lift < neededLift) {
+            this.hits++;
+            this.vz = Math.max(2.5, this.vz * SLOWDOWN_FACTOR);
+            this.slowRemain = RECOVER_SEC;
+            this.camera.rotation.z = 0.08;
+            setTimeout(() => { this.camera.rotation.z = 0; }, 160);
+          }
+          this.hitMarkers.add(h);
+        }
+      }
+
+      // Finish line
+      if (this.camera.position.z <= -COURSE_LEN_M && !this.finished) {
+        this.finished = true;
+        this.finishTime = this.runTime;
+        this.state = 'finish';
+
+        // Stop this player's audio
+        this.stopAllAudio();
+
+        // Check if this is the first player to finish
+        window.checkPlayerFinished(this.id);
+      }
+
+      // Update UI
+      this.updateUI();
+    }
+
+    updateUI() {
+      const prefix = `player${this.id}`;
+      const remaining = Math.max(0, COURSE_LEN_M + this.camera.position.z);
+      const $timer = document.getElementById(`${prefix}-timer`);
+      const $dist = document.getElementById(`${prefix}-dist`);
+      const $hcount = document.getElementById(`${prefix}-hcount`);
+      const $speed = document.getElementById(`${prefix}-speed`);
+      const $staminaBar = document.getElementById(`${prefix}-staminaBar`);
+
+      if ($timer) $timer.textContent = this.runTime.toFixed(2);
+      if ($dist) $dist.textContent = remaining.toFixed(1);
+      if ($hcount) $hcount.textContent = this.hits;
+      if ($speed) $speed.textContent = this.vz.toFixed(1);
+      if ($staminaBar) {
+        $staminaBar.style.transform = `scaleX(${this.stamina})`;
+        $staminaBar.style.filter = this.stamina < STAMINA_BLOCK_THRESHOLD ? 'grayscale(1)' : 'none';
+      }
+    }
+
+    reset() {
+      this.state = 'ready';
+      this.runTime = 0;
+      this.startEpoch = 0;
+      this.vz = BASE_SPEED;
+      this.vy = 0;
+      this.isGround = true;
+      this.slowRemain = 0;
+      this.hits = 0;
+      this.stamina = STAMINA_MAX;
+      this.finished = false;
+      this.finishTime = 0;
+
+      this.camera.position.set(0, PLAYER_EYE_H, 0);
+      this.camera.rotation.set(0, 0, 0);
+
+      this.hitMarkers.clear();
+
+      for (let i = 0; i < this.clouds.length; i++) {
+        const c = this.clouds[i];
+        c.position.x = (Math.random() * 2 - 1) * 18;
+        c.position.y = 6 + Math.random() * 8;
+        c.position.z = -Math.random() * (COURSE_LEN_M + 200);
+      }
+
+      this.accelPressedKeyboard = false;
+      this.accelPressedOrphe = false;
+      this.nextStepAt = 0;
+      if (this.windGain) this.windGain.gain.value = 0.0;
+
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+
+      this.updateUI();
+    }
+  }
+
+  // Create two scenes and renderers
+  const scene1 = new THREE.Scene();
+  scene1.fog = new THREE.Fog(0x87ceeb, 60, 260);
+  const scene2 = new THREE.Scene();
+  scene2.fog = new THREE.Fog(0x87ceeb, 60, 260);
+
+  const canvas1 = document.getElementById('game-canvas-1');
+  const canvas2 = document.getElementById('game-canvas-2');
+
+  const container = document.getElementById('game-container');
+  const containerWidth = container.clientWidth / 2;
+  const containerHeight = container.clientHeight;
+
+  const camera1 = new THREE.PerspectiveCamera(70, containerWidth / containerHeight, 0.01, 800);
+  const camera2 = new THREE.PerspectiveCamera(70, containerWidth / containerHeight, 0.01, 800);
+
+  const renderer1 = new THREE.WebGLRenderer({ canvas: canvas1, antialias: true });
+  const renderer2 = new THREE.WebGLRenderer({ canvas: canvas2, antialias: true });
+
+  renderer1.setSize(containerWidth, containerHeight);
+  renderer2.setSize(containerWidth, containerHeight);
+  renderer1.setPixelRatio(devicePixelRatio);
+  renderer2.setPixelRatio(devicePixelRatio);
+  renderer1.setClearColor(0x87ceeb);
+  renderer2.setClearColor(0x87ceeb);
+  renderer1.shadowMap.enabled = true;
+  renderer2.shadowMap.enabled = true;
+
+  window.addEventListener('resize', () => {
+    const container = document.getElementById('game-container');
+    const w = container.clientWidth / 2;
+    const h = container.clientHeight;
+    renderer1.setSize(w, h);
+    renderer2.setSize(w, h);
+    camera1.aspect = w / h;
+    camera2.aspect = w / h;
+    camera1.updateProjectionMatrix();
+    camera2.updateProjectionMatrix();
+  });
+
+  // Create players
+  const player1 = new Player(1, 'game-canvas-1', scene1, camera1, renderer1);
+  const player2 = new Player(2, 'game-canvas-2', scene2, camera2, renderer2);
+
+  window.player1 = player1;
+  window.player2 = player2;
+
+  // Game state
+  let gameState = 'ready'; // 'ready', 'countdown', 'running', 'finish'
+  let countdownValue = 0;
+
+  // UI elements
+  const $finish = document.getElementById('finish-layer');
+
+  function playCountdownBeep() {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    osc.frequency.value = 800;
+    osc.type = 'sine';
+    gainNode.gain.value = 0.3;
+
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    const t = audioCtx.currentTime;
+    osc.start(t);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    osc.stop(t + 0.1);
+  }
+
+  function playStartBeep() {
+    try {
+      const whistle = new Audio('sound/笛1.mp3');
+      whistle.volume = 0.7;
+      whistle.play().catch(err => {
+        console.log('Could not play whistle sound:', err);
+        // Fallback to beep
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc.frequency.value = 1200;
+        osc.type = 'sine';
+        gainNode.gain.value = 0.5;
+
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        const t = audioCtx.currentTime;
+        osc.start(t);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.stop(t + 0.3);
+      });
+    } catch (e) {
+      console.log('Error loading whistle sound:', e);
+    }
+  }
+
+  function startGame() {
+    if (gameState !== 'ready') return;
+
+    const $countdown = document.getElementById('countdown-layer');
+    const $countdownNumber = document.getElementById('countdown-number');
+
+    if ($countdown) {
+      $countdown.style.display = 'grid';
+      countdownValue = 3;
+      $countdownNumber.textContent = '3';
+      $countdownNumber.style.color = '#FFD700';
+      gameState = 'countdown';
+
+      const countdownInterval = setInterval(() => {
+        countdownValue--;
+
+        if (countdownValue > 0) {
+          $countdownNumber.textContent = countdownValue;
+          playCountdownBeep();
+        } else {
+          $countdownNumber.textContent = 'GO!';
+          $countdownNumber.style.color = '#00ff00';
+
+          clearInterval(countdownInterval);
+          gameState = 'running';
+          player1.start();
+          player2.start();
+
+          playStartBeep();
+
+          setTimeout(() => {
+            $countdown.style.display = 'none';
+          }, 500);
+        }
+      }, 1000);
+
+      // Play first beep
+      playCountdownBeep();
+    }
+  }
+
+  let firstFinisher = null;
+
+  window.checkPlayerFinished = function(playerId) {
+    if (gameState !== 'running') return;
+
+    // First player to finish
+    if (!firstFinisher) {
+      firstFinisher = playerId;
+      gameState = 'finish';
+
+      // Play cheer sound
+      playCheer();
+
+      // Show finish screen immediately
+      showFinishScreen();
+    }
+  };
+
+  function playCheer() {
+    try {
+      const audio = new Audio('sound/sound-audience.mp3');
+      audio.volume = 0.7;
+      audio.play().catch(() => {
+        console.log('Could not play audience sound');
+      });
+    } catch (e) {
+      console.log('Error loading audience sound:', e);
+    }
+  }
+
+  function showFinishScreen() {
+    const winner = firstFinisher;
+    const winnerPlayer = winner === 1 ? player1 : player2;
+    const loserPlayer = winner === 1 ? player2 : player1;
+
+    // Stop both players
+    player1.stopAllAudio();
+    player2.stopAllAudio();
+
+    document.getElementById('winner-text').textContent = `Player ${winner} WINS!`;
+    document.getElementById('winner-time').textContent = winnerPlayer.finishTime.toFixed(2);
+    document.getElementById('p1-final-time').textContent = player1.finishTime > 0 ? player1.finishTime.toFixed(2) + ' s' : '—';
+    document.getElementById('p1-final-hits').textContent = player1.hits + ' hits';
+    document.getElementById('p2-final-time').textContent = player2.finishTime > 0 ? player2.finishTime.toFixed(2) + ' s' : '—';
+    document.getElementById('p2-final-hits').textContent = player2.hits + ' hits';
+
+    $finish.style.display = 'grid';
+  }
+
+  function resetGame() {
+    gameState = 'ready';
+    firstFinisher = null;
+    player1.reset();
+    player2.reset();
+    $finish.style.display = 'none';
+  }
+
+  // Animation loop
+  function loop() {
+    const dt1 = player1.clock.getDelta();
+    const dt2 = player2.clock.getDelta();
+
+    if (gameState === 'running') {
+      player1.update(dt1);
+      player2.update(dt2);
+    }
+
+    renderer1.render(scene1, camera1);
+    renderer2.render(scene2, camera2);
+
+    requestAnimationFrame(loop);
+  }
+
+  // Event listeners
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('retry').addEventListener('click', resetGame);
+
+  // Keyboard controls
+  addEventListener('keydown', e => {
+    // Player 1: Arrow keys
+    if (e.code === 'ArrowUp') player1.jump();
+    if (e.code === 'ArrowRight') player1.accelPressedKeyboard = true;
+
+    // Player 2: WASD
+    if (e.code === 'KeyW') player2.jump();
+    if (e.code === 'KeyD') player2.accelPressedKeyboard = true;
+
+    if (e.code === 'Escape') resetGame();
+  });
+
+  addEventListener('keyup', e => {
+    if (e.code === 'ArrowRight') player1.accelPressedKeyboard = false;
+    if (e.code === 'KeyD') player2.accelPressedKeyboard = false;
+  });
+
+  loop();
+  </script>
+</head>
+<body>
+  <!-- Title -->
+  <h1>🏃 世界バーチャルハードル走　110m VS 🏃</h1>
+
+  <!-- Game description -->
+  <div class="description">
+    <div class="description-ja">
+      2人対戦の110mハードル走ゲームです。先にゴールした方が勝利！<br>
+      Player 1: ↑でジャンプ、→で加速 (またはORPHE CORE Device 0) | Player 2: Wでジャンプ、Dで加速 (またはORPHE CORE Device 1)
+    </div>
+    <div class="description-en">
+      2-player versus 110m hurdles race. First to finish wins!<br>
+      Player 1: ↑ to jump, → to accelerate (or ORPHE CORE Device 0) | Player 2: W to jump, D to accelerate (or ORPHE CORE Device 1)
+    </div>
+  </div>
+
+  <!-- CoreToolkit connection UI -->
+  <div id="config-panel" style="margin-bottom: 20px;">
+    <h3>📱 ORPHE CORE 接続 / Device Connection</h3>
+    <p style="text-align: center; font-size: 12px; color: #aaa; margin: -10px 0 15px 0;">
+      2人対戦には2台のORPHE COREが必要です（各プレイヤー1台）<br>
+      Two players need 2 ORPHE CORE devices (1 device per player)
+    </p>
+
+    <div class="toolkit-container">
+      <div class="player-toolkits">
+        <h4>👤 Player 1</h4>
+        <div id="toolkit_p1"></div>
+      </div>
+
+      <div class="player-toolkits">
+        <h4>👤 Player 2</h4>
+        <div id="toolkit_p2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game canvas container -->
+  <div id="game-container">
+    <!-- Player 1 Canvas -->
+    <div class="player-canvas-container">
+      <canvas id="game-canvas-1" class="game-canvas"></canvas>
+      <div class="player-ui">
+        <div class="player-label" style="background: linear-gradient(45deg, #FF6B6B, #FF8E53);">Player 1</div>
+        <div class="hud">
+          <div class="row">距離: <span id="player1-dist">110.0</span>m</div>
+          <div class="row">ヒット: <span id="player1-hcount">0</span></div>
+          <div class="row">速度: <span id="player1-speed">0.0</span>m/s</div>
+        </div>
+        <div class="staminaWrap">
+          <div id="player1-staminaBar" class="staminaBar"></div>
+        </div>
+        <div class="staminaLabel">STAMINA</div>
+        <div class="big-timer" id="player1-timer">0.00</div>
+      </div>
+    </div>
+
+    <!-- Player 2 Canvas -->
+    <div class="player-canvas-container">
+      <canvas id="game-canvas-2" class="game-canvas"></canvas>
+      <div class="player-ui">
+        <div class="player-label" style="background: linear-gradient(45deg, #4ECDC4, #44A08D);">Player 2</div>
+        <div class="hud">
+          <div class="row">距離: <span id="player2-dist">110.0</span>m</div>
+          <div class="row">ヒット: <span id="player2-hcount">0</span></div>
+          <div class="row">速度: <span id="player2-speed">0.0</span>m/s</div>
+        </div>
+        <div class="staminaWrap">
+          <div id="player2-staminaBar" class="staminaBar"></div>
+        </div>
+        <div class="staminaLabel">STAMINA</div>
+        <div class="big-timer" id="player2-timer">0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Game Button -->
+  <div style="margin: 30px auto; text-align: center;">
+    <div class="btn" id="start-btn" style="display: inline-block; font-size: 24px; padding: 15px 50px; cursor: pointer;">
+      🏁 スタート / START 🏁
+    </div>
+    <p style="margin-top: 10px; font-size: 14px; color: #aaa;">
+      ゲームを開始する前にORPHE COREを接続してください<br>
+      Please connect ORPHE CORE devices before starting the game
+    </p>
+  </div>
+
+  <!-- Sensor Monitor Section -->
+  <div id="sensor-config-panel" style="margin: 20px auto; padding: 20px; background-color: #2a2a3e; border-radius: 15px; max-width: 1200px; border: 1px solid rgba(0,188,212,0.3);">
+    <h3 style="text-align: center; color: #00bcd4; margin-bottom: 20px;">📊 センサー値モニター / Sensor Monitor</h3>
+
+    <!-- Player 1 Sensor Monitor -->
+    <div class="sensor-monitor">
+      <h4 style="color: #FF6B6B; margin-bottom: 15px; text-align: center;">👤 Player 1 (Device 0)</h4>
+      <div style="display: flex; gap: 20px;">
+        <div class="sensor-box">
+          <h5>Pitch (傾き)</h5>
+          <div style="margin: 10px 0;">
+            <span id="pitch0" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="pitchBar0" class="bar" style="width: 2px; left: 50%;"></div>
+              <div id="pitchThreshold0" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sensor-box">
+          <h5>Accel (加速度)</h5>
+          <div style="margin: 10px 0;">
+            <span id="acc0" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="accBar0" class="bar"></div>
+              <div id="accThreshold0" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; padding: 10px; background-color: #2a2a3e; border-radius: 8px; text-align: center;">
+          <p style="margin: 5px 0; color: #aaa; font-size: 12px;">動作状態</p>
+          <p id="actionStatus0" style="font-size: 14px; font-weight: bold; margin: 10px 0;">待機中</p>
+        </div>
+      </div>
+
+      <!-- Player 1 Settings -->
+      <div style="margin-top: 15px; padding: 15px; background-color: #2a2a3e; border-radius: 8px;">
+        <h5 style="color: #FF6B6B; margin-bottom: 10px;">⚙️ Player 1 設定</h5>
+        <div class="config-item">
+          <label for="p1-accelThreshold">加速度閾値 / Accel Threshold:</label>
+          <input type="range" id="p1-accelThreshold" min="0.1" max="5.1" value="0.3" step="0.1">
+          <span id="p1-accelThresholdValue">0.3 G</span>
+        </div>
+        <div class="config-item">
+          <label for="p1-jumpPitchThreshold">ジャンプPitch閾値 / Jump Pitch:</label>
+          <input type="range" id="p1-jumpPitchThreshold" min="0.05" max="0.5" value="0.1" step="0.05">
+          <span id="p1-jumpPitchThresholdValue">0.10 rad</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player 2 Sensor Monitor -->
+    <div class="sensor-monitor">
+      <h4 style="color: #4ECDC4; margin-bottom: 15px; text-align: center;">👤 Player 2 (Device 1)</h4>
+      <div style="display: flex; gap: 20px;">
+        <div class="sensor-box">
+          <h5>Pitch (傾き)</h5>
+          <div style="margin: 10px 0;">
+            <span id="pitch1" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="pitchBar1" class="bar" style="width: 2px; left: 50%;"></div>
+              <div id="pitchThreshold1" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sensor-box">
+          <h5>Accel (加速度)</h5>
+          <div style="margin: 10px 0;">
+            <span id="acc1" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="accBar1" class="bar"></div>
+              <div id="accThreshold1" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; padding: 10px; background-color: #2a2a3e; border-radius: 8px; text-align: center;">
+          <p style="margin: 5px 0; color: #aaa; font-size: 12px;">動作状態</p>
+          <p id="actionStatus1" style="font-size: 14px; font-weight: bold; margin: 10px 0;">待機中</p>
+        </div>
+      </div>
+
+      <!-- Player 2 Settings -->
+      <div style="margin-top: 15px; padding: 15px; background-color: #2a2a3e; border-radius: 8px;">
+        <h5 style="color: #4ECDC4; margin-bottom: 10px;">⚙️ Player 2 設定</h5>
+        <div class="config-item">
+          <label for="p2-accelThreshold">加速度閾値 / Accel Threshold:</label>
+          <input type="range" id="p2-accelThreshold" min="0.1" max="5.1" value="0.3" step="0.1">
+          <span id="p2-accelThresholdValue">0.3 G</span>
+        </div>
+        <div class="config-item">
+          <label for="p2-jumpPitchThreshold">ジャンプPitch閾値 / Jump Pitch:</label>
+          <input type="range" id="p2-jumpPitchThreshold" min="0.05" max="0.5" value="0.1" step="0.05">
+          <span id="p2-jumpPitchThresholdValue">0.10 rad</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background-color: #1a1a2e; border-radius: 10px;">
+      <p style="margin: 5px 0; color: #fff;">🎮 操作方法 / Controls:</p>
+      <p style="margin: 5px 0; color: #ccc;">• 足踏み（加速度 > 閾値） → 前進加速</p>
+      <p style="margin: 5px 0; color: #ccc;">• つま先を上げる（PITCH < -閾値） → ジャンプ</p>
+      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Stamp feet (Accel > threshold) → Accelerate forward</p>
+      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Lift toe up (Pitch < -threshold) → Jump</p>
+    </div>
+  </div>
+
+  <!-- Credits -->
+  <div style="margin: 40px auto 20px; padding: 20px; max-width: 1200px; text-align: center; color: #aaa; font-size: 12px;">
+    <p style="margin: 5px 0;">このゲームをセンサーでプレイするには<a href="https://orphe.io/core" target="_blank" style="color: #00bcd4;">ORPHE CORE</a>が2個必要です。またブラウザはGoogle Chromeをご使用ください。</p>
+    <p style="margin: 5px 0;">このプログラムはオープンソースの<a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" style="color: #00bcd4;">ORPHE-CORE.js</a>を利用して作成されています。誰でも利用して自作の運動ゲームを作ることができます。</p>
+    <p style="margin: 15px 0 5px 0; font-size: 11px; color: #999;">
+      To play with sensors, you need two <a href="https://orphe.io/core" target="_blank" style="color: #00bcd4;">ORPHE CORE</a> devices. Please use Google Chrome browser.<br>
+      This program is built using the open-source <a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" style="color: #00bcd4;">ORPHE-CORE.js</a>. Anyone can use it to create their own exercise games.
+    </p>
+  </div>
+
+  <!-- Overlays -->
+
+  <div class="center" id="countdown-layer" style="display:none; position: fixed; z-index: 999; background: transparent; pointer-events: none;">
+    <div style="font-size: 200px; font-weight: 900; color: #FFD700; text-shadow: 0 0 40px rgba(255, 215, 0, 0.5); animation: pulse 1s infinite;">
+      <span id="countdown-number">3</span>
+    </div>
+  </div>
+
+  <div class="center" id="finish-layer" style="display:none; position: fixed; z-index: 1000;">
+    <div class="card" style="min-width: 600px;">
+      <h1 id="winner-text" style="font-size: 72px; margin-bottom: 10px;">FINISH!</h1>
+      <p style="font-size: 120px; font-weight: 900; color: #00ff00; text-shadow: 0 0 30px rgba(0, 255, 0, 0.5); margin: 20px 0; line-height: 1;">
+        <span id="winner-time">0.00</span><span style="font-size: 48px;">s</span>
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+        <div>
+          <p style="font-size: 20px; color: #FF6B6B; margin-bottom: 10px;">Player 1</p>
+          <p style="font-size: 16px;">タイム: <b id="p1-final-time">—</b></p>
+          <p style="font-size: 14px; color: #aaa;" id="p1-final-hits">0 hits</p>
+        </div>
+        <div>
+          <p style="font-size: 20px; color: #4ECDC4; margin-bottom: 10px;">Player 2</p>
+          <p style="font-size: 16px;">タイム: <b id="p2-final-time">—</b></p>
+          <p style="font-size: 14px; color: #aaa;" id="p2-final-hits">0 hits</p>
+        </div>
+      </div>
+      <div class="btn" id="retry">もう一度 / RETRY</div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize ORPHE CORE devices (2 devices for 2 players - 1 device per player)
+    var bles = [new Orphe(0), new Orphe(1)];
+
+    // Setup each device
+    for (let i = 0; i < bles.length; i++) {
+      bles[i].setup();
+    }
+
+    // Build CoreToolkit for each device
+    buildCoreToolkit(document.querySelector('#toolkit_p1'), 'Player 1', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_p2'), 'Player 2', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+
+    var connectedDevices = 0;
+
+    window.devices = {
+      0: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 } },
+      1: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 } }
+    };
+
+    let basePitch = [null, null];
+
+    // Player-specific timing controls (same as original HURDLE game)
+    let lastAccelTime = [0, 0];
+    let lastJumpTime = [0, 0];
+    const accelCooldownMs = 250;
+    const jumpCooldownMs = 200;
+
+    // Connection handlers - same as original HURDLE
+    for (let ble of bles) {
+      ble.onConnect = function() {
+        connectedDevices++;
+        console.log('🟢 ORPHE CORE Device ' + this.id + ' connected (Total: ' + connectedDevices + '/2)');
+
+        if (connectedDevices === 2) {
+          // Both devices connected, start data streaming
+          for (let device of bles) {
+            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+            setupDataCallbacks(device);
+          }
+          console.log('📡 Started data streaming for both devices');
+        }
+      };
+
+      ble.onDisconnect = function() {
+        connectedDevices--;
+        console.log('🔴 ORPHE CORE Device ' + this.id + ' disconnected (Total: ' + connectedDevices + '/2)');
+      };
+    }
+
+    function setupDataCallbacks(ble_device) {
+      ble_device.gotConvertedAcc = function(_acc) {
+        if (!_acc) return;
+        window.devices[this.id].acc = _acc;
+
+        const acc = window.devices[this.id].acc;
+        const mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+
+        const now = performance.now();
+        const player = this.id === 0 ? window.player1 : window.player2;
+        const threshold = this.id === 0 ? window.player1Thresholds.accel : window.player2Thresholds.accel;
+
+        if (!player) return;
+
+        const shouldAccel = mag > threshold;
+
+        if (shouldAccel && (now - lastAccelTime[this.id]) > accelCooldownMs) {
+          player.setAccelPressed(true);
+          lastAccelTime[this.id] = now;
+        } else if (!shouldAccel) {
+          player.setAccelPressed(false);
+        }
+      };
+
+      ble_device.gotEuler = function(_euler) {
+        if (!_euler) return;
+        window.devices[this.id].eulers = _euler;
+
+        if (basePitch[this.id] === null) {
+          basePitch[this.id] = _euler.pitch;
+          return;
+        }
+
+        const currentPitch = _euler.pitch;
+        const now = performance.now();
+        const player = this.id === 0 ? window.player1 : window.player2;
+        const threshold = this.id === 0 ? window.player1Thresholds.pitch : window.player2Thresholds.pitch;
+
+        if (!player) return;
+
+        // Jump when pitch goes negative (toe up)
+        if (currentPitch < -threshold && (now - lastJumpTime[this.id]) > jumpCooldownMs) {
+          player.jump();
+          lastJumpTime[this.id] = now;
+        }
+      };
+    }
+
+    // Sensor display update function (same as original HURDLE)
+    function updateSensorDisplay() {
+      if (!window.devices) return;
+
+      // Device 0 (Player 1)
+      for (let i = 0; i < 2; i++) {
+        const device = window.devices[i];
+        if (!device) continue;
+
+        const pitch = device.eulers ? device.eulers.pitch : 0;
+        const pitchElem = document.getElementById(`pitch${i}`);
+
+        if (pitchElem) {
+          pitchElem.textContent = pitch.toFixed(3) + ' rad';
+
+          const pitchBar = document.getElementById(`pitchBar${i}`);
+          if (pitchBar) {
+            const position = ((pitch + 2) / 4) * 100;
+            pitchBar.style.left = Math.max(0, Math.min(100, position)) + '%';
+
+            const threshold = i === 0 ? window.player1Thresholds.pitch : window.player2Thresholds.pitch;
+            const isToeUp = pitch < -threshold;
+            if (isToeUp) {
+              pitchBar.style.background = '#ff9800';
+            } else {
+              pitchBar.style.background = '#4caf50';
+            }
+          }
+        }
+
+        let accMag = 0;
+        if (device.acc) {
+          accMag = Math.sqrt(
+            device.acc.x * device.acc.x +
+            device.acc.y * device.acc.y +
+            device.acc.z * device.acc.z
+          );
+        }
+
+        const accElem = document.getElementById(`acc${i}`);
+        if (accElem) {
+          accElem.textContent = accMag.toFixed(2) + ' G';
+
+          const accBar = document.getElementById(`accBar${i}`);
+          if (accBar) {
+            const width = (accMag / 2) * 100;
+            accBar.style.width = Math.min(100, width) + '%';
+
+            const threshold = i === 0 ? window.player1Thresholds.accel : window.player2Thresholds.accel;
+            if (accMag > threshold) {
+              accBar.style.background = '#ff9800';
+            } else {
+              accBar.style.background = '#2196f3';
+            }
+          }
+        }
+
+        // Update action status
+        const actionElem = document.getElementById(`actionStatus${i}`);
+        if (actionElem) {
+          const threshold = i === 0 ? window.player1Thresholds : window.player2Thresholds;
+          const isToeUp = pitch < -threshold.pitch;
+          const isAccel = accMag > threshold.accel;
+
+          if (isToeUp) {
+            actionElem.textContent = '⬆ ジャンプ準備';
+            actionElem.style.color = '#ff9800';
+          } else if (isAccel) {
+            actionElem.textContent = '⚡ 加速中';
+            actionElem.style.color = '#4caf50';
+          } else {
+            actionElem.textContent = '待機中';
+            actionElem.style.color = '#aaa';
+          }
+        }
+      }
+    }
+
+    // Update threshold visualizations
+    function updateThresholdVisuals() {
+      for (let i = 0; i < 2; i++) {
+        const threshold = i === 0 ? window.player1Thresholds : window.player2Thresholds;
+
+        const pitchLine = document.getElementById(`pitchThreshold${i}`);
+        if (pitchLine) {
+          pitchLine.style.left = ((2 - threshold.pitch) / 4 * 100) + '%';
+        }
+
+        const accLine = document.getElementById(`accThreshold${i}`);
+        if (accLine) {
+          accLine.style.left = (threshold.accel / 2 * 100) + '%';
+        }
+      }
+    }
+
+    // DOM ready setup
+    document.addEventListener('DOMContentLoaded', function() {
+      // Player 1 sliders
+      const p1AccelSlider = document.getElementById('p1-accelThreshold');
+      if (p1AccelSlider) {
+        p1AccelSlider.addEventListener('input', function(e) {
+          window.player1Thresholds.accel = parseFloat(e.target.value);
+          document.getElementById('p1-accelThresholdValue').textContent = e.target.value + ' G';
+          updateThresholdVisuals();
+        });
+      }
+
+      const p1PitchSlider = document.getElementById('p1-jumpPitchThreshold');
+      if (p1PitchSlider) {
+        p1PitchSlider.addEventListener('input', function(e) {
+          window.player1Thresholds.pitch = parseFloat(e.target.value);
+          const val = parseFloat(e.target.value);
+          document.getElementById('p1-jumpPitchThresholdValue').textContent = val.toFixed(2) + ' rad';
+          updateThresholdVisuals();
+        });
+      }
+
+      // Player 2 sliders
+      const p2AccelSlider = document.getElementById('p2-accelThreshold');
+      if (p2AccelSlider) {
+        p2AccelSlider.addEventListener('input', function(e) {
+          window.player2Thresholds.accel = parseFloat(e.target.value);
+          document.getElementById('p2-accelThresholdValue').textContent = e.target.value + ' G';
+          updateThresholdVisuals();
+        });
+      }
+
+      const p2PitchSlider = document.getElementById('p2-jumpPitchThreshold');
+      if (p2PitchSlider) {
+        p2PitchSlider.addEventListener('input', function(e) {
+          window.player2Thresholds.pitch = parseFloat(e.target.value);
+          const val = parseFloat(e.target.value);
+          document.getElementById('p2-jumpPitchThresholdValue').textContent = val.toFixed(2) + ' rad';
+          updateThresholdVisuals();
+        });
+      }
+
+      // Start sensor display updates
+      setInterval(updateSensorDisplay, 16);
+      updateThresholdVisuals();
+    });
+  </script>
+
+  <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #333; color: #aaa;">
+    <p style="margin: 10px 0;">
+      © 2024 ORPHE Inc. ORPHE CORE is a registered trademark of ORPHE Inc.
+    </p>
+    <p style="margin: 10px 0;">
+      Visit us at <a href="https://orphe.io/" target="_blank" style="color: #00bcd4; text-decoration: none;">https://orphe.io/</a>
+    </p>
+  </footer>
+</body>
+</html>

@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2025/10/10 16:20:33
+Last modified: 2025/10/10 16:50:18
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -10,7 +10,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.3.2
+@version 1.3.3
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -568,7 +568,10 @@ class Orphe {
         // { namePrefix: ['CR-'] }
       ],
       acceptAllDevices: false,
-      optionalServices: [this.hashUUID[uuid].serviceUUID]
+      optionalServices: [
+        this.ORPHE_INFORMATION,
+        this.ORPHE_OTHER_SERVICE
+      ]
     }
 
     return navigator.bluetooth.requestDevice(options)

@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2025/09/18 16:07:48
+Last modified: 2025/10/10 16:20:33
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -10,7 +10,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.3.1
+@version 1.3.2
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -116,6 +116,13 @@ class Orphe {
     Object.defineProperty(this, 'ORPHE_OTHER_SERVICE', { value: "db1b7aca-cda5-4453-a49b-33a53d3f0833", writable: false });
     Object.defineProperty(this, 'ORPHE_SENSOR_VALUES', { value: "f3f9c7ce-46ee-4205-89ac-abe64e626c0f", writable: false });
     Object.defineProperty(this, 'ORPHE_STEP_ANALYSIS', { value: "4eb776dc-cf99-4af7-b2d3-ad0f791a79dd", writable: false });
+
+    // Object.defineProperty(this, 'ORPHE_INFORMATION', { value: "01A9D6B5-FF6E-444A-B266-0BE75E85C064", writable: true });
+    // Object.defineProperty(this, 'ORPHE_DEVICE_INFORMATION', { value: "24354F22-1C46-430E-A4AB-A1EEABBCDFC0", writable: true });
+    // Object.defineProperty(this, 'ORPHE_DATE_TIME', { value: "F53EEEB1-B2E8-492A-9673-10E0F1C29026", writable: true });
+    // Object.defineProperty(this, 'ORPHE_OTHER_SERVICE', { value: "DB1B7ACA-CDA5-4453-A49B-33A53D3F0833", writable: false });
+    // Object.defineProperty(this, 'ORPHE_SENSOR_VALUES', { value: "F3F9C7CE-46EE-4205-89AC-ABE64E626C0F", writable: false });
+    // Object.defineProperty(this, 'ORPHE_STEP_ANALYSIS', { value: "4EB776DC-CF99-4AF7-B2D3-AD0F791A79DD", writable: false });
 
 
     // Initialize member variables
@@ -557,10 +564,10 @@ class Orphe {
       service UUIDを ORPHE_OTHER_SERVICE に指定することで，ORPHE core moduleのみを検出することができます．さらに，namePrefixを指定することで，CR-2, CR-3のみを検出することができます．
       */
       filters: [
-        { services: ['db1b7aca-cda5-4453-a49b-33a53d3f0833', '01a9d6b5-ff6e-444a-b266-0be75e85c064'] },
-        { namePrefix: ['CR-'] }
+        { services: [this.ORPHE_INFORMATION] }
+        // { namePrefix: ['CR-'] }
       ],
-      //acceptAllDevices: true,
+      acceptAllDevices: false,
       optionalServices: [this.hashUUID[uuid].serviceUUID]
     }
 

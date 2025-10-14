@@ -52,6 +52,10 @@ async function init() {
         chartManager = new ChartManager();
         playerManager = new PlayerManager();
         gameRenderer = new GameRenderer('gameCanvas');
+        
+        // Make gameRenderer globally accessible for ORPHE input handler
+        window.gameRenderer = gameRenderer;
+        
         console.log('✅ Core systems initialized');
     } catch (error) {
         console.error('❌ Failed to initialize core systems:', error);
@@ -170,6 +174,15 @@ function handleOrpheInput(direction) {
     
     if (lane !== undefined) {
         console.log(`👟 ORPHE step detected: direction=${direction} → lane=${lane}`);
+        
+        // Trigger visual feedback (lane indicator flash)
+        if (window.gameRenderer && typeof window.gameRenderer.triggerLanePress === 'function') {
+            console.log(`✨ Triggering lane press visual feedback for lane ${lane}`);
+            window.gameRenderer.triggerLanePress(lane);
+        } else {
+            console.warn('⚠️ gameRenderer.triggerLanePress not available');
+        }
+        
         handleGameInput(lane);
     }
 }

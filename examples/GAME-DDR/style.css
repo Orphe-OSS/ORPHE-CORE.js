@@ -1,0 +1,325 @@
+/* ==========================================
+   ORPHE DDR GAME - STYLES
+   Based on GAME-PINGPONG structure
+   ========================================== */
+
+/* Font Import */
+@font-face {
+    font-family: 'BebasNeue';
+    src: url('BebasNeue-Regular.ttf') format('truetype');
+}
+
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #1B1B1B;
+    color: #FFFFFF;
+    font-family: 'BebasNeue', 'Arial', sans-serif;
+    overflow-x: hidden;
+}
+
+.container-fluid {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+}
+
+h1 {
+    font-size: 60px;
+    margin: 0;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+    letter-spacing: 3px;
+}
+
+.description {
+    font-size: 18px;
+    margin-top: 10px;
+    color: #FFFFFF;
+}
+
+.description-en {
+    font-size: 14px;
+    color: #E0E0E0;
+    margin-top: 5px;
+}
+
+/* Toolkit Container */
+.toolkit-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.toolkit-box {
+    background-color: #2A2A2A;
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #444;
+    min-width: 300px;
+}
+
+/* Game Container */
+#game-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+#gameCanvas {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border: 4px solid #667eea;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+}
+
+/* Score Panel */
+#score-panel {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #2A2A2A;
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+
+.score-item {
+    text-align: center;
+    min-width: 100px;
+}
+
+.score-item .label {
+    display: block;
+    font-size: 14px;
+    color: #AAA;
+    margin-bottom: 5px;
+}
+
+.score-item .value {
+    display: block;
+    font-size: 32px;
+    font-weight: bold;
+    color: #667eea;
+    text-shadow: 0 0 10px rgba(102, 126, 234, 0.6);
+}
+
+/* Controls */
+#controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 30px 0;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.game-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 20px;
+    font-family: 'BebasNeue', 'Arial', sans-serif;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.game-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.game-btn:active {
+    transform: translateY(0);
+}
+
+.chart-select {
+    background-color: #2A2A2A;
+    color: white;
+    border: 2px solid #667eea;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-family: 'BebasNeue', 'Arial', sans-serif;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Instructions */
+#instructions {
+    background-color: #2A2A2A;
+    padding: 30px;
+    border-radius: 10px;
+    margin: 30px 0;
+}
+
+#instructions h3 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #667eea;
+}
+
+.control-methods {
+    display: flex;
+    justify-content: space-around;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.control-method {
+    flex: 1;
+    min-width: 300px;
+}
+
+.control-method h4 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #AAA;
+}
+
+.control-method ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.control-method li {
+    font-size: 18px;
+    margin: 10px 0;
+    padding: 8px;
+    background-color: #1B1B1B;
+    border-radius: 5px;
+}
+
+kbd {
+    background-color: #444;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-weight: bold;
+    color: #FFF;
+    border: 1px solid #666;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.note {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 16px;
+    color: #FFA500;
+}
+
+.note-en {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+}
+
+/* Settings Panel */
+#settings-panel {
+    background-color: #2A2A2A;
+    padding: 30px;
+    border-radius: 10px;
+    margin: 30px 0;
+}
+
+#settings-panel h3 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #667eea;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    gap: 15px;
+}
+
+.setting-item label {
+    flex: 1;
+    font-size: 18px;
+    color: #CCC;
+}
+
+.setting-item input[type="range"] {
+    flex: 2;
+    height: 8px;
+    background: #444;
+    border-radius: 5px;
+    outline: none;
+}
+
+.setting-item input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #667eea;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.setting-item input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #667eea;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.setting-item span {
+    min-width: 80px;
+    text-align: right;
+    font-size: 18px;
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 40px;
+    }
+
+    .toolkit-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .control-methods {
+        flex-direction: column;
+    }
+
+    #score-panel {
+        gap: 15px;
+    }
+
+    .score-item .value {
+        font-size: 24px;
+    }
+
+    .game-btn {
+        padding: 12px 30px;
+        font-size: 18px;
+    }
+}

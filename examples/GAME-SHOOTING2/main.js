@@ -123,6 +123,10 @@ function init() {
 
     // Make canvas focusable and auto-focus
     renderer.domElement.setAttribute('tabindex', '0');
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.top = '0';
+    renderer.domElement.style.left = '0';
+    renderer.domElement.style.zIndex = '0'; // Ensure it's behind UI
     renderer.domElement.focus();
     renderer.domElement.addEventListener('click', () => {
         renderer.domElement.focus();

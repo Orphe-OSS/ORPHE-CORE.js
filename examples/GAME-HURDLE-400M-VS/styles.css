@@ -1,0 +1,58 @@
+
+@font-face {
+  font-family: 'MyFont';
+  src: url('BebasNeue-Regular.ttf') format('truetype'); 
+}
+/* 背景と全てのテキストの色を設定 */
+body {
+
+  background-color: #1B1B1B;
+  color: white;
+   font-family: 'MyFont', sans-serif;
+}
+
+/* toolkit_placeholder1 と toolkit_placeholder2 を横並びにするスタイル */
+#toolkit_placeholder1,
+#toolkit_placeholder2 {
+  display: inline-block; /* インラインブロック要素として配置 */
+  width: 20%; /* 余裕を持って幅を設定 */
+  vertical-align: top; /* 上端揃えにする */
+ 
+  margin-left: 30px;
+ 
+}
+
+h1{
+  font-size: 50px;
+}
+
+h2{
+  margin-left: 30px;
+  margin-top: 5px;
+  /*テキストサイズを変更*/
+  font-size: 20px;
+    /* テキストの色を薄い灰色に設定 */
+  color: #919191;
+
+}
+
+#en{
+  margin-left: 30px;
+  margin-top: -10px;
+  /*テキストサイズを変更*/
+  font-size: 15px;
+    /* テキストの色を薄い灰色に設定 */
+  color: #919191;
+
+}
+/* h1とp要素のマージンを調整 */
+h1, p ,#rogo{
+  margin-left: 30px;
+  margin-top: 20px;
+margin-right: 100px;
+}
+
+#p5Canvas{
+  margin-top: -10px;
+  margin-left: 30px;
+}

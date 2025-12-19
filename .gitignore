@@ -1,0 +1,9 @@
+# OS
+.DS_Store
+
+# IDEs
+.vscode/
+.obsidian/
+
+# Dependencies
+node_modules/

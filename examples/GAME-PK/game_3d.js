@@ -417,6 +417,16 @@
       const distance = Math.hypot(dx, dy);
       const power = Math.min(1, Math.max(CFG.ball.minPower, distance / CFG.game.aimPowerScale));
       
+      this.executeShoot(dx, dy, power);
+    }
+
+    // Sensor-based shooting (called from index_orphe.html)
+    shootFromSensor(dx, dy, power) {
+      console.log('[GAME-PK 3D] Sensor shoot:', { dx, dy, power });
+      this.executeShoot(dx, dy, power);
+    }
+
+    executeShoot(dx, dy, power) {
       // Start kick animation
       this.state.player.kicking = true;
       this.state.player.kickFrame = 0;
@@ -718,7 +728,19 @@
     nextShot() {
       if (this.state.shotsRemaining <= 0) return;
       
-      this.state.phase = 'aim';
+      // Check if sensor is connected
+      const sensorConnected = typeof window.isSensorConnected === 'function' && window.isSensorConnected();
+      
+      if (sensorConnected) {
+        // Sensor mode: Start countdown
+        this.startCountdown();
+      } else {
+        // Mouse mode: Go directly to aim
+        this.state.phase = 'aim';
+        document.getElementById('msg').textContent = 'ドラッグして狙い、離してキック！';
+      }
+      
+      // Reset ball and keeper
       this.state.ball.x = CFG.ball.startX;
       this.state.ball.y = CFG.ball.startY;
       this.state.ball.z = 0;
@@ -727,25 +749,68 @@
       this.state.ball.vz = 0;
       this.state.ball.rotation = 0;
       this.state.ball.flightTime = 0;
-      this.state.ball.visible = true;  // Reset ball visibility
+      this.state.ball.visible = true;
       this.state.keeper.x = CFG.keeper.x;
       this.state.keeper.startX = CFG.keeper.x;
       this.state.keeper.targetX = CFG.keeper.x;
       this.state.keeper.moving = false;
-      this.state.keeper.committed = false;  // Reset commitment
+      this.state.keeper.committed = false;
       this.state.keeper.armAngle = 0;
       this.state.keeper.celebrating = false;
       this.state.result = null;
-      this.pendingKick = null;  // Clear pending kick
+      this.pendingKick = null;
+    }
+
+    startCountdown() {
+      this.state.phase = 'countdown';
+      this.countdownValue = 3;
       
-      document.getElementById('msg').textContent = 'ドラッグして狙い、離してキック！';
+      const countdownOverlay = document.getElementById('countdown-overlay');
+      const countdownNumber = document.getElementById('countdown-number');
+      
+      if (countdownOverlay && countdownNumber) {
+        countdownOverlay.style.display = 'grid';
+        countdownNumber.textContent = '3';
+        
+        const countdownInterval = setInterval(() => {
+          this.countdownValue--;
+          
+          if (this.countdownValue > 0) {
+            countdownNumber.textContent = this.countdownValue.toString();
+          } else if (this.countdownValue === 0) {
+            countdownNumber.textContent = 'GO!';
+          } else {
+            // Countdown finished
+            clearInterval(countdownInterval);
+            countdownOverlay.style.display = 'none';
+            
+            // Start sensor recording
+            this.state.phase = 'waiting_kick';
+            if (typeof window.startSensorRecording === 'function') {
+              window.startSensorRecording();
+            }
+            document.getElementById('msg').textContent = '足を振ってキック！';
+          }
+        }, 1000);
+      }
     }
 
     gameOver() {
       this.state.phase = 'gameover';
       this.sound.playWhistle();
       const accuracy = (this.state.goalsScored / CFG.game.totalShots * 100).toFixed(0);
-      document.getElementById('msg').textContent = `試合終了！${this.state.goalsScored}/${CFG.game.totalShots} ゴール (${accuracy}%) - Rキーで再開`;
+      document.getElementById('msg').textContent = `試合終了！${this.state.goalsScored}/${CFG.game.totalShots} ゴール (${accuracy}%) - もう一度プレイ`;
+      
+      // Show result overlay if available (ORPHE mode)
+      if (typeof window.showResultScreen === 'function') {
+        window.showResultScreen(this.state.goalsScored, CFG.game.totalShots);
+      }
+      
+      // Stop sensor recording if active
+      if (typeof window.stopSensorRecording === 'function') {
+        window.stopSensorRecording();
+      }
+      
       console.log(`[GAME-PK 3D] Game over: ${this.state.goalsScored}/${CFG.game.totalShots} goals`);
     }
 

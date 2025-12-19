@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ORPHE PENALTY KICK</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <style>
+    body { 
+      margin: 0; 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      overflow-x: hidden;
+    }
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    #game-container {
+      position: relative;
+      margin: 20px auto;
+      max-width: 1200px;
+      height: 600px;
+    }
+    #game {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+  </style>
+  
+  
+  <!-- ORPHE CORE libraries - SAME AS PINGPONG (NO float16!) -->
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <h1>⚽ ORPHE PENALTY KICK ⚽</h1>
+  
+  <!-- Connection UI - Single device for easier testing -->
+  <div class="my-4" style="display: flex; gap: 20px; justify-content: center;">
+    <div id="toolkit_placeholder1" style="max-width: 600px;"></div>
+  </div>
+  
+  <!-- Status -->
+  <div style="text-align: center; margin: 20px;">
+    <p>Device 0: <span id="status0">Waiting...</span> | Data: <span id="data-count0">Acc: 0 | Euler: 0</span></p>
+    <p style="margin-top: 15px; font-size: 18px; font-weight: bold;">
+      Recording: <span id="recording-status" style="color: #aaa;">Stopped</span>
+    </p>
+    <button id="start-recording-btn" style="padding: 10px 30px; font-size: 16px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px;">
+      Start Recording
+    </button>
+  </div>
+  
+  <!-- Sensor Data Log -->
+  <div style="max-width: 1200px; margin: 20px auto; background: #1a1a2e; padding: 20px; border-radius: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h3 style="color: #00bcd4; margin: 0;">📊 Sensor Data Log (Real-time)</h3>
+      <button id="clear-log-btn" style="padding: 5px 15px; background: #ff5722; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        Clear Log
+      </button>
+    </div>
+    <div id="sensor-log" style="background: #0a0a0a; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #0f0;">
+      <div style="color: #00bcd4;">Waiting for sensor data...</div>
+    </div>
+  </div>
+  
+  <!-- Algorithm Test Results -->
+  <div style="max-width: 1200px; margin: 20px auto; background: #2a2a3e; padding: 20px; border-radius: 10px;">
+    <h3 style="color: #ffd700; margin-bottom: 15px;">🎯 Kick Detection Results</h3>
+    <div id="kick-results" style="background: #1a1a2e; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 14px; color: #fff;">
+      <div style="color: #aaa;">No kicks detected yet. Start recording and swing your foot!</div>
+    </div>
+  </div>
+  
+  <!-- Game canvas -->
+  <div id="game-container">
+    <canvas id="game"></canvas>
+    
+    <!-- HUD elements required by game_3d.js -->
+    <div style="position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10;">
+      <div style="background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 10px; font-size: 20px; font-weight: bold;">
+        <span style="color: #aaa;">Shots:</span> <span id="shots" style="color: #ffd700;">5</span>
+      </div>
+      <div style="background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 10px; font-size: 20px; font-weight: bold;">
+        <span style="color: #aaa;">Score:</span> <span id="score" style="color: #4caf50;">0</span>
+      </div>
+      <div style="background: rgba(0,0,0,0.7); padding: 15px 25px; border-radius: 10px; font-size: 20px; font-weight: bold;">
+        <span style="color: #aaa;">Accuracy:</span> <span id="accuracy" style="color: #00bcd4;">0%</span>
+      </div>
+    </div>
+    
+    <div id="msg" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 10px; font-size: 18px; font-weight: bold; text-align: center; pointer-events: none; z-index: 10;">
+      Click to aim and shoot!
+    </div>
+    
+    <!-- Overlays -->
+    <div id="start-overlay" style="display: none;"></div>
+    <div id="countdown-overlay" style="display: none;"></div>
+    <div id="result-overlay" style="display: none;"></div>
+  </div>
+  
+  <!-- Load game engine -->
+  <script src="game_3d.js"></script>
+  
+  <script>
+    // ============================================================================
+    // ORPHE CORE Setup - COPIED EXACTLY FROM PINGPONG
+    // ============================================================================
+    
+    // Initialize 1 ORPHE CORE device for easier testing
+    var bles = [new Orphe(0)];
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    
+    var connectedDevices = 0;
+    
+    // Global variables for sensor data
+    window.devices = {
+      0: {
+        acc: { x: 0, y: 0, z: 0 },
+        eulers: { pitch: 0, roll: 0, yaw: 0 }
+      }
+    };
+    
+    // Data counters for device
+    let accDataCount = [0];
+    let eulerDataCount = [0];
+    
+    // Kick detection variables
+    let isRecording = false;
+    let sensorBuffer = [];
+    const BUFFER_SIZE = 20;  // 20 frames of sensor data
+    const KICK_THRESHOLD = 3.0;  // 3.0 G
+    const YAW_SENSITIVITY = 1.5;
+    const PITCH_SENSITIVITY = 1.5;
+    
+    // Data logging
+    let logCount = 0;
+    const MAX_LOG_ENTRIES = 100;
+    
+    function addLog(message, data = null, color = '#0f0') {
+      const logDiv = document.getElementById('sensor-log');
+      const timestamp = new Date().toISOString().substr(11, 12);
+      
+      let logText = `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${color};">${message}</span>`;
+      if (data) {
+        logText += `<br><span style="color: #aaa; padding-left: 20px;">${JSON.stringify(data, null, 2)}</span>`;
+      }
+      
+      const logEntry = document.createElement('div');
+      logEntry.innerHTML = logText;
+      logEntry.style.marginBottom = '8px';
+      logEntry.style.borderBottom = '1px solid #222';
+      logEntry.style.paddingBottom = '8px';
+      
+      logDiv.appendChild(logEntry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+      
+      logCount++;
+      if (logCount > MAX_LOG_ENTRIES) {
+        logDiv.removeChild(logDiv.firstChild);
+        logCount--;
+      }
+    }
+    
+    function addKickResult(result) {
+      const resultsDiv = document.getElementById('kick-results');
+      const timestamp = new Date().toISOString().substr(11, 12);
+      
+      const resultHTML = `
+        <div style="background: #2a2a3e; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid ${result.success ? '#4caf50' : '#ff5722'};">
+          <div style="font-size: 16px; font-weight: bold; color: ${result.success ? '#4caf50' : '#ff5722'}; margin-bottom: 10px;">
+            [${timestamp}] ${result.success ? '⚡ KICK DETECTED!' : '❌ KICK FAILED'}
+          </div>
+          <div style="margin-left: 15px; line-height: 1.8;">
+            <div><span style="color: #aaa;">Device:</span> <span style="color: #fff;">#${result.device}</span></div>
+            <div><span style="color: #aaa;">Max Accel:</span> <span style="color: #fff;">${result.maxAccel.toFixed(3)} G</span></div>
+            <div><span style="color: #aaa;">Avg Accel:</span> <span style="color: #fff;">${result.avgAccel.toFixed(3)} G</span></div>
+            <div><span style="color: #aaa;">Power:</span> <span style="color: #ffd700; font-weight: bold;">${(result.power * 100).toFixed(1)}%</span></div>
+            <div style="margin-top: 8px;"><span style="color: #aaa;">Direction:</span></div>
+            <div style="margin-left: 15px;">
+              <div><span style="color: #aaa;">Yaw (左右):</span> <span style="color: #fff;">${result.avgYaw.toFixed(3)} rad</span> → dx: <span style="color: #00bcd4;">${result.dx.toFixed(1)} px</span></div>
+              <div><span style="color: #aaa;">Pitch (上下):</span> <span style="color: #fff;">${result.avgPitch.toFixed(3)} rad</span> → dy: <span style="color: #00bcd4;">${result.dy.toFixed(1)} px</span></div>
+            </div>
+            <div style="margin-top: 8px;"><span style="color: #aaa;">Buffer Size:</span> <span style="color: #fff;">${result.bufferSize} frames</span></div>
+            <div><span style="color: #aaa;">Time Span:</span> <span style="color: #fff;">${result.timeSpan.toFixed(0)} ms</span></div>
+          </div>
+        </div>
+      `;
+      
+      resultsDiv.insertAdjacentHTML('afterbegin', resultHTML);
+      
+      // Keep only last 5 results
+      while (resultsDiv.children.length > 5) {
+        resultsDiv.removeChild(resultsDiv.lastChild);
+      }
+    }
+    
+    function processKickDetection() {
+      if (sensorBuffer.length < BUFFER_SIZE) {
+        return;
+      }
+      
+      // Find which device has the strongest acceleration
+      let maxAccelOverall = 0;
+      let targetDevice = 0;
+      
+      for (let frame of sensorBuffer) {
+        if (frame.accMag > maxAccelOverall) {
+          maxAccelOverall = frame.accMag;
+          targetDevice = frame.device;
+        }
+      }
+      
+      // Check if it exceeds threshold
+      if (maxAccelOverall < KICK_THRESHOLD) {
+        return;
+      }
+      
+      addLog(`🎯 Kick threshold exceeded! Max: ${maxAccelOverall.toFixed(3)}G, Threshold: ${KICK_THRESHOLD}G`, null, '#ff9800');
+      
+      // Filter data for the target device
+      const deviceData = sensorBuffer.filter(f => f.device === targetDevice);
+      
+      if (deviceData.length === 0) {
+        addLog('❌ No data for target device', null, '#ff5722');
+        return;
+      }
+      
+      // Calculate power from acceleration
+      const accMagnitudes = deviceData.map(d => d.accMag);
+      const maxAccel = Math.max(...accMagnitudes);
+      const avgAccel = accMagnitudes.reduce((a, b) => a + b) / accMagnitudes.length;
+      const power = Math.min(1.0, (maxAccel * 0.7 + avgAccel * 0.3) / 8.0);
+      
+      // Calculate direction from gyro (Euler angles)
+      const yawValues = deviceData.map(d => d.eulers.yaw);
+      const pitchValues = deviceData.map(d => d.eulers.pitch);
+      
+      const avgYaw = yawValues.reduce((a, b) => a + b) / yawValues.length;
+      const avgPitch = pitchValues.reduce((a, b) => a + b) / pitchValues.length;
+      
+      // Convert to screen coordinates
+      const dx = avgYaw * YAW_SENSITIVITY * 200;
+      const dy = avgPitch * PITCH_SENSITIVITY * 150;
+      
+      const timeSpan = deviceData[deviceData.length - 1].timestamp - deviceData[0].timestamp;
+      
+      const result = {
+        success: true,
+        device: targetDevice,
+        maxAccel: maxAccel,
+        avgAccel: avgAccel,
+        power: power,
+        avgYaw: avgYaw,
+        avgPitch: avgPitch,
+        dx: dx,
+        dy: dy,
+        bufferSize: deviceData.length,
+        timeSpan: timeSpan
+      };
+      
+      addKickResult(result);
+      addLog('✅ Kick processed successfully!', {
+        device: targetDevice,
+        power: (power * 100).toFixed(1) + '%',
+        direction: { dx: dx.toFixed(1), dy: dy.toFixed(1) }
+      }, '#4caf50');
+      
+      // Clear buffer after processing
+      sensorBuffer = [];
+      addLog('🗑️ Buffer cleared, ready for next kick', null, '#00bcd4');
+      
+      // Trigger game shoot if game is ready
+      if (window.game && window.game.shootFromSensor) {
+        window.game.shootFromSensor(dx, dy, power);
+        addLog('🎮 Game shoot triggered!', null, '#ffd700');
+      }
+    }
+    
+    // Setup data callbacks function - SAME AS PINGPONG
+    function mystart(ble_device) {
+      ble_device.gotConvertedAcc = function(_acc) {
+        accDataCount[this.id]++;
+        window.devices[this.id].acc = _acc;
+        
+        // Calculate acceleration magnitude
+        const accMag = Math.sqrt(_acc.x * _acc.x + _acc.y * _acc.y + _acc.z * _acc.z);
+        
+        // Log first 5 data points and then every 60 frames
+        if (accDataCount[this.id] <= 5 || accDataCount[this.id] % 60 === 0) {
+          addLog(`📊 Device ${this.id} Acc #${accDataCount[this.id]}`, {
+            x: _acc.x.toFixed(3),
+            y: _acc.y.toFixed(3),
+            z: _acc.z.toFixed(3),
+            magnitude: accMag.toFixed(3) + ' G'
+          });
+        }
+        
+        // Update display every 60 frames
+        if (accDataCount[this.id] % 60 === 0) {
+          document.getElementById('data-count' + this.id).textContent = 
+            `Acc: ${accDataCount[this.id]} | Euler: ${eulerDataCount[this.id]}`;
+        }
+        
+        // Add to buffer if recording
+        if (isRecording) {
+          sensorBuffer.push({
+            device: this.id,
+            acc: { ..._acc },
+            accMag: accMag,
+            eulers: { ...window.devices[this.id].eulers },
+            timestamp: performance.now()
+          });
+          
+          // Keep buffer at BUFFER_SIZE
+          if (sensorBuffer.length > BUFFER_SIZE) {
+            sensorBuffer.shift();
+          }
+          
+          // Check for kick
+          if (accMag > KICK_THRESHOLD && sensorBuffer.length >= BUFFER_SIZE) {
+            addLog(`⚡ THRESHOLD EXCEEDED on Device ${this.id}! Magnitude: ${accMag.toFixed(3)}G`, null, '#ff9800');
+            processKickDetection();
+          }
+        }
+      };
+      
+      ble_device.gotEuler = function(_euler) {
+        eulerDataCount[this.id]++;
+        window.devices[this.id].eulers = _euler;
+        
+        // Log first 5 data points and then every 60 frames
+        if (eulerDataCount[this.id] <= 5 || eulerDataCount[this.id] % 60 === 0) {
+          addLog(`🌀 Device ${this.id} Euler #${eulerDataCount[this.id]}`, {
+            pitch: _euler.pitch.toFixed(3),
+            roll: _euler.roll.toFixed(3),
+            yaw: _euler.yaw.toFixed(3)
+          });
+        }
+      };
+    }
+    
+    // Connection handlers - Start streaming immediately on single device connection
+    for (let ble of bles) {
+      ble.onConnect = function() {
+        connectedDevices++;
+        console.log('✅ ORPHE CORE Device ' + this.id + ' connected');
+        document.getElementById('status' + this.id).textContent = 'Connected';
+        document.getElementById('status' + this.id).style.color = '#4caf50';
+        
+        // Start data streaming immediately for single device
+        console.log('🎉 Device connected! Starting data streaming...');
+        mystart(this);
+        addLog('✅ Device ' + this.id + ' connected and streaming started', null, '#4caf50');
+      };
+      
+      ble.onDisconnect = function() {
+        console.warn('⚠️ ORPHE CORE Device ' + this.id + ' disconnected');
+        document.getElementById('status' + this.id).textContent = 'Disconnected';
+        document.getElementById('status' + this.id).style.color = '#ff9800';
+        connectedDevices--;
+      };
+      
+      ble.onError = function(error) {
+        console.error('BLE Error on device ' + this.id + ':', error);
+      };
+    }
+    
+    // Sensor check function
+    window.isSensorConnected = function() {
+      return connectedDevices >= 1 && accDataCount[0] > 0 && eulerDataCount[0] > 0;
+    };
+    
+    console.log('✅ ORPHE CORE initialization complete');
+    console.log('📱 Connect device using the BLE button');
+    addLog('🚀 System initialized. Connect your ORPHE CORE device.', null, '#00bcd4');
+    
+    // UI Event Listeners
+    document.getElementById('start-recording-btn').addEventListener('click', function() {
+      isRecording = !isRecording;
+      const btn = this;
+      const statusSpan = document.getElementById('recording-status');
+      
+      if (isRecording) {
+        btn.textContent = 'Stop Recording';
+        btn.style.background = '#ff5722';
+        statusSpan.textContent = 'Recording...';
+        statusSpan.style.color = '#ff5722';
+        sensorBuffer = [];
+        addLog('▶️ Recording started! Swing your foot to test kick detection.', null, '#4caf50');
+      } else {
+        btn.textContent = 'Start Recording';
+        btn.style.background = '#4caf50';
+        statusSpan.textContent = 'Stopped';
+        statusSpan.style.color = '#aaa';
+        addLog('⏹️ Recording stopped.', null, '#ff9800');
+      }
+    });
+    
+    document.getElementById('clear-log-btn').addEventListener('click', function() {
+      document.getElementById('sensor-log').innerHTML = '<div style="color: #00bcd4;">Log cleared.</div>';
+      logCount = 0;
+      addLog('🗑️ Log cleared', null, '#00bcd4');
+    });
+    
+    // Global functions for game integration
+    window.startSensorRecording = function() {
+      if (!isRecording) {
+        document.getElementById('start-recording-btn').click();
+      }
+    };
+    
+    window.stopSensorRecording = function() {
+      if (isRecording) {
+        document.getElementById('start-recording-btn').click();
+      }
+    };
+  </script>
+</body>
+</html>

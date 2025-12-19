@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ORPHE CORE Shooting Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
+</head>
+<body>
+    <div style="text-align:center; margin-top:30px;">
+        <img src="rogo.png" style="width:180px; margin-bottom:10px;">
+        <h1>ORPHE CORE Shooting Game</h1>
+        <p>ORPHE COREをコントローラーにして、左右の傾きで自機を動かし、振動でミサイルを発射！<br>
+        敵を撃ち落とし、ハイスコアを目指そう！<br>
+        ※キーボードの左右矢印や「m」キーでも操作できます。</p>
+        <div id="toolkit_placeholder1" class="my-4"></div>
+    </div>
+    <div id="p5Canvas" style="display:flex; justify-content:center;"></div>
+    <script>
+      // PINGPONGと同じように自動接続
+      var ble = new Orphe(0);
+      ble.setup();
+      buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    </script>
+    <script src="sketch.js"></script>
+</body>
+</html>

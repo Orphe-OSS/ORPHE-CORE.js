@@ -1,5 +1,5 @@
 var orphe_js_version_date = `
-Last modified: 2025/10/10 16:50:18
+Last modified: 2026/01/31 23:52:51
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
@@ -10,7 +10,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.3.3
+@version 1.3.4
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -413,6 +413,7 @@ class Orphe {
     this.notification_type = str_type;
 
     let obj = await this.getDeviceInformation();
+
     if (range.acc == 16) obj.range.acc = 3;
     if (range.acc == 8) obj.range.acc = 2;
     if (range.acc == 4) obj.range.acc = 1;
@@ -421,10 +422,11 @@ class Orphe {
     if (range.gyro == 1000) obj.range.gyro = 2;
     if (range.gyro == 500) obj.range.gyro = 1;
     if (range.gyro == 250) obj.range.gyro = 0;
-    // 設定値の書き換え
-    await this.setDeviceInformation(obj);
 
-    // コアの書き込みを待つため，500ms待つ．特に次で速度計測するのでやや長めに設定している
+    // 設定値の書き換え    CORE 2の場合、デバイス情報の書き込みに時間がかかることがあるため、現状コードはスキップさせます
+    await this.setDeviceInformation(obj);
+    console.log("Device Information set:", obj);
+
     await new Promise(resolve => setTimeout(resolve, 500));
 
     // DateTimeキャラクタリスティックを利用して時刻を同期する．現在のPC時間とデータ取得にかかる統計値からその分コアの時計を進めておく．
@@ -434,6 +436,7 @@ class Orphe {
     return new Promise((resolve, reject) => {
 
       if (str_type == "STEP_ANALYSIS") {
+
         this.startNotify('STEP_ANALYSIS').then(() => {
           resolve("done begin(); STEP ANALYSIS");
         })
@@ -1067,6 +1070,7 @@ class Orphe {
         let gyroRange = this.device_information.range.gyro;
         let accRange = this.device_information.range.acc;
 
+
         // 値を変換
         if (gyroRange == 0) gyroRange = 250;
         if (gyroRange == 1) gyroRange = 500;
@@ -1176,6 +1180,16 @@ class Orphe {
         let gyroRange = this.device_information.range.gyro;
         let accRange = this.device_information.range.acc;
 
+        // 値を変換
+        if (gyroRange == 0) gyroRange = 250;
+        if (gyroRange == 1) gyroRange = 500;
+        if (gyroRange == 2) gyroRange = 1000;
+        if (gyroRange == 3) gyroRange = 2000;
+        if (accRange == 0) accRange = 2;
+        if (accRange == 1) accRange = 4;
+        if (accRange == 2) accRange = 8;
+        if (accRange == 3) accRange = 16;
+
         this.converted_gyro = {
           x: this.gyro.x * gyroRange,
           y: this.gyro.y * gyroRange,
@@ -1186,6 +1200,7 @@ class Orphe {
           y: this.acc.y * accRange,
           z: this.acc.z * accRange,
         };
+
         this.gotAcc(this.acc);
         this.gotQuat(this.quat);
         this.gotGyro(this.gyro);

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/gh/TetsuakiBaba/lazyElement.js@main/lazyElement.css" rel="stylesheet"
+        type="text/css" media="all">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/TetsuakiBaba/placeholderable@main/placeholderable.js"
+        crossorigin="anonymous" type="text/javascript"></script>
+    <title>ORPHE CORE Workshop 2025 | Report</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #1c1b1f;
+            /* MD3 On Surface */
+            --secondary-text: #49454f;
+            /* MD3 On Surface Variant */
+            --border-color: #cac4d0;
+            /* MD3 Outline */
+            --surface-color: #FFFFFF;
+            /* MD3 Surface */
+            --primary-color: #6750a4;
+            /* MD3 Primary */
+            --card-radius: 12px;
+        }
+
+        body {
+            font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+        }
+
+        .header-meta {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--secondary-text);
+            letter-spacing: 0.02em;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 48px auto;
+            padding: 0 24px;
+        }
+
+        .workshop-info {
+            margin-bottom: 48px;
+        }
+
+        .workshop-info h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.01em;
+        }
+
+        .workshop-info p {
+            color: var(--secondary-text);
+            /* max-width: 800px; */
+            font-size: 16px;
+        }
+
+        .hero-image-container {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 48px;
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            background-color: #f3f3f3;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) brightness(0.9) contrast(1.2);
+            transition: filter 0.5s ease;
+        }
+
+
+
+        .workshop-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .meta-item-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 32px;
+        }
+
+        .schedule-section {
+            margin-bottom: 64px;
+        }
+
+        .schedule-section h3 {
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--primary-color);
+            display: inline-block;
+            padding-bottom: 4px;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+
+        .schedule-table tr {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .schedule-table td {
+            padding: 16px 8px;
+        }
+
+        .schedule-time {
+            font-weight: 700;
+            color: var(--primary-color);
+            width: 120px;
+            white-space: nowrap;
+        }
+
+        .schedule-content {
+            font-weight: 500;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+        #loading-overlay.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-text {
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--primary-color);
+            letter-spacing: 0.1em;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        footer {
+            margin-top: 80px;
+            padding: 64px 24px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--secondary-text);
+            background-color: var(--surface-color);
+        }
+
+        .card {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--surface-color);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .award-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            z-index: 10;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .award-1 {
+            background-color: #FFD700;
+            color: #000;
+        }
+
+        /* Gold */
+        .award-2 {
+            background-color: #C0C0C0;
+            color: #000;
+        }
+
+        /* Silver */
+        .award-3 {
+            background-color: #CD7F32;
+        }
+
+        /* Bronze */
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-image-container {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: #f3f3f3;
+            overflow: hidden;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .card-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .card-description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--secondary-text);
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-description.expanded {
+            display: block;
+            -webkit-line-clamp: initial;
+        }
+
+        .read-more-btn {
+            color: var(--primary-color);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 8px;
+            align-self: flex-start;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 16px 0;
+            }
+
+            .container {
+                margin: 32px auto;
+                padding: 0 16px;
+            }
+
+            .grid {
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-overlay">
+        <div class="loading-text">Loading..</div>
+    </div>
+    <div class="container">
+        <header>
+            <div class="header-meta">
+                東京都立大学授業講座：インタラクションデザイン演習実習2025連動企画<br>
+                担当：馬場 哲晃（東京都立大学）| ゲスト講師：菊川 裕也（ORPHE Inc.） | 協力：株式会社ORPHE（会場・機材提供）
+            </div>
+        </header>
+
+        <section class="workshop-info">
+
+            <h1>ORPHE-CORE.js Workshop in SHIBUYA</h1>
+            <div class="hero-image-container">
+                <img src="./images/shero.jpg" alt="Workshop Hero" class="hero-image">
+            </div>
+            <h3>テーマ：スポーツトレーニングとリハビリテーション</h3>
+            <p>
+                <a href="https://orphe.io/core" target="_blank">ORPHE
+                    COREのモーションセンサー</a>を活用し、ブラウザ上で動作するアプリケーションを開発しました。受講生は東京都立大学インダストリアルアート学科3年生で，90分のAIコーディング受講の後，90分の実習を経て制作しました。受講生による、多様なアイデアが詰まった成果物の一覧です。それぞれの作品をクリックするとアプリケーションページにジャンプします。ORPHE
+                COREを接続してお楽しみください。
+            </p>
+            <P>
+                ページ下部には、講師がws時間内で開発したアプリケーションも掲載しています。こちらもぜひご覧ください。
+            </P>
+
+            <div class="workshop-meta">
+                <div class="meta-item">
+                    <span class="meta-item-label">Date</span>
+                    <span>2026年1月31日（土）</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-item-label">Location</span>
+                    <span>株式会社ORPHE OFFICE</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-item-label">Environment</span>
+                    <span>macOS / Windows (Google Chrome)</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="schedule-section">
+            <h3>Workshop Schedule</h3>
+            <table class="schedule-table">
+                <tr>
+                    <td class="schedule-time">10:30 - 10:45</td>
+                    <td class="schedule-content">オープニング・講師紹介・</td>
+                </tr>
+                <tr>
+                    <td class="schedule-time">10:45 - 12:00</td>
+                    <td class="schedule-content">AIコーディングレクチャー（GitHub Copilot Pro を活用したブラウザアプリ開発）</td>
+                </tr>
+                <tr>
+                    <td class="schedule-time">12:00 - 13:00</td>
+                    <td class="schedule-content">お昼休み</td>
+                </tr>
+                <tr>
+                    <td class="schedule-time">13:00 - 14:30</td>
+                    <td class="schedule-content">実習：プロトタイプ開発（スポーツトレーニング・リハビリ支援アプリ）</td>
+                </tr>
+                <tr>
+                    <td class="schedule-time">14:30 - 16:00</td>
+                    <td class="schedule-content">発表・デモンストレーション・講評</td>
+                </tr>
+
+            </table>
+        </section>
+
+        <h3>参加者の作品一覧</h3>
+        <div class="grid" id="project-grid">
+            <!-- 参加者の作品データはJavaScriptで動的に生成されます -->
+        </div>
+
+        <h3 style="margin-top: 64px;">番外編：講師による作品</h3>
+        <div class="grid" id="extra-grid">
+            <div class="card">
+                <a href="apps/L01.html" target="_blank" style="text-decoration: none; color: inherit;">
+                    <div class="card-image-container">
+                        <img src="./images/L01.png" alt="QMQ Sample A" class="card-image">
+                    </div>
+                    <div class="card-content" style="padding-bottom: 0;">
+                        <h2 class="card-title">QUIET MOVE QUEST</h2>
+                        <p class="card-description">ORPHE
+                            COREモジュールを揺らさずに相手に渡す対戦ゲームです。コアモジュールをウエイトに組み合わせることで、ストリクトフォームといった、筋肉の静かなコントロールを鍛錬することができます。
+                        </p>
+                    </div>
+                </a>
+                <div class="card-content" style="padding-top: 8px;">
+                    <span class="read-more-btn" onclick="toggleSummary(this)">もっと見る</span>
+                </div>
+            </div>
+            <div class="card">
+                <a href="" target="_blank" style="text-decoration: none; color: inherit;">
+                    <div class="card-image-container">
+                        <img src="https://placehold.jp/24/6750a4/ffffff/500x500.png?text=Sample+B" alt="QMQ Sample B"
+                            class="card-image">
+                    </div>
+                    <div class="card-content" style="padding-bottom: 0;">
+                        <h2 class="card-title">sample</h2>
+                        <p class="card-description">
+                            靴の動きを3Dモデルに反映させる、リハビリテーション支援のためのデモです。センシングの可能性を広げるためのリファレンスとして公開しています。</p>
+                    </div>
+                </a>
+                <div class="card-content" style="padding-top: 8px;">
+                    <span class="read-more-btn" onclick="toggleSummary(this)">もっと見る</span>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const projects = [
+                {
+                    id: 1,
+                    order: 2,
+                    title: "ORPHE BOXING",
+                    summary: `「ORPHE CORE」を握り、座ったまま運動できる体感型ボクシングゲームです。
+HPや攻撃力、攻撃後の隙など能力の異なる5人のキャラから自機と相手を選び、3種のステージと4段階の難易度で計300通りの対戦が可能です。実際に拳を突き出して攻撃し、相手の攻撃直後の隙を狙う戦略性が鍵です。
+攻防によりゲージが溜まり、円を用いたタイミング入力のミニゲームに成功すると、必殺技で大ダメージを与えられます。クリア時間とHP差でスコアを算出し、D〜Sのランクで評価されます。`
+                },
+                {
+                    id: 2,
+                    order: 1,
+                    title: "カーフトレーニングチャレンジ",
+                    summary: `筋力トレーニングにおいて鍛え辛い部位とされるカーフを重点的に鍛えるゲームです。地味で辛いトレーニングであるのでついつい鍛えないことも多い部位でもあります。そのために楽しく、より効果的に鍛えるためにアクションゲーム感覚でスコアを伸ばし競い合うトレーニングソフトを作成しました。Nomal ModeとSlow Down Modeという2つのモードを搭載しており、種類の違うトレーニングを交互に行う構成にすることで筋肉により刺激を与え、効果を最大限に引き出します。スコアに応じて筋肉レベルが示され、スコアを伸ばすモチベーション要素も追加しました。`
+                },
+                // ここに 3〜20 のデータを追加してください
+                {
+                    id: 3,
+                    order: -1,
+                    title: "EX star seize",
+                    summary: `作品概要：ORPHE coreモジュールによる脚部センシングを入力として用いた、全身運動型の防御アクションゲームである。プレイヤーはスターエクササイズの動きを行い、8方向から飛来する敵の球に対して、その方向へ足を伸ばし、シールドを展開する。一度シールドを展開した後は一度中心に戻さないと次のシールドを展開できないことに注意が必要。プレイそのものがスターエクササイズとなり、足首を強化します。`
+                },
+                {
+                    id: 4,
+                    order: -1,
+                    title: "PUSH-UP SURFING 3D",
+                    summary: `Coreの周波数測定機能を使い、腕立て伏せによる上半身の上下動の周波数を測る。その周波数がゲーム画面での波の周波数に割り当てられる。プレイヤーのアバターはその波に乗ってサーフィンをするというゲーム。画面には周波数と回数カウンターで現在の数値を表示している。最後の腕立て伏せカウントから15秒以上経過でゲームオーバーとなる。また10秒ごとに津波警報が発生するギミックがある。津波警報ではカウントダウンが始まり、０になると津波が来る。０になるまでに周波数を現在の値から0.2hzあげないと即ゲームオーバーになってしまう。`
+                },
+                {
+                    id: 5,
+                    order: -1,
+                    title: "SWING AND SLASH",
+                    summary: `本作品は、ORPHE COREを用いて手の動きを入力し、剣を振る動作で敵を倒すトレーニング向けアクションゲームです。ゲームを開始すると、敵キャラクターが次々に出現し、プレイヤーに向かって接近してきます。プレイヤーは画面中央の判定ラインに敵キャラクターが重なったタイミングでセンサを振るうことで斬撃を放ち、敵キャラクターを撃破することができます。斬撃のタイミングがズレてしまうと敵の撃破に失敗し、プレイヤーはダメージを負ってしまいます。プレイヤーのHPが0になった時点でゲームは終了し、それまでのスコアが計上されます。スコアは敵を倒すほど増加していきます。「腕を振る」動きを即座に演出やサウンドとしてフィードバックし、楽しみながら手の動作のトレーニングを行えます。`
+                },
+                {
+                    id: 6,
+                    order: 3,
+                    title: "3D TETRIS",
+                    summary: `リハビリトレーニングを行いながら、テトリスのブロックになりきり遊べるゲームを作成しました。足を上げながらや床に着けながら、自分の可動域を設定して人それぞれの程度で遊ぶことが出来ます。操作方法は足をひねることでブロックの位置を移動し、つま先を上げるとブロックの向きが変化、足を下に強く降ると真下にブロックが落ちます。この動作で皆が知るであろうテトリスを、没入感を持って行ってもらいます。`
+                },
+                {
+                    id: 7,
+                    order: -1,
+                    title: "風船宇宙への旅",
+                    summary: `風船を膨らませ、できるだけ早く宇宙に辿り着くことを目指すゲームです。ORPHE COREを持って腕を振る、または足に装着して足を振ることで風船を膨らませることができます。風船が大きくなるほど飛行速度は上がりますが、膨らませている最中に障害物に当たると割れてしまいます。状況に応じて振る動作と止める動作を切り替えることが求められ、その音・オフの操作がリハビリに繋がることを想定しています。`
+                },
+                {
+                    id: 8,
+                    order: -1,
+                    title: "ORPHE JUMP",
+                    summary: `本作品は、スマートシューズセンサー「ORPHE CORE」を用いた、身体連動型の2Dアクションゲームです。センサーで計測した足の角度（ピッチ）をゲーム内のジャンプ力やバランス調整に反映させ、直感的な身体操作でステージクリアを目指します。レトロなピクセルアート調のグラフィックが特徴で、障害物を避ける「ジャンプ」と、一定の角度を保つ「綱渡り」の2つのステージを通じて、楽しく体幹や姿勢を意識できる設計です。`
+                },
+                {
+                    id: 9,
+                    order: -1,
+                    title: "wire walker",
+                    summary: `このゲームは、子供の頃に電車の窓から見える電線の上を空想のキャラクターが走る様子を思い描いて遊んだ記憶を再現したものです。座った状態で足を垂直に置き、つま先を上げ下げすることでキャラクターを操作し、障害物を避けて進みます。車窓の景色を舞台にしたあの頃の想像の世界を、スマートシューズのセンサーを用いた足元の動きで実際に体験できる、ノスタルジックなアクションゲームです。`
+                },
+                {
+                    id: 10,
+                    order: -1,
+                    title: "作品タイトル：ORPHE ROGUE CORE",
+                    summary: `これはORPHE COREモジュールを使用して遊べる育成・戦闘ゲームである．ユーザーはデバイスを太ももに装着することでプレイすることができ，ゲームは大きく分けて二つのパートに分かれている．一つ目のトレーニングパートでは，ユーザーはジョギングやウォーキングのような長時間の歩行・走行を行うことでポイントを獲得できるほか，ランダムに発生するイベントでアイテムを取得できる．これらでキャラクターを強化した上で，二つ目の戦闘パートに挑戦することができる．ここでは腿上げで敵を攻撃でき，倒すと敵が強化されて繰り返し遊ぶことができる．将来的にはスクワットなどの別の運動でも攻撃できるようにし，それぞれの攻撃方法に特化したアイテムを追加するなどしてよりゲームとして面白いものにしていきたい．`
+                },
+                {
+                    id: 11,
+                    order: -1,
+                    title: "手首の運動！ボール斬り",
+                    summary: `手首の運動として、ORPHE COREを横向き手で持って動かすことで剣を振り画面中央にある丸を切るというゲームを作った。Yawの値で剣の縦振りを操作できるようにし、持ちやすいようにした。このゲームを行うことで手首を上下に動かすことができ、普段んから手首を酷使する人のストレッチや病気の方のリハビリ、スポーツトレーニング等として活用ができる。`
+                },
+                {
+                    id: 12,
+                    order: -1,
+                    title: "NECK AGE TRAINER",
+                    summary: `「Neck Age Trainer」は、ORPHE COREを頭部に装着して首の可動域や安定性を鍛えるトレーニングゲームです。キャリブレーションで自分の首の可動範囲を記録し、音声指示とリズムに合わせて首を上下左右に動かす音ゲー要素や、姿勢を保つバランスゲームを行います。退屈で分かりにくい首のストレッチや筋トレを、視覚・音響演出で楽しく体験でき、トレーニング後には「首年齢」が算出され、継続的な改善とモチベーション向上を促します。`
+                },
+                {
+                    id: 13,
+                    order: -1,
+                    title: "ぽんぽん",
+                    summary: `楽しくリハビリに取り組めるよう、音を用いたゲームとして設計した。画面上から落下してくるピンクと水色のオブジェクトに、音のタイミングを合わせて操作を行う。ORPHE COREは、オブジェクトが縦方向に降るか、左右に分かれて降るかによって左右の識別を行う仕組みとなっており、動作は非常にシンプルで、直感的に操作できる。`
+                },
+                {
+                    id: 14,
+                    order: 3,
+                    title: "オルフェコアでだるまさんがころんだ",
+                    summary: `この作品では子供を対象に室内でも運動ができるようなゲームを実装した。ゲームの内容としてはだるまさんがころんだを元に、足踏みをすることでだるまに近づいていき、だるまとの距離が0になるとクリアとなる。また、だるまが振り返ったタイミングで動いているとアウトになるという機能も実装している。足踏みの判定には足に取り付けたオルフェコアを用いており、歩くスピードや動いているかを判定できるようになっている。`
+                }
+
+            ];
+
+
+
+            const grid = document.getElementById('project-grid');
+
+            // カスタムソートロジック
+            const sortedProjects = [...projects].sort((a, b) => {
+                const orderA = a.order > 0 ? a.order : 999;
+                const orderB = b.order > 0 ? b.order : 999;
+
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                // 両方が -1 (または正のorder以外) の場合はランダム
+                return Math.random() - 0.5;
+            });
+
+            sortedProjects.forEach(p => {
+                let awardBadge = '';
+                if (p.order === 1) awardBadge = '<div class="award-badge award-1"><i class="fas fa-trophy"></i>最優秀賞</div>';
+                else if (p.order === 2) awardBadge = '<div class="award-badge award-2"><i class="fas fa-medal"></i>優秀賞</div>';
+                else if (p.order === 3) awardBadge = '<div class="award-badge award-3"><i class="fas fa-award"></i>入賞</div>';
+
+                const card = `
+                    <div class="card">
+                        ${awardBadge}
+                        <a href="apps/${p.id}.html" target="_blank" style="text-decoration: none; color: inherit;">
+                            <div class="card-image-container">
+                                <img src="images/${p.id}.png" alt="${p.title}" class="card-image" onerror="this.src='https://placehold.jp/24/6750a4/ffffff/500x500.png?text=${encodeURIComponent(p.title)}'; placeholderable();">
+                            </div>
+                            <div class="card-content" style="padding-bottom: 0;">
+                                <h2 class="card-title">${p.title}</h2>
+                                <p class="card-description">${p.summary}</p>
+                            </div>
+                        </a>
+                        <div class="card-content" style="padding-top: 8px;">
+                            <span class="read-more-btn" onclick="toggleSummary(this)">もっと見る</span>
+                        </div>
+                    </div>`;
+                grid.insertAdjacentHTML('beforeend', card);
+            });
+
+            function toggleSummary(btn) {
+                const card = btn.closest('.card');
+                const desc = card.querySelector('.card-description');
+                desc.classList.toggle('expanded');
+                if (desc.classList.contains('expanded')) {
+                    btn.textContent = '閉じる';
+                } else {
+                    btn.textContent = 'もっと見る';
+                }
+            }
+            // 初期ロード時にプレースホルダーを適用する場合（src=" "などの場合）に備えて呼び出し
+            placeholderable();
+        </script>
+    </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 ORPHE Inc. All Rights Reserved.</p>
+        <p style="font-size: 13px; margin-top: 8px;">
+            このページに掲載されているコンテンツ（画像および概要等）の著作権は株式会社ORPHEに帰属します。<br>
+            これらのコンテンツは <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.ja" target="_blank"
+                style="color: inherit;">クリエイティブ・コモンズ 表示 - 非営利 4.0 国際ライセンス (CC BY-NC 4.0)</a> の下で配布されています。
+        </p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/gh/TetsuakiBaba/lazyElement.js@main/lazyElement.js" crossorigin="anonymous"
+        type="text/javascript"></script>
+
+    <script>
+        window.addEventListener('load', function () {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.add('fade-out');
+
+            document.querySelectorAll('.card').forEach(card => {
+                addLazyElement(card, { once: false });
+            });
+        })
+    </script>
+</body>
+
+</html>

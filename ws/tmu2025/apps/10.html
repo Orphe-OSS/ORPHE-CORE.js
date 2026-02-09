@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE CORE 育成バトル</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+
+        #p5-canvas-container {
+            border: 2px solid #00ff00;
+            position: relative;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            pointer-events: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 5px;
+            pointer-events: auto;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="p5-canvas-container"></div>
+
+    <script src="src/ORPHE-CORE.js"></script>
+    <script>
+        const ble = new Orphe(0);
+        let gameState = 'START'; // START, MENU, TRAINING, STATUS, BATTLE, GAME_OVER, WIN
+        let points = 0;
+        let hp_stat = 0;
+        let str_stat = 0;
+        let items = { sword: 0, armor: 0, boots: 0, ring: 0 };
+
+        // Battle stats
+        let playerHealth = 5;
+        let playerMaxHealth = 5;
+        let bossHealth = 10;
+        let bossMaxHealth = 10;
+        let bossLevel = 1;
+        let lastBossAttackTime = 0;
+        let lastAttackTime = 0; // Time of the last player attack for combo effect
+        const BOSS_ATTACK_INTERVAL = 5000;
+
+        // Sensor data
+        let currentPitch = 0;
+        let prevPitch = 0;
+        let pitchVelocity = 0;
+        let highKneeCooldown = 0;
+        let isWaitingForLowering = false; // Flag to ensure leg is lowered before next attack
+        let trainingIntensity = 0;
+        let frequencyScore = 0;
+        let stabilityScore = 0;
+
+        // Training stats
+        let trainingStartTime = 0;
+        let trainingPointsEarned = 0;
+
+        // Event system
+        let currentTask = null; // { type, progress, timer, startTime }
+        let lastEventEndTime = 0;
+        let lastEventCheckTime = 0;
+        let eventMessage = "";
+        let eventOpacity = 0;
+
+        const ASCII_ART = {
+            GRASS: [
+                "wVVv   vVVw   wVVv",
+                " \\/     \\/     \\/ ",
+                "  ||     ||     ||",
+                "__||_____||_____||__"
+            ],
+            BASE: [
+                "      _T_      ",
+                "    /|   |\\    ",
+                "   | |[S]| |   ",
+                "   | |___| |   ",
+                "  _|_______|_  "
+            ],
+            CASTLE: [
+                " [H] [H] [H] [H] ",
+                " | | | | | | | | ",
+                " | |_| |_| |_| | ",
+                " |  _   _   _  | ",
+                " |_| |_| |_| |_| "
+            ],
+            BOSS: [
+                "   ,---.   ",
+                "  ( @ @ )  ",
+                "   ) - (   ",
+                "  /| v |\\  ",
+                "  / | _ | \\",
+                "    m   m   "
+            ],
+            SWORD: [
+                "    /|  ",
+                "   | |  ",
+                "   | |  ",
+                "  --O-- ",
+                "    |   "
+            ]
+        };
+
+        function drawASCIIArt(artArray, x, y, size = 10, col = color(0, 255, 0)) {
+            push();
+            fill(col);
+            textSize(size);
+            textFont('Courier New');
+            textAlign(CENTER);
+            for (let i = 0; i < artArray.length; i++) {
+                text(artArray[i], x, y + i * size);
+            }
+            pop();
+        }
+
+        // FFT Buffer
+        const FFT_SIZE = 128; // Increased from 64 for better frequency resolution
+        let pitchBuffer = new Array(FFT_SIZE).fill(0);
+        let bufferIndex = 0;
+
+        function setup() {
+            const canvas = createCanvas(400, 600);
+            canvas.parent('p5-canvas-container');
+            ble.setup();
+
+            // Define ORPHE callbacks
+            ble.gotEuler = (euler) => {
+                prevPitch = currentPitch;
+                // Convert Radians to Degrees
+                let rawDeg = euler.pitch * (180 / Math.PI);
+                
+                // Re-mapping based on user feedback:
+                // Neutral (Down) was ~65 mapped (raw ~14.4) -> Should be 0
+                // Right angle (Up) was ~8 mapped (raw ~1.7) -> Should be 90
+                currentPitch = map(rawDeg, 14.4, 1.7, 0, 90);
+                
+                // Constrain to 0-90 range to avoid negative or over-90 values
+                currentPitch = constrain(currentPitch, 0, 100); 
+                
+                pitchVelocity = Math.abs(currentPitch - prevPitch);
+
+                // Update FFT Buffer
+                pitchBuffer[bufferIndex] = currentPitch;
+                bufferIndex = (bufferIndex + 1) % FFT_SIZE;
+
+                if (gameState === 'TRAINING') {
+                    analyzeMovement();
+                    
+                    // Event task: High Knee check
+                    if (currentTask && currentTask.type === 'HIGH_KNEE') {
+                        // Using same logic as battle: moving towards 90 from 0
+                        if (!currentTask.waitingForLower && currentPitch > 60) {
+                            currentTask.progress++;
+                            currentTask.waitingForLower = true;
+                            if (currentTask.progress >= 3) {
+                                completeTask();
+                            }
+                        }
+                        if (currentTask.waitingForLower && currentPitch < 20) {
+                            currentTask.waitingForLower = false;
+                        }
+                    }
+                } else if (gameState === 'BATTLE') {
+                    // Detection of high knee: Value moves from 0 (neutral) towards 90 (high knee)
+                    // Threshold set to 60 degrees in the mapped 0-90 range
+                    if (!isWaitingForLowering && currentPitch > 60) {
+                        attackBoss();
+                        isWaitingForLowering = true;
+                        highKneeCooldown = 20; // visual feedback duration
+                    }
+                    
+                    // Reset flag when leg is lowered (neutral is 0, so < 20 is lowered)
+                    if (isWaitingForLowering && currentPitch < 20) {
+                        isWaitingForLowering = false;
+                    }
+                }
+            };
+        }
+
+        // Simple FFT implementation (Radix-2)
+        function simpleFFT(data) {
+            const n = data.length;
+            let real = [...data];
+            let imag = new Array(n).fill(0);
+
+            // Bit-reversal
+            for (let i = 0, j = 0; i < n; i++) {
+                if (i < j) {
+                    [real[i], real[j]] = [real[j], real[i]];
+                }
+                let m = n >> 1;
+                while (j >= m && m > 0) {
+                    j -= m;
+                    m >>= 1;
+                }
+                j += m;
+            }
+
+            // Cooley-Tukey
+            for (let len = 2; len <= n; len <<= 1) {
+                let ang = 2 * Math.PI / len;
+                let wlen_real = Math.cos(ang);
+                let wlen_imag = -Math.sin(ang);
+                for (let i = 0; i < n; i += len) {
+                    let w_real = 1;
+                    let w_imag = 0;
+                    for (let j = 0; j < len / 2; j++) {
+                        let u_real = real[i + j];
+                        let u_imag = imag[i + j];
+                        let v_real = real[i + j + len / 2] * w_real - imag[i + j + len / 2] * w_imag;
+                        let v_imag = real[i + j + len / 2] * w_imag + imag[i + j + len / 2] * w_real;
+                        real[i + j] = u_real + v_real;
+                        imag[i + j] = u_imag + v_imag;
+                        real[i + j + len / 2] = u_real - v_real;
+                        imag[i + j + len / 2] = u_imag - v_imag;
+                        let tmp_real = w_real * wlen_real - w_imag * wlen_imag;
+                        w_imag = w_real * wlen_imag + w_imag * wlen_real;
+                        w_real = tmp_real;
+                    }
+                }
+            }
+            
+            // Calculate magnitudes (ignore DC component at index 0)
+            let magnitudes = [];
+            for (let i = 1; i < n / 2; i++) {
+                magnitudes.push(Math.sqrt(real[i] * real[i] + imag[i] * imag[i]));
+            }
+            return magnitudes;
+        }
+
+        function analyzeMovement() {
+            // Get data in chronological order
+            let data = [];
+            for (let i = 0; i < FFT_SIZE; i++) {
+                // Apply Hanning Window to improve frequency accuracy and reduce leakage
+                let windowValue = 0.5 * (1 - Math.cos(2 * Math.PI * i / (FFT_SIZE - 1)));
+                data.push(pitchBuffer[(bufferIndex + i) % FFT_SIZE] * windowValue);
+            }
+
+            // Remove mean to reduce DC
+            let avg = data.reduce((a, b) => a + b, 0) / FFT_SIZE;
+            data = data.map(v => v - avg);
+
+            let magnitudes = simpleFFT(data);
+            
+            // Find peak
+            let maxMag = 0;
+            let peakIdx = 0;
+            let totalMag = 0;
+            // Focus on logical human movement frequencies (ignoring very high noise)
+            const MAX_RELEVANT_BIN = FFT_SIZE / 4; 
+            for (let i = 0; i < MAX_RELEVANT_BIN; i++) {
+                totalMag += magnitudes[i];
+                if (magnitudes[i] > maxMag) {
+                    maxMag = magnitudes[i];
+                    peakIdx = i;
+                }
+            }
+
+            if (totalMag > 0) {
+                // Peak search in relevant movement range
+                let maxMagVal = 0;
+                let peakBin = 0;
+                let relevantMagSum = 0;
+                const MAX_RELEVANT_BIN = FFT_SIZE / 4; 
+                
+                for (let i = 0; i < MAX_RELEVANT_BIN; i++) {
+                    relevantMagSum += magnitudes[i];
+                    if (magnitudes[i] > maxMagVal) {
+                        maxMagVal = magnitudes[i];
+                        peakBin = i;
+                    }
+                }
+
+                stabilityScore = maxMagVal / totalMag;
+                // frequencyScore is the index in magnitudes (0-indexed, where 0 is first AC bin)
+                // We show peakBin + 1 to avoid 0 for the first detected frequency
+                frequencyScore = peakBin + 1;
+
+                // Points calculation logic
+                let gain = 0;
+                // 1. Static/Noise detection: 
+                //    If stability is > 80%, it's likely standing still (or a non-movement vibration)
+                // 2. Movement threshold: maxMagVal must be significant
+                // 3. Current Task: Stop score gain during tasks
+                if (stabilityScore < 0.8 && maxMagVal > 4 && !currentTask) {
+                    // Use stability up to 60% as a multiplier
+                    let effectiveStability = Math.min(stabilityScore, 0.6);
+                    gain = (frequencyScore * effectiveStability * 0.1);
+                    trainingIntensity += gain;
+                } else {
+                    // If too stable (>80%) or too little movement, no frequency score shown
+                    if (stabilityScore >= 0.8 || maxMagVal <= 4) {
+                        frequencyScore = 0;
+                        stabilityScore = stabilityScore > 0.1 ? stabilityScore : 0; 
+                    }
+                }
+
+                // Event task: Stay Still check
+                if (currentTask && currentTask.type === 'STILL') {
+                    // Use only stabilityScore as requested, considering noise (>= 0.7)
+                    if (stabilityScore >= 0.7) {
+                        // Increase progress based on time
+                        // Assuming this runs roughly 50 times per second
+                        currentTask.progress += 1/50; 
+                        if (currentTask.progress >= 10) {
+                            completeTask();
+                        }
+                    } else {
+                        // Reset if stability drops (moving)
+                        currentTask.progress = 0;
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            background(30);
+            if (highKneeCooldown > 0) highKneeCooldown--;
+
+            switch (gameState) {
+                case 'START':
+                    drawStartScreen();
+                    break;
+                case 'MENU':
+                    drawMenu();
+                    break;
+                case 'TRAINING':
+                    drawTraining();
+                    break;
+                case 'STATUS':
+                    drawStatus();
+                    break;
+                case 'BATTLE':
+                    drawBattle();
+                    break;
+                case 'GAME_OVER':
+                    drawGameOver();
+                    break;
+                case 'WIN':
+                    drawWin();
+                    break;
+            }
+            window.prevMouseIsPressed = mouseIsPressed;
+        }
+
+        function drawStartScreen() {
+            textAlign(CENTER, CENTER);
+            fill(0, 255, 0);
+            textSize(24);
+            text("ORPHE-ROGUE CORE", width / 2, height / 2 - 80);
+            
+            textSize(14);
+            fill(0, 200, 0);
+            text("==========================", width / 2, height / 2 - 50);
+            text("太ももにデバイスを装着せよ", width / 2, height / 2 - 20);
+            text("PITCH角度で運命が決まる...", width / 2, height / 2 + 10);
+            text("==========================", width / 2, height / 2 + 40);
+
+            drawButton("[ 接続して開始 ]", width / 2 - 80, height / 2 + 80, async () => {
+                try {
+                    await ble.begin('SENSOR_VALUES');
+                    gameState = 'MENU';
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+
+            drawButton("[ 接続せずに開始 ]", width / 2 - 80, height / 2 + 140, () => {
+                gameState = 'MENU';
+            });
+        }
+
+        function drawMenu() {
+            textAlign(CENTER, TOP);
+            fill(0, 255, 0);
+            textSize(20);
+            text(">> MAIN TERMINAL <<", width / 2, 60);
+            
+            fill(0, 255, 0);
+            textSize(16);
+            text(`GOLD(pt): ${Math.floor(points)}`, width / 2, 110);
+            
+            fill(255, 50, 50);
+            textSize(14);
+            text(`[ ADVENTURE LV: ${bossLevel} ]`, width / 2, 135);
+
+            drawButton("< TRAINING >", width / 2 - 80, 200, () => {
+                gameState = 'TRAINING';
+                trainingStartTime = millis();
+                trainingPointsEarned = 0;
+                trainingIntensity = 0;
+            });
+
+            drawButton("< UPGRADE >", width / 2 - 80, 260, () => {
+                gameState = 'STATUS';
+            });
+
+            drawButton("< ENTER DUNGEON >", width / 2 - 80, 320, () => {
+                startBattle();
+            });
+            
+            // Stats summary at bottom
+            textAlign(LEFT);
+            textSize(12);
+            text(`[ HP:${5+hp_stat}+(ARM:${items.armor*2}) ]`, 50, 400);
+            text(`[ STR:${str_stat}+(SWD:${items.sword*2}) ]`, 50, 425);
+            text(`[ ITEMS: B:${items.boots} R:${items.ring} ]`, 50, 450);
+        }
+
+        function drawTraining() {
+            textAlign(CENTER, TOP);
+            fill(0, 255, 0);
+            textSize(18);
+            text(">> EXPLORING... <<", width / 2, 60);
+
+            // Draw Grassland background at the bottom
+            drawASCIIArt(ASCII_ART.GRASS, width / 2, 350, 12, color(0, 150, 0));
+            drawASCIIArt(ASCII_ART.GRASS, width / 2 - 120, 360, 10, color(0, 100, 0));
+            drawASCIIArt(ASCII_ART.GRASS, width / 2 + 120, 360, 10, color(0, 100, 0));
+
+            let now = millis();
+            let elapsed = (now - trainingStartTime) / 1000;
+            textSize(14);
+            text(`TIME: ${elapsed.toFixed(1)}s`, width / 2, 90);
+
+            // Event logic
+            checkEvents(now);
+
+            // Calculate points based on time and movement analysis
+            trainingPointsEarned = (elapsed * 0.05) + trainingIntensity;
+            fill(0, 255, 0);
+            text(`EST. GOLD: ${Math.floor(trainingPointsEarned)}`, width / 2, 115);
+
+            if (currentTask) {
+                drawEventUI();
+            } else {
+                fill(0, 255, 0);
+                textSize(12);
+                text("STAY ACTIVE TO FIND TREASURE", width / 2, 160);
+
+                // FFT Analysis Visualization
+                textAlign(LEFT);
+                textSize(12);
+                text(`FREQ:`, 50, 200);
+                drawASCIIBar(100, 192, 230, 10, frequencyScore, 10, color(0, 255, 255));
+
+                let stabText = stabilityScore >= 0.8 ? "STATIC" : Math.floor(stabilityScore * 100) + "%";
+                text(`STAB:`, 50, 230);
+                let stabColor = stabilityScore >= 0.8 ? color(255, 0, 0) : color(0, 255, 0);
+                drawASCIIBar(100, 222, 230, 10, stabilityScore, 1.0, stabColor);
+                if (stabilityScore >= 0.8) text(" (HOVER)", 340, 230);
+
+                text(`VELO:`, 50, 260);
+                drawASCIIBar(100, 252, 230, 10, pitchVelocity, 20, color(0, 255, 0));
+            }
+
+            // Message display
+            if (eventOpacity > 0) {
+                fill(0, 255, 0, eventOpacity);
+                textAlign(CENTER);
+                text(eventMessage, width/2, height/2 + 100);
+                eventOpacity -= 2;
+            }
+
+            drawButton("< HOME >", width / 2 - 80, 450, () => {
+                points += trainingPointsEarned;
+                gameState = 'MENU';
+                currentTask = null;
+            });
+
+            // Debug: Event Trigger Button
+            if (!currentTask) {
+                drawButton("[ SCAN_AREA ]", 25, 450, () => {
+                    triggerEvent();
+                }, false);
+            }
+        }
+
+        function checkEvents(now) {
+            if (currentTask) return;
+
+            let elapsedGame = now - trainingStartTime;
+            let elapsedSinceEnd = now - lastEventEndTime;
+
+            // Restricted periods
+            if (elapsedGame < 15000) return;
+            if (elapsedSinceEnd < 30000) return;
+
+            // Check every 60 seconds
+            if (now - lastEventCheckTime > 60000) {
+                lastEventCheckTime = now;
+                if (random() < 0.5) {
+                    triggerEvent();
+                }
+            }
+        }
+
+        function triggerEvent() {
+            const types = ['STILL', 'HIGH_KNEE'];
+            let type = random(types);
+            currentTask = {
+                type: type,
+                progress: 0,
+                waitingForLower: false,
+                startTime: millis() // Add start time for time limits
+            };
+            eventMessage = "!! INCOMING SIGNAL !!";
+            eventOpacity = 255;
+        }
+
+        function drawEventUI() {
+            let now = millis();
+            let timeLeft = 15 - (now - currentTask.startTime) / 1000;
+
+            if (currentTask.type === 'HIGH_KNEE' && timeLeft <= 0) {
+                eventMessage = "!! TIME EXPIRED !!";
+                eventOpacity = 255;
+                lastEventEndTime = millis();
+                currentTask = null;
+                return;
+            }
+
+            fill(0, 255, 0);
+            textAlign(CENTER, CENTER);
+            textSize(14);
+            if (currentTask.type === 'STILL') {
+                text(">> TASK: MAINTAIN STATIC STATE <<", width / 2, 175);
+                drawASCIIBar(50, 200, 300, 20, currentTask.progress, 10, color(0, 255, 0));
+                text(`${currentTask.progress.toFixed(1)} / 10.0s`, width / 2, 235);
+            } else {
+                text(">> TASK: PERFORM 3 HIGH-KNEES <<", width / 2, 175);
+                fill(255, 50, 50);
+                text(`TIMER: ${max(0, timeLeft).toFixed(1)}s`, width / 2, 200);
+                drawASCIIBar(50, 220, 300, 20, currentTask.progress, 3, color(0, 255, 0));
+                fill(0, 255, 0);
+                text(`${currentTask.progress} / 3 REPS`, width / 2, 255);
+            }
+        }
+
+        function completeTask() {
+            const rewards = ['10pt', '20pt', '30pt', 'sword', 'armor', 'boots', 'ring'];
+            let reward = random(rewards);
+            let msg = "";
+
+            if (reward === '10pt') { trainingIntensity += 10; msg = "REWARD: +10 GOLD"; }
+            else if (reward === '20pt') { trainingIntensity += 20; msg = "REWARD: +20 GOLD"; }
+            else if (reward === '30pt') { trainingIntensity += 30; msg = "REWARD: +30 GOLD"; }
+            else if (reward === 'sword') { items.sword++; msg = "REWARD: LEGENDARY SWORD (STR+2)"; }
+            else if (reward === 'armor') { items.armor++; msg = "REWARD: IRON ARMOR (HP+2)"; }
+            else if (reward === 'boots') { items.boots++; msg = "REWARD: SPEED BOOTS (COMBO)"; }
+            else if (reward === 'ring') { items.ring++; msg = "REWARD: CRITICAL RING (CRIT)"; }
+
+            eventMessage = "MISSION COMPLETE\n" + msg;
+            eventOpacity = 255;
+            lastEventEndTime = millis();
+            currentTask = null;
+        }
+
+        function drawStatus() {
+            textAlign(CENTER, TOP);
+            fill(0, 255, 0);
+            textSize(18);
+            text(">> UPGRADE CHAMBER <<", width / 2, 60);
+            fill(0, 255, 0);
+            text(`GOLD(pt): ${Math.floor(points)}`, width / 2, 100);
+
+            // Draw Base ASCII Art
+            drawASCIIArt(ASCII_ART.BASE, 320, 110, 10, color(0, 180, 0));
+
+            textAlign(LEFT);
+            fill(0, 255, 0);
+            textSize(14);
+            text(`HP (Life) : ${5 + hp_stat + (items.armor * 2)}`, 50, 140);
+            textSize(10);
+            text(`(Base:${5+hp_stat} + Armor:${items.armor*2})`, 50, 155);
+            
+            textSize(14);
+            text(`STR (Dmg) : ${str_stat + (items.sword * 2)}`, 50, 210);
+            textSize(10);
+            text(`(Base:${str_stat} + Sword:${items.sword*2})`, 50, 225);
+            text(`Boss Dmg req: ${max(1, 10 - (str_stat + items.sword * 2))} reps`, 50, 240);
+
+            drawButton("+ [10G]", 260, 130, () => {
+                if (points >= 10) { points -= 10; hp_stat++; }
+            }, points < 10);
+
+            drawButton("+ [10G]", 260, 200, () => {
+                if (points >= 10) { points -= 10; str_stat++; }
+            }, points < 10);
+
+            // Item Box
+            noFill();
+            stroke(0, 255, 0);
+            rect(40, 260, 320, 100);
+            noStroke();
+            fill(0, 255, 0);
+            textAlign(CENTER);
+            text("[ INVENTORY ]", width / 2, 275);
+            
+            // Draw Sword Art inside inventory
+            drawASCIIArt(ASCII_ART.SWORD, 320, 280, 8, color(0, 255, 255));
+
+            textAlign(LEFT);
+            textSize(11);
+            text(`SWD x${items.sword}  /  ARM x${items.armor}`, 60, 300);
+            text(`BTS x${items.boots}  /  RNG x${items.ring}`, 60, 325);
+            text("Ring: 50% Crit x2 Dmg", 60, 345);
+
+            drawButton("SWD+", 45, 370, () => { items.sword++; });
+            drawButton("ARM+", 125, 370, () => { items.armor++; });
+            drawButton("BTS+", 205, 370, () => { items.boots++; });
+            drawButton("RNG+", 285, 370, () => { items.ring++; });
+
+            drawButton("< BACK >", width / 2 - 80, 480, () => {
+                gameState = 'MENU';
+            });
+        }
+
+        function startBattle() {
+            gameState = 'BATTLE';
+            isWaitingForLowering = false;
+            lastAttackTime = 0; // Reset combo timer
+            playerMaxHealth = 5 + hp_stat + (items.armor * 2);
+            playerHealth = playerMaxHealth;
+            
+            // Boss strength increases by 1.5x마다 level
+            let baseBossHP = 10;
+            let levelMultiplier = Math.pow(1.5, bossLevel - 1);
+            bossMaxHealth = Math.max(1, Math.round((baseBossHP * levelMultiplier) - (str_stat + items.sword * 2)));
+            bossHealth = bossMaxHealth;
+            lastBossAttackTime = millis();
+        }
+
+        function drawBattle() {
+            textAlign(CENTER, TOP);
+            fill(0, 255, 0);
+            textSize(18);
+            text(">> ENGAGEMENT <<", width / 2, 60);
+
+            // Draw Castle background
+            drawASCIIArt(ASCII_ART.CASTLE, width / 2, 120, 10, color(50, 50, 50));
+
+            // Boss Area
+            noFill();
+            stroke(0, 255, 0);
+            rect(50, 100, 300, 160);
+            line(50, 125, 350, 125);
+            noStroke();
+            fill(0, 255, 0);
+            textSize(14);
+            text(`MONSTER LV.${bossLevel}`, width / 2, 110);
+
+            // Draw Boss ASCII Art
+            drawASCIIArt(ASCII_ART.BOSS, width / 2, 135, 12, color(255, 50, 50));
+            
+            // Boss HP Bar
+            drawASCIIBar(100, 210, 200, 15, bossHealth, bossMaxHealth, color(255, 0, 0));
+            fill(255, 0, 0);
+            textSize(12);
+            text(`HP: ${bossHealth} / ${bossMaxHealth}`, width / 2, 230);
+
+            // Player Area
+            textAlign(CENTER);
+            fill(0, 255, 0);
+            textSize(14);
+            text("COMMANDER (YOU)", width / 2, 380);
+            
+            // Player HP
+            drawASCIIBar(100, 420, 200, 15, playerHealth, playerMaxHealth, color(0, 255, 0));
+            fill(0, 255, 0);
+            text(`HP: ${playerHealth} / ${playerMaxHealth}`, width / 2, 440);
+
+            textSize(16);
+            text("ACTIVATE HIGH-KNEE!", width / 2, 300);
+            textSize(11);
+            text(`PITCH: ${currentPitch.toFixed(1)}°`, width / 2, 320);
+
+            // Movement feedback
+            if (highKneeCooldown > 0) {
+                fill(0, 255, 0, highKneeCooldown * 10);
+                text(">> IMPACT <<", width / 2, 340);
+            }
+
+            // Boss attack timer
+            let now = millis();
+            let elapsedSinceAttack = now - lastBossAttackTime;
+            let timeUntilAttack = (BOSS_ATTACK_INTERVAL - elapsedSinceAttack) / 1000;
+            
+            fill(255, 200, 0);
+            textAlign(LEFT);
+            text("THREAT:", 60, 145);
+            drawASCIIBar(150, 137, 160, 10, timeUntilAttack, 5, color(255, 200, 0));
+
+            if (elapsedSinceAttack > BOSS_ATTACK_INTERVAL) {
+                playerHealth--;
+                lastBossAttackTime = now;
+                if (playerHealth <= 0) {
+                    gameState = 'GAME_OVER';
+                }
+            }
+
+            // Flash effect
+            if (highKneeCooldown > 15) {
+                fill(0, 255, 0, 50);
+                rect(0, 0, width, height);
+            }
+        }
+
+        function attackBoss() {
+            let damage = 1;
+            let now = millis();
+            
+            // Speed Boots Effect: extra damage if attacked within 5 seconds
+            let comboBonus = false;
+            if (items.boots > 0 && lastAttackTime > 0 && (now - lastAttackTime) <= 5000) {
+                damage += 1;
+                comboBonus = true;
+            }
+            
+            // Critical Ring Effect: 50% chance to double total damage
+            let criticalHit = false;
+            if (items.ring > 0 && random() < 0.5) {
+                damage *= 2;
+                criticalHit = true;
+            }
+            
+            bossHealth -= damage;
+            lastAttackTime = now;
+
+            if (bossHealth <= 0) {
+                bossHealth = 0;
+                gameState = 'WIN';
+            }
+            
+            // Show damage effect message
+            if (criticalHit) {
+                eventMessage = "CRITICAL HIT!! X2";
+                eventOpacity = 255;
+            } else if (comboBonus) {
+                eventMessage = "COMBO! +1 BONUS";
+                eventOpacity = 255;
+            }
+        }
+
+        function drawGameOver() {
+            textAlign(CENTER, CENTER);
+            fill(255, 0, 0);
+            textSize(32);
+            text("TERMINATED", width / 2, height / 2 - 50);
+            drawButton("< REBOOT >", width / 2 - 80, height / 2 + 50, () => {
+                gameState = 'MENU';
+            });
+        }
+
+        function drawWin() {
+            textAlign(CENTER, CENTER);
+            fill(0, 255, 0);
+            textSize(32);
+            text("MISSION CLEAR", width / 2, height / 2 - 80);
+            let reward = 20 + str_stat * 5;
+            textSize(18);
+            text(`BOUNTY: ${reward} GOLD`, width / 2, height / 2 - 20);
+            text(`LV UP: ${bossLevel} -> ${bossLevel + 1}`, width / 2, height / 2 + 20);
+            drawButton("< RETURN >", width / 2 - 80, height / 2 + 100, () => {
+                points += reward;
+                bossLevel++;
+                gameState = 'MENU';
+            });
+        }
+
+        function drawButton(label, x, y, onClick, disabled = false) {
+            const btnWidth = 160;
+            const btnHeight = 35;
+            const isHover = mouseX > x && mouseX < x + btnWidth && mouseY > y && mouseY < y + btnHeight;
+            
+            push();
+            if (disabled) {
+                fill(50);
+                stroke(50);
+            } else if (isHover) {
+                fill(0, 255, 0);
+                if (mouseIsPressed && !window.prevMouseIsPressed) {
+                    onClick();
+                }
+            } else {
+                noFill();
+                stroke(0, 255, 0);
+            }
+            
+            // Draw border
+            rect(x, y, btnWidth, btnHeight);
+            
+            if (isHover && !disabled) fill(0);
+            else fill(0, 255, 0);
+            
+            noStroke();
+            textAlign(CENTER, CENTER);
+            textSize(12);
+            text(label, x + btnWidth / 2, y + btnHeight / 2);
+            pop();
+        }
+
+        function drawBorder() {
+            stroke(0, 255, 0);
+            noFill();
+            rect(5, 5, width - 10, height - 10);
+            line(5, 40, width - 10, 40);
+        }
+
+        function drawASCIIBar(x, y, w, h, val, maxVal, col) {
+            push();
+            noFill();
+            stroke(col);
+            rect(x, y, w, h);
+            noStroke();
+            fill(col);
+            let fillW = map(val, 0, maxVal, 0, w, true);
+            rect(x, y, fillW, h);
+            pop();
+        }
+
+        window.prevMouseIsPressed = false;
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,2566 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE CORE ジャンプゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        #info-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #000;
+            border: 3px solid #fff;
+            padding: 20px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+            align-items: center;
+        }
+        #info-panel.hidden {
+            display: none;
+        }
+        h1 {
+            display: none;
+        }
+        .info-row {
+            display: none;
+        }
+        .info-item {
+            display: none;
+        }
+        .label {
+            display: none;
+        }
+        .value {
+            display: none;
+        }
+        button {
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            min-width: 200px;
+        }
+        button:hover {
+            background: #fff;
+            color: #000;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .angle-bar {
+            display: none;
+        }
+        .angle-fill {
+            display: none;
+        }
+        .angle-text {
+            display: none;
+        }
+        #instructions {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏃 ORPHE CORE ジャンプゲーム</h1>
+    
+    <div id="game-container"></div>
+    
+    <div id="info-panel">
+        <button id="connectBtn" onclick="connectDevice()">ORPHE</button>
+        <button id="keyboardBtn" onclick="startWithKeyboard()">KEYBD</button>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "p5": "https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js",
+            "orphe": "./src/ORPHE-CORE.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import 'https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js';
+        
+        // グローバル変数
+        let ble;
+        let currentPitch = 0;
+        let currentGyroY = 0;
+        let gyroChangeRate = 0;
+        let prevGyroY = 0;
+        let wasAbove20 = false; // 以前に20度以上だったか
+        let jumpGauge = 0; // ジャンプゲージ（0-100）
+        let maxJumpGauge = 100;
+        let isAKeyPressed = false; // Aキーが押されているか
+        let inputMode = 'keyboard'; // 'sensor' または 'keyboard'
+        
+        let gameState = 'not-connected'; // not-connected, settings, difficulty-settings, theme-select, waiting, stage1, stage2, cleared, game-over
+        let score = 0;
+        let stage = 0;
+        let obstaclesCleared = 0; // クリアした針山の数
+        let selectedCharacter = 'rabbit'; // rabbit, cat, dog, panda
+        let selectedTheme = 'grassland'; // grassland, ocean, magma, space
+        let lastPlayedStage = 1; // 最後にプレイしたステージを記録
+        
+        // 難易度設定
+        let difficultySettings = {
+            stage1_spawnRate: 120,      // 針山の生成間隔（フレーム）：60-180
+            stage1_minHeight: 40,       // 針山の最小高さ：20-60
+            stage1_maxHeight: 100,      // 針山の最大高さ：80-150
+            stage2_targetAngle: 25      // ステージ2の目標角度：15-40
+        };
+        
+        // ステージ2用
+        let stage2Timer = 0;
+        let stage2StartTime = 0;
+        const STAGE2_DURATION = 15000; // 15秒
+        const STAGE2_TARGET_ANGLE = 25; // 25度以上（160倍表示で4000度）
+        const STAGE2_GRACE_PERIOD = 3000; // 開始後3秒間の猶予期間
+        let ropeProgress = 0; // 綱渡りの進捗度
+        let tapCount = 0; // 連打カウント
+        const TAP_TARGET = 100; // クリア目標回数
+        let lastTapFrame = 0; // 最後に連打をカウントしたフレーム
+        
+        // ステージ3用
+        let stage3StartTime = 0;
+        const STAGE3_DURATION = 20000; // 20秒
+        let stage3Player = { x: 400, y: 350, width: 40, height: 50 };
+        let fallingNeedles = []; // 降ってくる針の配列
+        let stage3Score = 0; // 避けた針の数
+        
+        // ORPHE-CORE.js を動的にロードして初期化
+        const script = document.createElement('script');
+        script.src = './src/ORPHE-CORE.js';
+        script.onload = () => {
+            // ORPHE初期化
+            ble = new Orphe(0);
+            ble.setup();
+            
+            // コールバック設定
+            setupOrpheCallbacks();
+        };
+        document.head.appendChild(script);
+        
+        // 音声生成関数（Web Audio API）
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // BGM用の変数
+        let bgmOscillators = [];
+        let bgmGainNode = null;
+        let isBgmPlaying = false;
+        
+        // BGM開始関数（レトロシンセサイザー風）
+        function startBGM() {
+            if (isBgmPlaying) return;
+            isBgmPlaying = true;
+            
+            // ゲイン設定
+            bgmGainNode = audioContext.createGain();
+            bgmGainNode.gain.value = 0.08; // BGMの音量（控えめ）
+            bgmGainNode.connect(audioContext.destination);
+            
+            // レトロゲーム風のメロディーを演奏
+            playBGMLoop();
+        }
+        
+        function playBGMLoop() {
+            if (!isBgmPlaying) return;
+            
+            // C4 E4 G4 C5のアルペジオ（懐かしいシンセ音）
+            const melody = [
+                {freq: 262, start: 0, duration: 0.2},    // C4
+                {freq: 330, start: 0.2, duration: 0.2},  // E4
+                {freq: 392, start: 0.4, duration: 0.2},  // G4
+                {freq: 523, start: 0.6, duration: 0.2},  // C5
+                {freq: 392, start: 0.8, duration: 0.2},  // G4
+                {freq: 330, start: 1.0, duration: 0.2},  // E4
+                {freq: 294, start: 1.2, duration: 0.2},  // D4
+                {freq: 262, start: 1.4, duration: 0.4},  // C4
+            ];
+            
+            const now = audioContext.currentTime;
+            
+            melody.forEach(note => {
+                const osc = audioContext.createOscillator();
+                const noteGain = audioContext.createGain();
+                
+                osc.type = 'square'; // レトロなスクエア波
+                osc.frequency.value = note.freq;
+                
+                noteGain.gain.setValueAtTime(0, now + note.start);
+                noteGain.gain.linearRampToValueAtTime(1, now + note.start + 0.01);
+                noteGain.gain.setValueAtTime(1, now + note.start + note.duration - 0.05);
+                noteGain.gain.linearRampToValueAtTime(0, now + note.start + note.duration);
+                
+                osc.connect(noteGain);
+                noteGain.connect(bgmGainNode);
+                
+                osc.start(now + note.start);
+                osc.stop(now + note.start + note.duration);
+            });
+            
+            // ループ
+            setTimeout(() => playBGMLoop(), 1800);
+        }
+        
+        function stopBGM() {
+            isBgmPlaying = false;
+            if (bgmGainNode) {
+                bgmGainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+            }
+        }
+        
+        // ボタンクリック音
+        function playButtonSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.05);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+        
+        // 障害物衝突音
+        function playCollisionSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sawtooth'; // ノイジーな音
+            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+        
+        function playJumpSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+        }
+        
+        function playGameOverSound() {
+            // 深刻で重厚なシンセサイザー風ゲームオーバーBGM
+            const now = audioContext.currentTime;
+            const duration = 3.0; // 3秒間のBGM
+            
+            // 暗いコード進行: Dm - Bb - Gm - A (D minor key)
+            const chordProgression = [
+                [146.83, 174.61, 220.00], // Dm (D-F-A)
+                [116.54, 146.83, 174.61], // Bb (Bb-D-F)
+                [196.00, 233.08, 293.66], // Gm (G-Bb-D)
+                [220.00, 277.18, 329.63]  // A (A-C#-E)
+            ];
+            
+            const chordDuration = duration / chordProgression.length;
+            
+            chordProgression.forEach((chord, chordIndex) => {
+                const chordStart = now + (chordIndex * chordDuration);
+                
+                // 各コードの3つの音
+                chord.forEach((freq, noteIndex) => {
+                    // 低音オシレーター（ベース）
+                    const bass = audioContext.createOscillator();
+                    const bassGain = audioContext.createGain();
+                    bass.type = 'sawtooth';
+                    bass.frequency.setValueAtTime(freq / 2, chordStart);
+                    bassGain.gain.setValueAtTime(0.15, chordStart);
+                    bassGain.gain.exponentialRampToValueAtTime(0.01, chordStart + chordDuration);
+                    bass.connect(bassGain);
+                    bassGain.connect(audioContext.destination);
+                    bass.start(chordStart);
+                    bass.stop(chordStart + chordDuration);
+                    
+                    // 中音オシレーター（パッド）
+                    const pad = audioContext.createOscillator();
+                    const padGain = audioContext.createGain();
+                    pad.type = 'triangle';
+                    pad.frequency.setValueAtTime(freq, chordStart);
+                    padGain.gain.setValueAtTime(0.08, chordStart);
+                    padGain.gain.exponentialRampToValueAtTime(0.01, chordStart + chordDuration);
+                    pad.connect(padGain);
+                    padGain.connect(audioContext.destination);
+                    pad.start(chordStart);
+                    pad.stop(chordStart + chordDuration);
+                });
+                
+                // 不協和音のレイヤー（深刻さを強調）
+                if (chordIndex === chordProgression.length - 1) {
+                    const dissonance = audioContext.createOscillator();
+                    const dissonanceGain = audioContext.createGain();
+                    dissonance.type = 'square';
+                    dissonance.frequency.setValueAtTime(chord[0] * 1.05, chordStart); // 微妙にずらして不協和音
+                    dissonanceGain.gain.setValueAtTime(0.05, chordStart);
+                    dissonanceGain.gain.exponentialRampToValueAtTime(0.01, chordStart + chordDuration);
+                    dissonance.connect(dissonanceGain);
+                    dissonanceGain.connect(audioContext.destination);
+                    dissonance.start(chordStart);
+                    dissonance.stop(chordStart + chordDuration);
+                }
+            });
+        }
+        
+        function playClearSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.4);
+        }
+        
+        function playAvoidSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.05);
+        }
+        
+        function playProgressSound() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(500, audioContext.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.08);
+        }
+        
+        // p5.js スケッチ
+        const sketch = (p) => {
+            let player;
+            let obstacles = [];
+            let ground;
+            let scrollSpeed = 3;
+            let jumpVelocity = 0;
+            let gravity = 0.6;
+            let isJumping = false;
+            let lastJumpTime = 0;
+            const JUMP_COOLDOWN = 400; // ジャンプのクールダウン（ミリ秒）
+            const CEILING_HEIGHT = 100; // 天井の高さ（低く設定）
+            
+            p.setup = () => {
+                let canvas = p.createCanvas(window.innerWidth, window.innerHeight);
+                canvas.parent('game-container');
+                
+                // ピクセルアート風の設定
+                p.noSmooth();
+                p.pixelDensity(1);
+                
+                // プレイヤー初期化
+                player = {
+                    x: 150,
+                    y: 300,
+                    width: 30,
+                    height: 40,
+                    baseY: 300
+                };
+                
+                ground = 350;
+            };
+            
+            // マウスクリックでステージ選択
+            p.mousePressed = () => {
+                if (gameState === 'character-select') {
+                    handleCharacterSelect();
+                } else if (gameState === 'theme-select') {
+                    handleThemeSelect();
+                } else if (gameState === 'difficulty-settings') {
+                    handleDifficultySettingsClick();
+                } else if (gameState === 'cleared') {
+                    handleClearedClick();
+                } else if (gameState === 'game-over') {
+                    handleGameOverClick();
+                } else if (gameState === 'waiting') {
+                    // ステージ1ボタンの範囲
+                    let stage1BtnX = p.width/2 - 160;
+                    let stage1BtnY = 220;
+                    let btnWidth = 150;
+                    let btnHeight = 100;
+                    
+                    if (p.mouseX > stage1BtnX && p.mouseX < stage1BtnX + btnWidth &&
+                        p.mouseY > stage1BtnY && p.mouseY < stage1BtnY + btnHeight) {
+                        playButtonSound();
+                        resetGame();
+                        return;
+                    }
+                    
+                    // ステージ2ボタンの範囲
+                    let stage2BtnX = p.width/2 + 10;
+                    let stage2BtnY = 220;
+                    
+                    if (p.mouseX > stage2BtnX && p.mouseX < stage2BtnX + btnWidth &&
+                        p.mouseY > stage2BtnY && p.mouseY < stage2BtnY + btnHeight) {
+                        playButtonSound();
+                        startStage2();
+                        return;
+                    }
+                }
+            };
+            
+            // Aキーが押されたとき
+            p.keyPressed = () => {
+                if (p.key === 'a' || p.key === 'A') {
+                    isAKeyPressed = true;
+                    
+                    // ステージ2でキーボードモードの場合、1回押すとカウント+1
+                    if (gameState === 'stage2' && inputMode === 'keyboard') {
+                        let elapsed = Date.now() - stage2StartTime;
+                        let isGracePeriod = elapsed < STAGE2_GRACE_PERIOD;
+                        if (!isGracePeriod) {
+                            tapCount++;
+                            ropeProgress = (tapCount / TAP_TARGET) * 1000;
+                        }
+                    }
+                }
+                
+                // 難易度調整（ステージ選択画面で）
+                if (gameState === 'waiting') {
+                    if (p.keyCode === p.UP_ARROW) {
+                        // 針山を高く（難しく）
+                        difficultySettings.stage1_minHeight = Math.min(difficultySettings.stage1_minHeight + 5, 60);
+                        difficultySettings.stage1_maxHeight = Math.min(difficultySettings.stage1_maxHeight + 5, 150);
+                    } else if (p.keyCode === p.DOWN_ARROW) {
+                        // 針山を低く（簡単に）
+                        difficultySettings.stage1_minHeight = Math.max(difficultySettings.stage1_minHeight - 5, 20);
+                        difficultySettings.stage1_maxHeight = Math.max(difficultySettings.stage1_maxHeight - 5, 80);
+                    } else if (p.keyCode === p.LEFT_ARROW) {
+                        // 針山を少なく（簡単に）
+                        difficultySettings.stage1_spawnRate = Math.min(difficultySettings.stage1_spawnRate + 10, 180);
+                    } else if (p.keyCode === p.RIGHT_ARROW) {
+                        // 針山を多く（難しく）
+                        difficultySettings.stage1_spawnRate = Math.max(difficultySettings.stage1_spawnRate - 10, 60);
+                    }
+                }
+            };
+            
+            // Aキーが離されたとき
+            p.keyReleased = () => {
+                if (p.key === 'a' || p.key === 'A') {
+                    isAKeyPressed = false;
+                    // Aキーを離したときにジャンプ
+                    if (gameState === 'stage1' && jumpGauge > 10 && !isJumping) {
+                        isJumping = true;
+                        jumpVelocity = -8 - (jumpGauge / maxJumpGauge) * 17;
+                        jumpGauge = 0;
+                        playJumpSound();
+                    }
+                }
+            };
+            
+            p.draw = () => {
+                // 背景
+                if (gameState === 'stage1') {
+                    p.background(135, 206, 235); // 空色
+                    drawStage1();
+                } else if (gameState === 'stage2') {
+                    p.background(255, 250, 205); // レモンシフォン
+                    drawStage2();
+                } else if (gameState === 'cleared') {
+                    p.background(144, 238, 144); // ライトグリーン
+                    drawClearedScreen();
+                } else if (gameState === 'game-over') {
+                    p.background(0);
+                    drawGameOverScreen();
+                } else if (gameState === 'theme-select') {
+                    drawThemeSelectScreen();
+                } else if (gameState === 'difficulty-settings') {
+                    drawDifficultySettingsScreen();
+                } else if (gameState === 'character-select') {
+                    drawCharacterSelectScreen();
+                } else if (gameState === 'waiting') {
+                    // ステージ選択画面（ピクセル風）
+                    p.background(0);
+                    
+                    // ドットパターン
+                    p.fill(20);
+                    for (let y = 0; y < p.height; y += 20) {
+                        for (let x = 0; x < p.width; x += 20) {
+                            if ((x + y) % 40 === 0) {
+                                p.rect(x, y, 4, 4);
+                            }
+                        }
+                    }
+                    
+                    // タイトル
+                    p.fill(255);
+                    p.textAlign(p.CENTER, p.CENTER);
+                    p.textSize(36);
+                    p.textFont('Courier New');
+                    p.textStyle(p.BOLD);
+                    p.text('SELECT STAGE', p.width/2, 80);
+                    
+                    // ステージ1ボタン
+                    let stage1BtnX = p.width/2 - 160;
+                    let stage1BtnY = 220;
+                    let btnWidth = 150;
+                    let btnHeight = 100;
+                    
+                    let overStage1 = p.mouseX > stage1BtnX && p.mouseX < stage1BtnX + btnWidth &&
+                                     p.mouseY > stage1BtnY && p.mouseY < stage1BtnY + btnHeight;
+                    
+                    // ステージ1ボタン描画
+                    p.fill(overStage1 ? 255 : 0);
+                    p.stroke(overStage1 ? 0 : 100);
+                    p.strokeWeight(3);
+                    p.rect(stage1BtnX, stage1BtnY, btnWidth, btnHeight);
+                    p.fill(overStage1 ? 0 : 100);
+                    p.noStroke();
+                    p.textSize(20);
+                    p.textFont('Courier New');
+                    p.text('STAGE 1', stage1BtnX + btnWidth/2, stage1BtnY + 35);
+                    p.textSize(14);
+                    p.text('JUMP', stage1BtnX + btnWidth/2, stage1BtnY + 65);
+                    
+                    // ステージ2ボタン
+                    let stage2BtnX = p.width/2 + 10;
+                    let stage2BtnY = 220;
+                    
+                    let overStage2 = p.mouseX > stage2BtnX && p.mouseX < stage2BtnX + btnWidth &&
+                                     p.mouseY > stage2BtnY && p.mouseY < stage2BtnY + btnHeight;
+                    
+                    // ステージ2ボタン描画
+                    p.fill(overStage2 ? 255 : 0);
+                    p.stroke(overStage2 ? 0 : 100);
+                    p.strokeWeight(3);
+                    p.rect(stage2BtnX, stage2BtnY, btnWidth, btnHeight);
+                    p.fill(overStage2 ? 0 : 100);
+                    p.noStroke();
+                    p.textSize(20);
+                    p.textFont('Courier New');
+                    p.text('STAGE 2', stage2BtnX + btnWidth/2, stage2BtnY + 35);
+                    p.textSize(14);
+                    p.text('BALANCE', stage2BtnX + btnWidth/2, stage2BtnY + 65);
+                    
+                    // 難易度調整ヒント
+                    p.textSize(14);
+                    p.fill(150);
+                    p.textFont('Courier New');
+                    p.text('ARROW KEYS: DIFFICULTY', p.width/2, p.height - 30);
+                } else {
+                    // タイトル画面（ピクセルアート風）
+                    // 黒背景
+                    p.background(0);
+                    
+                    // ドットパターン背景
+                    p.fill(20);
+                    for (let y = 0; y < p.height; y += 20) {
+                        for (let x = 0; x < p.width; x += 20) {
+                            if ((x + y) % 40 === 0) {
+                                p.rect(x, y, 4, 4);
+                            }
+                        }
+                    }
+                    
+                    // タイトルロゴ（ピクセル文字風）
+                    let titleY = p.height/2 - 100;
+                    
+                    p.fill(255);
+                    p.textAlign(p.CENTER, p.CENTER);
+                    p.textSize(48);
+                    p.textStyle(p.BOLD);
+                    p.textFont('Courier New');
+                    p.text('ORPHE JUMP', p.width/2, titleY);
+                    
+                    // ピクセル装飾
+                    p.fill(0, 255, 0);
+                    for (let i = 0; i < 10; i++) {
+                        let px = p.width/2 - 200 + i * 40;
+                        p.rect(px, titleY - 60, 8, 8);
+                        p.rect(px, titleY + 60, 8, 8);
+                    }
+                    
+                    // 説明テキスト
+                    p.fill(200);
+                    p.textSize(16);
+                    p.textFont('Courier New');
+                    p.text('CLICK TO START', p.width/2, titleY + 100);
+                    
+                    // 点滅カーソル
+                    if (p.frameCount % 60 < 30) {
+                        p.fill(255);
+                        p.rect(p.width/2 + 90, titleY + 92, 12, 16);
+                    }
+                }
+            };
+            
+            function drawStage1() {
+                // テーマに応じた背景描画
+                drawThemeBackground();
+                
+                // プレイヤーの影
+                p.fill(0, 0, 0, 50);
+                p.ellipse(player.x + player.width/2, ground + 5, player.width * 0.8, 10);
+                
+                // 選択された動物キャラクターを描画
+                drawAnimalCharacter(player.x, player.y - 3, selectedCharacter);
+                
+                // ジャンプ処理
+                if (isJumping) {
+                    player.y += jumpVelocity;
+                    jumpVelocity += gravity;
+                    
+                    if (player.y >= player.baseY) {
+                        player.y = player.baseY;
+                        isJumping = false;
+                        jumpVelocity = 0;
+                    }
+                }
+                
+                // 天井衝突判定（余裕を持たせる）
+                if (player.y <= CEILING_HEIGHT - 5) {
+                    gameOver();
+                    return;
+                }
+                
+                // ジャンプゲージの更新
+                let displayAngle = currentPitch * 200; // ステージ1は200倍表示
+                
+                // Aキーが押されているか、角度が20以上ならゲージを溜める
+                if ((displayAngle >= 20 || isAKeyPressed) && !isJumping) {
+                    // 角度が20以上か Aキーが押されている場合はゲージを溜める
+                    jumpGauge = Math.min(jumpGauge + 1.2, maxJumpGauge);
+                    wasAbove20 = true;
+                } else if (displayAngle < 20 && wasAbove20 && !isJumping && !isAKeyPressed) {
+                    // 角度が20未満になった瞬間にジャンプ（Aキーが押されていない場合のみ）
+                    if (jumpGauge > 10) { // 最小ゲージ
+                        isJumping = true;
+                        // ゲージ量に応じてジャンプ力を設定
+                        jumpVelocity = -8 - (jumpGauge / maxJumpGauge) * 17;
+                        jumpGauge = 0;
+                        playJumpSound(); // ジャンプ音を再生
+                    }
+                    wasAbove20 = false;
+                }
+                
+                // ゲージの自然減衰
+                if (displayAngle < 20 && !isJumping && !isAKeyPressed) {
+                    jumpGauge = Math.max(jumpGauge - 1, 0);
+                }
+                
+                // 障害物生成
+                if (p.frameCount % difficultySettings.stage1_spawnRate === 0) {
+                    let spikeHeight = p.random(difficultySettings.stage1_minHeight, difficultySettings.stage1_maxHeight);
+                    obstacles.push({
+                        x: p.width,
+                        y: ground - spikeHeight,
+                        width: 30,
+                        height: spikeHeight,
+                        speed: p.random(3.5, 5) // ランダムな速度（3.5～5に狭める）
+                    });
+                }
+                
+                // 障害物の更新と描画
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    let obs = obstacles[i];
+                    obs.x -= obs.speed; // 個別の速度で移動
+                    
+                    // テーマに応じた障害物を描画
+                    drawThemeObstacle(obs);
+                    
+                    // 画面外に出たら削除
+                    if (obs.x + obs.width < 0) {
+                        obstacles.splice(i, 1);
+                        score += 10;
+                        obstaclesCleared++;
+                        playAvoidSound(); // 避けた音を再生
+                        updateUI();
+                    }
+                    
+                    // 衝突判定
+                    if (checkCollision(player, obs)) {
+                        gameOver();
+                    }
+                }
+                
+                // ステージクリア判定（スコア100以上で第二ステージへ）
+                if (score >= 100 && gameState === 'stage1') {
+                    startStage2();
+                    return; // すぐに第二ステージへ移行
+                }
+                
+                // スコア表示
+                p.fill(0, 255, 0);
+                p.textAlign(p.LEFT, p.TOP);
+                p.textFont('Courier New');
+                p.textSize(20);
+                p.text(`DIST: ${score}M`, 20, 20);
+                p.text(`CLEAR: ${obstaclesCleared}/10`, 20, 45);
+                
+                // ジャンプゲージ表示
+                p.fill(0, 255, 0);
+                p.text('JUMP POWER:', 20, 75);
+                p.fill(50);
+                p.rect(20, 95, 200, 20);
+                // ゲージの色（溜まるほど青→緑→黄→赤）
+                let gaugePercent = jumpGauge / maxJumpGauge;
+                if (gaugePercent < 0.33) {
+                    p.fill(0, 100, 255);
+                } else if (gaugePercent < 0.66) {
+                    p.fill(0, 255, 0);
+                } else {
+                    p.fill(255, 200, 0);
+                }
+                p.rect(20, 95, 200 * gaugePercent, 20);
+                
+                // 天井衝突の危険ライン（80%以上で危険）
+                let dangerThreshold = 0.8;
+                p.stroke(255, 0, 0);
+                p.strokeWeight(2);
+                p.line(20 + 200 * dangerThreshold, 93, 20 + 200 * dangerThreshold, 117);
+                p.noStroke();
+                
+                // 警告テキスト
+                p.fill(255, 0, 0);
+                p.textSize(10);
+                p.text('MAX', 20 + 200 * dangerThreshold - 10, 88);
+                
+                p.fill(255);
+                p.textAlign(p.CENTER);
+                p.textSize(16);
+                p.text(`${Math.round(jumpGauge)}%`, 120, 118);
+                
+                // 画面下部に情報表示を追加
+                drawBottomInfo();
+            }
+            
+            function drawStage2() {
+                // テーマに応じた背景を描画
+                drawStage2ThemeBackground();
+                
+                // 綱の位置
+                let ropeY = p.height/2;
+                let groundY = p.height - 60; // 地面のY座標を定義
+                
+                // 角度チェック（設定した角度以上で進む、未満で落下）
+                // 角度を160倍で表示
+                let displayAngle = currentPitch * 160;
+                let elapsed = Date.now() - stage2StartTime;
+                let isGracePeriod = elapsed < STAGE2_GRACE_PERIOD;
+                
+                // 10秒の時間制限チェック（猶予期間後）
+                if (!isGracePeriod && elapsed >= STAGE2_DURATION + STAGE2_GRACE_PERIOD) {
+                    // 時間切れ
+                    gameOver();
+                    return;
+                }
+                
+                // センサーモードの場合のみ角度判定
+                if (inputMode === 'sensor') {
+                    // センサーモード：角度判定
+                    if (displayAngle >= difficultySettings.stage2_targetAngle) {
+                        // 設定した角度以上なら連打カウント（フレームごとに1回のみ）
+                        if (p.frameCount !== lastTapFrame && !isGracePeriod) {
+                            tapCount++;
+                            lastTapFrame = p.frameCount;
+                            ropeProgress = (tapCount / TAP_TARGET) * 1000; // 進捗度を計算
+                        }
+                    } else if (!isGracePeriod) {
+                        // 猶予期間外で目標角度未満で落下（ゲームオーバー）
+                        if (p.frameCount % 30 < 15) {
+                            p.fill(255, 0, 0, 100);
+                            p.rect(0, 0, p.width, p.height);
+                        }
+                        gameOver();
+                        return;
+                    }
+                }
+                
+                // 綱の支柱（土管風・緑）
+                // 左の支柱
+                p.fill(34, 139, 34);
+                p.rect(50, ropeY - 20, 40, 40);
+                p.fill(0, 100, 0);
+                p.rect(50, ropeY + 20, 40, groundY - ropeY - 20);
+                // 土管の口
+                p.fill(0);
+                p.ellipse(70, ropeY, 30, 30);
+                p.fill(34, 139, 34);
+                p.ellipse(70, ropeY, 25, 25);
+                
+                // 右の支柱
+                p.fill(34, 139, 34);
+                p.rect(p.width - 90, ropeY - 20, 40, 40);
+                p.fill(0, 100, 0);
+                p.rect(p.width - 90, ropeY + 20, 40, groundY - ropeY - 20);
+                // 土管の口
+                p.fill(0);
+                p.ellipse(p.width - 70, ropeY, 30, 30);
+                p.fill(34, 139, 34);
+                p.ellipse(p.width - 70, ropeY, 25, 25);
+                
+                // ゴールフラッグ（右側）
+                p.fill(255, 215, 0);
+                p.rect(p.width - 100, ropeY - 80, 60, 10);
+                p.fill(255, 0, 0);
+                p.triangle(p.width - 100, ropeY - 80, p.width - 100, ropeY - 50, p.width - 60, ropeY - 65);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(40);
+                p.text('🏁', p.width - 70, ropeY - 100);
+                
+                // 綱
+                p.stroke(139, 90, 43);
+                p.strokeWeight(5);
+                // 綱の揺れ（角度が低いと揺れる）
+                let sway = displayAngle < difficultySettings.stage2_targetAngle ? Math.sin(p.frameCount * 0.1) * 5 : 0;
+                for (let x = 90; x < p.width - 90; x += 20) {
+                    p.line(x, ropeY + sway, x + 20, ropeY + sway);
+                }
+                p.noStroke();
+                
+                // 綱のテクスチャ
+                p.fill(101, 67, 33);
+                for (let x = 90; x < p.width - 90; x += 10) {
+                    p.rect(x, ropeY + sway - 2, 5, 4);
+                }
+                
+                // 主人公の位置（進捗度に応じて移動）
+                let maxProgress = 1000; // 最大進捗度
+                let progressRatio = Math.min(ropeProgress / maxProgress, 1);
+                let playerXOffset = progressRatio * (p.width - 200);
+                let playerX = 100 + playerXOffset;
+                let playerY = ropeY - 40 + sway;
+                
+                // ゴール到達判定（連打100回でクリア）
+                if (tapCount >= TAP_TARGET) {
+                    playClearSound(); // クリア音を再生
+                    gameClear();
+                    return;
+                }
+                
+                // 選択されたキャラクターを表示
+                drawAnimalCharacter(playerX, playerY, selectedCharacter);
+                
+                // 腕（バランスを取るポーズ） - キャラクターの上に重ねる
+                p.stroke(255, 80, 80);
+                p.strokeWeight(3);
+                let armAngle = Math.sin(p.frameCount * 0.05) * 30;
+                // 表示しない（動物キャラクターに腕が含まれているため）
+                p.noStroke();
+                
+                // UI表示
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textFont('Courier New');
+                p.textSize(24);
+                p.fill(255);
+                p.text('STAGE 2: BALANCE', p.width/2, 30);
+                
+                // 猶予期間の表示
+                if (isGracePeriod) {
+                    let graceRemaining = Math.ceil((STAGE2_GRACE_PERIOD - elapsed) / 1000);
+                    p.textSize(20);
+                    p.fill(255, 255, 0);
+                    p.text(`READY: ${graceRemaining}S`, p.width/2, 60);
+                }
+                
+                // 残り時間表示（猶予期間後）
+                if (!isGracePeriod) {
+                    let timeRemaining = Math.max(0, Math.ceil((STAGE2_DURATION + STAGE2_GRACE_PERIOD - elapsed) / 1000));
+                    p.textSize(24);
+                    if (timeRemaining <= 3) {
+                        p.fill(255, 0, 0); // 残り3秒以下は赤
+                    } else {
+                        p.fill(255, 255, 255);
+                    }
+                    p.text(`TIME: ${timeRemaining}S`, p.width/2, 60);
+                }
+                
+                // 連打カウント表示
+                p.textSize(48);
+                p.fill(0, 255, 0);
+                p.text(`${tapCount} / ${TAP_TARGET}`, p.width/2, 100);
+                
+                // 進捗バー
+                p.fill(50);
+                p.rect(p.width/2 - 150, 140, 300, 20);
+                p.fill(0, 255, 0);
+                p.rect(p.width/2 - 150, 140, 300 * (tapCount / TAP_TARGET), 20);
+                
+                // 角度表示
+                p.textSize(24);
+                if (inputMode === 'keyboard') {
+                    // キーボードモード：Aキーの状態を表示
+                    p.fill(255, 255, 255);
+                    p.text('TAP A KEY TO COUNT!', p.width/2, p.height - 50);
+                } else {
+                    // センサーモード：角度表示
+                    if (displayAngle >= difficultySettings.stage2_targetAngle) {
+                        p.fill(0, 255, 0);
+                        p.text(`ANGLE: ${displayAngle.toFixed(1)}`, p.width/2, p.height - 50);
+                    } else {
+                        p.fill(255, 0, 0);
+                        p.text(`DANGER: ${displayAngle.toFixed(1)} < ${difficultySettings.stage2_targetAngle}`, p.width/2, p.height - 50);
+                    }
+                }
+            }
+            
+            function drawClearedScreen() {
+                // ピクセルアート風の背景
+                p.background(0);
+                
+                // ドットパターン
+                p.fill(20);
+                for (let y = 0; y < p.height; y += 20) {
+                    for (let x = 0; x < p.width; x += 20) {
+                        if ((x + y) % 40 === 0) {
+                            p.rect(x, y, 4, 4);
+                        }
+                    }
+                }
+                
+                // ピクセル星エフェクト
+                for (let i = 0; i < 30; i++) {
+                    let x = (p.frameCount * 2 + i * 30) % (p.width + 100);
+                    let y = (i * 50 + p.frameCount * 3) % p.height;
+                    p.fill(255, 255, 0);
+                    p.rect(x, y, 4, 4);
+                }
+                
+                // クリアメッセージ
+                p.fill(0, 255, 0);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textFont('Courier New');
+                p.textSize(48);
+                p.text('*** CLEAR ***', p.width/2, p.height/2 - 50);
+                
+                p.fill(255);
+                p.textSize(32);
+                p.text('SCORE: ' + score, p.width/2, p.height/2 + 30);
+                
+                p.textSize(16);
+                p.fill(150);
+                p.text('CLICK TO CONTINUE', p.width/2, p.height/2 + 80);
+                
+                // 点滅カーソル
+                if (p.frameCount % 60 < 30) {
+                    p.fill(255);
+                    p.rect(p.width/2 + 100, p.height/2 + 72, 12, 16);
+                }
+            }
+            
+            function drawSettingsScreen() {
+                p.background(50, 50, 80);
+                
+                p.fill(255);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(48);
+                p.text('難易度設定', p.width/2, 50);
+                
+                // ステージ1設定
+                p.textSize(32);
+                p.fill(100, 200, 255);
+                p.text('ステージ1: ジャンプゲーム', p.width/2, 120);
+                
+                p.textSize(20);
+                p.fill(255);
+                p.textAlign(p.LEFT, p.CENTER);
+                
+                // 針山の頻度
+                p.text('針山の頻度:', 100, 170);
+                drawSlider(100, 190, 600, difficultySettings.stage1_spawnRate, 60, 180, 'スライダ1');
+                p.textAlign(p.RIGHT, p.CENTER);
+                p.text(getDifficultyLabel(difficultySettings.stage1_spawnRate, 60, 180, true), 710, 170);
+                
+                // 針山の高さ（最小）
+                p.textAlign(p.LEFT, p.CENTER);
+                p.text('針山の高さ（最小）:', 100, 240);
+                drawSlider(100, 260, 600, difficultySettings.stage1_minHeight, 20, 60, 'スライダ2');
+                p.textAlign(p.RIGHT, p.CENTER);
+                p.text(difficultySettings.stage1_minHeight + 'px', 710, 240);
+                
+                // 針山の高さ（最大）
+                p.textAlign(p.LEFT, p.CENTER);
+                p.text('針山の高さ（最大）:', 100, 310);
+                drawSlider(100, 330, 600, difficultySettings.stage1_maxHeight, 80, 150, 'スライダ3');
+                p.textAlign(p.RIGHT, p.CENTER);
+                p.text(difficultySettings.stage1_maxHeight + 'px', 710, 310);
+                
+                // ステージ2設定
+                p.textSize(32);
+                p.fill(100, 255, 100);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.text('ステージ2: 綱渡りゲーム', p.width/2, 390);
+                
+                p.textSize(20);
+                p.fill(255);
+                p.textAlign(p.LEFT, p.CENTER);
+                
+                // 目標角度
+                p.text('目標角度（超える必要がある角度）:', 100, 440);
+                drawSlider(100, 460, 600, difficultySettings.stage2_targetAngle, 15, 40, 'スライダ4');
+                p.textAlign(p.RIGHT, p.CENTER);
+                p.text(difficultySettings.stage2_targetAngle + '°', 710, 440);
+                
+                // 決定ボタン
+                let btnX = p.width/2 - 100;
+                let btnY = p.height - 80;
+                let btnW = 200;
+                let btnH = 50;
+                
+                let isOver = p.mouseX > btnX && p.mouseX < btnX + btnW &&
+                             p.mouseY > btnY && p.mouseY < btnY + btnH;
+                
+                p.fill(isOver ? [100, 255, 100] : [80, 200, 80]);
+                p.rect(btnX, btnY, btnW, btnH, 10);
+                p.fill(0);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(28);
+                p.text('決定', p.width/2, btnY + btnH/2);
+            }
+            
+            function drawCloud(x, y) {
+                // マリオ風の雲（モコモコした形）
+                p.fill(255);
+                p.ellipse(x, y, 60, 40);
+                p.ellipse(x + 25, y - 5, 50, 35);
+                p.ellipse(x + 45, y, 55, 38);
+                p.ellipse(x + 30, y + 10, 50, 30);
+            }
+            
+            function drawCharacterSelectScreen() {
+                // ピクセルアート風背景
+                p.background(0);
+                
+                // ドットパターン
+                p.fill(20);
+                for (let y = 0; y < p.height; y += 20) {
+                    for (let x = 0; x < p.width; x += 20) {
+                        if ((x + y) % 40 === 0) {
+                            p.rect(x, y, 4, 4);
+                        }
+                    }
+                }
+                
+                // タイトル
+                p.fill(255);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(32);
+                p.textFont('Courier New');
+                p.textStyle(p.BOLD);
+                p.text('SELECT PLAYER', p.width/2, 80);
+                
+                // キャラクターボタン
+                let characters = [
+                    {id: 'rabbit', name: 'RABBIT', x: p.width/2 - 240},
+                    {id: 'cat', name: 'CAT', x: p.width/2 - 80},
+                    {id: 'dog', name: 'DOG', x: p.width/2 + 80},
+                    {id: 'panda', name: 'PANDA', x: p.width/2 + 240}
+                ];
+                
+                let btnY = 180;
+                let btnSize = 120;
+                
+                for (let char of characters) {
+                    let isOver = p.mouseX > char.x - btnSize/2 && p.mouseX < char.x + btnSize/2 &&
+                                 p.mouseY > btnY && p.mouseY < btnY + btnSize + 40;
+                    let isSelected = selectedCharacter === char.id;
+                    
+                    // ボタンの背景（ピクセル枠）
+                    p.noFill();
+                    if (isSelected) {
+                        p.stroke(0, 255, 0);
+                        p.strokeWeight(4);
+                    } else if (isOver) {
+                        p.stroke(255, 255, 0);
+                        p.strokeWeight(3);
+                    } else {
+                        p.stroke(100);
+                        p.strokeWeight(2);
+                    }
+                    p.rect(char.x - btnSize/2, btnY, btnSize, btnSize + 40);
+                    p.noStroke();
+                    
+                    // キャラクター描画
+                    drawAnimalCharacter(char.x - 15, btnY + 20, char.id);
+                    
+                    // 名前
+                    p.fill(isSelected ? 0 : (isOver ? 255 : 200), isSelected ? 255 : (isOver ? 255 : 200), isSelected ? 0 : (isOver ? 0 : 200));
+                    p.textSize(14);
+                    p.textFont('Courier New');
+                    p.text(char.name, char.x, btnY + btnSize + 25);
+                }
+                
+                // 決定ボタン
+                let confirmBtnY = p.height - 100;
+                let confirmBtnW = 180;
+                let confirmBtnH = 40;
+                let isOverConfirm = p.mouseX > p.width/2 - confirmBtnW/2 && p.mouseX < p.width/2 + confirmBtnW/2 &&
+                                   p.mouseY > confirmBtnY && p.mouseY < confirmBtnY + confirmBtnH;
+                
+                p.fill(isOverConfirm ? 255 : 0);
+                p.stroke(isOverConfirm ? 0 : 255);
+                p.strokeWeight(3);
+                p.rect(p.width/2 - confirmBtnW/2, confirmBtnY, confirmBtnW, confirmBtnH);
+                p.fill(isOverConfirm ? 0 : 255);
+                p.noStroke();
+                p.textSize(20);
+                p.textFont('Courier New');
+                p.text('DONE', p.width/2, confirmBtnY + confirmBtnH/2);
+            }
+            
+            function drawThemeSelectScreen() {
+                // ピクセルアート風背景
+                p.background(0);
+                
+                // ドットパターン
+                p.fill(20);
+                for (let y = 0; y < p.height; y += 20) {
+                    for (let x = 0; x < p.width; x += 20) {
+                        if ((x + y) % 40 === 0) {
+                            p.rect(x, y, 4, 4);
+                        }
+                    }
+                }
+                
+                // タイトル
+                p.fill(255);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(32);
+                p.textFont('Courier New');
+                p.textStyle(p.BOLD);
+                p.text('SELECT THEME', p.width/2, 60);
+                
+                // テーマボタン
+                let themes = [
+                    {id: 'grassland', name: 'GRASSLAND', icon: '🌿', color: [100, 200, 100]},
+                    {id: 'ocean', name: 'OCEAN', icon: '🌊', color: [100, 150, 255]},
+                    {id: 'magma', name: 'MAGMA', icon: '🔥', color: [255, 100, 50]},
+                    {id: 'space', name: 'SPACE', icon: '🌌', color: [50, 50, 150]}
+                ];
+                
+                let btnW = 180;
+                let btnH = 120;
+                let startX = p.width/2 - (btnW * 2 + 20);
+                let startY = 150;
+                
+                for (let i = 0; i < themes.length; i++) {
+                    let theme = themes[i];
+                    let col = i % 2;
+                    let row = Math.floor(i / 2);
+                    let btnX = startX + col * (btnW + 20);
+                    let btnY = startY + row * (btnH + 40);
+                    
+                    let isOver = p.mouseX > btnX && p.mouseX < btnX + btnW &&
+                                 p.mouseY > btnY && p.mouseY < btnY + btnH;
+                    let isSelected = selectedTheme === theme.id;
+                    
+                    // ボタンの背景
+                    if (isSelected) {
+                        p.fill(theme.color);
+                        p.stroke(255, 255, 0);
+                        p.strokeWeight(4);
+                    } else if (isOver) {
+                        p.fill(theme.color[0] * 0.7, theme.color[1] * 0.7, theme.color[2] * 0.7);
+                        p.stroke(255);
+                        p.strokeWeight(3);
+                    } else {
+                        p.fill(theme.color[0] * 0.5, theme.color[1] * 0.5, theme.color[2] * 0.5);
+                        p.stroke(150);
+                        p.strokeWeight(2);
+                    }
+                    p.rect(btnX, btnY, btnW, btnH);
+                    p.noStroke();
+                    
+                    // アイコン（絵文字）
+                    p.textSize(48);
+                    p.text(theme.icon, btnX + btnW/2, btnY + 40);
+                    
+                    // 名前
+                    p.fill(255);
+                    p.textSize(16);
+                    p.textFont('Courier New');
+                    p.text(theme.name, btnX + btnW/2, btnY + 90);
+                }
+                
+                // 決定ボタン
+                let confirmBtnY = p.height - 100;
+                let confirmBtnW = 180;
+                let confirmBtnH = 40;
+                let isOverConfirm = p.mouseX > p.width/2 - confirmBtnW/2 && p.mouseX < p.width/2 + confirmBtnW/2 &&
+                                   p.mouseY > confirmBtnY && p.mouseY < confirmBtnY + confirmBtnH;
+                
+                p.fill(isOverConfirm ? 255 : 0);
+                p.stroke(isOverConfirm ? 0 : 255);
+                p.strokeWeight(3);
+                p.rect(p.width/2 - confirmBtnW/2, confirmBtnY, confirmBtnW, confirmBtnH);
+                p.fill(isOverConfirm ? 0 : 255);
+                p.noStroke();
+                p.textSize(20);
+                p.textFont('Courier New');
+                p.text('DONE', p.width/2, confirmBtnY + confirmBtnH/2);
+            }
+            
+            function drawDifficultySettingsScreen() {
+                // ピクセルアート風背景
+                p.background(0);
+                
+                // ドットパターン
+                p.fill(20);
+                for (let y = 0; y < p.height; y += 20) {
+                    for (let x = 0; x < p.width; x += 20) {
+                        if ((x + y) % 40 === 0) {
+                            p.rect(x, y, 4, 4);
+                        }
+                    }
+                }
+                
+                // タイトル
+                p.fill(255);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(32);
+                p.textFont('Courier New');
+                p.textStyle(p.BOLD);
+                p.text('DIFFICULTY SETTINGS', p.width/2, 60);
+                
+                // 説明
+                p.textSize(16);
+                p.fill(200);
+                p.text('針山の設定を調整してください', p.width/2, 100);
+                
+                // 設定項目
+                let settingY = 160;
+                let settingSpacing = 100;
+                
+                // 1. 生成頻度
+                p.textAlign(p.LEFT, p.CENTER);
+                p.textSize(18);
+                p.fill(255, 255, 0);
+                p.text('生成頻度 (FREQUENCY)', 100, settingY);
+                
+                let freqPercent = Math.round((180 - difficultySettings.stage1_spawnRate) / 120 * 100);
+                p.fill(255);
+                p.textSize(16);
+                p.text(`現在: ${freqPercent}%`, 100, settingY + 25);
+                
+                // ボタン
+                let btnW = 60;
+                let btnH = 35;
+                let btnX = p.width - 250;
+                
+                // - ボタン
+                let isOverMinus1 = p.mouseX > btnX && p.mouseX < btnX + btnW &&
+                                   p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2;
+                p.fill(isOverMinus1 ? 200 : 150);
+                p.rect(btnX, settingY - btnH/2, btnW, btnH);
+                p.fill(0);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(24);
+                p.text('-', btnX + btnW/2, settingY);
+                
+                // + ボタン
+                let btnX2 = btnX + btnW + 20;
+                let isOverPlus1 = p.mouseX > btnX2 && p.mouseX < btnX2 + btnW &&
+                                  p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2;
+                p.fill(isOverPlus1 ? 200 : 150);
+                p.rect(btnX2, settingY - btnH/2, btnW, btnH);
+                p.fill(0);
+                p.text('+', btnX2 + btnW/2, settingY);
+                
+                // 2. 針山の高さ（最小）
+                settingY += settingSpacing;
+                p.textAlign(p.LEFT, p.CENTER);
+                p.textSize(18);
+                p.fill(255, 255, 0);
+                p.text('針山の高さ 最小 (MIN HEIGHT)', 100, settingY);
+                
+                p.fill(255);
+                p.textSize(16);
+                p.text(`現在: ${difficultySettings.stage1_minHeight}px`, 100, settingY + 25);
+                
+                // - ボタン
+                let isOverMinus2 = p.mouseX > btnX && p.mouseX < btnX + btnW &&
+                                   p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2;
+                p.fill(isOverMinus2 ? 200 : 150);
+                p.rect(btnX, settingY - btnH/2, btnW, btnH);
+                p.fill(0);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(24);
+                p.text('-', btnX + btnW/2, settingY);
+                
+                // + ボタン
+                let isOverPlus2 = p.mouseX > btnX2 && p.mouseX < btnX2 + btnW &&
+                                  p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2;
+                p.fill(isOverPlus2 ? 200 : 150);
+                p.rect(btnX2, settingY - btnH/2, btnW, btnH);
+                p.fill(0);
+                p.text('+', btnX2 + btnW/2, settingY);
+                
+                // 3. 針山の高さ（最大）
+                settingY += settingSpacing;
+                p.textAlign(p.LEFT, p.CENTER);
+                p.textSize(18);
+                p.fill(255, 255, 0);
+                p.text('針山の高さ 最大 (MAX HEIGHT)', 100, settingY);
+                
+                p.fill(255);
+                p.textSize(16);
+                p.text(`現在: ${difficultySettings.stage1_maxHeight}px`, 100, settingY + 25);
+                
+                // - ボタン
+                let isOverMinus3 = p.mouseX > btnX && p.mouseX < btnX + btnW &&
+                                   p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2;
+                p.fill(isOverMinus3 ? 200 : 150);
+                p.rect(btnX, settingY - btnH/2, btnW, btnH);
+                p.fill(0);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(24);
+                p.text('-', btnX + btnW/2, settingY);
+                
+                // + ボタン
+                let isOverPlus3 = p.mouseX > btnX2 && p.mouseX < btnX2 + btnW &&
+                                  p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2;
+                p.fill(isOverPlus3 ? 200 : 150);
+                p.rect(btnX2, settingY - btnH/2, btnW, btnH);
+                p.fill(0);
+                p.text('+', btnX2 + btnW/2, settingY);
+                
+                // 決定ボタン
+                let confirmBtnY = p.height - 100;
+                let confirmBtnW = 180;
+                let confirmBtnH = 40;
+                let isOverConfirm = p.mouseX > p.width/2 - confirmBtnW/2 && p.mouseX < p.width/2 + confirmBtnW/2 &&
+                                   p.mouseY > confirmBtnY && p.mouseY < confirmBtnY + confirmBtnH;
+                
+                p.fill(isOverConfirm ? 255 : 0);
+                p.stroke(isOverConfirm ? 0 : 255);
+                p.strokeWeight(3);
+                p.rect(p.width/2 - confirmBtnW/2, confirmBtnY, confirmBtnW, confirmBtnH);
+                p.fill(isOverConfirm ? 0 : 255);
+                p.noStroke();
+                p.textSize(20);
+                p.textFont('Courier New');
+                p.text('START', p.width/2, confirmBtnY + confirmBtnH/2);
+            }
+            
+            function handleDifficultySettingsClick() {
+                let settingY = 160;
+                let settingSpacing = 100;
+                let btnW = 60;
+                let btnH = 35;
+                let btnX = p.width - 250;
+                let btnX2 = btnX + btnW + 20;
+                
+                // 1. 生成頻度
+                if (p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2) {
+                    if (p.mouseX > btnX && p.mouseX < btnX + btnW) {
+                        // - ボタン（頻度を減らす = 間隔を増やす）
+                        playButtonSound();
+                        difficultySettings.stage1_spawnRate = Math.min(difficultySettings.stage1_spawnRate + 10, 180);
+                        return;
+                    } else if (p.mouseX > btnX2 && p.mouseX < btnX2 + btnW) {
+                        // + ボタン（頻度を増やす = 間隔を減らす）
+                        playButtonSound();
+                        difficultySettings.stage1_spawnRate = Math.max(difficultySettings.stage1_spawnRate - 10, 60);
+                        return;
+                    }
+                }
+                
+                // 2. 針山の高さ（最小）
+                settingY += settingSpacing;
+                if (p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2) {
+                    if (p.mouseX > btnX && p.mouseX < btnX + btnW) {
+                        playButtonSound();
+                        difficultySettings.stage1_minHeight = Math.max(difficultySettings.stage1_minHeight - 5, 20);
+                        return;
+                    } else if (p.mouseX > btnX2 && p.mouseX < btnX2 + btnW) {
+                        playButtonSound();
+                        difficultySettings.stage1_minHeight = Math.min(difficultySettings.stage1_minHeight + 5, 60);
+                        return;
+                    }
+                }
+                
+                // 3. 針山の高さ（最大）
+                settingY += settingSpacing;
+                if (p.mouseY > settingY - btnH/2 && p.mouseY < settingY + btnH/2) {
+                    if (p.mouseX > btnX && p.mouseX < btnX + btnW) {
+                        playButtonSound();
+                        difficultySettings.stage1_maxHeight = Math.max(difficultySettings.stage1_maxHeight - 5, 80);
+                        return;
+                    } else if (p.mouseX > btnX2 && p.mouseX < btnX2 + btnW) {
+                        playButtonSound();
+                        difficultySettings.stage1_maxHeight = Math.min(difficultySettings.stage1_maxHeight + 5, 150);
+                        return;
+                    }
+                }
+                
+                // 決定ボタン
+                let confirmBtnY = p.height - 100;
+                let confirmBtnW = 180;
+                let confirmBtnH = 40;
+                if (p.mouseX > p.width/2 - confirmBtnW/2 && p.mouseX < p.width/2 + confirmBtnW/2 &&
+                    p.mouseY > confirmBtnY && p.mouseY < confirmBtnY + confirmBtnH) {
+                    playButtonSound();
+                    startBGM(); // BGMを開始
+                    gameState = 'waiting';
+                }
+            }
+            
+            function handleThemeSelect() {
+                let themes = [
+                    {id: 'grassland'},
+                    {id: 'ocean'},
+                    {id: 'magma'},
+                    {id: 'space'}
+                ];
+                
+                let btnW = 180;
+                let btnH = 120;
+                let startX = p.width/2 - (btnW * 2 + 20);
+                let startY = 150;
+                
+                // テーマボタンのクリック判定
+                for (let i = 0; i < themes.length; i++) {
+                    let theme = themes[i];
+                    let col = i % 2;
+                    let row = Math.floor(i / 2);
+                    let btnX = startX + col * (btnW + 20);
+                    let btnY = startY + row * (btnH + 40);
+                    
+                    if (p.mouseX > btnX && p.mouseX < btnX + btnW &&
+                        p.mouseY > btnY && p.mouseY < btnY + btnH) {
+                        playButtonSound();
+                        selectedTheme = theme.id;
+                        return;
+                    }
+                }
+                
+                // 決定ボタンのクリック判定
+                let confirmBtnY = p.height - 100;
+                let confirmBtnW = 180;
+                let confirmBtnH = 40;
+                if (p.mouseX > p.width/2 - confirmBtnW/2 && p.mouseX < p.width/2 + confirmBtnW/2 &&
+                    p.mouseY > confirmBtnY && p.mouseY < confirmBtnY + confirmBtnH) {
+                    playButtonSound();
+                    gameState = 'difficulty-settings';
+                }
+            }
+            
+            function drawThemeBackground() {
+                p.noStroke();
+                
+                if (selectedTheme === 'grassland') {
+                    // 原っぱ
+                    p.background(135, 206, 235); // 空色
+                    
+                    // 雲
+                    p.fill(255);
+                    for (let i = 0; i < 5; i++) {
+                        let cx = (i * 200 + p.frameCount * 0.3) % (p.width + 100);
+                        let cy = 50 + i * 20;
+                        p.ellipse(cx, cy, 60, 30);
+                        p.ellipse(cx + 20, cy - 5, 50, 25);
+                    }
+                    
+                    // 天井（草の天井）
+                    p.fill(34, 139, 34);
+                    p.rect(0, 0, p.width, CEILING_HEIGHT);
+                    
+                    // 天井の針山（逆さ）
+                    p.fill(100, 100, 100);
+                    for (let x = 0; x < p.width; x += 15) {
+                        let needleHeight = 20;
+                        p.triangle(x, CEILING_HEIGHT, x + 7, CEILING_HEIGHT - needleHeight, x + 14, CEILING_HEIGHT);
+                    }
+                    
+                    // 地面（草）
+                    p.fill(50, 150, 50);
+                    p.rect(0, ground, p.width, 60);
+                    
+                    // 草のディテール
+                    p.fill(40, 120, 40);
+                    for (let x = 0; x < p.width; x += 10) {
+                        p.rect(x, ground, 3, 10);
+                    }
+                    
+                } else if (selectedTheme === 'ocean') {
+                    // 海
+                    p.background(30, 80, 150); // 深い青
+                    
+                    // 気泡
+                    p.fill(200, 230, 255, 150);
+                    for (let i = 0; i < 10; i++) {
+                        let bx = (i * 100 + p.frameCount * 0.5) % p.width;
+                        let by = (p.height - 100 - (p.frameCount * 0.5 + i * 50) % p.height);
+                        p.ellipse(bx, by, 10, 10);
+                    }
+                    
+                    // 天井（海面）
+                    p.fill(0, 50, 120);
+                    p.rect(0, 0, p.width, CEILING_HEIGHT);
+                    
+                    // 天井の針山（逆さ）
+                    p.fill(150, 150, 150);
+                    for (let x = 0; x < p.width; x += 15) {
+                        let needleHeight = 20;
+                        p.triangle(x, CEILING_HEIGHT, x + 7, CEILING_HEIGHT - needleHeight, x + 14, CEILING_HEIGHT);
+                    }
+                    
+                    // 地面（海底）
+                    p.fill(20, 60, 100);
+                    p.rect(0, ground, p.width, 60);
+                    
+                    // 海藻風のライン
+                    p.stroke(30, 100, 60);
+                    p.strokeWeight(2);
+                    for (let x = 0; x < p.width; x += 40) {
+                        for (let i = 0; i < 3; i++) {
+                            p.line(x + i * 5, ground, x + i * 5 + Math.sin(p.frameCount * 0.05 + i) * 3, ground - 20);
+                        }
+                    }
+                    p.noStroke();
+                    
+                } else if (selectedTheme === 'magma') {
+                    // マグマ
+                    p.background(50, 20, 20); // 暗い赤
+                    
+                    // 火の粉
+                    p.fill(255, 150, 0, 200);
+                    for (let i = 0; i < 15; i++) {
+                        let fx = (i * 80) % p.width;
+                        let fy = (p.height - (p.frameCount * 2 + i * 40) % p.height);
+                        p.rect(fx, fy, 3, 3);
+                    }
+                    
+                    // 天井（溶岩の天井）
+                    p.fill(80, 30, 30);
+                    p.rect(0, 0, p.width, CEILING_HEIGHT);
+                    
+                    // 天井の針山（逆さ、赤熱）
+                    p.fill(180, 80, 80);
+                    for (let x = 0; x < p.width; x += 15) {
+                        let needleHeight = 20;
+                        p.triangle(x, CEILING_HEIGHT, x + 7, CEILING_HEIGHT - needleHeight, x + 14, CEILING_HEIGHT);
+                    }
+                    
+                    // 地面（溶岩地帯）
+                    p.fill(60, 20, 20);
+                    p.rect(0, ground, p.width, 60);
+                    
+                    // マグマの波
+                    p.fill(255, 100, 0, 100);
+                    for (let x = 0; x < p.width; x += 20) {
+                        let h = Math.sin(p.frameCount * 0.1 + x * 0.1) * 5 + 10;
+                        p.rect(x, ground, 20, h);
+                    }
+                    
+                } else if (selectedTheme === 'space') {
+                    // 宇宙
+                    p.background(10, 10, 30); // 暗い青紫
+                    
+                    // 星
+                    p.fill(255);
+                    for (let i = 0; i < 30; i++) {
+                        let sx = (i * 137 + p.frameCount * 0.2) % p.width;
+                        let sy = (i * 83) % (p.height - 100);
+                        let twinkle = Math.sin(p.frameCount * 0.1 + i) * 100 + 155;
+                        p.fill(twinkle);
+                        p.rect(sx, sy, 2, 2);
+                    }
+                    
+                    // 天井
+                    p.fill(30, 30, 60);
+                    p.rect(0, 0, p.width, CEILING_HEIGHT);
+                    
+                    // 天井の針山（逆さ）
+                    p.fill(150, 150, 150);
+                    for (let x = 0; x < p.width; x += 15) {
+                        let needleHeight = 20;
+                        p.triangle(x, CEILING_HEIGHT, x + 7, CEILING_HEIGHT - needleHeight, x + 14, CEILING_HEIGHT);
+                    }
+                    
+                    // 地面（宇宙ステーション風）
+                    p.fill(50, 50, 70);
+                    p.rect(0, ground, p.width, 60);
+                    
+                    // グリッドライン
+                    p.stroke(80, 80, 120);
+                    p.strokeWeight(1);
+                    for (let x = 0; x < p.width; x += 20) {
+                        p.line(x, ground, x, p.height);
+                    }
+                    for (let y = ground; y < p.height; y += 20) {
+                        p.line(0, y, p.width, y);
+                    }
+                    p.noStroke();
+                }
+            }
+            
+            // 画面下部に難易度設定と足の角度を表示
+            function drawBottomInfo() {
+                // 背景パネル
+                p.fill(0, 0, 0, 180);
+                p.noStroke();
+                p.rect(0, p.height - 100, p.width, 100);
+                
+                // 左下: 難易度設定
+                p.fill(255, 255, 0);
+                p.textAlign(p.LEFT, p.TOP);
+                p.textFont('Courier New');
+                p.textSize(14);
+                p.textStyle(p.BOLD);
+                p.text('[SETTINGS]', 20, p.height - 90);
+                
+                p.fill(255);
+                p.textSize(12);
+                p.textStyle(p.NORMAL);
+                let freqPercent = Math.round((180 - difficultySettings.stage1_spawnRate) / 120 * 100);
+                p.text(`針山の数: ${freqPercent}%`, 20, p.height - 68);
+                p.text(`針山の高さ: ${difficultySettings.stage1_minHeight}-${difficultySettings.stage1_maxHeight}px`, 20, p.height - 50);
+                p.text(`スピード: 3.5-5.0`, 20, p.height - 32);
+                
+                // 右下: 足の角度イラスト
+                let rightX = p.width - 120;
+                let rightY = p.height - 50;
+                
+                p.fill(255, 255, 0);
+                p.textAlign(p.RIGHT, p.TOP);
+                p.textSize(14);
+                p.textStyle(p.BOLD);
+                p.text('[足の角度]', p.width - 20, p.height - 90);
+                
+                // 角度の数値表示
+                p.fill(0, 255, 255);
+                p.textSize(16);
+                p.textStyle(p.BOLD);
+                p.textAlign(p.RIGHT, p.TOP);
+                p.text(`${Math.round(currentPitch)}°`, p.width - 20, p.height - 68);
+                
+                // 足のイラスト（棒で表現）
+                p.push();
+                p.translate(rightX, rightY);
+                
+                // 基準線（水平線）
+                p.stroke(100);
+                p.strokeWeight(2);
+                p.line(-40, 0, 40, 0);
+                
+                // 足の向き（角度に応じて回転）
+                p.rotate(p.radians(-currentPitch)); // pitchを反映
+                
+                // 足の形状
+                p.strokeWeight(4);
+                
+                // 色を角度によって変化
+                if (Math.abs(currentPitch) < 10) {
+                    p.stroke(0, 255, 0); // 平行に近い = 緑
+                } else if (Math.abs(currentPitch) < 30) {
+                    p.stroke(255, 255, 0); // 中程度 = 黄色
+                } else {
+                    p.stroke(255, 100, 0); // 大きく傾いている = オレンジ
+                }
+                
+                // 足の本体（長方形的に）
+                p.line(0, 0, 0, -35);
+                p.strokeWeight(8);
+                p.line(-8, -35, 8, -35); // 足首部分
+                
+                // つま先
+                p.strokeWeight(6);
+                p.line(8, -35, 18, -35);
+                
+                p.pop();
+                
+                // 角度の目盛り
+                p.textAlign(p.CENTER, p.TOP);
+                p.textSize(10);
+                p.fill(150);
+                p.noStroke();
+                p.text('-90°', rightX - 40, rightY + 15);
+                p.text('0°', rightX, rightY + 15);
+                p.text('+90°', rightX + 40, rightY + 15);
+            }
+            
+            function drawStage2ThemeBackground() {
+                let groundY = p.height - 60;
+                p.noStroke();
+                
+                if (selectedTheme === 'grassland') {
+                    // 原っぱ
+                    p.background(135, 206, 235); // 空色
+                    
+                    // 雲
+                    p.fill(255);
+                    for (let i = 0; i < 5; i++) {
+                        let cx = (i * 200 + p.frameCount * 0.3) % (p.width + 100);
+                        let cy = 50 + i * 20;
+                        p.ellipse(cx, cy, 60, 30);
+                        p.ellipse(cx + 20, cy - 5, 50, 25);
+                    }
+                    
+                    // 地面（草）
+                    p.fill(50, 150, 50);
+                    p.rect(0, groundY, p.width, 60);
+                    
+                    // 草のディテール
+                    p.fill(40, 120, 40);
+                    for (let x = 0; x < p.width; x += 10) {
+                        p.rect(x, groundY, 3, 10);
+                    }
+                    
+                } else if (selectedTheme === 'ocean') {
+                    // 海
+                    p.background(30, 80, 150); // 深い青
+                    
+                    // 気泡
+                    p.fill(200, 230, 255, 150);
+                    for (let i = 0; i < 10; i++) {
+                        let bx = (i * 100 + p.frameCount * 0.5) % p.width;
+                        let by = (p.height - 100 - (p.frameCount * 0.5 + i * 50) % p.height);
+                        p.ellipse(bx, by, 10, 10);
+                    }
+                    
+                    // 地面（海底）
+                    p.fill(20, 60, 100);
+                    p.rect(0, groundY, p.width, 60);
+                    
+                    // 海藻風のライン
+                    p.stroke(30, 100, 60);
+                    p.strokeWeight(2);
+                    for (let x = 0; x < p.width; x += 40) {
+                        for (let i = 0; i < 3; i++) {
+                            p.line(x + i * 5, groundY, x + i * 5 + Math.sin(p.frameCount * 0.05 + i) * 3, groundY - 20);
+                        }
+                    }
+                    p.noStroke();
+                    
+                } else if (selectedTheme === 'magma') {
+                    // マグマ
+                    p.background(50, 20, 20); // 暗い赤
+                    
+                    // 火の粉
+                    p.fill(255, 150, 0, 200);
+                    for (let i = 0; i < 15; i++) {
+                        let fx = (i * 80) % p.width;
+                        let fy = (p.height - (p.frameCount * 2 + i * 40) % p.height);
+                        p.rect(fx, fy, 3, 3);
+                    }
+                    
+                    // 地面（溶岩地帯）
+                    p.fill(60, 20, 20);
+                    p.rect(0, groundY, p.width, 60);
+                    
+                    // マグマの波
+                    p.fill(255, 100, 0, 100);
+                    for (let x = 0; x < p.width; x += 20) {
+                        let h = Math.sin(p.frameCount * 0.1 + x * 0.1) * 5 + 10;
+                        p.rect(x, groundY, 20, h);
+                    }
+                    
+                } else if (selectedTheme === 'space') {
+                    // 宇宙
+                    p.background(10, 10, 30); // 暗い青紫
+                    
+                    // 星
+                    p.fill(255);
+                    for (let i = 0; i < 30; i++) {
+                        let sx = (i * 137 + p.frameCount * 0.2) % p.width;
+                        let sy = (i * 83) % (p.height - 100);
+                        let twinkle = Math.sin(p.frameCount * 0.1 + i) * 100 + 155;
+                        p.fill(twinkle);
+                        p.rect(sx, sy, 2, 2);
+                    }
+                    
+                    // 地面（宇宙ステーション風）
+                    p.fill(50, 50, 70);
+                    p.rect(0, groundY, p.width, 60);
+                    
+                    // グリッドライン
+                    p.stroke(80, 80, 120);
+                    p.strokeWeight(1);
+                    for (let x = 0; x < p.width; x += 20) {
+                        p.line(x, groundY, x, p.height);
+                    }
+                    for (let y = groundY; y < p.height; y += 20) {
+                        p.line(0, y, p.width, y);
+                    }
+                    p.noStroke();
+                }
+            }
+            
+            function drawThemeObstacle(obs) {
+                p.noStroke();
+                
+                if (selectedTheme === 'grassland') {
+                    // 泥（茶色いブロック）
+                    for (let j = 0; j < 3; j++) {
+                        // メインの泥
+                        p.fill(101, 67, 33);
+                        p.rect(obs.x + j * 10, obs.y, 10, ground - obs.y);
+                        
+                        // ハイライト
+                        p.fill(139, 90, 43);
+                        p.rect(obs.x + j * 10, obs.y, 10, 5);
+                        
+                        // シャドウ
+                        p.fill(70, 50, 30);
+                        p.rect(obs.x + j * 10, ground - 5, 10, 5);
+                    }
+                    
+                } else if (selectedTheme === 'ocean') {
+                    // クラゲ（ピンク）
+                    let jellyfishHeight = obs.height;
+                    let jellyfishY = obs.y;
+                    
+                    // 頭（ドーム型）
+                    p.fill(255, 150, 200, 200);
+                    p.ellipse(obs.x + 15, jellyfishY + 15, 30, 25);
+                    
+                    // 触手（波打つ）
+                    p.stroke(255, 100, 150, 200);
+                    p.strokeWeight(2);
+                    for (let j = 0; j < 4; j++) {
+                        let startX = obs.x + 5 + j * 6;
+                        let startY = jellyfishY + 25;
+                        for (let k = 0; k < 5; k++) {
+                            let x1 = startX + Math.sin(p.frameCount * 0.1 + j + k) * 2;
+                            let y1 = startY + k * 8;
+                            let x2 = startX + Math.sin(p.frameCount * 0.1 + j + k + 0.5) * 2;
+                            let y2 = startY + (k + 1) * 8;
+                            p.line(x1, y1, x2, y2);
+                        }
+                    }
+                    p.noStroke();
+                    
+                } else if (selectedTheme === 'magma') {
+                    // 針山（赤熱）
+                    for (let j = 0; j < 3; j++) {
+                        // メインの針
+                        p.fill(180, 50, 50);
+                        p.triangle(obs.x + j * 10, ground, obs.x + j * 10 + 5, obs.y, obs.x + j * 10 + 10, ground);
+                        
+                        // 赤熱の光
+                        p.fill(255, 100, 0);
+                        p.triangle(obs.x + j * 10 + 3, ground - 5, obs.x + j * 10 + 5, obs.y + 10, obs.x + j * 10 + 7, ground - 5);
+                    }
+                    
+                } else if (selectedTheme === 'space') {
+                    // 隕石（灰色の岩）
+                    let meteorSize = obs.height * 0.8;
+                    let meteorX = obs.x + 15;
+                    let meteorY = obs.y + obs.height / 2;
+                    
+                    // 隕石の本体（不規則な円形）
+                    p.fill(80, 80, 90);
+                    p.ellipse(meteorX, meteorY, meteorSize, meteorSize * 0.9);
+                    
+                    // クレーター（暗い穴）
+                    p.fill(40, 40, 50);
+                    p.ellipse(meteorX - meteorSize * 0.2, meteorY - meteorSize * 0.15, meteorSize * 0.25, meteorSize * 0.2);
+                    p.ellipse(meteorX + meteorSize * 0.15, meteorY + meteorSize * 0.1, meteorSize * 0.2, meteorSize * 0.15);
+                    p.ellipse(meteorX + meteorSize * 0.05, meteorY - meteorSize * 0.25, meteorSize * 0.15, meteorSize * 0.15);
+                    
+                    // ハイライト（光の反射）
+                    p.fill(120, 120, 130);
+                    p.ellipse(meteorX - meteorSize * 0.15, meteorY - meteorSize * 0.2, meteorSize * 0.2, meteorSize * 0.15);
+                    
+                    // 炎のエフェクト（後ろに軌跡）
+                    p.fill(255, 150, 0, 100);
+                    p.ellipse(meteorX - meteorSize * 0.4, meteorY, meteorSize * 0.4, meteorSize * 0.3);
+                    p.fill(255, 100, 0, 80);
+                    p.ellipse(meteorX - meteorSize * 0.6, meteorY, meteorSize * 0.3, meteorSize * 0.2);
+                }
+            }
+            
+            function handleCharacterSelect() {
+
+                let characters = [
+                    {id: 'rabbit', x: p.width/2 - 240},
+                    {id: 'cat', x: p.width/2 - 80},
+                    {id: 'dog', x: p.width/2 + 80},
+                    {id: 'panda', x: p.width/2 + 240}
+                ];
+                
+                let btnY = 180;
+                let btnSize = 120;
+                
+                // キャラクターボタンのクリック判定
+                for (let char of characters) {
+                    if (p.mouseX > char.x - btnSize/2 && p.mouseX < char.x + btnSize/2 &&
+                        p.mouseY > btnY && p.mouseY < btnY + btnSize + 40) {
+                        playButtonSound();
+                        selectedCharacter = char.id;
+                        return;
+                    }
+                }
+                
+                // 決定ボタンのクリック判定
+                let confirmBtnY = p.height - 100;
+                let confirmBtnW = 180;
+                let confirmBtnH = 40;
+                if (p.mouseX > p.width/2 - confirmBtnW/2 && p.mouseX < p.width/2 + confirmBtnW/2 &&
+                    p.mouseY > confirmBtnY && p.mouseY < confirmBtnY + confirmBtnH) {
+                    playButtonSound();
+                    gameState = 'theme-select';
+                }
+            }
+            
+            function drawAnimalCharacter(x, y, type) {
+                // 選択された動物に応じて描画
+                if (type === 'rabbit') {
+                    drawRabbit(x, y);
+                } else if (type === 'cat') {
+                    drawCat(x, y);
+                } else if (type === 'dog') {
+                    drawDog(x, y);
+                } else if (type === 'panda') {
+                    drawPanda(x, y);
+                } else {
+                    // デフォルトはうさぎ
+                    drawRabbit(x, y);
+                }
+            }
+            
+            function drawRabbit(x, y) {
+                // ピクセルアートうさぎ
+                p.noStroke();
+                
+                // 体（白のブロック）
+                p.fill(255);
+                p.rect(x + 6, y + 24, 18, 24);
+                p.rect(x + 6, y + 12, 18, 18);
+                
+                // 耳（長い）
+                p.rect(x + 8, y, 6, 14);
+                p.rect(x + 16, y, 6, 14);
+                p.fill(255, 150, 200);
+                p.rect(x + 10, y + 4, 2, 8);
+                p.rect(x + 18, y + 4, 2, 8);
+                
+                // 目
+                p.fill(0);
+                p.rect(x + 10, y + 16, 3, 3);
+                p.rect(x + 17, y + 16, 3, 3);
+                
+                // 鼻
+                p.fill(255, 150, 200);
+                p.rect(x + 13, y + 22, 4, 3);
+                
+                // 足
+                p.fill(255);
+                p.rect(x + 8, y + 44, 5, 6);
+                p.rect(x + 17, y + 44, 5, 6);
+            }
+            
+            function drawCat(x, y) {
+                // ピクセルアート猫
+                p.noStroke();
+                
+                // 体（オレンジ）
+                p.fill(255, 140, 0);
+                p.rect(x + 6, y + 24, 18, 24);
+                p.rect(x + 6, y + 12, 18, 18);
+                
+                // 耳（三角形風）
+                p.rect(x + 6, y + 8, 6, 8);
+                p.rect(x + 18, y + 8, 6, 8);
+                
+                // 目（緑）
+                p.fill(0, 200, 0);
+                p.rect(x + 10, y + 16, 3, 4);
+                p.rect(x + 17, y + 16, 3, 4);
+                
+                // 鼻
+                p.fill(255, 100, 150);
+                p.rect(x + 13, y + 22, 4, 2);
+                
+                // 口
+                p.fill(0);
+                p.rect(x + 11, y + 24, 2, 2);
+                p.rect(x + 17, y + 24, 2, 2);
+                
+                // 足
+                p.fill(255, 140, 0);
+                p.rect(x + 8, y + 44, 5, 6);
+                p.rect(x + 17, y + 44, 5, 6);
+                
+                // 尻尾
+                p.rect(x + 22, y + 36, 4, 8);
+            }
+            
+            function drawDog(x, y) {
+                // ピクセルアート犬
+                p.noStroke();
+                
+                // 体（茶色）
+                p.fill(160, 82, 45);
+                p.rect(x + 6, y + 24, 18, 24);
+                p.rect(x + 6, y + 12, 18, 18);
+                
+                // 耳（垂れ耳）
+                p.fill(120, 60, 30);
+                p.rect(x + 4, y + 14, 4, 10);
+                p.rect(x + 22, y + 14, 4, 10);
+                
+                // 目
+                p.fill(0);
+                p.rect(x + 10, y + 16, 3, 3);
+                p.rect(x + 17, y + 16, 3, 3);
+                
+                // 鼻
+                p.fill(0);
+                p.rect(x + 12, y + 22, 6, 4);
+                
+                // 舌
+                p.fill(255, 100, 150);
+                p.rect(x + 13, y + 26, 4, 3);
+                
+                // 足
+                p.fill(160, 82, 45);
+                p.rect(x + 8, y + 44, 5, 6);
+                p.rect(x + 17, y + 44, 5, 6);
+            }
+            
+            function drawPanda(x, y) {
+                // ピクセルアートパンダ
+                p.noStroke();
+                
+                // 体（白）
+                p.fill(255);
+                p.rect(x + 6, y + 24, 18, 24);
+                p.rect(x + 6, y + 12, 18, 18);
+                
+                // 耳（黒）
+                p.fill(0);
+                p.rect(x + 6, y + 8, 6, 6);
+                p.rect(x + 18, y + 8, 6, 6);
+                
+                // 目の周り（黒）
+                p.rect(x + 8, y + 14, 6, 8);
+                p.rect(x + 16, y + 14, 6, 8);
+                
+                // 目（白）
+                p.fill(255);
+                p.rect(x + 10, y + 16, 3, 4);
+                p.rect(x + 17, y + 16, 3, 4);
+                
+                // 瞳
+                p.fill(0);
+                p.rect(x + 11, y + 17, 1, 2);
+                p.rect(x + 18, y + 17, 1, 2);
+                
+                // 鼻
+                p.fill(0);
+                p.rect(x + 13, y + 22, 4, 3);
+                
+                // 足（黒）
+                p.rect(x + 8, y + 44, 5, 6);
+                p.rect(x + 17, y + 44, 5, 6);
+            }
+            
+            function drawBrick(x, y, w, h) {
+                // レンガブロック
+                p.fill(210, 105, 30);
+                p.rect(x, y, w, h);
+                
+                // レンガの影
+                p.fill(160, 82, 45);
+                p.rect(x, y + h - 5, w, 5);
+                p.rect(x + w - 5, y, 5, h);
+                
+                // レンガのハイライト
+                p.fill(255, 140, 50);
+                p.rect(x, y, w, 5);
+                p.rect(x, y, 5, h);
+                
+                // レンガの境界線
+                p.stroke(101, 67, 33);
+                p.strokeWeight(2);
+                p.noFill();
+                p.rect(x + 1, y + 1, w - 2, h - 2);
+                p.noStroke();
+            }
+            
+            function drawSlider(x, y, width, value, min, max, id) {
+                // スライダーの背景
+                p.fill(100);
+                p.rect(x, y, width, 10, 5);
+                
+                // スライダーの値
+                let ratio = (value - min) / (max - min);
+                let handleX = x + ratio * width;
+                
+                // スライダーのバー
+                p.fill(100, 200, 255);
+                p.rect(x, y, ratio * width, 10, 5);
+                
+                // ハンドル
+                p.fill(255);
+                p.circle(handleX, y + 5, 20);
+            }
+            
+            function getDifficultyLabel(value, min, max, reverse = false) {
+                let ratio = (value - min) / (max - min);
+                if (reverse) ratio = 1 - ratio;
+                
+                if (ratio < 0.33) return '簡単';
+                if (ratio < 0.66) return '普通';
+                return '難しい';
+            }
+            
+            function handleSettingsClick() {
+                // スライダーのドラッグ処理
+                let sliders = [
+                    { x: 100, y: 190, width: 600, min: 60, max: 180, key: 'stage1_spawnRate' },
+                    { x: 100, y: 260, width: 600, min: 20, max: 60, key: 'stage1_minHeight' },
+                    { x: 100, y: 330, width: 600, min: 80, max: 150, key: 'stage1_maxHeight' },
+                    { x: 100, y: 460, width: 600, min: 15, max: 40, key: 'stage2_targetAngle' }
+                ];
+                
+                for (let slider of sliders) {
+                    if (p.mouseY > slider.y - 10 && p.mouseY < slider.y + 20) {
+                        let ratio = p.constrain((p.mouseX - slider.x) / slider.width, 0, 1);
+                        let value = slider.min + ratio * (slider.max - slider.min);
+                        difficultySettings[slider.key] = Math.round(value);
+                    }
+                }
+                
+                // 決定ボタン
+                let btnX = p.width/2 - 100;
+                let btnY = p.height - 80;
+                let btnW = 200;
+                let btnH = 50;
+                
+                if (p.mouseX > btnX && p.mouseX < btnX + btnW &&
+                    p.mouseY > btnY && p.mouseY < btnY + btnH) {
+                    // 設定完了、ステージ選択へ
+                    gameState = 'waiting';
+                }
+            }
+            
+            function drawClearedScreen() {
+                // 紙吹雪エフェクト
+                for (let i = 0; i < 50; i++) {
+                    let x = (p.frameCount * 2 + i * 30) % (p.width + 100);
+                    let y = (i * 50 + p.frameCount * 3) % p.height;
+                    p.fill(p.random(200, 255), p.random(200, 255), p.random(0, 255));
+                    p.rect(x, y, 5, 10, 2);
+                }
+                
+                // 光の輪
+                for (let i = 0; i < 3; i++) {
+                    let size = 200 + i * 100 + Math.sin(p.frameCount * 0.05) * 20;
+                    p.noFill();
+                    p.stroke(255, 215, 0, 100 - i * 30);
+                    p.strokeWeight(3);
+                    p.circle(p.width/2, p.height/2 - 150, size);
+                }
+                
+                p.noStroke();
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(64);
+                p.fill(255, 215, 0);
+                p.text('🎉 ゲームクリア！ 🎉', p.width/2, 100);
+                
+                p.textSize(32);
+                p.fill(0);
+                p.text(`最終スコア: ${score}`, p.width/2, 180);
+                
+                // 4つのボタン
+                let btnWidth = 280;
+                let btnHeight = 50;
+                let btnSpacing = 65;
+                let startY = 260;
+                
+                // 1. もう一度遊ぶボタン
+                let retryBtnY = startY;
+                let isOverRetry = p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                                 p.mouseY > retryBtnY && p.mouseY < retryBtnY + btnHeight;
+                p.fill(isOverRetry ? 120 : 100, isOverRetry ? 220 : 200, isOverRetry ? 120 : 100);
+                p.rect(p.width/2 - btnWidth/2, retryBtnY, btnWidth, btnHeight, 5);
+                p.fill(255);
+                p.textSize(24);
+                p.textFont('Courier New');
+                p.text('もう一度遊ぶ', p.width/2, retryBtnY + btnHeight/2);
+                
+                // 2. キャラクター選択に戻るボタン
+                let charSelectBtnY = startY + btnSpacing;
+                let isOverChar = p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                                p.mouseY > charSelectBtnY && p.mouseY < charSelectBtnY + btnHeight;
+                p.fill(isOverChar ? 120 : 100, isOverChar ? 120 : 100, isOverChar ? 220 : 200);
+                p.rect(p.width/2 - btnWidth/2, charSelectBtnY, btnWidth, btnHeight, 5);
+                p.fill(255);
+                p.text('キャラクター選択', p.width/2, charSelectBtnY + btnHeight/2);
+                
+                // 3. テーマ選択に戻るボタン
+                let themeSelectBtnY = startY + btnSpacing * 2;
+                let isOverTheme = p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                                 p.mouseY > themeSelectBtnY && p.mouseY < themeSelectBtnY + btnHeight;
+                p.fill(isOverTheme ? 220 : 200, isOverTheme ? 140 : 120, isOverTheme ? 120 : 100);
+                p.rect(p.width/2 - btnWidth/2, themeSelectBtnY, btnWidth, btnHeight, 5);
+                p.fill(255);
+                p.text('テーマ選択', p.width/2, themeSelectBtnY + btnHeight/2);
+                
+                // 4. ステージ選択に戻るボタン
+                let stageSelectBtnY = startY + btnSpacing * 3;
+                let isOverStage = p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                                 p.mouseY > stageSelectBtnY && p.mouseY < stageSelectBtnY + btnHeight;
+                p.fill(isOverStage ? 220 : 200, isOverStage ? 120 : 100, isOverStage ? 120 : 100);
+                p.rect(p.width/2 - btnWidth/2, stageSelectBtnY, btnWidth, btnHeight, 5);
+                p.fill(255);
+                p.text('ステージ選択', p.width/2, stageSelectBtnY + btnHeight/2);
+            }
+            
+            function handleClearedClick() {
+                let btnWidth = 280;
+                let btnHeight = 50;
+                let btnSpacing = 65;
+                let startY = 260;
+                
+                // もう一度遊ぶボタン
+                let retryBtnY = startY;
+                if (p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                    p.mouseY > retryBtnY && p.mouseY < retryBtnY + btnHeight) {
+                    playButtonSound();
+                    // 最後にプレイしたステージを再開
+                    if (lastPlayedStage === 1) {
+                        resetGame();
+                    } else {
+                        startStage2();
+                    }
+                    return;
+                }
+                
+                // キャラクター選択に戻るボタン
+                let charSelectBtnY = startY + btnSpacing;
+                if (p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                    p.mouseY > charSelectBtnY && p.mouseY < charSelectBtnY + btnHeight) {
+                    playButtonSound();
+                    gameState = 'character-select';
+                    return;
+                }
+                
+                // テーマ選択に戻るボタン
+                let themeSelectBtnY = startY + btnSpacing * 2;
+                if (p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                    p.mouseY > themeSelectBtnY && p.mouseY < themeSelectBtnY + btnHeight) {
+                    playButtonSound();
+                    gameState = 'theme-select';
+                    return;
+                }
+                
+                // ステージ選択に戻るボタン
+                let stageSelectBtnY = startY + btnSpacing * 3;
+                if (p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                    p.mouseY > stageSelectBtnY && p.mouseY < stageSelectBtnY + btnHeight) {
+                    playButtonSound();
+                    gameState = 'waiting';
+                    return;
+                }
+            }
+            
+            function drawGameOverScreen() {
+                // ピクセル風ゲームオーバー画面
+                p.background(0);
+                
+                // ドットパターン背景
+                p.fill(20);
+                for (let y = 0; y < p.height; y += 20) {
+                    for (let x = 0; x < p.width; x += 20) {
+                        if ((x / 20 + y / 20) % 2 === 0) {
+                            p.rect(x, y, 10, 10);
+                        }
+                    }
+                }
+                
+                // タイトル
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(72);
+                p.fill(255, 0, 0);
+                p.text('GAME OVER', p.width/2, 120);
+                
+                // スコア表示
+                p.textSize(36);
+                p.fill(255);
+                p.text(`スコア: ${score}`, p.width/2, 200);
+                
+                // ボタン3つ
+                let btnWidth = 280;
+                let btnHeight = 60;
+                let btnSpacing = 80;
+                let startY = 300;
+                
+                // 1. もう一度遊ぶボタン
+                let retryBtnY = startY;
+                p.fill(100, 200, 100);
+                p.rect(p.width/2 - btnWidth/2, retryBtnY, btnWidth, btnHeight, 5);
+                p.fill(255);
+                p.textSize(28);
+                p.text('もう一度遊ぶ', p.width/2, retryBtnY + btnHeight/2);
+                
+                // 2. キャラクター選択に戻るボタン
+                let charSelectBtnY = startY + btnSpacing;
+                p.fill(100, 100, 200);
+                p.rect(p.width/2 - btnWidth/2, charSelectBtnY, btnWidth, btnHeight, 5);
+                p.fill(255);
+                p.text('キャラクター選択', p.width/2, charSelectBtnY + btnHeight/2);
+                
+                // 3. ステージ選択に戻るボタン
+                let stageSelectBtnY = startY + btnSpacing * 2;
+                p.fill(200, 100, 100);
+                p.rect(p.width/2 - btnWidth/2, stageSelectBtnY, btnWidth, btnHeight, 5);
+                p.fill(255);
+                p.text('ステージ選択', p.width/2, stageSelectBtnY + btnHeight/2);
+            }
+            
+            function handleGameOverClick() {
+                let btnWidth = 280;
+                let btnHeight = 60;
+                let btnSpacing = 80;
+                let startY = 300;
+                
+                // もう一度遊ぶボタン
+                let retryBtnY = startY;
+                if (p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                    p.mouseY > retryBtnY && p.mouseY < retryBtnY + btnHeight) {
+                    playButtonSound();
+                    // 最後にプレイしたステージを再開
+                    if (lastPlayedStage === 1) {
+                        resetGame();
+                    } else {
+                        startStage2();
+                    }
+                    return;
+                }
+                
+                // キャラクター選択に戻るボタン
+                let charSelectBtnY = startY + btnSpacing;
+                if (p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                    p.mouseY > charSelectBtnY && p.mouseY < charSelectBtnY + btnHeight) {
+                    playButtonSound();
+                    gameState = 'character-select';
+                    return;
+                }
+                
+                // ステージ選択に戻るボタン
+                let stageSelectBtnY = startY + btnSpacing * 2;
+                if (p.mouseX > p.width/2 - btnWidth/2 && p.mouseX < p.width/2 + btnWidth/2 &&
+                    p.mouseY > stageSelectBtnY && p.mouseY < stageSelectBtnY + btnHeight) {
+                    playButtonSound();
+                    gameState = 'waiting';
+                    return;
+                }
+            }
+            
+            function checkCollision(player, obstacle) {
+                // 当たり判定を少し緩める（各辺に5ピクセルの余裕）
+                let margin = 5;
+                return player.x + margin < obstacle.x + obstacle.width &&
+                       player.x + player.width - margin > obstacle.x &&
+                       player.y + margin < obstacle.y + obstacle.height &&
+                       player.y + player.height - margin > obstacle.y;
+            }
+            
+            function gameOver() {
+                stopBGM(); // 通常のBGMを停止
+                playCollisionSound(); // 衝突音を再生
+                playGameOverSound(); // ゲームオーバー音を再生
+                gameState = 'game-over';
+            }
+            
+            function gameClear() {
+                gameState = 'cleared';
+                score += 1000;
+                playClearSound(); // クリア音を再生
+                updateUI();
+            }
+            
+            function resetGame() {
+                lastPlayedStage = 1;
+                gameState = 'stage1';
+                stage = 1;
+                score = 0;
+                obstaclesCleared = 0;
+                obstacles = [];
+                player.y = player.baseY;
+                isJumping = false;
+                jumpVelocity = 0;
+                jumpGauge = 0;
+                wasAbove20 = false;
+                updateUI();
+            }
+            
+            function startStage2() {
+                lastPlayedStage = 2;
+                gameState = 'stage2';
+                stage = 2;
+                stage2StartTime = Date.now();
+                obstacles = [];
+                ropeProgress = 0;
+                tapCount = 0;
+                lastTapFrame = 0;
+                updateUI();
+            }
+            
+            // ジャンプ処理（外部から呼び出し可能）- 新システムでは使用しない
+            window.triggerJump = (intensity) => {
+                // 新しいゲージ式システムに置き換えたため無効化
+                return;
+            };
+            
+            window.startGame = () => {
+                resetGame();
+            };
+        };
+        
+        // p5インスタンス作成
+        new p5(sketch);
+        
+        // ORPHEコールバック設定
+        function setupOrpheCallbacks() {
+            // 角速度コールバック（新システムでは角度のみ使用）
+            ble.gotConvertedGyro = (gyro) => {
+                currentGyroY = gyro.y;
+                gyroChangeRate = Math.abs(currentGyroY - prevGyroY);
+                prevGyroY = currentGyroY;
+            };
+            
+            // オイラー角コールバック
+            ble.gotEuler = (euler) => {
+                currentPitch = euler.pitch;
+                updateAngleDisplay();
+            };
+        }
+        
+        // 接続関数
+        window.connectDevice = async () => {
+            if (!ble) {
+                alert('ORPHE CORE ライブラリの読み込み中です。少々お待ちください。');
+                return;
+            }
+            
+            try {
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('connectBtn').textContent = '接続中...';
+                
+                await ble.begin('SENSOR_VALUES');
+                
+                inputMode = 'sensor'; // センサーモードに設定
+                
+                // ボタンパネルを非表示にする
+                document.getElementById('info-panel').classList.add('hidden');
+                
+                // キャラクター選択画面に移行
+                gameState = 'character-select';
+            } catch (error) {
+                console.error('接続エラー:', error);
+                alert('接続エラー: ' + error.message);
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('connectBtn').textContent = 'ORPHE';
+            }
+        };
+        
+        // キーボードで開始
+        window.startWithKeyboard = () => {
+            inputMode = 'keyboard'; // キーボードモードに設定
+            
+            // ボタンパネルを非表示にする
+            document.getElementById('info-panel').classList.add('hidden');
+            
+            // センサーなしでキャラクター選択画面へ
+            gameState = 'character-select';
+        };
+        
+        function updateAngleDisplay() {
+            const angleText = document.getElementById('angle-text');
+            const angleFill = document.getElementById('angle-fill');
+            
+            if (!angleText || !angleFill) return;
+            
+            // 角度を160倍で表示（ステージ2用）
+            let displayAngle = currentPitch * 160;
+            angleText.textContent = displayAngle.toFixed(1) + '°';
+            
+            // -90度から+90度を0%から100%にマッピング
+            let percent = ((currentPitch + 90) / 180) * 100;
+            percent = Math.max(0, Math.min(100, percent));
+            angleFill.style.width = percent + '%';
+        }
+        
+        function updateUI() {
+            // DOM要素が存在する場合のみ更新
+            const scoreElement = document.getElementById('score');
+            const stageElement = document.getElementById('stage');
+            
+            if (scoreElement) {
+                scoreElement.textContent = score;
+            }
+            if (stageElement) {
+                stageElement.textContent = stage || '-';
+            }
+        }
+    </script>
+</body>
+</html>
+

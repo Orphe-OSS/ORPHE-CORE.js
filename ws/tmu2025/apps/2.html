@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE カーフトレーニング・ジャンプ</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            background-color: #050505; 
+            color: white;
+        }
+        #ui { 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            pointer-events: none; 
+            z-index: 5;
+        }
+        #score { font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        #mode-indicator { 
+            font-size: 20px; 
+            font-weight: bold; 
+            margin-top: 10px; 
+            padding: 5px 15px; 
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .mode-normal { background: #00e5ff; color: #000; }
+        .mode-slow { background: #ffea00; color: #000; }
+        
+        #status { font-size: 14px; opacity: 0.8; margin-top: 5px; }
+        #angle-container { 
+            margin-top: 15px; 
+            background: rgba(255, 255, 255, 0.1); 
+            padding: 10px; 
+            border-radius: 8px;
+            width: 150px;
+        }
+        #angle-label { font-size: 12px; margin-bottom: 5px; }
+        #angle-value { font-size: 24px; font-weight: bold; color: #00e5ff; }
+        #angle-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.2); margin-top: 5px; border-radius: 4px; overflow: hidden; }
+        #angle-bar-fill { width: 0%; height: 100%; background: #00e5ff; transition: width 0.1s; }
+        
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+            text-align: center;
+        }
+        .instruction {
+            max-width: 400px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        button {
+            padding: 18px 40px; font-size: 20px; cursor: pointer;
+            background: #00e5ff; border: none; border-radius: 50px; color: #000;
+            font-weight: bold; transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+        }
+        button:hover { 
+            background: #ffffff; 
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+        }
+        #gameover-title { font-size: 64px; color: #ff1744; margin-bottom: 10px; display: none; }
+        #final-score { font-size: 24px; margin-bottom: 5px; display: none; }
+        #rank-comment { font-size: 28px; font-weight: bold; color: #ffea00; margin-bottom: 30px; display: none; }
+
+        #jump-indicator {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="ui">
+        <div id="score">SCORE: 0</div>
+        <div id="mode-indicator" class="mode-normal">NORMAL MODE</div>
+        <div id="status">ORPHEを待機中</div>
+        <div id="angle-container">
+            <div id="angle-label">CALF ANGLE</div>
+            <div id="angle-value">0.0°</div>
+            <div id="angle-bar-bg"><div id="angle-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <div id="jump-indicator">READY TO JUMP</div>
+
+    <div id="overlay">
+        <h1 id="title">ORPHE CALF JUMP</h1>
+        <div class="instruction">
+            <p>カーフ（ふくらはぎ）を鍛えるジャンプアクション！</p>
+            <p>踵を上げて角度が<b>70度</b>を超えるとジャンプします。<br>
+            一度<b>5度</b>以下に戻さないと次のジャンプはできません。</p>
+        </div>
+        <h1 id="gameover-title">GAME OVER</h1>
+        <div id="final-score">SCORE: 0</div>
+        <div id="rank-comment">あなたの筋肉レベル: </div>
+        <button id="main-button">ORPHEを接続して開始</button>
+        <button id="debug-button" style="margin-top: 15px; background: #555; font-size: 14px; padding: 10px 20px; color: white; border-radius: 30px; border: none; cursor: pointer;">デバッグ開始（センサーなし）</button>
+    </div>
+
+    <script src="src/ORPHE-CORE.js"></script>
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Sound System (Web Audio API) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let isBGMPlaying = false;
+        let nextNoteTime = 0;
+        let beatCount = 0;
+        let bgmTimerId = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playVoice(text) {
+            if (!window.speechSynthesis) return;
+            
+            // 連続再生に対応するため、前の発話をキャンセルしないほうが
+            // ゲームのSEとしては自然な場合もあるが、遅延を防ぐためにキャンセルを入れる
+            // window.speechSynthesis.cancel(); 
+
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'ja-JP';
+            u.pitch = 0.4; // 低めにして男性のような太い声を表現
+            u.rate = 1.4;  // テンポよく
+            u.volume = 1.0;
+            
+            window.speechSynthesis.speak(u);
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const now = audioCtx.currentTime;
+
+            if (type === 'jump') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'score') {
+                // 1点加算: マッチョ！
+                playVoice("マッチョ！");
+            } else if (type === 'great') {
+                // 2点加算（ボーナス）: ナイスマッチョ！！
+                playVoice("ナイスマッチョ！！");
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+        }
+
+        function scheduler() {
+            // Techno Pop BGM Sequencer
+            if (!isBGMPlaying) return;
+            
+            const tempo = 135;
+            const secondsPerBeat = 60.0 / tempo;
+            const lookahead = 0.1; 
+
+            while (nextNoteTime < audioCtx.currentTime + lookahead) {
+                scheduleNote(beatCount, nextNoteTime);
+                nextNoteTime += secondsPerBeat / 4; // 16th notes
+                beatCount++;
+            }
+            bgmTimerId = requestAnimationFrame(scheduler);
+        }
+
+        function scheduleNote(beat, time) {
+            const step = beat % 16;
+            const bar = Math.floor(beat / 16) % 4; // 4 bar phrases
+            
+            // Kick (4-on-the-floor)
+            if (step % 4 === 0) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(120, time);
+                osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.15);
+                gain.gain.setValueAtTime(0.3, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(time);
+                osc.stop(time + 0.15);
+            }
+
+            // Hi-hat (off-beat)
+            if (step % 4 === 2) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                // Noise buffer creation is heavy, use high freq random modulation
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(8000, time);
+                gain.gain.setValueAtTime(0.05, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(time);
+                osc.stop(time + 0.05);
+            }
+
+            // Bass Line
+            if ([0, 2, 3, 5, 7, 8, 10, 11, 14].includes(step)) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                
+                // Root notes: F, F, G#, A#
+                let freq = 87.31; // F2
+                if (bar === 2) freq = 103.83; // G#2
+                if (bar === 3) freq = 116.54; // A#2
+                
+                // Octave jump
+                if (step % 2 !== 0) freq *= 2;
+
+                osc.frequency.setValueAtTime(freq, time);
+                
+                // Lowpass filter simulation via gain duration
+                gain.gain.setValueAtTime(0.1, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(time);
+                osc.stop(time + 0.1);
+            }
+
+            // Arpeggio / Melody (Sparse)
+            if (step % 2 === 0 && Math.random() > 0.3) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                
+                // Scale: F Minor Pentatonic (F, G#, A#, C, D#)
+                const scale = [349.23, 415.30, 466.16, 523.25, 622.25, 698.46];
+                const note = scale[Math.floor(Math.random() * scale.length)];
+                
+                osc.frequency.setValueAtTime(note, time);
+                gain.gain.setValueAtTime(0.03, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(time);
+                osc.stop(time + 0.15);
+            }
+        }
+
+        function startBGM() {
+            if (isBGMPlaying) return;
+            initAudio();
+            isBGMPlaying = true;
+            nextNoteTime = audioCtx.currentTime + 0.1;
+            beatCount = 0;
+            scheduler();
+        }
+
+        function stopBGM() {
+            isBGMPlaying = false;
+            if(bgmTimerId) cancelAnimationFrame(bgmTimerId);
+        }
+
+        // --- ORPHE CORE Setup ---
+        const ble = new Orphe(0);
+        let currentAngle = 0;
+        let canJump = true;
+        let jumpRequested = false;
+
+        // モード管理用変数
+        let currentMode = 'NORMAL'; // 'NORMAL' or 'SLOW'
+        let jumpCountInMode = 0;
+        const MODE_SWITCH_COUNT = 10;
+        let isDescending = false;
+        let lastPeakTime = 0;
+
+        window.onload = () => {
+            ble.setup();
+        };
+
+        const mainBtn = document.getElementById('main-button');
+        const debugBtn = document.getElementById('debug-button');
+        const overlay = document.getElementById('overlay');
+        const titleElement = document.getElementById('title');
+        const gameoverTitle = document.getElementById('gameover-title');
+        const finalScoreElement = document.getElementById('final-score');
+        const rankCommentElement = document.getElementById('rank-comment');
+        const scoreDisplay = document.getElementById('score');
+        const modeIndicator = document.getElementById('mode-indicator');
+        const statusDisplay = document.getElementById('status');
+        const angleValueDisplay = document.getElementById('angle-value');
+        const angleBarFill = document.getElementById('angle-bar-fill');
+        const jumpIndicator = document.getElementById('jump-indicator');
+
+        mainBtn.addEventListener('click', async () => {
+            initAudio(); // Initialize Web Audio Context
+            
+            if (gameState === 'GAMEOVER') {
+                resetGame();
+                return;
+            }
+
+            try {
+                statusDisplay.innerText = "接続中...";
+                await ble.begin('SENSOR_VALUES');
+                statusDisplay.innerText = "接続済み";
+                overlay.style.display = 'none';
+                gameState = 'PLAYING';
+                startBGM(); // Start BGM
+            } catch (e) {
+                console.error(e);
+                statusDisplay.innerText = "接続失敗";
+            }
+        });
+debugBtn.addEventListener('click', () => {
+            initAudio();
+            if (gameState === 'GAMEOVER') {
+                resetGame();
+                return;
+            }
+            statusDisplay.innerText = "デバッグモード（キーボード操作）";
+            overlay.style.display = 'none';
+            gameState = 'PLAYING';
+            startBGM();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && gameState === 'PLAYING') {
+                jumpRequested = true;
+            }
+        });
+
+        
+        function updateModeUI() {
+            if (currentMode === 'NORMAL') {
+                modeIndicator.innerText = `NORMAL MODE (${jumpCountInMode}/${MODE_SWITCH_COUNT})`;
+                modeIndicator.className = 'mode-normal';
+            } else {
+                modeIndicator.innerText = `SLOW DOWN MODE (${jumpCountInMode}/${MODE_SWITCH_COUNT})`;
+                modeIndicator.className = 'mode-slow';
+            }
+        }
+
+        ble.gotEuler = (euler) => {
+            // ORPHE-CORE.js の toEuler() はラジアン [rad] を返すため度数 [deg] に変換します
+            const RAD_TO_DEG = 180 / Math.PI;
+            
+            // ピッチとロールの絶対値を取得
+            const pitchDeg = Math.abs(euler.pitch * RAD_TO_DEG);
+            const rollDeg = Math.abs(euler.roll * RAD_TO_DEG);
+            
+            // 基礎となる角度 (大きい方を採用)
+            const rawAngle = Math.max(pitchDeg, rollDeg);
+
+            // 0.7度〜12度の範囲を0度〜90度にマッピング（線形補間）
+            const inputMin = 0.7;
+            const inputMax = 12.0;
+            currentAngle = ((rawAngle - inputMin) * (90 - 0)) / (inputMax - inputMin) + 0;
+            currentAngle = Math.max(0, Math.min(90, currentAngle));
+            
+            // UI更新
+            angleValueDisplay.innerText = `${currentAngle.toFixed(1)}°`;
+            const fillWidth = Math.min(100, (currentAngle / 70) * 100);
+            angleBarFill.style.width = `${fillWidth}%`;
+            angleBarFill.style.backgroundColor = currentAngle > 70 ? '#ff1744' : '#00e5ff';
+
+            // ジャンプ可能状態の更新
+            if (gameState === 'PLAYING') {
+                if (canJump && currentAngle > 70) {
+                    jumpRequested = true;
+                    canJump = false;
+                    isDescending = true;
+                    lastPeakTime = Date.now();
+                }
+                
+                if (!canJump && currentAngle < 5) {
+                    // 下ろし動作の評価（SLOWモードの時のみ）
+                    if (currentMode === 'SLOW' && isDescending) {
+                        const descendTime = (Date.now() - lastPeakTime) / 1000;
+                        if (descendTime >= 2.0) {
+                            score += 2;
+                            scoreDisplay.innerText = `SCORE: ${score}`;
+                            statusDisplay.innerText = `GREAT! SLOW DOWN: ${descendTime.toFixed(1)}s (+2pts)`;
+                            playSound('great');
+                        } else {
+                            statusDisplay.innerText = `TOO FAST: ${descendTime.toFixed(1)}s (0pts)`;
+                        }
+                    }
+                    
+                    canJump = true;
+                    isDescending = false;
+                }
+                
+                jumpIndicator.style.display = 'block';
+                if (canJump) {
+                    jumpIndicator.innerText = "READY TO JUMP";
+                    jumpIndicator.style.color = "#00e5ff";
+                } else {
+                    if (currentMode === 'SLOW') {
+                        const elapsed = (Date.now() - lastPeakTime) / 1000;
+                        jumpIndicator.innerText = `SLOWLY DOWN... (${elapsed.toFixed(1)}s)`;
+                        jumpIndicator.style.color = elapsed >= 2.0 ? "#00ff00" : "#ffea00";
+                    } else {
+                        jumpIndicator.innerText = "CALF DOWN";
+                        jumpIndicator.style.color = "#ff1744";
+                    }
+                }
+            }
+
+            // 演出：プレイヤーの傾きを固定（常に同じ角度にする）
+            if (player) {
+                player.rotation.z = 0;
+                player.rotation.x = 0;
+            }
+        };
+
+        // --- Game Logic & Three.js ---
+        let gameState = 'START';
+        let score = 0;
+        let jumping = false;
+        let jumpVelocity = 0;
+        const gravity = -0.012;
+        const jumpStrength = 0.32;
+        const obstacles = [];
+        let nextObstacleTime = 0;
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.Fog(0x0a0a0a, 15, 60);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 4, 8);
+        camera.lookAt(0, 1, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Grid & Ground
+        const grid = new THREE.GridHelper(100, 50, 0x00e5ff, 0x222222);
+        scene.add(grid);
+
+        const groundGeo = new THREE.PlaneGeometry(100, 1000);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Player (Humanoid Robot)
+        const player = new THREE.Group();
+        const materialRawString = { color: 0x00e5ff, emissive: 0x00e5ff, emissiveIntensity: 0.6 };
+        const matBody = new THREE.MeshStandardMaterial(materialRawString);
+        const matDark = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+
+        // Head
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), matBody);
+        head.position.y = 1.6;
+        player.add(head);
+
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.25), matBody);
+        torso.position.y = 1.15;
+        player.add(torso);
+
+        // Limbs containers (for pivoting)
+        const armL_piv = new THREE.Group(); armL_piv.position.set(0.3, 1.35, 0); player.add(armL_piv);
+        const armR_piv = new THREE.Group(); armR_piv.position.set(-0.3, 1.35, 0); player.add(armR_piv);
+        const legL_piv = new THREE.Group(); legL_piv.position.set(0.12, 0.9, 0); player.add(legL_piv);
+        const legR_piv = new THREE.Group(); legR_piv.position.set(-0.12, 0.9, 0); player.add(legR_piv);
+
+        // Limbs meshes
+        const armGeo = new THREE.BoxGeometry(0.12, 0.45, 0.12);
+        const legGeo = new THREE.BoxGeometry(0.15, 0.55, 0.15);
+        
+        const armL = new THREE.Mesh(armGeo, matBody); armL.position.y = -0.22; armL_piv.add(armL);
+        const armR = new THREE.Mesh(armGeo, matBody); armR.position.y = -0.22; armR_piv.add(armR);
+        const legL = new THREE.Mesh(legGeo, matDark); legL.position.y = -0.27; legL_piv.add(legL);
+        const legR = new THREE.Mesh(legGeo, matDark); legR.position.y = -0.27; legR_piv.add(legR);
+
+        scene.add(player);
+
+        // Animation state
+        let animTime = 0;
+        function updatePlayerAnim(delta, isJumping) {
+            animTime += delta * 15;
+            if (isJumping) {
+                // Jump pose
+                armL_piv.rotation.x = Math.PI; // Hands up
+                armR_piv.rotation.x = Math.PI;
+                legL_piv.rotation.x = -0.2; 
+                legR_piv.rotation.x = -0.2;
+                player.children[1].position.y = 1.15; // Reset torso bob
+                player.children[0].position.y = 1.6; // Reset head bob
+            } else {
+                // Run cycle
+                armL_piv.rotation.x = Math.sin(animTime) * 0.8;
+                armR_piv.rotation.x = Math.sin(animTime + Math.PI) * 0.8;
+                legL_piv.rotation.x = Math.sin(animTime + Math.PI) * 1.0;
+                legR_piv.rotation.x = Math.sin(animTime) * 1.0;
+                // Bobbing
+                player.children[1].position.y = 1.15 + Math.sin(animTime * 2) * 0.05; // torso
+                player.children[0].position.y = 1.6 + Math.sin(animTime * 2) * 0.05; // head
+            }
+        }
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        const spotLight = new THREE.SpotLight(0xffffff, 100);
+        spotLight.position.set(0, 15, 5);
+        spotLight.angle = Math.PI / 4;
+        scene.add(spotLight);
+
+        function spawnObstacle() {
+            const width = 2.4; // プレイヤーの幅 0.8 * 3 = 2.4 
+            const height = 0.8 + Math.random() * 0.4;
+            const geo = new THREE.BoxGeometry(width, height, 0.8);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: 0xff1744, 
+                emissive: 0xff1744, 
+                emissiveIntensity: 0.5 
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            // プレイヤーの直線上に配置（x座標を0に固定）
+            mesh.position.set(0, height / 2, -60);
+            scene.add(mesh);
+            obstacles.push(mesh);
+        }
+
+        function resetGame() {
+            score = 0;
+            scoreDisplay.innerText = `SCORE: ${score}`;
+            currentMode = 'NORMAL';
+            jumpCountInMode = 0;
+            updateModeUI();
+            player.position.y = 0.0; // 地面基準に合わせてリセット
+            jumping = false;
+            jumpVelocity = 0;
+            obstacles.forEach(o => scene.remove(o));
+            obstacles.length = 0;
+            gameState = 'PLAYING';
+            overlay.style.display = 'none';
+            gameoverTitle.style.display = 'none';
+            finalScoreElement.style.display = 'none';
+            rankCommentElement.style.display = 'none';
+            titleElement.style.display = 'block';
+            document.querySelector('.instruction').style.display = 'block';
+            startBGM(); // Restart BGM
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            stopBGM(); // Stop music
+            playSound('gameover');
+            overlay.style.display = 'flex';
+            gameoverTitle.style.display = 'block';
+            finalScoreElement.style.display = 'block';
+            finalScoreElement.innerText = `FINAL SCORE: ${score}`;
+            
+            // 評価コメントの設定
+            let comment = "";
+            if (score <= 10) comment = "老婆";
+            else if (score <= 20) comment = "骨野郎";
+            else if (score <= 30) comment = "チキンレッグ";
+            else if (score <= 40) comment = "イキフィジ";
+            else if (score <= 50) comment = "マッスル";
+            else comment = "ふくらはぎに大根乗ってる！！";
+            
+            rankCommentElement.innerText = `あなたの筋肉レベル: ${comment}`;
+            rankCommentElement.style.display = 'block';
+
+            titleElement.style.display = 'none';
+            document.querySelector('.instruction').style.display = 'none';
+            mainBtn.innerText = 'リトライ';
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Clock for animation
+            const delta = 0.016; 
+
+            if (gameState === 'PLAYING') {
+                // アニメーション更新
+                updatePlayerAnim(delta, jumping);
+
+                // ジャンプの処理
+                if (jumpRequested && !jumping) {
+                    jumping = true;
+                    jumpVelocity = jumpStrength;
+                    jumpRequested = false;
+                    playSound('jump');
+                }
+
+                if (jumping) {
+                    player.position.y += jumpVelocity;
+                    jumpVelocity += gravity;
+                    if (player.position.y <= 0.0) { // 地面レベルは0
+                        player.position.y = 0.0;
+                        jumping = false;
+                    }
+                }
+
+                // 障害物の生成
+                if (Date.now() > nextObstacleTime) {
+                    spawnObstacle();
+                    // モードに応じて生成間隔を調整
+                    let interval;
+                    if (currentMode === 'SLOW') {
+                        // 2秒以上の下ろし動作を考慮し、最低でも3.5秒以上の間隔を開ける
+                        interval = 3500;
+                    } else {
+                        // NORMALモードは通常通りの間隔（スコアに応じて加速）
+                        interval = Math.max(800, 2000 - (score * 20));
+                    }
+                    nextObstacleTime = Date.now() + interval + Math.random() * 500;
+                }
+
+                // 障害物の移動と判定
+                const speed = 0.25 + (score * 0.005);
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    const o = obstacles[i];
+                    o.position.z += speed;
+
+                    // 当たり判定
+                    const playerBox = new THREE.Box3().setFromObject(player);
+                    const obstacleBox = new THREE.Box3().setFromObject(o);
+                    
+                    // 少し甘めに判定（z方向の余裕）
+                    if (playerBox.intersectsBox(obstacleBox)) {
+                        gameOver();
+                    }
+
+                    // スコア加算と削除
+                    if (o.position.z > 10) {
+                        scene.remove(o);
+                        obstacles.splice(i, 1);
+                        
+                        // モード内のカウントを進める
+                        jumpCountInMode++;
+
+                        // スコア計算
+                        if (currentMode === 'NORMAL') {
+                            score++;
+                            scoreDisplay.innerText = `SCORE: ${score}`;
+                            playSound('score');
+                        }
+
+                        // モード切り替え判定
+                        if (jumpCountInMode >= MODE_SWITCH_COUNT) {
+                            currentMode = (currentMode === 'NORMAL') ? 'SLOW' : 'NORMAL';
+                            jumpCountInMode = 0;
+                            // モード切り替え直後に次の障害物出現時間を再計算して即座に反映させる
+                            const interval = currentMode === 'SLOW' ? 3500 : 2000;
+                            nextObstacleTime = Date.now() + interval;
+                        }
+                        updateModeUI();
+                    }
+                }
+                
+                // 背景（グリッド）のスクロール演出
+                grid.position.z = (grid.position.z + speed) % 2;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

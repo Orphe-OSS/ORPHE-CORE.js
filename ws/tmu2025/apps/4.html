@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE CORE PUSH-UP SURFING 3D</title>
+    <script src="./src/ORPHE-CORE.js"></script>
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+          }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #000; overflow: hidden; }
+        #ui { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 12px; text-align: center; min-width: 200px; }
+        #hud { position: absolute; top: 20px; right: 20px; z-index: 10; color: white; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; text-align: right; pointer-events: none; border: 1px solid #444; font-size: 18px; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.7); color: white; z-index: 100; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        button.connected { background: #28a745; }
+        .val { color: #00d2ff; font-weight: bold; }
+        #led { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #300; margin-right: 8px; vertical-align: middle; }
+        #warning { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); z-index: 20; color: #ff0000; font-size: 32px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 15px 30px; border-radius: 10px; display: none; text-align: center; border: 4px solid #ff0000; animation: blink 0.5s infinite; }
+        #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 50; color: white; font-size: 120px; font-weight: bold; text-shadow: 0 0 20px rgba(0,0,0,0.5); display: none; pointer-events: none; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+</head>
+
+<body>
+    <div id="ui">
+        <h2 style="margin:0 0 10px 0; font-size:16px;">PUSH-UP SURFING 3D</h2>
+        <button id="connect-btn">ORPHE CORE 接続</button>
+        <div style="margin-top: 8px; font-size: 12px; color: #666;">
+            [Space] キーで開始/プッシュアップ<br>
+            [←][→] キーで左右移動（デバッグ用）
+        </div>
+    </div>
+
+    <div id="hud">
+        <div id="led"></div>
+        Mag: <span id="mag-val" class="val">0.00</span><br>
+        周波数: <span id="hz-val" class="val">0.00</span> Hz<br>
+        回数: <span id="reps-val" class="val">0</span>
+    </div>
+
+    <div id="overlay">
+        <h1 id="gameover-title">WIPE OUT!</h1>
+        <p id="final-score">SCORE: 0</p>
+        <button onclick="location.reload()">RETRY</button>
+    </div>
+
+    <div id="warning">
+        WARNING: 津波が来ます！<br>
+        <span style="font-size: 20px;">速度を上げろ！ 残り: <span id="warning-timer">5</span>秒</span><br>
+        <span style="font-size: 16px;">(目標: <span id="target-hz-val">0.7</span>Hz以上)</span>
+    </div>
+
+    <div id="countdown">5</div>
+
+    <!-- 短い単発の波の音（水しぶき音）に変更 -->
+    <audio id="wave-sound" src="https://assets.mixkit.co/active_storage/sfx/1115/1115-preview.mp3" preload="auto"></audio>
+    <!-- 短いゲームオーバー音（入水音） -->
+    <audio id="gameover-sound" src="https://assets.mixkit.co/active_storage/sfx/1113/1113-preview.mp3" preload="auto"></audio>
+    <!-- 津波サイレン -->
+    <audio id="siren-sound" src="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3" preload="auto" loop></audio>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ORPHE CORE
+        const ble = new Orphe(0);
+        let currentHz = 0;
+        let pushupCount = 0;
+        let lastPeakTime = Date.now();
+        let lastAccMag = 0;
+        let magBaseline = 0; // 動的な基準値
+        const waveSound = document.getElementById('wave-sound');
+        const gameoverSound = document.getElementById('gameover-sound');
+        const sirenSound = document.getElementById('siren-sound');
+        let pushupState = 'TOP'; 
+        let gameState = 'START';
+        let score = 0;
+
+        // 左右移動
+        let surferX = 0;
+        let targetX = 0;
+        let currentRoll = 0; // 現在の傾きを保持
+
+        // 津波警告用の変数
+        let lastWarningTime = Date.now();
+        let isWarningActive = false;
+        let warningStartHz = 0; // 警告開始時の周波数を記録
+        const WARNING_INTERVAL = 10000; // 10秒ごとに津波が来る (旧: 30000)
+        const WARNING_DURATION = 7000;  // 7秒間の猶予
+
+        // Three.js
+        let scene, camera, renderer, sea, surfer;
+        const clock = new THREE.Clock();
+
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 10, 80);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10);
+            camera.lookAt(0, 0, -2);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+            const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+            sun.position.set(10, 20, 10);
+            scene.add(sun);
+
+            // 海
+            const seaGeo = new THREE.PlaneGeometry(120, 120, 60, 60);
+            const seaMat = new THREE.MeshPhongMaterial({ color: 0x006994, shininess: 80, flatShading: true, transparent: true, opacity: 0.9 });
+            sea = new THREE.Mesh(seaGeo, seaMat);
+            sea.rotation.x = -Math.PI / 2;
+            scene.add(sea);
+
+            // サーファー
+            const group = new THREE.Group();
+            const boardGeo = new THREE.CapsuleGeometry(0.4, 2.0, 4, 8);
+            const boardMat = new THREE.MeshPhongMaterial({ color: 0xffd700 });
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.rotation.x = Math.PI / 2;
+            board.scale.set(1, 1, 0.2);
+            group.add(board);
+
+            const bodyGeo = new THREE.CylinderGeometry(0.15, 0.15, 1.2, 8);
+            const bodyMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.7;
+            group.add(body);
+
+            surfer = group;
+            scene.add(surfer);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function handlePushupAction() {
+            const now = Date.now();
+            const interval = now - lastPeakTime;
+            
+            if (interval > 400 && interval < 5000) {
+                currentHz = 1000 / interval;
+                pushupCount++;
+                lastPeakTime = now;
+                
+                // 波の音を再生
+                if (waveSound) {
+                    waveSound.currentTime = 0;
+                    waveSound.play().catch(e => console.log("Audio play blocked"));
+                }
+                document.getElementById('reps-val').innerText = pushupCount;
+            } else if (interval >= 5000) {
+                lastPeakTime = now; // 間隔が空きすぎた場合はリセット
+            }
+        }
+
+        function analyzePushup(acc) {
+            // データ受信LED
+            const led = document.getElementById('led');
+            led.style.background = '#00ff00';
+            setTimeout(() => led.style.background = '#300', 40);
+
+            // 合成加速度の計算
+            let mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+            document.getElementById('mag-val').innerText = mag.toFixed(2);
+
+            // 基準値（静止状態）の自動追従
+            if (magBaseline === 0) magBaseline = mag;
+            magBaseline = magBaseline * 0.98 + mag * 0.02;
+
+            // 基準値からの変化量
+            const diff = mag - magBaseline;
+
+            // 変化量が小さくても反応するように調整（0.03 = 3%の変化）
+            const threshold = 0.03;
+
+            if (pushupState === 'TOP' && diff < -threshold) {
+                // 下降検知
+                pushupState = 'DOWN';
+            } else if (pushupState === 'DOWN' && diff > threshold) {
+                // 上昇検知 -> 1回とカウント
+                handlePushupAction();
+                pushupState = 'TOP';
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            const now = Date.now();
+
+            // プッシュアップ周波数の減衰と表示 (COREなしでも動作するように)
+            if (now - lastPeakTime > 6000) {
+                currentHz *= 0.99; // 少し緩やかに減衰
+                if (currentHz < 0.01) currentHz = 0;
+            }
+            const hzValElem = document.getElementById('hz-val');
+            if (hzValElem) hzValElem.innerText = currentHz.toFixed(2);
+
+            // --- 傾き継続による移動の更新 ---
+            const deadzone = 3; // 3度以下の傾きは無視
+            if (Math.abs(currentRoll) > deadzone) {
+                // 移動速度を 0.015 -> 0.04 に大幅強化
+                const tiltAmount = currentRoll - (currentRoll > 0 ? deadzone : -deadzone);
+                targetX += -tiltAmount * 0.04; 
+            }
+            // 移動範囲の制限
+            if (targetX > 25) targetX = 25;
+            if (targetX < -25) targetX = -25;
+            // ---------------------------
+
+            // 左右移動の補完 (0.15 -> 0.3 に上げてキビキビ動くように)
+            surferX += (targetX - surferX) * 0.3;
+            surfer.position.x = surferX;
+            // カメラも追従させてスピード感を出す
+            camera.position.x = surferX * 0.3;
+            camera.lookAt(surferX * 0.5, 0, -5);
+            const speedFact = 1.0 + (currentHz * 3.0);
+            let heightFact = 0.6 + (currentHz * 2.5);
+            
+            // 津波警告中は波が徐々に高くなる
+            if (isWarningActive) {
+                heightFact += 2.0; 
+            }
+            
+            const pos = sea.geometry.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const x = pos.getX(i);
+                const y = pos.getY(i);
+                // 前後の波 (surferXの影響を少し受けるように)
+                const z = Math.sin(y * 0.2 + t * speedFact) * heightFact + 
+                          Math.cos((x - surferX) * 0.1 + t * 0.5) * 0.2;
+                pos.setZ(i, z);
+            }
+            pos.needsUpdate = true;
+
+            // サーファーを波の上に乗せる
+            const surferY = Math.sin(0 * 0.2 + t * speedFact) * heightFact + Math.cos(0 * 0.1 + t * 0.5) * 0.2;
+            surfer.position.y = surferY + 0.3;
+            surfer.rotation.x = Math.cos(t * speedFact) * 0.2;
+            
+            // ヨットの自体の傾きは、波の揺れや進行方向の慣性のみを反映（センサーの生角度は含めない）
+            surfer.rotation.z = (Math.sin(t * 1.5) * 0.05) + (currentHz * -0.1) + (targetX - surferX) * 0.2;
+
+            if (gameState === 'PLAYING') {
+                score += (currentHz + 0.1) * 0.2;
+
+                // --- 津波警告ロジック ---
+                const warningDiv = document.getElementById('warning');
+                
+                if (!isWarningActive) {
+                    // 10秒ごとに警告開始
+                    if (now - lastWarningTime > WARNING_INTERVAL) {
+                        isWarningActive = true;
+                        lastWarningTime = now;
+                        warningStartHz = currentHz; // 警告開始時のHzを記録
+                        
+                        // サイレン再生
+                        if (sirenSound) {
+                            sirenSound.currentTime = 0;
+                            sirenSound.play().catch(e => console.log("Siren play blocked"));
+                        }
+
+                        // 目標Hzを表示 (+0.2Hz以上)
+                        const targetHz = warningStartHz + 0.2;
+                        document.getElementById('target-hz-val').innerText = targetHz.toFixed(2);
+                    }
+                } else {
+                    const elapsed = now - lastWarningTime;
+                    const remaining = Math.ceil((WARNING_DURATION - elapsed) / 1000);
+                    
+                    if (remaining > 0) {
+                        warningDiv.style.display = 'block';
+                        document.getElementById('warning-timer').innerText = remaining;
+                    } else {
+                        // 判定の瞬間
+                        warningDiv.style.display = 'none';
+                        
+                        // サイレン停止
+                        if (sirenSound) sirenSound.pause();
+
+                        const targetHz = warningStartHz + 0.2;
+                        if (currentHz < targetHz) {
+                            endGame("TSUNAMI!");
+                        } else {
+                            // 成功！津波を乗り越えた
+                            isWarningActive = false;
+                            lastWarningTime = now;
+                            score += 100; // ボーナス取得
+                        }
+                    }
+                }
+                // -----------------------
+
+                // ペース維持の判定（かなり緩めに設定）
+                if (pushupCount > 0) {
+                    const elapsedSinceLast = Date.now() - lastPeakTime;
+                    
+                    // 判定1: 周波数が極端に低い（0.05Hz = 20秒周期）
+                    // 判定2: または、最後のカウントから15秒以上経過
+                    if (currentHz < 0.05 || elapsedSinceLast > 15000) {
+                        endGame();
+                    }
+                }
+            }
+            renderer.render(scene, camera);
+        }
+
+        function startGame() {
+            gameState = 'PLAYING';
+            pushupCount = 0;
+            currentHz = 0;
+            score = 0;
+            surferX = 0;
+            targetX = 0;
+            lastPeakTime = Date.now();
+            lastWarningTime = Date.now(); // 警告タイマーリセット
+            isWarningActive = false;
+            if (sirenSound) {
+                sirenSound.pause();
+                sirenSound.currentTime = 0;
+            }
+
+            pushupState = 'TOP';
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('warning').style.display = 'none';
+        }
+
+        function endGame(reason = "WIPE OUT!") {
+            gameState = 'GAMEOVER';
+            
+            // サイレンを止める
+            if (sirenSound) sirenSound.pause();
+
+            // ゲームオーバーの音を再生
+            if (gameoverSound) {
+                gameoverSound.currentTime = 0;
+                gameoverSound.play().catch(e => console.log("Audio play blocked"));
+            }
+
+            document.getElementById('gameover-title').innerText = reason;
+            document.getElementById('overlay').style.display = 'flex';
+            document.getElementById('final-score').innerText = `SCORE: ${Math.floor(score)}`;
+        }
+
+        async function startCountdown() {
+            gameState = 'PREPARATION';
+            const countdownDiv = document.getElementById('countdown');
+            countdownDiv.style.display = 'block';
+            
+            for (let i = 5; i > 0; i--) {
+                countdownDiv.innerText = i;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            countdownDiv.innerText = 'GO!';
+            setTimeout(() => {
+                countdownDiv.style.display = 'none';
+            }, 1000);
+            
+            startGame();
+        }
+
+        // キーボード操作用のイベントリスナー (デバッグ用/COREなし用)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault(); // 画面スクロールの防止
+                if (gameState === 'START') {
+                    startCountdown();
+                } else if (gameState === 'PLAYING') {
+                    handlePushupAction();
+                    // キー入力時の視覚的フィードバック
+                    const led = document.getElementById('led');
+                    led.style.background = '#00ffff';
+                    setTimeout(() => led.style.background = '#300', 40);
+                } else if (gameState === 'GAMEOVER') {
+                    location.reload();
+                }
+            }
+            // 矢印キーでの左右移動
+            if (gameState === 'PLAYING') {
+                if (e.code === 'ArrowLeft') targetX += 2;
+                if (e.code === 'ArrowRight') targetX -= 2;
+            }
+        });
+
+        // BLE Setup
+        window.onload = () => {
+            ble.setup(['DEVICE_INFORMATION', 'DATE_TIME', 'SENSOR_VALUES', 'STEP_ANALYSIS'], {
+                interpolation: { enabled: true, max_consecutive_missing: 1 }
+            });
+            ble.gotConvertedAcc = (acc) => analyzePushup(acc);
+            ble.gotEuler = (euler) => {
+                // ロール角（左右の傾き）を保存
+                currentRoll = euler.roll;
+            };
+            ble.onDisconnect = () => {
+                document.getElementById('connect-btn').innerText = 'ORPHE CORE 接続';
+                document.getElementById('connect-btn').classList.remove('connected');
+                if (gameState === 'PLAYING') endGame();
+            };
+        };
+
+        document.getElementById('connect-btn').onclick = async () => {
+            if (!ble.bluetoothDevice) {
+                try {
+                    await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                    document.getElementById('connect-btn').innerText = '切断';
+                    document.getElementById('connect-btn').classList.add('connected');
+                    startCountdown();
+                } catch (e) {
+                    console.error(e);
+                    alert("接続エラー: " + e.message);
+                }
+            } else {
+                ble.reset();
+                location.reload();
+            }
+        };
+
+        init3D();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUIET MOVE QUEST | 8-BIT BATTLE</title>
+    <!-- ORPHE-CORE.js Library -->
+    <script src="./L01/src/ORPHE-CORE.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pixel-bg: #000000;
+            --pixel-text: #00ff00;
+            --pixel-accent: #ff00ff;
+            --pixel-border: #ffffff;
+            --pixel-danger: #ff0000;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: var(--pixel-bg);
+            color: var(--pixel-text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            image-rendering: pixelated;
+        }
+
+        #game-container {
+            text-align: center;
+            width: 90%;
+            max-width: 540px;
+            padding: 32px;
+            border: 4px solid var(--pixel-border);
+            background: var(--pixel-bg);
+            box-shadow: 10px 10px 0px var(--pixel-accent);
+            position: relative;
+        }
+
+        #game-container::after {
+            content: "";
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            border: 2px solid var(--pixel-border);
+            pointer-events: none;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 18px;
+            line-height: 1.5;
+            color: var(--pixel-accent);
+            margin-bottom: 32px;
+            text-shadow: 4px 4px 0px #000000;
+        }
+
+        .status-box {
+            font-size: 12px;
+            margin: 24px 0;
+            padding: 16px;
+            border: 2px solid var(--pixel-text);
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        #timer {
+            font-size: 40px;
+            margin: 32px 0;
+            color: #ffff00;
+            text-shadow: 4px 4px 0px #aa0000;
+        }
+
+        #acc-value {
+            font-size: 10px;
+            color: var(--pixel-text);
+            margin-top: 16px;
+            letter-spacing: 1px;
+        }
+
+        .bar-container {
+            width: 100%;
+            height: 24px;
+            background: #333;
+            border: 2px solid var(--pixel-border);
+            margin: 24px 0 8px 0;
+            position: relative;
+        }
+
+        #acc-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--pixel-text);
+            transition: width 0.05s steps(10);
+        }
+
+        button {
+            padding: 16px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            border: 4px solid var(--pixel-border);
+            background-color: var(--pixel-bg);
+            color: var(--pixel-border);
+            cursor: pointer;
+            margin: 16px;
+            position: relative;
+            box-shadow: 4px 4px 0px var(--pixel-border);
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            background-color: #222;
+        }
+
+        button:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px var(--pixel-border);
+        }
+
+        .btn-connect,
+        .btn-start {
+            border-color: var(--pixel-text);
+            color: var(--pixel-text);
+            box-shadow: 4px 4px 0px var(--pixel-text);
+        }
+
+        .btn-stop {
+            border-color: var(--pixel-danger);
+            color: var(--pixel-danger);
+            box-shadow: 4px 4px 0px var(--pixel-danger);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #message {
+            font-size: 10px;
+            line-height: 1.8;
+            min-height: 40px;
+            margin-bottom: 24px;
+            color: var(--pixel-text);
+        }
+
+        .danger {
+            color: var(--pixel-danger) !important;
+            animation: flash 0.2s infinite;
+        }
+
+        @keyframes flash {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .slider-container {
+            margin-top: 40px;
+            padding: 16px;
+            border-top: 4px dotted var(--pixel-border);
+            text-align: left;
+        }
+
+        .slider-label {
+            display: block;
+            font-size: 8px;
+            color: var(--pixel-text);
+            margin-bottom: 16px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border: 2px solid var(--pixel-border);
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            height: 16px;
+            width: 16px;
+            background: var(--pixel-accent);
+            border: 2px solid var(--pixel-border);
+            margin-top: -6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <h1>QUIET MOVE QUEST</h1>
+
+        <div id="setup-view">
+            <p>1. CONNECT CORE MODULE</p>
+            <button id="btn-connect" class="btn-connect">CONNECT</button>
+            <div id="conn-status" class="status-box">DISCONNECTED</div>
+        </div>
+
+        <div id="game-view" class="hidden">
+            <div id="message">READY PLAYER 1</div>
+            <div id="timer">60.00</div>
+
+            <div class="status-box">
+                PLAYER <span id="current-player">1</span>
+            </div>
+
+            <div class="bar-container">
+                <div id="acc-bar"></div>
+            </div>
+            <div id="acc-value">VIBRATION: 0.0000</div>
+
+            <div style="margin-top: 24px;">
+                <button id="btn-game-toggle" class="btn-start">START</button>
+            </div>
+
+            <div class="slider-container">
+                <label class="slider-label" for="threshold">SENSITIVITY: <span id="threshold-val">0.020</span>g</label>
+                <input type="range" id="threshold" min="0.001" max="1.0" step="0.001" value="0.5">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ble = new Orphe(0);
+        let gameActive = false;
+        let timeLeft = 60.0;
+        let timerId = null;
+        let currentPlayer = 1;
+        let threshold = parseFloat(localStorage.getItem('orphe_threshold')) || 0.02;
+        let prevAcc = null;
+        let prevGyro = null;
+        let diff6D = { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 };
+        const GYRO_SCALE = 0.002;
+
+        // Audio Context for sounds
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(freq, duration, type = 'sine') {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSuccess() {
+            playSound(440, 0.1);
+            setTimeout(() => playSound(880, 0.2), 100);
+        }
+
+        function playFail() {
+            playSound(220, 0.3, 'sawtooth');
+            playSound(110, 0.5, 'sawtooth');
+        }
+
+        function playTick() {
+            playSound(660, 0.05);
+        }
+
+        function playTock() {
+            playSound(440, 0.05);
+        }
+
+        // DOM elements
+        const btnConnect = document.getElementById('btn-connect');
+        const setupView = document.getElementById('setup-view');
+        const gameView = document.getElementById('game-view');
+        const connStatus = document.getElementById('conn-status');
+        const timerLabel = document.getElementById('timer');
+        const btnGameToggle = document.getElementById('btn-game-toggle');
+        const msgLabel = document.getElementById('message');
+        const accBar = document.getElementById('acc-bar');
+        const accValueLabel = document.getElementById('acc-value');
+        const thresholdInput = document.getElementById('threshold');
+        const thresholdValLabel = document.getElementById('threshold-val');
+        const playerLabel = document.getElementById('current-player');
+
+        window.onload = () => {
+            ble.setup();
+            const savedThreshold = localStorage.getItem('orphe_threshold');
+            if (savedThreshold) {
+                thresholdInput.value = savedThreshold;
+                thresholdValLabel.innerText = parseFloat(savedThreshold).toFixed(3);
+            }
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!setupView.classList.contains('hidden')) {
+                    btnConnect.click();
+                } else if (!gameView.classList.contains('hidden')) {
+                    if (btnGameToggle.innerText === 'RESET') {
+                        resetGame();
+                    } else {
+                        handleToggle();
+                    }
+                }
+            }
+        });
+
+        btnConnect.onclick = async () => {
+            initAudio();
+            try {
+                connStatus.innerText = 'CONNECTING...';
+                await ble.begin('SENSOR_VALUES', { range: { acc: 2, gyro: 250 } });
+                connStatus.innerText = 'CONNECTED!';
+                setupView.classList.add('hidden');
+                gameView.classList.remove('hidden');
+                ble.setLED(1, 0);
+                playSuccess();
+                console.log(ble.device_information);
+            } catch (e) {
+                console.error(e);
+                connStatus.innerText = 'FAIL';
+            }
+        };
+
+        thresholdInput.oninput = () => {
+            threshold = parseFloat(thresholdInput.value);
+            thresholdValLabel.innerText = threshold.toFixed(3);
+            localStorage.setItem('orphe_threshold', threshold);
+        };
+
+        function handleToggle() {
+            initAudio();
+            if (!gameActive) {
+                startGame();
+            } else {
+                stopGame(true);
+            }
+        }
+
+        btnGameToggle.onclick = handleToggle;
+
+        function startGame() {
+            gameActive = true;
+            ble.setLED(0, 0);
+            btnGameToggle.innerText = 'FINISH (STOP)';
+            btnGameToggle.className = 'btn-stop';
+            msgLabel.innerText = 'MOVING... BE QUIET!';
+            msgLabel.classList.remove('danger');
+
+            let startTime = performance.now();
+            let baseTime = timeLeft;
+            let lastTickSec = Math.floor(baseTime);
+
+            timerId = setInterval(() => {
+                let elapsed = (performance.now() - startTime) / 1000;
+                timeLeft = baseTime - elapsed;
+
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    gameOver('TIME UP!');
+                }
+
+                timerLabel.innerText = timeLeft.toFixed(2);
+                let currentSec = Math.floor(timeLeft);
+                if (currentSec !== lastTickSec && timeLeft > 0) {
+                    if (currentSec % 2 === 0) {
+                        playTick();
+                    } else {
+                        playTock();
+                    }
+                    lastTickSec = currentSec;
+                }
+            }, 10);
+        }
+
+        function stopGame(success) {
+            gameActive = false;
+            clearInterval(timerId);
+            ble.setLED(1, 0);
+
+            if (success) {
+                playSuccess();
+                currentPlayer++;
+                playerLabel.innerText = currentPlayer;
+                msgLabel.innerText = 'NEXT PLAYER: ' + currentPlayer + '\nREADY?';
+                btnGameToggle.innerText = 'RESUME';
+                btnGameToggle.className = 'btn-start';
+            }
+        }
+
+        function resetGame() {
+            timeLeft = 60.0;
+            currentPlayer = 1;
+            ble.setLED(1, 0);
+            timerLabel.innerText = timeLeft.toFixed(2);
+            playerLabel.innerText = currentPlayer;
+            msgLabel.innerText = 'READY PLAYER 1';
+            msgLabel.classList.remove('danger');
+            btnGameToggle.innerText = 'START';
+            btnGameToggle.className = 'btn-start';
+            btnGameToggle.onclick = handleToggle;
+            accBar.style.width = '0%';
+            accValueLabel.innerText = 'VIBRATION: 0.0000';
+            prevAcc = null;
+            prevGyro = null;
+            diff6D = { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 };
+        }
+
+        function gameOver(reason) {
+            gameActive = false;
+            clearInterval(timerId);
+            ble.setLED(1, 0);
+            playFail();
+            msgLabel.innerText = 'GAME OVER\n' + reason;
+            msgLabel.classList.add('danger');
+            btnGameToggle.innerText = 'RESET';
+            btnGameToggle.className = 'btn-connect';
+            btnGameToggle.onclick = resetGame;
+        }
+
+        function checkVibration() {
+            // ゲームオーバー時は更新を停止（原因となった値を保持するため）
+            if (!gameActive && msgLabel.classList.contains('danger')) {
+                return;
+            }
+
+            const intensity = Math.sqrt(
+                diff6D.ax ** 2 + diff6D.ay ** 2 + diff6D.az ** 2 +
+                (diff6D.gx * GYRO_SCALE) ** 2 + (diff6D.gy * GYRO_SCALE) ** 2 + (diff6D.gz * GYRO_SCALE) ** 2
+            );
+
+            // const logValue = Math.log(1 + intensity);
+            // const logThreshold = Math.log(1 + threshold);
+            const percentage = Math.min(100, (intensity / threshold) * 100);
+            accBar.style.width = percentage + '%';
+            accValueLabel.innerText = `VIBRATION: ${intensity.toFixed(4)}`;
+            // accValueLabel.innerText = `VIBRATION: ${logValue.toFixed(4)}`;
+            // console.log('Vibration Log Value:', intensity, logValue, logThreshold);
+            if (gameActive) {
+                if (intensity > threshold) {
+                    gameOver(`DETECTED MOVEMENT!`);
+                }
+            }
+        }
+
+        ble.gotAcc = (acc) => {
+            //            console.log(acc);
+
+        };
+
+        ble.gotConvertedAcc = (acc) => {
+            // console.log(acc);
+            if (prevAcc === null) {
+                prevAcc = { ...acc };
+                return;
+            }
+            diff6D.ax = acc.x - prevAcc.x;
+            diff6D.ay = acc.y - prevAcc.y;
+            diff6D.az = acc.z - prevAcc.z;
+            checkVibration();
+            prevAcc = { ...acc };
+        };
+
+        ble.gotConvertedGyro = (gyro) => {
+            if (prevGyro === null) {
+                prevGyro = { ...gyro };
+                return;
+            }
+            diff6D.gx = gyro.x - prevGyro.x;
+            diff6D.gy = gyro.y - prevGyro.y;
+            diff6D.gz = gyro.z - prevGyro.z;
+            //checkVibration();
+            prevGyro = { ...gyro };
+        };
+
+        ble.onDisconnect = () => {
+            alert('DISCONNECTED');
+            location.reload();
+        };
+
+    </script>
+</body>
+
+</html>

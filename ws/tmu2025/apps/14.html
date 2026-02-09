@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE CORE だるまさんがころんだ</title>
+    <script src="src/ORPHE-CORE.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            font-family: 'Mochiy Pop One', 'Hiragino Kaku Gothic ProN', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* p5.js Canvas */
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0; 
+        }
+
+        /* Common UI Screen Styles */
+        .ui-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 20;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border: 4px solid #D32F2F;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        /* Overlay style for Result (transparent background) */
+        .ui-overlay {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border: 4px solid #333;
+            box-shadow: 0 10px 0px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #D32F2F;
+            font-size: 32px;
+            margin: 0;
+            letter-spacing: 2px;
+        }
+        
+        h2 {
+            color: #333;
+            font-size: 28px;
+            margin: 0;
+        }
+
+        p.description {
+            color: #666;
+            font-size: 18px;
+        }
+
+        /* Buttons */
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        button:active {
+            transform: translateY(4px);
+            box-shadow: none !important;
+        }
+
+        .btn-primary {
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            background: #D32F2F;
+            border-radius: 50px;
+            box-shadow: 0 6px 0 #B71C1C; 
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* Level Select Buttons */
+        .level-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .btn-level {
+            padding: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #fff;
+            border-radius: 15px;
+            width: 100%;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .btn-level .sub {
+            display: block;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        #btn-lvl1 { background: #4CAF50; box-shadow: 0 5px 0 #2E7D32; }
+        #btn-lvl2 { background: #FF9800; box-shadow: 0 5px 0 #EF6C00; }
+        #btn-lvl3 { background: #9C27B0; box-shadow: 0 5px 0 #7B1FA2; }
+
+        /* Result Buttons */
+        .btn-result {
+            padding: 15px 40px;
+            font-size: 20px;
+            color: #333;
+            background: #eee;
+            border-radius: 30px;
+            box-shadow: 0 5px 0 #ccc;
+            margin: 10px;
+        }
+        .btn-result.highlight {
+            background: #D32F2F;
+            color: #fff;
+            box-shadow: 0 5px 0 #B71C1C;
+        }
+
+        /* In-Game Message Overlay */
+        #game-message {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translate(-50%, 0);
+            width: 90%; 
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .msg-main {
+            font-size: 48px; 
+            color: #333;
+            font-weight: bold; 
+            margin: 0;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .msg-sub {
+            font-size: 24px; 
+            color: #666;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        #debug {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #333;
+            background: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 8px;
+            pointer-events: none;
+            white-space: pre;
+            z-index: 100;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SCREEN 1: Start (Connection) -->
+    <div id="screen-start" class="ui-screen">
+        <h1>コアで<br>だるまさんがころんだ</h1>
+        <p class="description">足にORPHE COREをつけて準備してね！</p>
+        <button id="btn-connect" class="btn-primary">接続してはじめる</button>
+    </div>
+
+    <!-- SCREEN 2: Level Select -->
+    <div id="screen-level" class="ui-screen" style="display:none;">
+        <h2>レベルをえらんでね</h2>
+        <div class="level-container">
+            <button id="btn-lvl1" class="btn-level">
+                レベル 1
+                <span class="sub">「ころんだ」のみ</span>
+            </button>
+            <button id="btn-lvl2" class="btn-level">
+                レベル 2
+                <span class="sub">＋「しゃがんだ」</span>
+            </button>
+            <button id="btn-lvl3" class="btn-level">
+                レベル 3
+                <span class="sub">＋「ケンケン」</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: Result (Game Over / Goal) -->
+    <div id="screen-result" class="ui-screen ui-overlay" style="display:none;">
+        <h2 id="result-title"></h2>
+        <p id="result-desc" style="font-size:18px; color:#555; margin-bottom:20px;"></p>
+        <div>
+            <button id="btn-retry" class="btn-result highlight">もう一回！</button>
+            <button id="btn-select" class="btn-result">レベル選択へ</button>
+        </div>
+    </div>
+
+    <!-- In-Game Message -->
+    <div id="game-message" style="display:none;">
+        <h2 class="msg-main" id="msg-main"></h2>
+        <p class="msg-sub" id="msg-sub"></p>
+    </div>
+
+    <div id="debug"></div>
+
+    <script>
+        const ble = new Orphe(0);
+        
+        // Game State management
+        // PHASES: 'START', 'LEVEL_SELECT', 'GAME_PLAY', 'RESULT'
+        // Internal Game Loop States: 'ONI_SINGING', 'ONI_WATCHING', 'GAME_OVER', 'GOAL'
+        let appPhase = 'START'; 
+        let gameState = 'WAITING'; 
+        
+        let playerDistance = 10.0;
+        const GOAL_DISTANCE = 10.0;
+        let displayPhrase = "";
+        let currentLevel = 1;
+        
+        // Motion Sensing
+        let accVec = { x: 0, y: 0, z: 0 };
+        let lastAccVec = { x: 0, y: 0, z: 0 };
+        let movement = 0;
+        
+        // Thresholds
+        const OUT_THRESHOLD = 0.3;  
+        const MOVE_THRESHOLD = 0.15; 
+
+        // Step Detection
+        let lastMoveTime = 0;
+        const MIN_STEP_INTERVAL = 200; 
+
+        // p5.js setup
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            textAlign(CENTER, CENTER);
+            textFont('Mochiy Pop One'); 
+            
+            ble.setup();
+            
+            // --- UI Event Listeners ---
+
+            // 1. Connect Button
+            document.getElementById('btn-connect').addEventListener('click', async () => {
+                // Connect to BLE
+                await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                
+                // Transition to Level Select
+                switchPhase('LEVEL_SELECT');
+            });
+
+            // 2. Level Buttons
+            document.getElementById('btn-lvl1').addEventListener('click', () => startGame(1));
+            document.getElementById('btn-lvl2').addEventListener('click', () => startGame(2));
+            document.getElementById('btn-lvl3').addEventListener('click', () => startGame(3));
+
+            // 3. Result Buttons
+            document.getElementById('btn-retry').addEventListener('click', () => {
+                // Retry same level
+                startGame(currentLevel);
+            });
+            document.getElementById('btn-select').addEventListener('click', () => {
+                // Back to level select
+                switchPhase('LEVEL_SELECT');
+            });
+
+            // Debug Toggle
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'd' || e.key === 'D') {
+                    const d = document.getElementById('debug');
+                    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+
+            // --- ORPHE CORE Callbacks ---
+            ble.gotConvertedAcc = (acc) => {
+                accVec = acc;
+                
+                let dx = acc.x - lastAccVec.x;
+                let dy = acc.y - lastAccVec.y;
+                let dz = acc.z - lastAccVec.z;
+                movement = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                let isFirstFrame = (lastAccVec.x === 0 && lastAccVec.y === 0 && lastAccVec.z === 0);
+                lastAccVec = acc;
+
+                // Game Logic only runs when in GAME_PLAY phase
+                if (appPhase === 'GAME_PLAY') {
+                    
+                    // --- MOVING (Singing) ---
+                    if (gameState === 'ONI_SINGING' && !isFirstFrame) {
+                        if (movement > MOVE_THRESHOLD) {
+                            let now = millis();
+                            if (now - lastMoveTime > MIN_STEP_INTERVAL) {
+                                let interval = now - lastMoveTime;
+                                lastMoveTime = now;
+                                
+                                let stepDist = 0.1; 
+                                // Stronger movement = longer step
+                                let strength = map(movement, MOVE_THRESHOLD, 2.0, 0.5, 8.0, true);
+                                stepDist *= strength;
+
+                                playerDistance -= stepDist;
+                                if (playerDistance <= 0) {
+                                    playerDistance = 0;
+                                    handleGameEnd('GOAL');
+                                }
+                            }
+                        }
+                    }
+                    
+                    // --- OUT (Watching) ---
+                    if (gameState === 'ONI_WATCHING' && !isFirstFrame) {
+                        if (movement > OUT_THRESHOLD) { 
+                            handleGameEnd('GAME_OVER');
+                        }
+                    }
+                }
+            };
+        }
+
+        // --- Game Flow Control ---
+
+        function switchPhase(phase) {
+            appPhase = phase;
+            
+            // Hide all screens first
+            document.getElementById('screen-start').style.display = 'none';
+            document.getElementById('screen-level').style.display = 'none';
+            document.getElementById('screen-result').style.display = 'none';
+            document.getElementById('game-message').style.display = 'none';
+
+            // Show relevant screen
+            switch(phase) {
+                case 'START':
+                    document.getElementById('screen-start').style.display = 'flex';
+                    break;
+                case 'LEVEL_SELECT':
+                    document.getElementById('screen-level').style.display = 'flex';
+                    // Reset game background logic just in case
+                    gameState = 'WAITING';
+                    break;
+                case 'GAME_PLAY':
+                    document.getElementById('game-message').style.display = 'block';
+                    break;
+                case 'RESULT':
+                    document.getElementById('screen-result').style.display = 'flex';
+                    // Keep 'game-message' hidden, result overlay handles text
+                    break;
+            }
+        }
+
+        function startGame(level) {
+            currentLevel = level;
+            playerDistance = GOAL_DISTANCE;
+            
+            // Reset Speech
+            window.speechSynthesis.cancel();
+            
+            // Start Game Loop
+            switchPhase('GAME_PLAY');
+            gameState = 'ONI_SINGING';
+            startOniCycle();
+        }
+
+        function handleGameEnd(result) {
+            gameState = result; // 'GOAL' or 'GAME_OVER'
+            
+            // Audio & Speech
+            if (result === 'GOAL') {
+                playClearSound();
+                speak("ゴール！おめでとう！");
+                document.getElementById('result-title').innerText = "🎉 ゴール！";
+                document.getElementById('result-title').style.color = "#FFD700";
+                document.getElementById('result-desc').innerText = "すごい！クリアおめでとう！";
+            } else {
+                speak("動いた！アウト！");
+                document.getElementById('result-title').innerText = "😱 アウト！";
+                document.getElementById('result-title').style.color = "#D32F2F";
+                document.getElementById('result-desc').innerText = "残念...もう一度チャレンジ？";
+            }
+
+            // Show Result Screen
+            switchPhase('RESULT');
+        }
+
+        async function startOniCycle() {
+            if (appPhase !== 'GAME_PLAY') return; // Stop if not playing
+            if (gameState !== 'ONI_SINGING' && gameState !== 'ONI_WATCHING') return;
+
+            gameState = 'ONI_SINGING';
+            displayPhrase = "";
+            
+            // Patterns
+            const patterns = [
+                ["だ", "る", "ま", "さ", "ん", "が", "こ", "ろ", "ん", "だ"],
+                ["だ", "る", "ま", "さ", "ん", "が", "しゃ", "が", "ん", "だ"], 
+                ["だ", "る", "ま", "さ", "ん", "が", "ケ", "ン", "ケ", "ン"]
+            ];
+            
+            // Filter by Level
+            let validPatterns = [];
+            validPatterns.push(patterns[0]); 
+            if (currentLevel >= 2) validPatterns.push(patterns[1]);
+            if (currentLevel >= 3) validPatterns.push(patterns[2]);
+            
+            let phraseArray = validPatterns[Math.floor(Math.random() * validPatterns.length)];
+            
+            for (let i = 0; i < phraseArray.length; i++) {
+                if (appPhase !== 'GAME_PLAY') return; // Exit if quit
+                if (gameState !== 'ONI_SINGING') return; // Exit if state changed
+
+                displayPhrase += phraseArray[i];
+                
+                let delay = 300 + Math.random() * 500;
+                if (i >= phraseArray.length - 4) delay = 100 + Math.random() * 300; 
+                
+                speak(phraseArray[i]);
+                await new Promise(r => setTimeout(r, delay));
+            }
+
+            // Finished singing, now WATCHING
+            gameState = 'ONI_WATCHING';
+            displayPhrase = "！！";
+            
+            let watchTime = 1500 + Math.random() * 1500;
+            // Wait
+            await new Promise(r => setTimeout(r, watchTime));
+
+            // Continue loop if still watching
+            if (gameState === 'ONI_WATCHING' && appPhase === 'GAME_PLAY') {
+                startOniCycle();
+            }
+        }
+
+        // --- Util Functions ---
+
+        function speak(text) {
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = "ja-JP";
+            uttr.rate = 1.3;
+            window.speechSynthesis.speak(uttr);
+        }
+
+        function playClearSound() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+
+            const notes = [523.25, 659.25, 783.99, 1046.50]; 
+            let now = ctx.currentTime;
+
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(freq, now + i * 0.1);
+                
+                gain.gain.setValueAtTime(0.3, now + i * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(now + i * 0.1);
+                osc.stop(now + i * 0.1 + 0.6);
+            });
+        }
+
+        function draw() {
+            // Visualize based on State
+            if (appPhase === 'START' || appPhase === 'LEVEL_SELECT') {
+                background(255);
+                // UI is HTML-based
+            } else if (appPhase === 'GAME_PLAY') {
+                if (gameState === 'ONI_SINGING') {
+                    background(255);
+                    updateMessage(displayPhrase, "進め！");
+                    updateMessageColor('#D32F2F', '#333');
+                    drawFlatDesign(false);
+                } else if (gameState === 'ONI_WATCHING') {
+                    background('#D32F2F'); 
+                    updateMessage("！！", "止まれ！");
+                    updateMessageColor('#FFF', '#FFCCCC');
+                    drawFlatDesign(true);
+                }
+            } else if (appPhase === 'RESULT') {
+                // Keep the background state from the end of game
+                if (gameState === 'GAME_OVER') {
+                    background('#D32F2F');
+                    drawFlatDesign(true);
+                } else if (gameState === 'GOAL') {
+                    background('#FFD700');
+                    drawFlatDesign(true);
+                }
+            }
+
+            // Debug Data
+            updateDebug();
+        }
+
+        function updateMessage(main, sub) {
+            const m = document.getElementById('msg-main');
+            const s = document.getElementById('msg-sub');
+            if (m.innerText !== main) m.innerText = main;
+            if (s.innerText !== sub) s.innerText = sub;
+        }
+
+        function updateMessageColor(mCol, sCol) {
+            document.getElementById('msg-main').style.color = mCol;
+            document.getElementById('msg-sub').style.color = sCol;
+        }
+
+        function updateDebug() {
+             // デバッグ情報
+            let status = "";
+            let threshold = 0;
+            if (gameState === 'ONI_WATCHING') {
+                status = (movement > OUT_THRESHOLD) ? "⚠️ OUT!" : "✅ SAFE";
+                threshold = OUT_THRESHOLD;
+            } else if (gameState === 'ONI_SINGING') {
+                 status = (movement > MOVE_THRESHOLD) ? "🏃 MOVING" : "🛑 WAITING";
+                 threshold = MOVE_THRESHOLD;
+            } else {
+                status = "--";
+            }
+            
+            let mv = (typeof movement === 'number') ? movement : 0;
+
+            let debugText = `
+[DEBUG INFO] (Press 'D')
+Phase: ${appPhase} / State: ${gameState}
+Level: ${currentLevel}
+Movement: ${mv.toFixed(3)} / Threshold: ${threshold}
+Status  : ${status}
+Dist    : ${playerDistance.toFixed(2)}m
+`;
+            document.getElementById('debug').innerText = debugText;
+        }
+
+        function drawFlatDesign(isWatching) {
+            // 背景色に応じて各パーツの色を変える
+            
+            // レスポンシブな配置計算
+            let safeAreaTop = height * 0.1; // 上部マージン 10%
+            let barY = safeAreaTop + 40; // バーの位置
+
+            // 1. 距離テキスト (プログレスバーの上)
+            noStroke();
+            let distFontSize = Math.min(24, width * 0.05);
+            textSize(distFontSize); 
+            if (isWatching && gameState !== 'GOAL') {
+                fill(255); 
+            } else if (gameState === 'GOAL') {
+                fill(255); // ゴール時は金背景に白文字
+            } else {
+                fill('#D32F2F'); 
+            }
+            
+            if (gameState === 'GOAL') {
+                text(`GOAL!`, width / 2, safeAreaTop);
+            } else {
+                text(`残り ${playerDistance.toFixed(1)} m`, width / 2, safeAreaTop);
+            }
+
+            // 2. プログレスバー
+            drawProgressBar(barY);
+
+            // 3. だるま & テキスト配置計算
+            let contentTop = barY + 40; 
+            let textAreaHeight = height * 0.25;
+            let availableHeightForDaruma = height - contentTop - textAreaHeight - 20;
+
+            let maxAllowedSize = Math.min(width * 0.8, availableHeightForDaruma * 0.95);
+            let distanceScale = map(playerDistance, GOAL_DISTANCE, 0, 0.4, 1.0, true);
+            let size = maxAllowedSize * distanceScale;
+
+            if (size < 10) size = 10;
+            
+            let cx = width / 2;
+            let cy = contentTop + availableHeightForDaruma / 2;
+            
+            drawSimpleDaruma(cx, cy, size, isWatching);
+
+            // 4. メッセージテキスト配置 (だるまの下)
+            // RESULT画面ではHTMLオーバーレイが出るのでここのメッセージは邪魔にならないように
+            // プレイ中のみ位置更新を行う
+            if (appPhase === 'GAME_PLAY') {
+                let messageTop = cy + size/2 + 20; 
+                
+                const msgEl = document.getElementById('game-message');
+                if (messageTop > height - textAreaHeight) {
+                    messageTop = height - textAreaHeight;
+                }
+                msgEl.style.top = messageTop + 'px';
+                
+                let mainFS = Math.min(48, width * 0.12); 
+                let subFS = Math.min(24, mainFS * 0.5);   
+                
+                document.getElementById('msg-main').style.fontSize = mainFS + 'px';
+                document.getElementById('msg-sub').style.fontSize = subFS + 'px';
+            }
+        }
+
+        function drawProgressBar(y) {
+            let barWidth = width * 0.8; 
+            let barHeight = Math.max(20, height * 0.03); 
+            let x = (width - barWidth) / 2;
+
+            // Track
+            fill(230); 
+            noStroke();
+            rect(x, y, barWidth, barHeight, barHeight/2);
+
+            // Progress
+            let progress = map(playerDistance, GOAL_DISTANCE, 0, 0, 1);
+            progress = constrain(progress, 0, 1);
+            
+            if (progress > 0) {
+                fill('#4CAF50'); // 緑
+                rect(x, y, barWidth * progress, barHeight, barHeight/2);
+            }
+
+            // Icons
+            let iconSize = barHeight * 1.5;
+            textSize(iconSize);
+            text("🏁", x + barWidth + iconSize * 0.8, y + barHeight * 0.1);
+            
+            let px = x + barWidth * progress;
+            text("🏃", px, y - iconSize * 0.8);
+        }
+
+        function drawSimpleDaruma(x, y, d, isWatching) {
+            push();
+            translate(x, y);
+
+            if (isWatching) {
+                // Eyes Only (Scary)
+                fill(255);
+                ellipse(-d * 0.2, -d * 0.1, d * 0.25, d * 0.25);
+                ellipse(d * 0.2, -d * 0.1, d * 0.25, d * 0.25);
+
+                fill(0);
+                ellipse(-d * 0.2, -d * 0.1, d * 0.1, d * 0.1);
+                ellipse(d * 0.2, -d * 0.1, d * 0.1, d * 0.1);
+
+            } else {
+                // Body
+                noStroke();
+                fill('#D32F2F'); 
+                ellipse(0, 0, d, d); 
+
+                // Back "福"
+                fill(255); 
+                textAlign(CENTER, CENTER);
+                textSize(d * 0.5);
+                text("福", 0, 0); 
+            }
+
+            pop();
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>

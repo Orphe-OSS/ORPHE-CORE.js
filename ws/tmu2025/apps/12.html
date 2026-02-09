@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neck Age Trainer</title>
+    <!-- p5.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #7000ff;
+            --bg: #0a0a0f;
+            --text: #ffffff;
+            --accent: #ff007b;
+            --success: #00ff88;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        #ui-layer > * {
+            pointer-events: auto;
+        }
+
+        .screen {
+            display: none;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 0;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 20px rgba(112, 0, 255, 0.4);
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.6);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .calibration-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .calib-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .calib-btn.done {
+            background: var(--success);
+            color: var(--bg);
+        }
+
+        #combo-display {
+            position: absolute;
+            top: 10%;
+            font-size: 8rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent);
+            opacity: 0;
+            transition: 0.1s;
+        }
+
+        #judgment-display {
+            position: absolute;
+            top: 25%;
+            font-size: 3rem;
+            font-weight: bold;
+            opacity: 0;
+        }
+
+        #age-result {
+            font-size: 4rem;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 10px;
+            min-width: 80px;
+        }
+
+        #connection-warning {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            padding: 5px 20px;
+            border-radius: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <!-- Start Screen -->
+        <div id="screen-start" class="screen active">
+            <h1>NECK AGE<br>TRAINER</h1>
+            <p>首の可動域を鍛えて、若返りを目指せ！</p>
+            <div id="last-record" style="margin: 20px; font-size: 0.9rem; color: #888;"></div>
+            <button class="btn" onclick="app.connect()">ORPHEをつなぐ</button>
+            <div id="keyboard-mode-opt" style="margin-top:20px;">
+                <button class="btn" style="background: rgba(255,255,255,0.1); box-shadow:none; font-size:1rem; padding:10px 20px;" onclick="app.startKeyboardMode()">キーボードでプレイ</button>
+            </div>
+        </div>
+
+        <!-- Calibration Screen -->
+        <div id="screen-calib" class="screen">
+            <h2>キャリブレーション</h2>
+            <p>方向の基準を記録します。<br>各方向を向いてボタンを押してください。</p>
+            <div class="calibration-grid">
+                <button class="calib-btn" id="btn-center" onclick="app.calibrate('center')">正面 (基準)</button>
+                <button class="calib-btn" id="btn-right" onclick="app.calibrate('right')">右を向いて記録</button>
+                <button class="calib-btn" id="btn-left" onclick="app.calibrate('left')">左を向いて記録</button>
+                <button class="calib-btn" id="btn-up" onclick="app.calibrate('up')">上を向いて記録</button>
+                <button class="calib-btn" id="btn-down" onclick="app.calibrate('down')">下を向いて記録</button>
+            </div>
+            <div id="range-info" style="margin-top:20px; font-family:monospace;"></div>
+            <button class="btn" id="game-start-btn" style="display:none;" onclick="app.startGame()">トレーニング開始</button>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="screen-result" class="screen">
+            <h2>トレーニング完了！</h2>
+            <div id="age-result">-- 歳</div>
+            <div id="age-diff" style="font-weight:bold;"></div>
+            <div class="stat-box">
+                <div class="stat-item">
+                    <div style="font-size:0.8rem">SCORE</div>
+                    <div id="final-score">0</div>
+                </div>
+                <div class="stat-item">
+                    <div style="font-size:0.8rem">COMBO</div>
+                    <div id="final-combo">0</div>
+                </div>
+            </div>
+            <button class="btn" onclick="location.reload()">もう一度</button>
+        </div>
+
+        <!-- HUD -->
+        <div id="combo-display">0</div>
+        <div id="judgment-display">PERFECT</div>
+        <div id="connection-warning">⚠️ 接続が不安定です</div>
+    </div>
+
+    <script src="./src/ORPHE-CORE.js"></script>
+
+    <script>
+        const ble = new Orphe(0);
+        let currentEuler = { pitch: 0, roll: 0, yaw: 0 };
+        let currentAcc = { x: 0, y: 0, z: 0 };
+        let currentGyro = { x: 0, y: 0, z: 0 };
+        let calibration = {
+            center: null, right: null, left: null,
+            up: null, down: null
+        };
+        let isRotateMode = false;
+        let rotateStartAngle = 0;
+        let rotateProgress = 0;
+        let lastBeatJudge = 0;
+        let ranges = { yaw: 0, pitch: 0, roll: 0 };
+
+        let gameState = 'START';
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let multiplier = 1;
+        let flash = 0;
+        let notes = [];
+        let nextNoteTime = 0;
+        let gameTimer = 30; // Rhythm Game Duration
+        let chinTuckDuration = 40; // Chin Tuck Duration
+        let gameStartTs = 0;
+        let chinTuckStartTs = 0;
+        let chinTuckPhase = 'FORWARD'; 
+        let chinTuckPhaseStart = 0;
+        let lastChinTuckAcc = {x:0, y:0, z:0};
+        let chinTuckBonus = 0;
+        let lastNoteDir = 'direction'; // 最初は方向から始める（center以外にしておく）
+        let isKeyboardMode = false;
+        
+        // Audio & Speech
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playCoinSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(2000, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playBuzzerSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // 8 Beat BGM
+        let bgmInterval = null;
+        let beatCount = 0;
+        function start8Beat() {
+            if (bgmInterval) return;
+            beatCount = 0;
+            const bpm = 80;
+            const interval = (60 / bpm) * 1000 / 2; // 8th notes
+            bgmInterval = setInterval(() => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                // Accent on beat 1
+                if (beatCount % 4 === 0) {
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                } else {
+                    osc.frequency.setValueAtTime(330, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                }
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+                beatCount++;
+            }, interval);
+        }
+        function stop8Beat() {
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
+            }
+        }
+
+        function speak(text) {
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = 'ja-JP';
+            uttr.rate = 1.2;
+            uttr.pitch = 1.2;
+            speechSynthesis.speak(uttr);
+        }
+
+        const app = {
+            connect: async () => {
+                try {
+                    await ble.begin('SENSOR_VALUES');
+                    app.showScreen('screen-calib');
+                    gameState = 'CALIBRATION';
+                    isKeyboardMode = false;
+                } catch (e) {
+                    console.error(e);
+                    alert('接続に失敗しました。キーボードモードで開始します。');
+                    app.startKeyboardMode();
+                }
+            },
+
+            startKeyboardMode: () => {
+                isKeyboardMode = true;
+                app.showScreen('screen-calib');
+                gameState = 'CALIBRATION';
+                // ダミーの現在値を設定
+                currentEuler = { pitch: 0, roll: 0, yaw: 0 };
+                alert('キーボードモード：\n数字キー[1-5]：キャリブレーション記録\n矢印キー：首の動き操作');
+            },
+
+            showScreen: (id) => {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                const target = document.getElementById(id);
+                if (target) target.classList.add('active');
+            },
+
+            calibrate: (type) => {
+                calibration[type] = { ...currentEuler };
+                document.getElementById(`btn-${type}`).classList.add('done');
+
+                // 計算
+                if (calibration.right && calibration.left) {
+                    ranges.yaw = Math.abs(calibration.right.yaw - calibration.left.yaw);
+                }
+                if (calibration.up && calibration.down) {
+                    ranges.pitch = Math.abs(calibration.up.pitch - calibration.down.pitch);
+                }
+
+                document.getElementById('range-info').innerText =
+                    `可動域: YAW:${ranges.yaw.toFixed(1)}° PITCH:${ranges.pitch.toFixed(1)}°`;
+
+                if (calibration.center && calibration.right && calibration.left && calibration.up && calibration.down) {
+                    document.getElementById('game-start-btn').style.display = 'inline-block';
+                }
+            },
+
+            startGame: () => {
+                app.showScreen('none');
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                start8Beat();
+                gameState = 'RHYTHM_GAME';
+                gameStartTs = Date.now();
+                score = 0;
+                combo = 0;
+                maxCombo = 0;
+                multiplier = 1;
+            },
+
+            lostData: (n, p) => {
+                const warn = document.getElementById('connection-warning');
+                if (warn) {
+                    warn.style.display = 'block';
+                    setTimeout(() => warn.style.display = 'none', 2000);
+                }
+            }
+        };
+
+        // ORPHE Callbacks
+        ble.gotEuler = (euler) => {
+            // Convert radians to degrees
+            const toDeg = 180 / Math.PI;
+            currentEuler = {
+                pitch: euler.pitch * toDeg,
+                roll: euler.roll * toDeg,
+                yaw: euler.yaw * toDeg
+            };
+        };
+        ble.gotConvertedAcc = (acc) => { currentAcc = acc; };
+        ble.gotConvertedGyro = (gyro) => { currentGyro = gyro; };
+        ble.onLostData = app.lostData;
+
+        window.onload = () => {
+            ble.setup();
+            const lastData = JSON.parse(localStorage.getItem('NeckAgeTrainer'));
+            if (lastData) {
+                const recordEl = document.getElementById('last-record');
+                if (recordEl) {
+                    recordEl.innerText = `前回の記録: ${lastData.age}歳 (${lastData.date})`;
+                }
+            }
+        };
+
+        // p5.js Sketch
+        new p5((p) => {
+            let history = { euler: [], acc: [], gyro: [] };
+            const maxHist = 300;
+            const dirMap = {
+                'right': '右 ➤',
+                'left': '◀ 左',
+                'up': '▲ 上',
+                'down': '▼ 下'
+            };
+
+            p.setup = () => {
+                p.createCanvas(p.windowWidth, p.windowHeight);
+                p.textAlign(p.CENTER, p.CENTER);
+            };
+
+            p.keyPressed = () => {
+                if (isKeyboardMode && gameState === 'CALIBRATION') {
+                    if (p.key === '1') app.calibrate('center');
+                    if (p.key === '2') app.calibrate('right');
+                    if (p.key === '3') app.calibrate('left');
+                    if (p.key === '4') app.calibrate('up');
+                    if (p.key === '5') app.calibrate('down');
+                }
+            };
+
+            p.draw = () => {
+                // キーボードモード時の操作
+                if (isKeyboardMode) {
+                    const speed = 4;
+                    if (p.keyIsDown(p.LEFT_ARROW)) currentEuler.yaw -= speed;
+                    if (p.keyIsDown(p.RIGHT_ARROW)) currentEuler.yaw += speed;
+                    if (p.keyIsDown(p.UP_ARROW)) currentEuler.pitch -= speed;
+                    if (p.keyIsDown(p.DOWN_ARROW)) currentEuler.pitch += speed;
+
+                    // 加速度のシミュレーション（バランスゲーム用）
+                    if (gameState === 'CHIN_TUCK') {
+                        currentAcc.x = p.lerp(currentAcc.x, (p.mouseX - p.width/2)/500, 0.1);
+                        currentAcc.z = p.lerp(currentAcc.z, (p.mouseY - p.height/2)/500, 0.1);
+                    }
+                }
+
+                p.background(10, 10, 15, 200);
+
+                // Update History
+                if (currentEuler) history.euler.push({...currentEuler});
+                if (currentAcc) history.acc.push({...currentAcc});
+                if (currentGyro) history.gyro.push({...currentGyro});
+
+                if(history.euler.length > maxHist) {
+                    history.euler.shift();
+                    history.acc.shift();
+                    history.gyro.shift();
+                }
+                
+                if (flash > 0) {
+                    p.background(0, 242, 255, flash);
+                    flash -= 20;
+                }
+
+                if (gameState === 'RHYTHM_GAME' || gameState === 'CHIN_TUCK') {
+                    p.drawVisualizer();
+                    if (gameState === 'RHYTHM_GAME') p.updateRhythm();
+                    if (gameState === 'CHIN_TUCK') p.updateChinTuck();
+                    p.drawHUD();
+                }
+
+                p.drawGraphs();
+            };
+
+            p.drawGraphs = () => {
+                const w = 200;
+                const h = 60;
+                const x = p.width - w - 20;
+                let y = 20;
+                const gap = 30;
+
+                // 1. Angles
+                if(history.euler.length > 0)
+                    p.drawGraphPanel(x, y, w, h, history.euler, ['pitch', 'roll', 'yaw'], ['#ff0055', '#00ff55', '#5500ff'], -180, 180, 'ANGLE (deg)');
+                y += h + gap;
+
+                // 2. Gyro
+                if(history.gyro.length > 0)
+                    p.drawGraphPanel(x, y, w, h, history.gyro, ['x', 'y', 'z'], ['#ff0055', '#00ff55', '#5500ff'], -500, 500, 'GYRO (deg/s)');
+                y += h + gap;
+
+                // 3. Acc
+                if(history.acc.length > 0)
+                    p.drawGraphPanel(x, y, w, h, history.acc, ['x', 'y', 'z'], ['#ff0055', '#00ff55', '#5500ff'], -2, 2, 'ACC (g)');
+            };
+
+            p.drawGraphPanel = (x, y, w, h, data, keys, colors, min, max, label) => {
+                p.push();
+                p.fill(0, 100);
+                p.stroke(255, 50);
+                p.rect(x, y, w, h);
+                
+                p.noStroke();
+                p.fill(255);
+                p.textSize(10);
+                p.textAlign(p.LEFT, p.BOTTOM);
+                p.text(label, x, y - 5);
+
+                const len = data.length;
+                
+                keys.forEach((key, kIndex) => {
+                    p.stroke(colors[kIndex]);
+                    p.noFill();
+                    p.beginShape();
+                    for(let i=0; i<len; i++) {
+                        let val = data[i][key];
+                        let px = p.map(i, 0, maxHist, x, x + w);
+                        let py = p.map(val, min, max, y + h, y);
+                        py = p.constrain(py, y, y+h);
+                        p.vertex(px, py);
+                    }
+                    p.endShape();
+                });
+                // Legend
+                let lx = x;
+                const ly = y + h + 12;
+                keys.forEach((key, kIndex)=>{
+                   p.fill(colors[kIndex]);
+                   p.noStroke();
+                   if (data[len-1]) {
+                       p.text(`${key}: ${data[len-1][key].toFixed(1)}`, lx, ly);
+                   }
+                   lx += 60; 
+                });
+
+                p.pop();
+            };
+
+            p.drawVisualizer = () => {
+                const cx = p.width / 2;
+                const cy = p.height / 2;
+
+                p.noFill();
+                p.stroke(255, 50);
+                p.ellipse(cx, cy, 400); 
+                p.ellipse(cx, cy, 100);
+                
+                // ガイドライン
+                p.line(cx - 200, cy, cx + 200, cy);
+                p.line(cx, cy - 200, cx, cy + 200);
+
+                // 現在の首の角度のドット
+                if (calibration.center) {
+                    // 差分計算 (Degree)
+                    let dYaw = currentEuler.yaw - calibration.center.yaw;
+                    let dPitch = currentEuler.pitch - calibration.center.pitch;
+                    
+                    const sensitivity = 8; 
+                    let dx = dYaw * sensitivity; 
+                    let dy = dPitch * sensitivity; 
+                    
+                    // --- グローバル変数に座標を保存して他メソッドで使う ---
+                    p.headPos = { x: cx + dx, y: cy + dy };
+
+                    // ターゲット位置を描画（ドット）
+                    p.fill(varColor('--primary'));
+                    p.noStroke();
+                    
+                    let shakeX = p.random(-1, 1);
+                    let shakeY = p.random(-1, 1);
+
+                    p.ellipse(cx + dx + shakeX, cy + dy + shakeY, 30);
+                    
+                    // 現在の角度数値を表示
+                    p.fill(255);
+                    p.textSize(14);
+                    p.textAlign(p.LEFT, p.CENTER);
+                    p.text(`Y: ${dYaw.toFixed(1)}°`, cx + dx + 20, cy + dy - 10);
+                    p.text(`P: ${dPitch.toFixed(1)}°`, cx + dx + 20, cy + dy + 10);
+                    
+                    // エリア外に出たら警告色
+                    if (p.dist(0, 0, dx, dy) > 200) {
+                        p.stroke(255, 0, 0);
+                        p.noFill();
+                        p.ellipse(cx + dx, cy + dy, 40);
+                    }
+                }
+            };
+
+            p.updateRhythm = () => {
+                let now = (Date.now() - gameStartTs) / 1000;
+                let timeLeft = gameTimer - now;
+
+                if (timeLeft < 0) {
+                    stop8Beat();
+                    gameState = 'CHIN_TUCK';
+                    chinTuckStartTs = Date.now();
+                    chinTuckPhaseStart = Date.now();
+                    chinTuckPhase = 'FORWARD';
+                    lastChinTuckAcc = {...currentAcc};
+                    return;
+                }
+                
+                // 背景フラッシュ
+                if (flash > 0) {
+                     p.background(0, 255, 0, flash);
+                }
+                
+                // 角速度チェック（速すぎると警告）
+                let gyroMag = Math.sqrt(currentGyro.x * currentGyro.x + currentGyro.y * currentGyro.y + currentGyro.z * currentGyro.z);
+                const gyroThreshold = 50; // deg/s
+                if (gyroMag > gyroThreshold) {
+                    p.background(255, 0, 0, 150); // 赤背景
+                    if (Date.now() - lastBeatJudge > 300) {
+                        playBuzzerSound();
+                        lastBeatJudge = Date.now();
+                    }
+                    // 警告表示
+                    p.fill(255);
+                    p.textSize(32);
+                    p.text('ゆっくり動かして！', p.width / 2, 100);
+                }
+
+                const cx = p.width / 2;
+                const cy = p.height / 2;
+                
+                // 首回しモード処理
+                if (isRotateMode) {
+                    p.drawRotateMode(cx, cy);
+                    return;
+                }
+
+                // ノート生成 (8ビートに合わせて)
+                const bpm = 80;
+                const beatInterval = (60 / bpm) * 1000; // 1拍の長さ
+                if (Date.now() > nextNoteTime) {
+                    let dir;
+                    // 10%の確率で「回して」モード（真ん中の後のみ）
+                    if (Math.random() < 0.1 && notes.length === 0 && lastNoteDir === 'center') {
+                        dir = 'rotate';
+                        speak('回してっ！');
+                        isRotateMode = true;
+                        rotateStartAngle = currentEuler.yaw;
+                        rotateProgress = 0;
+                        nextNoteTime = Date.now() + 4000; // 4秒後に次
+                        return;
+                    }
+                    
+                    // 必ず「方向 → 真ん中 → 方向 → 真ん中...」の順番
+                    if (lastNoteDir === 'center') {
+                         // 左右上下からランダムに選ぶ
+                         const directions = ['right', 'left', 'up', 'down'];
+                         dir = directions[Math.floor(p.random(4))];
+                         const voices = {
+                             'right': '右っ！', 'left': '左っ！',
+                             'up': '上っ！', 'down': '下っ！'
+                         };
+                         speak(voices[dir]);
+                    } else {
+                        // 方向の後は必ず真ん中
+                        dir = 'center';
+                        speak('真ん中っ！');
+                    }
+
+                    notes.push({
+                        dir: dir,
+                        startTime: Date.now(),
+                        duration: beatInterval * 2, // 2拍分
+                        done: false,
+                        judged: false
+                    });
+                    lastNoteDir = dir;
+                    
+                    // 段々速くなる (2拍 -> 1拍)
+                    let interval = p.map(timeLeft, 0, 30, beatInterval, beatInterval * 2);
+                    nextNoteTime = Date.now() + interval;
+                }
+
+                // 現在の方向を判定
+                let currentDir = p.getCurrentDirection();
+
+                // ノート処理
+                for (let i = notes.length - 1; i >= 0; i--) {
+                    let n = notes[i];
+                    let elapsed = Date.now() - n.startTime;
+                    
+                    if (elapsed > n.duration + 500) {
+                        // 時間切れ
+                        if (!n.judged) {
+                            p.judge('MISS');
+                        }
+                        notes.splice(i, 1);
+                        continue;
+                    }
+
+                    // 方向が合っているかチェック
+                    if (!n.judged && currentDir === n.dir) {
+                        n.judged = true;
+                        n.done = true;
+                        playCoinSound();
+                        flash = 100;
+                        p.judge('PERFECT');
+                    }
+
+                    // 指示表示
+                    if (!n.done) {
+                        let alpha = p.map(elapsed, 0, n.duration, 255, 100);
+                        p.fill(255, alpha);
+                        p.textSize(72);
+                        p.textStyle(p.BOLD);
+                        
+                        let label = '● 真ん中';
+                        if (n.dir === 'right') label = '➤ 右';
+                        else if (n.dir === 'left') label = '◀ 左';
+                        else if (n.dir === 'up') label = '▲ 上';
+                        else if (n.dir === 'down') label = '▼ 下';
+                        else if (n.dir === 'center') label = '● 真ん中';
+                        
+                        p.text(label, cx, cy - 250);
+                        p.textStyle(p.NORMAL);
+                        
+                        // Progress bar
+                        let prog = 1 - (elapsed / n.duration);
+                        p.noStroke();
+                        p.fill(255, 100);
+                        p.rect(cx - 100, cy - 200, 200, 10);
+                        p.fill(prog > 0.3 ? '#00ff88' : '#ff0055');
+                        p.rect(cx - 100, cy - 200, 200 * prog, 10);
+                    }
+                }
+                
+                // 残り時間
+                p.fill(255);
+                p.textSize(24);
+                p.text(`残り ${Math.ceil(timeLeft)} 秒`, cx, 50);
+            };
+            
+            p.getCurrentDirection = () => {
+                if (!calibration.center) return null;
+                let dYaw = currentEuler.yaw - calibration.center.yaw;
+                let dPitch = currentEuler.pitch - calibration.center.pitch;
+                
+                // キャリブレーションで記録した最大角度の30%以上で成功
+                const yawThresholdRight = (calibration.right.yaw - calibration.center.yaw) * 0.3;
+                const yawThresholdLeft = (calibration.left.yaw - calibration.center.yaw) * 0.3;
+                const pitchThresholdUp = (calibration.up.pitch - calibration.center.pitch) * 0.3;
+                const pitchThresholdDown = (calibration.down.pitch - calibration.center.pitch) * 0.3;
+                
+                const centerThreshold = 10; // 10度以内で中央
+                
+                if (Math.abs(dYaw) < centerThreshold && Math.abs(dPitch) < centerThreshold) {
+                    return 'center';
+                }
+                // 右: dYawが正で、閾値を超えている
+                if (dYaw > yawThresholdRight && Math.abs(dPitch) < 30) {
+                    return 'right';
+                }
+                // 左: dYawが負で、閾値を超えている
+                if (dYaw < yawThresholdLeft && Math.abs(dPitch) < 30) {
+                    return 'left';
+                }
+                // 上: dPitchが閾値を超えている（Yaw制限を大幅緩和）
+                if (dPitch < pitchThresholdUp && Math.abs(dYaw) < 40) {
+                    return 'up';
+                }
+                // 下: dPitchが閾値を超えている（Yaw制限を大幅緩和）
+                if (dPitch > pitchThresholdDown && Math.abs(dYaw) < 40) {
+                    return 'down';
+                }
+                return null;
+            };
+            
+            p.drawRotateMode = (cx, cy) => {
+                // 首を回すモード
+                let currentYaw = currentEuler.yaw;
+                let diff = currentYaw - rotateStartAngle;
+                // 角度の正規化
+                while (diff > 180) diff -= 360;
+                while (diff < -180) diff += 360;
+                
+                // 累積回転量を追跡
+                rotateProgress += Math.abs(diff);
+                rotateStartAngle = currentYaw;
+                
+                // 表示
+                p.fill('#ff00ff');
+                p.textSize(60);
+                p.text('ぐるっと回して！', cx, cy - 200);
+                
+                // 回転プログレス表示
+                p.noFill();
+                p.stroke('#00ff88');
+                p.strokeWeight(10);
+                let angle = p.map(rotateProgress, 0, 360, 0, p.TWO_PI);
+                p.arc(cx, cy, 200, 200, -p.HALF_PI, angle - p.HALF_PI);
+                p.strokeWeight(1);
+                
+                // チャリン音（回転中）
+                if (Math.abs(diff) > 5) {
+                    if (Date.now() - lastBeatJudge > 200) {
+                        playCoinSound();
+                        lastBeatJudge = Date.now();
+                    }
+                }
+                
+                // 一周完了判定
+                if (rotateProgress >= 360) {
+                    isRotateMode = false;
+                    p.judge('PERFECT');
+                    flash = 150;
+                    speak('ナイス！');
+                }
+                
+                // タイムアウト
+                if (Date.now() > nextNoteTime - 500) {
+                    if (rotateProgress < 360) {
+                        p.judge('MISS');
+                    }
+                    isRotateMode = false;
+                }
+            };
+
+            p.updateChinTuck = () => {
+                let now = Date.now();
+                let dt = (now - chinTuckPhaseStart) / 1000;
+                let totalTime = (now - chinTuckStartTs) / 1000;
+                
+                // 加速度の変化検知 for Stability
+                let accDist = p.dist(currentAcc.x, currentAcc.y, currentAcc.z, lastChinTuckAcc.x, lastChinTuckAcc.y, lastChinTuckAcc.z);
+                lastChinTuckAcc = {...currentAcc};
+
+                if (totalTime > chinTuckDuration) {
+                    p.calculateResult();
+                    return;
+                }
+                
+                // Timer
+                p.noStroke();
+                p.fill(255, 100);
+                p.arc(p.width - 50, p.height - 50, 60, 60, 0, p.map(totalTime, 0, chinTuckDuration, 0, p.TWO_PI));
+
+                let cx = p.width/2;
+                let cy = p.height/2;
+
+                if (chinTuckPhase === 'FORWARD') {
+                    p.fill(255); p.textSize(40); 
+                    p.text("頭を前に出して！", cx, cy - 150);
+                    if (dt > 2.0) {
+                         chinTuckPhase = 'PULL';
+                         chinTuckPhaseStart = now;
+                         ble.setLED(1, 1);
+                    }
+                    
+                } else if (chinTuckPhase === 'PULL') {
+                    p.fill('#00f2ff'); p.textSize(40); 
+                    p.text("後ろに引いて！", cx, cy - 150);
+                    
+                    let pitchDiff = Math.abs(currentEuler.pitch - calibration.center.pitch);
+                    let isCenter = pitchDiff < (ranges.pitch * 0.3);
+                    let isStable = accDist < 0.1; 
+
+                    if ((dt > 1.0 && isCenter && isStable) || dt > 4.0) {
+                         chinTuckPhase = 'KEEP';
+                         chinTuckPhaseStart = now;
+                         // 基準の傾きを保存 (Balance Game Zero Point)
+                         p.balanceBase = { ...currentAcc }; // 重力加速度成分を基準にする
+                         speak("キープ！");
+                    }
+
+                } else if (chinTuckPhase === 'KEEP') {
+                    let timeLeft = 5.0 - dt;
+                    p.fill('#00ff88'); p.textSize(60); 
+                    p.text(`バランスとって！ ${Math.ceil(timeLeft)}`, cx, cy - 200);
+                    
+                    // --- Balance Game Visual ---
+                    // Board
+                    p.push();
+                    p.translate(cx, cy);
+                    p.fill(255, 50);
+                    p.stroke(255);
+                    p.ellipse(0, 0, 300); // Dish
+                    p.fill(0, 100);
+                    p.ellipse(0, 0, 50); // Target zone
+
+                    // Ball Logic
+                    // currentAcc.x -> Lateral tilt -> Move Ball X
+                    // currentAcc.z -> Forward/Back tilt -> Move Ball Y (assuming sensor orientation)
+                    // センサーの向きによるが、AccX, AccZ(またはY)の変化を使う
+                    if (!p.balanceBase) p.balanceBase = {x:0, y:0, z:0};
+                    
+                    let bx = (currentAcc.x - p.balanceBase.x) * 1000; 
+                    let by = (currentAcc.z - p.balanceBase.z) * 1000; 
+                    
+                    // Limit ball inside
+                    let bDist = p.dist(0, 0, bx, by);
+                    if (bDist > 140) {
+                        let angle = Math.atan2(by, bx);
+                        bx = Math.cos(angle) * 140;
+                        by = Math.sin(angle) * 140;
+                    }
+
+                    // Draw Ball
+                    if (bDist < 30) {
+                        p.fill('#00ff88'); // OK
+                        chinTuckBonus += 2;
+                    } else {
+                        p.fill('#ff0055'); // Out
+                        // ブザー音（はみ出し時）
+                        if (Date.now() - lastBeatJudge > 500) {
+                            playBuzzerSound();
+                            lastBeatJudge = Date.now();
+                        }
+                    }
+                    p.noStroke();
+                    p.ellipse(bx, by, 40);
+                    p.pop();
+                    // ---------------------------
+
+                    if (dt > 5.0) {
+                         chinTuckPhase = 'REST';
+                         chinTuckPhaseStart = now;
+                         ble.setLED(1, 2);
+                         p.judge('PERFECT');
+                    }
+
+                } else if (chinTuckPhase === 'REST') {
+                    p.fill(255); p.textSize(40); 
+                    p.text("力を抜いて...", cx, cy - 150);
+                    if (dt > 1.0) {
+                         chinTuckPhase = 'FORWARD';
+                         chinTuckPhaseStart = now;
+                    }
+                }
+            };
+
+            p.judge = (type) => {
+                let display = document.getElementById('judgment-display');
+                let comboDisplay = document.getElementById('combo-display');
+                
+                display.innerText = type;
+                display.style.opacity = 1;
+                display.style.color = type === 'PERFECT' ? '#00f2ff' : (type === 'MISS' ? '#ff007b' : '#ffffff');
+                
+                if (type === 'MISS') {
+                    combo = 0;
+                    multiplier = 1;
+                    ble.setLED(1, 3);
+                } else {
+                    combo++;
+                    maxCombo = Math.max(maxCombo, combo);
+                    if (combo >= 50) multiplier = 3;
+                    else if (combo >= 25) multiplier = 2;
+                    else if (combo >= 10) multiplier = 1.5;
+                    
+                    let points = type === 'PERFECT' ? 100 : (type === 'GREAT' ? 50 : 20);
+                    score += points * multiplier;
+                    
+                    if (type === 'PERFECT') flash = 100;
+                    ble.setLED(1, 1);
+                }
+
+                comboDisplay.innerText = combo;
+                comboDisplay.style.opacity = combo > 0 ? 1 : 0;
+                comboDisplay.style.transform = `translate(-50%, -50%) scale(${1 + combo/100})`;
+
+                setTimeout(() => { display.style.opacity = 0; }, 500);
+            };
+
+            p.drawHUD = () => {
+                p.fill(255);
+                p.textSize(20);
+                p.text(`SCORE: ${score + chinTuckBonus}`, p.width - 100, 50);
+            };
+
+            p.calculateResult = () => {
+                gameState = 'RESULT';
+                app.showScreen('screen-result');
+
+                // 首年齢計算ロジック
+                // 理想的: Yaw 160, Pitch 120 = 280
+                let totalRange = ranges.yaw + ranges.pitch;
+                let age = Math.round(Math.max(18, 80 - (totalRange / 4)));
+                
+                document.getElementById('age-result').innerText = `${age}歳`;
+                document.getElementById('final-score').innerText = score + chinTuckBonus;
+                document.getElementById('final-combo').innerText = maxCombo;
+
+                const lastData = JSON.parse(localStorage.getItem('NeckAgeTrainer'));
+                if (lastData) {
+                    let diff = lastData.age - age;
+                    let diffText = diff > 0 ? `-${diff}歳 若返りました！` : (diff < 0 ? `+${Math.abs(diff)}歳 ...お疲れですね` : "前回と同じです");
+                    document.getElementById('age-diff').innerText = diffText;
+                    document.getElementById('age-diff').style.color = diff >= 0 ? 'var(--success)' : 'var(--accent)';
+                }
+
+                // 保存
+                localStorage.setItem('NeckAgeTrainer', JSON.stringify({
+                    age: age,
+                    ranges: ranges,
+                    score: score,
+                    date: new Date().toLocaleDateString()
+                }));
+            };
+
+            function varColor(name) {
+                return p.color(getComputedStyle(document.documentElement).getPropertyValue(name).trim());
+            }
+        });
+
+    </script>
+</body>
+</html>

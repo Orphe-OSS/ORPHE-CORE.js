@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ORPHE CORE 風船大空の旅</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="src/ORPHE-CORE.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
+
+        #ui {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.5s;
+        }
+
+        h1 {
+            color: #03a9f4;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #546e7a;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(255, 82, 82, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #ff1744;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 82, 82, 0.6);
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #90a4ae;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #info {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #546e7a;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #shake-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #26a69a;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .safe {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .danger {
+            background-color: #ff5252;
+            color: white;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+
+        /* 高度メーターのスタイル */
+        #altitude-container {
+            position: absolute;
+            left: 30px;
+            top: 120px;
+            bottom: 40px;
+            width: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+
+        #altitude-progress {
+            position: absolute;
+            width: 100%;
+            bottom: 0;
+            background: #03a9f4;
+            border-radius: 10px;
+            transition: height 0.1s;
+        }
+
+        #altitude-marker {
+            position: absolute;
+            left: 20px;
+            bottom: 0;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            transition: bottom 0.1s;
+        }
+
+        .goal-line {
+            position: absolute;
+            top: 0;
+            width: 30px;
+            border-top: 2px dashed #ffff00;
+            color: #ffff00;
+            font-size: 30px;
+            font-weight: bold;
+            padding-left: 35px;
+            line-height: normal;
+            white-space: nowrap;
+            transform: translateY(-50%);
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui">
+        <h1>風船宇宙への旅</h1>
+        <p>ORPHE COREを振って風船を膨らませて上昇しよう！<br>高度100kmを目指せ！<br>石や鳥に当たると割れてしまうが、止まれば跳ね返せるぞ！</p>
+        <button id="connectBtn" style="background-color: #03a9f4;">ORPHE CORE 接続</button>
+        <button id="startBtn" class="hidden">離陸！</button>
+        <div id="status">ORPHE COREを接続してください</div>
+    </div>
+    <div id="info" class="hidden">未知の領域、宇宙へ！</div>
+    <div id="shake-indicator" class="hidden">止まれば安全！</div>
+    <div id="score-display" class="hidden">高度: 0.0km / タイム: 0.0s</div>
+    <div id="altitude-container" class="hidden">
+        <div id="altitude-progress"></div>
+        <div id="altitude-marker">現在地</div>
+        <div class="goal-line">100.0km GOAL</div>
+    </div>
+
+    <script>
+        const ble = new Orphe(0);
+        let balloonSize = 60;
+        let targetSize = 60;
+        let isPopped = false;
+        let isCleared = false;
+        let lastAcc = { x: 0, y: 0, z: 0 };
+        let particles = [];
+        let stones = [];
+        let birds = [];
+        let ufos = [];
+        let clouds = [];
+        let stars = [];
+        let altitude = 0;
+        const GOAL_ALTITUDE = 100000; // 100km = 100,000m
+        let startTime = 0;
+        let clearTime = 0;
+        let bgColor;
+        let balloonColor;
+        let isShaking = false;
+        let isStarted = false;
+        let lastShakeTime = 0;
+        const SHAKE_THRESHOLD = 0.6;
+        const SHAKE_TIMEOUT = 300; // ms
+        let popReason = "";
+
+        // Web Audio API の初期化
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'clear') {
+                // もっと嬉しくなるポジティブなファンファーレ音
+                oscillator.type = 'square'; // 少しゲーム機のような音
+                
+                // ド(C5) -> ミ(E5) -> ソ(G5) -> ド(C6) のアルペジオ
+                const tune = [523.25, 659.25, 783.99, 1046.50];
+                const startTime = now;
+                
+                tune.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    const time = startTime + i * 0.12;
+                    osc.frequency.setValueAtTime(freq, time);
+                    
+                    gain.gain.setValueAtTime(0.1, time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+                    
+                    osc.start(time);
+                    osc.stop(time + 0.3);
+                });
+
+                // 最後に長いキラキラした余韻を追加
+                const highOsc = audioCtx.createOscillator();
+                const highGain = audioCtx.createGain();
+                highOsc.connect(highGain);
+                highGain.connect(audioCtx.destination);
+                highOsc.type = 'triangle';
+                highOsc.frequency.setValueAtTime(1046.50 * 1.5, startTime + 0.5);
+                highGain.gain.setValueAtTime(0.1, startTime + 0.5);
+                highGain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5);
+                highOsc.start(startTime + 0.5);
+                highOsc.stop(startTime + 1.5);
+            } else if (type === 'pop') {
+                // ネガティブな音（下降する濁った音）
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(200, now);
+                oscillator.frequency.linearRampToValueAtTime(50, now + 0.4);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                oscillator.start(now);
+                oscillator.stop(now + 0.4);
+            }
+        }
+
+        window.onload = () => {
+            ble.setup();
+        };
+
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            try {
+                await ble.begin('SENSOR_VALUES');
+                document.getElementById('status').innerText = '接続済み';
+                document.getElementById('connectBtn').classList.add('hidden');
+                document.getElementById('startBtn').classList.remove('hidden');
+            } catch (error) {
+                console.error(error);
+                document.getElementById('status').innerText = '接続に失敗しました';
+            }
+        });
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            isStarted = true;
+            startTime = millis();
+            document.getElementById('ui').classList.add('hidden');
+            document.getElementById('info').classList.remove('hidden');
+            document.getElementById('shake-indicator').classList.remove('hidden');
+            document.getElementById('score-display').classList.remove('hidden');
+            document.getElementById('altitude-container').classList.remove('hidden');
+        });
+
+        ble.gotConvertedAcc = (acc) => {
+            if (isPopped) return;
+
+            let delta = Math.abs(acc.x - lastAcc.x) + 
+                        Math.abs(acc.y - lastAcc.y) + 
+                        Math.abs(acc.z - lastAcc.z);
+
+            if (delta > SHAKE_THRESHOLD) {
+                targetSize += delta * 2; // 以前の 4 から 2 に変更して緩やかに
+                lastShakeTime = millis();
+                isShaking = true;
+                
+                let now = Date.now();
+                if (now % 200 < 50) {
+                    ble.setLED(1, 1);
+                }
+            }
+            lastAcc = { ...acc };
+
+            if (targetSize > Math.min(windowWidth, windowHeight) * 0.9) {
+                popBalloon("大きくなりすぎた！");
+            }
+        };
+
+        function popBalloon(reason = "BANG!") {
+            if (isPopped || isCleared) return;
+            isPopped = true;
+            popReason = reason;
+            ble.setLED(1, 4);
+            playSound('pop');
+            
+            // 現在の風船の位置を取得（揺れを考慮）
+            let ballY = height / 2 + sin(frameCount * 0.05) * 10;
+            
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle(width / 2, ballY, balloonColor));
+            }
+
+            stones = [];
+            birds = []; // 鳥も消去
+            ufos = []; // UFOも消去
+
+            // ゲームオーバー表示後、リトライボタンを表示
+            const ui = document.getElementById('ui');
+            const finalScore = (altitude / 1000).toFixed(1);
+            ui.innerHTML = `
+                <h1 style="color:#ff5252">GAME OVER</h1>
+                <p>${reason}</p>
+                <div style="font-size: 32px; font-weight: bold; margin-bottom: 20px; color: #26a69a;">到達高度: ${finalScore}km</div>
+                <button onclick="location.reload()">もう一度挑戦！</button>
+            `;
+            ui.classList.remove('hidden');
+            document.getElementById('score-display').classList.add('hidden');
+            document.getElementById('altitude-container').classList.add('hidden');
+        }
+
+        function clearGame() {
+            if (isCleared || isPopped) return;
+            isCleared = true;
+            isStarted = false;
+            clearTime = (millis() - startTime) / 1000;
+            ble.setLED(1, 1);
+            playSound('clear');
+
+            const ui = document.getElementById('ui');
+            ui.innerHTML = `
+                <h1 style="color:#03a9f4">SPACE REACHED!!</h1>
+                <p>ついに高度100km、宇宙の入り口へ辿り着きました！</p>
+                <div style="font-size: 28px; font-weight: bold; color: #03a9f4;">タイム: ${clearTime.toFixed(2)}s</div>
+                <div style="font-size: 32px; font-weight: bold; margin-bottom: 20px; color: #03a9f4;">MISSION CLEAR</div>
+                <button onclick="location.reload()">もう一度飛ぶ！</button>
+            `;
+            ui.classList.remove('hidden');
+            document.getElementById('score-display').classList.add('hidden');
+        }
+
+        function resetGame() {
+            // 注意: 現在は location.reload() を使用しているためこの関数は呼ばれませんが、
+            // 内容を最新のゲームタイトルに合わせて更新しておきます。
+            isPopped = false;
+            isStarted = false;
+            isCleared = false;
+            balloonSize = 60;
+            targetSize = 60;
+            altitude = 0;
+            particles = [];
+            stones = [];
+            
+            const ui = document.getElementById('ui');
+            ui.innerHTML = `
+                <h1>風船大空の旅</h1>
+                <p>ORPHE COREを振って風船を膨らませて上昇しよう！<br>高度1,000mを目指せ！<br>石に当たると割れてしまうが、止まれば跳ね返せるぞ！</p>
+                <button id="connectBtn" style="background-color: #03a9f4;">ORPHE CORE 接続</button>
+                <button id="startBtn" class="hidden">離陸！</button>
+                <div id="status">接続済み</div>
+            `;
+            // 以降のイベントリスナー再設定は省略（reloadを使用するため）
+            ui.classList.remove('hidden');
+        }
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            bgColor = color(135, 206, 235);
+            balloonColor = color(255, 82, 82);
+            noStroke();
+            
+            // 雲を生成
+            for (let i = 0; i < 8; i++) {
+                clouds.push(new Cloud(random(width), random(height)));
+            }
+
+            // 星を事前生成（背景用）
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: random(width),
+                    y: random(height),
+                    size: random(1, 3),
+                    blink: random(PI)
+                });
+            }
+        }
+
+        function draw() {
+            // 高度に応じて背景色を遷移
+            let skyColor = color(135, 206, 235);
+            let spaceColor = color(46, 8, 84);
+            let progressRatio = altitude / GOAL_ALTITUDE;
+            
+            // グラデーション背景をより綺麗に描画
+            if (progressRatio > 0) {
+                for (let i = 0; i <= height; i += 10) {
+                    let inter = map(i, 0, height, 0, 0.2);
+                    let c = lerpColor(skyColor, spaceColor, min(1.0, progressRatio + inter));
+                    fill(c);
+                    noStroke();
+                    rect(0, i, width, 10);
+                }
+            } else {
+                background(skyColor);
+            }
+
+            // 星の描画（50km以上から徐々に表示）
+            if (altitude > 40000) {
+                let starAlpha = map(altitude, 40000, 80000, 0, 255, true);
+                // ゴール付近で星を増やす演出
+                let starCountMult = map(progressRatio, 0.9, 1.0, 1.0, 2.5);
+                push();
+                for (let i = 0; i < stars.length * (progressRatio > 0.9 ? 2 : 1); i++) {
+                    let s = stars[i % stars.length];
+                    let b = sin(frameCount * 0.05 + s.blink) * 50 + 205;
+                    
+                    // ゴール付近では虹色に輝く星を混ぜる
+                    if (progressRatio > 0.98 && i % 5 === 0) {
+                        colorMode(HSB);
+                        fill((frameCount * 5 + i * 10) % 360, 50, 100, starAlpha / 255);
+                        colorMode(RGB);
+                    } else {
+                        fill(255, 255, 255, (starAlpha * b) / 255);
+                    }
+                    
+                    noStroke();
+                    let sSize = s.size * (progressRatio > 0.9 ? 1.5 : 1);
+                    ellipse(s.x, s.y, sSize);
+                    
+                    // 星もゆっくり下に流れる
+                    if (isStarted && !isPopped && !isCleared) {
+                        let worldSpeed = map(balloonSize, 60, 500, 2, 25);
+                        s.y += worldSpeed * 0.1;
+                        if (s.y > height) {
+                            s.y = 0;
+                            s.x = random(width);
+                        }
+                    }
+                }
+                pop();
+            }
+
+            // ゴール直前の光の粒子演出（90km以上）
+            if (altitude > 90000 && !isPopped && !isCleared) {
+                // オーロラのような光の筋
+                push();
+                for (let i = 0; i < 5; i++) {
+                    let x = (frameCount * 1.5 + i * width / 5) % (width * 1.5) - width * 0.25;
+                    let w = width * 0.4;
+                    let alpha = map(altitude, 90000, 100000, 0, 40);
+                    noStroke();
+                    // 多彩な色に変化
+                    colorMode(HSB);
+                    fill((frameCount * 0.5 + i * 40) % 360, 40, 100, alpha / 255);
+                    beginShape();
+                    vertex(x, 0);
+                    vertex(x + w, 0);
+                    vertex(x + w - 150, height);
+                    vertex(x - 150, height);
+                    endShape();
+                    colorMode(RGB);
+                }
+                pop();
+
+                // 上昇する光の粒子
+                if (frameCount % 2 === 0) {
+                    particles.push(new ShineParticle(random(width), height + 10));
+                }
+            }
+
+            // 風船のサイズに応じた上昇スピード（worldSpeed）の計算
+            // 小さい（60付近）ときは遅く、大きくなるほど速くなる
+            // マップ関数を使用して、サイズ 60-500 を スピード 2-25 に変換
+            let baseSpeed = map(balloonSize, 60, 500, 2, 25);
+            let worldSpeed = isStarted && !isPopped && !isCleared ? baseSpeed : 0;
+
+            // 雲の背景移動
+            for (let i = clouds.length - 1; i >= 0; i--) {
+                clouds[i].update(worldSpeed);
+                clouds[i].display();
+                if (clouds[i].isOffscreen()) {
+                    clouds.splice(i, 1);
+                    clouds.push(new Cloud(random(width), -100));
+                }
+            }
+
+            // 開始前は風船の初期状態だけ表示
+            if (!isStarted && !isPopped && !isCleared) {
+                drawBalloon();
+                return;
+            }
+
+            if (millis() - lastShakeTime > SHAKE_TIMEOUT) {
+                isShaking = false;
+            }
+
+            const indicator = document.getElementById('shake-indicator');
+            if (indicator) {
+                if (isShaking) {
+                    indicator.innerText = "キケン！上昇中！";
+                    indicator.className = "danger";
+                } else {
+                    indicator.innerText = "安全！ホバリング中";
+                    indicator.className = "safe";
+                }
+            }
+
+            if (!isPopped && !isCleared) {
+                // 高度に応じて障害物の出現を切り替え
+                // さらに高度（progressRatio）に合わせて出現頻度を上昇させる
+                let progressRatio = altitude / GOAL_ALTITUDE;
+                
+                if (altitude >= 50000) {
+                    // 石（50km以上）: 少し出現頻度を抑える
+                    let stoneInterval = max(5, floor(map(progressRatio, 0.5, 1.0, 40, 15) - worldSpeed * 0.5));
+                    if (frameCount % stoneInterval == 0) {
+                        stones.push(new Stone());
+                    }
+
+                    // UFO（70km以上）: 横から飛んでくる
+                    if (altitude >= 70000) {
+                        if (frameCount % 45 == 0) { // 25から45に緩和
+                            ufos.push(new UFO());
+                        }
+                    }
+                } else {
+                    // 鳥（0-50km）: 出現頻度を緩和
+                    let baseInterval = map(progressRatio, 0, 0.5, 60, 25);
+                    if (altitude >= 30000) {
+                        baseInterval = map(progressRatio, 0.3, 0.5, 25, 12);
+                    }
+                    
+                    let birdInterval = max(5, floor(baseInterval));
+                    if (frameCount % birdInterval == 0) {
+                        birds.push(new Bird());
+                    }
+                }
+
+                balloonSize = lerp(balloonSize, targetSize, 0.1);
+                
+                // 高度を更新（以前の1000mと同様の内部進行スピードに変更）
+                // altitude を内部的には以前の100倍の速さで加算することで、100kmまでの距離感を調整
+                altitude += worldSpeed * 5.0; 
+                if (altitude >= GOAL_ALTITUDE) {
+                    altitude = GOAL_ALTITUDE;
+                    clearGame();
+                }
+
+                const scoreDisplay = document.getElementById('score-display');
+                if (scoreDisplay) {
+                    let currentTime = (millis() - startTime) / 1000;
+                    scoreDisplay.innerText = `高度: ${(altitude / 1000).toFixed(1)}km / タイム: ${currentTime.toFixed(1)}s`;
+                }
+
+                // 高度メーターの更新
+                const percent = (altitude / GOAL_ALTITUDE) * 100;
+                const progress = document.getElementById('altitude-progress');
+                const marker = document.getElementById('altitude-marker');
+                if (progress && marker) {
+                    progress.style.height = `${percent}%`;
+                    marker.style.bottom = `${percent}%`;
+                    marker.innerText = `${(altitude / 1000).toFixed(1)}km`;
+                }
+
+                drawBalloon();
+
+                for (let i = stones.length - 1; i >= 0; i--) {
+                    stones[i].update(worldSpeed);
+                    stones[i].display();
+
+                    // 風船の揺れ（offset）を考慮した当たり判定
+                    let ballY = height / 2 + sin(frameCount * 0.05) * 10;
+                    let d = dist(stones[i].pos.x, stones[i].pos.y, width / 2, ballY);
+                    
+                    if (d < (balloonSize / 2 + stones[i].size / 2)) {
+                        if (isShaking) {
+                            popBalloon("障害物にぶつかった！");
+                        } else {
+                            // 跳ね返す
+                            stones[i].vel.y = abs(stones[i].vel.y) * 1.5 + worldSpeed;
+                            stones[i].pos.add(stones[i].vel);
+                        }
+                    }
+
+                    if (stones[i].isOffscreen()) {
+                        stones.splice(i, 1);
+                    }
+                }
+
+                // 鳥の更新と描画
+                for (let i = birds.length - 1; i >= 0; i--) {
+                    birds[i].update(worldSpeed);
+                    birds[i].display();
+
+                    let ballY = height / 2 + sin(frameCount * 0.05) * 10;
+                    let d = dist(birds[i].pos.x, birds[i].pos.y, width / 2, ballY);
+                    
+                    if (d < (balloonSize * 0.4 + birds[i].size * 0.5)) {
+                        if (isShaking) {
+                            popBalloon("鳥にぶつかった！");
+                        } else {
+                            // 振っていない時は鳥が驚いて逃げる（上か横へ加速）
+                            birds[i].vel.y -= 2;
+                            birds[i].vel.x *= 1.2;
+                        }
+                    }
+
+                    if (birds[i].isOffscreen()) {
+                        birds.splice(i, 1);
+                    }
+                }
+
+                // UFOの更新と描画
+                for (let i = ufos.length - 1; i >= 0; i--) {
+                    ufos[i].update(worldSpeed);
+                    ufos[i].display();
+
+                    let ballY = height / 2 + sin(frameCount * 0.05) * 10;
+                    let d = dist(ufos[i].pos.x, ufos[i].pos.y, width / 2, ballY);
+                    
+                    if (d < (balloonSize * 0.4 + ufos[i].size * 0.5)) {
+                        if (isShaking) {
+                            popBalloon("UFOに撃墜された！");
+                        } else {
+                            // 振っていない時は回避（バリア的な演出で弾く）
+                            ufos[i].vel.x *= -1.5;
+                            ufos[i].pos.add(ufos[i].vel);
+                        }
+                    }
+
+                    if (ufos[i].isOffscreen()) {
+                        ufos.splice(i, 1);
+                    }
+                }
+            } else {
+                // パーティクルの更新と表示（ゲームオーバー時やクリア演出）
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].display();
+                    if (particles[i].finished()) {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                if (isPopped) {
+                    textAlign(CENTER, CENTER);
+                    textSize(60);
+                    fill(255, 82, 82);
+                    textStyle(BOLD);
+                    text(popReason, width / 2, height / 2);
+                }
+            }
+        }
+
+        // ゴール近くで上昇する光の粒子
+        class ShineParticle {
+            constructor(x, y) {
+                this.pos = createVector(x, y);
+                this.vel = createVector(random(-1, 1), random(-5, -10));
+                this.size = random(3, 8);
+                this.alpha = 255;
+                this.hue = random(180, 280); // 青〜紫系
+            }
+            update() {
+                this.pos.add(this.vel);
+                this.alpha -= 3;
+            }
+            display() {
+                push();
+                colorMode(HSB);
+                noStroke();
+                fill(this.hue, 50, 100, this.alpha / 255);
+                drawingContext.shadowBlur = 10;
+                drawingContext.shadowColor = color(this.hue, 50, 100);
+                ellipse(this.pos.x, this.pos.y, this.size);
+                pop();
+            }
+            finished() {
+                return this.alpha < 0;
+            }
+        }
+
+        class Stone {
+            constructor() {
+                // 上から降ってくるように変更
+                this.pos = createVector(random(width), -50);
+                this.vel = createVector(random(-1, 1), random(2, 5));
+                this.size = random(30, 60);
+                this.rot = random(TWO_PI);
+                this.rotVel = random(-0.05, 0.05);
+            }
+
+            update(worldSpeed) {
+                // 世界の上昇速度を加味
+                this.pos.y += this.vel.y + worldSpeed;
+                this.pos.x += this.vel.x;
+                this.rot += this.rotVel;
+            }
+
+            display() {
+                push();
+                translate(this.pos.x, this.pos.y);
+                rotate(this.rot);
+                fill(120);
+                stroke(80);
+                strokeWeight(2);
+                beginShape();
+                for (let a = 0; a < TWO_PI; a += PI / 3) {
+                    let r = this.size / 2 + random(-5, 5);
+                    vertex(cos(a) * r, sin(a) * r);
+                }
+                endShape(CLOSE);
+                pop();
+            }
+
+            isOffscreen() {
+                return (this.pos.y > height + 100 || this.pos.x < -100 || this.pos.x > width + 100);
+            }
+        }
+
+        class Bird {
+            constructor() {
+                // 左右どちらかから出現
+                let fromLeft = random() > 0.5;
+                // 画面を上から3分割した一番上の範囲 (0 〜 height/3) から出現
+                let spawnY = random(0, height / 3);
+                
+                if (fromLeft) {
+                    this.pos = createVector(-50, spawnY);
+                    this.vel = createVector(random(5, 10), random(-0.5, 0.5));
+                } else {
+                    this.pos = createVector(width + 50, spawnY);
+                    this.vel = createVector(random(-10, -5), random(-0.5, 0.5));
+                }
+                this.size = random(50, 80);
+                this.wingAngle = 0;
+            }
+
+            update(worldSpeed) {
+                // 基本の飛行速度に、風船の上昇スピード（worldSpeed）の一部を加算
+                // さらに高度（altitude）が上がるほど鳥自身の飛行スピードも増すように
+                let speedBoost = map(altitude, 0, GOAL_ALTITUDE, 1.2, 3.5);
+                this.pos.x += this.vel.x * speedBoost;
+                
+                // 鳥自身の垂直移動 + 世界の下落（上昇演出）
+                this.pos.y += this.vel.y + worldSpeed * 0.5;
+                this.wingAngle = sin(frameCount * (0.2 * speedBoost));
+            }
+
+            display() {
+                push();
+                translate(this.pos.x, this.pos.y);
+                if (this.vel.x < 0) scale(-1, 1); // 左向きなら反転
+
+                fill(70, 70, 70);
+                noStroke();
+                // 胴体
+                ellipse(0, 0, this.size, this.size * 0.4);
+                // 頭
+                ellipse(this.size * 0.4, -this.size * 0.1, this.size * 0.3, this.size * 0.3);
+                // くちばし
+                fill(255, 165, 0);
+                triangle(this.size * 0.5, 0, this.size * 0.5, -this.size * 0.2, this.size * 0.7, -this.size * 0.1);
+                
+                // 羽の羽ばたき
+                fill(100, 100, 100);
+                push();
+                rotate(this.wingAngle);
+                ellipse(0, -this.size * 0.1, this.size * 0.4, this.size * 0.8);
+                pop();
+                
+                pop();
+            }
+
+            isOffscreen() {
+                return (this.pos.x < -100 || this.pos.x > width + 100 || this.pos.y > height + 200);
+            }
+        }
+
+        class UFO {
+            constructor() {
+                let fromLeft = random() > 0.5;
+                let spawnY = random(0, height / 2); // UFOは少し広範囲に出現
+                if (fromLeft) {
+                    this.pos = createVector(-60, spawnY);
+                    this.vel = createVector(random(8, 15), random(-0.5, 0.5));
+                } else {
+                    this.pos = createVector(width + 60, spawnY);
+                    this.vel = createVector(random(-15, -8), random(-0.5, 0.5));
+                }
+                this.size = random(180, 250);
+                this.lightColor = color(0, 255, 255);
+            }
+
+            update(worldSpeed) {
+                // 高度に応じてスピードアップ
+                let speedBoost = map(altitude, 70000, GOAL_ALTITUDE, 1.2, 2.5);
+                this.pos.x += this.vel.x * speedBoost;
+                this.pos.y += this.vel.y + worldSpeed * 0.3;
+            }
+
+            display() {
+                push();
+                translate(this.pos.x, this.pos.y);
+                
+                // UFOのボディ
+                noStroke();
+                fill(150);
+                ellipse(0, 0, this.size, this.size * 0.4);
+                
+                // キャノピー
+                fill(100, 200, 255, 150);
+                arc(0, -this.size * 0.05, this.size * 0.5, this.size * 0.4, PI, TWO_PI);
+                
+                // ライトの点滅
+                if (frameCount % 20 < 10) {
+                    fill(255, 255, 0);
+                    ellipse(-this.size * 0.3, 0, this.size * 0.1);
+                    ellipse(0, this.size * 0.05, this.size * 0.1);
+                    ellipse(this.size * 0.3, 0, this.size * 0.1);
+                }
+                
+                pop();
+            }
+
+            isOffscreen() {
+                return (this.pos.x < -150 || this.pos.x > width + 150 || this.pos.y > height + 200);
+            }
+        }
+
+        class Cloud {
+            constructor(x, y) {
+                this.pos = createVector(x, y);
+                this.size = random(100, 200);
+                this.speedMult = random(0.5, 0.8);
+                this.opacity = 180;
+            }
+
+            update(worldSpeed) {
+                // 雲は背景なので少しゆっくり動かす
+                this.pos.y += worldSpeed * this.speedMult;
+                
+                // 高度が上がるにつれて雲を薄くする
+                this.opacity = map(altitude, 0, GOAL_ALTITUDE * 0.3, 180, 0, true);
+            }
+
+            display() {
+                if (this.opacity <= 0) return;
+                push();
+                noStroke();
+                fill(255, 255, 255, this.opacity);
+                ellipse(this.pos.x, this.pos.y, this.size, this.size * 0.6);
+                ellipse(this.pos.x + this.size * 0.3, this.pos.y + this.size * 0.1, this.size * 0.7, this.size * 0.5);
+                ellipse(this.pos.x - this.size * 0.3, this.pos.y + this.size * 0.1, this.size * 0.7, this.size * 0.5);
+                pop();
+            }
+
+            isOffscreen() {
+                return this.pos.y > height + 150;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, col) {
+                this.pos = createVector(x, y);
+                this.vel = p5.Vector.random2D().mult(random(5, 15));
+                this.acc = createVector(0, 0.2);
+                this.alpha = 255;
+                this.color = col;
+                this.size = random(5, 15);
+            }
+
+            update() {
+                this.vel.add(this.acc);
+                this.pos.add(this.vel);
+                this.alpha -= 4;
+            }
+
+            display() {
+                noStroke();
+                fill(red(this.color), green(this.color), blue(this.color), this.alpha);
+                ellipse(this.pos.x, this.pos.y, this.size);
+            }
+
+            finished() { return this.alpha < 0; }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+
+        function drawBalloon() {
+            push();
+            translate(width / 2, height / 2);
+            let offset = sin(frameCount * 0.05) * 10;
+            translate(0, offset);
+
+            fill(balloonColor);
+            if (isShaking) {
+                translate(random(-2, 2), random(-2, 2));
+            }
+            ellipse(0, 0, balloonSize, balloonSize * 1.2);
+            
+            fill(balloonColor);
+            triangle(-10, balloonSize * 0.6, 10, balloonSize * 0.6, 0, balloonSize * 0.6 - 10);
+            stroke(255); // 宇宙でも見えやすいように白に変更
+            strokeWeight(5); // 2から5に太く
+            noFill();
+            beginShape();
+            for (let i = 0; i < 50; i++) {
+                let y = i + balloonSize * 0.6;
+                let x = sin(y * 0.05 + frameCount * 0.1) * 5;
+                vertex(x, y);
+            }
+            endShape();
+            pop();
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORPHE Wire Walker</title>
+    <!-- p5.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="./9/assets/player.js"></script>
+    <script src="./9/assets/enemy.js"></script>
+    <script src="./9/assets/item.js"></script>
+    <script>
+        const GAME_CONFIG = {
+            LOGICAL_WIDTH: 320,
+            LOGICAL_HEIGHT: 240,
+            BASE_SCROLL_SPEED: 3,
+            INVINCIBLE_SPEED: 8,
+            WIRE_LANES: [60, 100], // 0: Top (Line 1), 1: Bottom (Line 2)
+            POLE_DISTANCE: 400,
+            WIRE_SAG: 20,
+            BALANCE_LIMIT: 5.0,
+            ROLL_SENSITIVITY: 3.0,
+            PITCH_THRESH_UP: 0.25,
+            PITCH_THRESH_DOWN: -0.25,
+            GYRO_THRESH: 3.0,
+            JUMP_COOLDOWN: 300,
+            JUMP_FORCE: -6,
+            GRAVITY: 0.4,
+            OBSTACLE_INTERVAL_MIN: 120,
+            OBSTACLE_INTERVAL_MAX: 240,
+            INVINCIBLE_DURATION: 300,
+            RESPAWN_TIME: 2000,
+            PLAYER_DESIGN: 0 // 0: Ninja, 1: Stick, 2: Cloak
+        };
+    </script>
+    <script src="./9/core/core.js"></script>
+    <script src="./9/core/ui.js"></script>
+    <script src="./9/core/debug.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: none;
+            /* Prevent Pull-to-refresh on mobile */
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            /* Vital for pixel art style */
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+
+        .ui-hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: flex-start;
+        }
+
+        #start-panel-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            transition: opacity 0.3s;
+        }
+
+        #start-panel-wrapper.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .ui-panel {
+            background: #000;
+            padding: 24px;
+            border: 4px solid #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            min-width: 280px;
+        }
+
+        .hud-panel {
+            background: #000;
+            padding: 8px 12px;
+            border: 4px solid #fff;
+            pointer-events: auto;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 4px 4px 0 #000;
+        }
+
+        button {
+            background: #fff;
+            color: #000;
+            border: 4px solid #000;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: none;
+            font-size: 14px;
+            text-transform: uppercase;
+            width: 100%;
+            position: relative;
+            box-shadow: 4px 4px 0 #fff;
+        }
+
+        button:hover {
+            background: #eee;
+        }
+
+        button:active {
+            top: 2px;
+            left: 2px;
+            box-shadow: 0 0 0 #fff;
+        }
+
+        button:disabled {
+            background: #888;
+            color: #444;
+            border-color: #444;
+            cursor: not-allowed;
+            top: 0;
+            left: 0;
+            box-shadow: none;
+        }
+
+        .button-secondary {
+            background: #000;
+            color: #fff;
+            border: 4px solid #fff;
+            box-shadow: 4px 4px 0 #000;
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 2px 2px 0 #fff;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 6px;
+            min-width: 160px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #btn-debug-toggle {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            transform-origin: bottom right;
+            background: #fff;
+            color: #000;
+            border: 4px solid #000;
+            padding: 8px 16px;
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: -4px 0 0 #000;
+        }
+
+        #btn-debug-toggle:hover {
+            background: #eee;
+        }
+
+        #debug-modal {
+            position: fixed;
+            top: 20px;
+            right: -360px;
+            /* Fully hidden */
+            background: #000;
+            border: 4px solid #fff;
+            color: #fff;
+            padding: 20px;
+            width: 320px;
+            height: calc(100% - 40px);
+            pointer-events: auto;
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s steps(4);
+            /* Pixel-like transition */
+            box-sizing: border-box;
+        }
+
+        #debug-modal.visible {
+            right: 20px;
+        }
+
+        .debug-graph-container {
+            flex: 1;
+            border: 2px solid #fff;
+            margin-top: 12px;
+            position: relative;
+            background: #111;
+        }
+
+        #debug-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            /* Moved to Top-Left as requested */
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            font-size: 16px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .close-btn:hover {
+            background: #eee;
+        }
+
+        /* Scanline effect */
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                    rgba(255, 255, 255, 0),
+                    rgba(255, 255, 255, 0) 50%,
+                    rgba(0, 0, 0, 0.05) 50%,
+                    rgba(0, 0, 0, 0.05));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Train Window Frame Effect */
+        .window-frame {
+            position: absolute;
+            pointer-events: none;
+            z-index: 900;
+            border: 12px solid #1a1a1a;
+            border-radius: 40px;
+            box-sizing: border-box;
+            /* Massive shadow to fill out the workspace and blend with background */
+            box-shadow:
+                inset 0 0 20px rgba(0, 0, 0, 0.8),
+                0 0 0 100vmax #000;
+            display: none;
+        }
+
+        /* Subtle reflection on the glass */
+        .window-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
+            pointer-events: none;
+            border-radius: 28px;
+            /* Match inner curve */
+        }
+
+        /* Window handle detail */
+        .window-frame::after {
+            content: '';
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 2px;
+            background: #333;
+            border-radius: 1px;
+        }
+
+        @media (max-width: 600px) {
+            .window-frame {
+                border-width: 8px;
+                border-radius: 20px;
+            }
+        }
+    </style>
+
+    <!-- Import Map for module loading if needed, though we will use the local script directly -->
+</head>
+
+<body>
+
+    <div id="game-container">
+        <!-- p5.js canvas will be created here -->
+        <div class="window-frame"></div>
+    </div>
+
+    <!-- Retro overlay effect -->
+    <div class="scanlines"></div>
+
+    <div id="ui-layer" class="hidden">
+        <!-- UI Elements moved to Canvas (core/ui.js) -->
+    </div>
+
+    <!-- Debug Modal (Only Content kept, trigger moved to Canvas) -->
+    <div id="debug-modal">
+        <button class="close-btn" id="btn-debug-close">×</button>
+        <h3 style="margin-top: 0; margin-left: 35px; font-size: 16px; letter-spacing: 1px;">DEBUG MONITOR</h3>
+
+        <!-- Live Sensor Values -->
+        <div id="mini-debug"
+            style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+            <div class="stat-row"><span>Roll:</span> <span id="val-roll">0.00</span></div>
+            <div class="stat-row"><span>Pitch:</span> <span id="val-pitch">0.00</span></div>
+            <div class="stat-row"><span>Gyro:</span> <span id="val-gyro">0.00</span></div>
+            <div class="stat-row"><span>Status:</span> <span id="val-status">-</span></div>
+        </div>
+
+        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="chk-debug-raw" checked style="width: 16px; height: 16px;"> Raw Roll
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="chk-debug-filt" checked style="width: 16px; height: 16px;"> Filtered Roll
+            </label>
+        </div>
+
+        <div class="debug-graph-container">
+            <canvas id="debug-canvas"></canvas>
+        </div>
+        <div id="debug-log"
+            style="height: 100px; overflow-y: scroll; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px; padding-top: 10px; font-family: monospace; color: #888;">
+            <!-- Logs go here -->
+        </div>
+    </div>
+
+    <!-- ORPHE CORE Script -->
+    <script src="./9/src/ORPHE-CORE.js"></script>
+
+    <script>
+        // --- Game State ---
+        let currentScrollSpeed = 3;
+        let gameState = 'INIT'; // INIT, CONNECTED, CALIBRATING, READY, TUTORIAL, PLAYING, GAMEOVER
+        let score = 0;
+        let distance = 0;
+        let falls = 0;
+        let gameTime = 0;
+        let frameCountScore = 0;
+        let demoMode = true; // Use keyboard if not connected
+
+        let lastJumpTime = 0;
+        let lastPitchState = 0; // 0: Neutral, 1: Up, -1: Down
+        let calibrationTimer = 0;
+        let calibrationSum = 0;
+        let calibrationSumPitch = 0;
+        let calibrationCount = 0;
+
+        // --- Tutorial ---
+        let tutorialStep = 0;
+        const tutorialSteps = [
+            {
+                title: "チュートリアルへようこそ",
+                msg: "綱渡りの基本操作を学びましょう！",
+                condition: "NONE",
+                actionDesc: "画面をタップして進む"
+            },
+            {
+                title: "ステップ 1: レーン移動",
+                msg: "つま先を上げると上の線へ、\n下げると下の線へ移動します。",
+                condition: "MOVE",
+                actionDesc: "上下両方のレーンに移動してください"
+            },
+            {
+                title: "ステップ 2: バランス",
+                msg: "左右にふらつく体を立て直そう！\n左の『BALANCE』メーターを見て傾きを調整！",
+                condition: "STAY",
+                timer: 240, // 4 seconds
+                actionDesc: "バランスを取って4秒間耐えてください"
+            },
+            {
+                title: "準備完了！",
+                msg: "基本操作はバッチリです。\nハイスコアを目指して出発しましょう！",
+                condition: "FINISH",
+                actionDesc: "画面をタップしてメニューに戻る"
+            }
+        ];
+        let tutorialTimer = 0;
+        let tutorialActionDone = { up: false, down: false };
+
+        // --- Sound & BGM (Web Audio API) ---
+        let audioCtx;
+        let isMuted = false;
+        // let bgmInterval = null; // Removed in favor of bgmTimeout
+        let bgmNoteIndex = 0;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+
+        function playTone(freq, duration, type = 'sine', vol = 0.1, slideTo = null) {
+            initAudio();
+            if (isMuted) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            if (slideTo) {
+                osc.frequency.exponentialRampToValueAtTime(slideTo, audioCtx.currentTime + duration);
+            }
+
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playNoise(duration, vol = 0.2) {
+            initAudio();
+            if (isMuted) return;
+
+            const bufferSize = audioCtx.sampleRate * duration;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+            noise.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        function playSFX(name) {
+            if (isMuted) return;
+
+            switch (name) {
+                case 'jump':
+                    // Rising scale for jump
+                    playTone(200, 0.15, 'square', 0.1, 600);
+                    break;
+                case 'hit':
+                    // Noise burst + dropping low tone
+                    playNoise(0.3, 0.3);
+                    playTone(150, 0.3, 'sawtooth', 0.3, 10);
+                    break;
+                case 'click':
+                    // High blip
+                    playTone(800, 0.05, 'sine', 0.1);
+                    break;
+                case 'kick':
+                    // Short high ping (Magic/Coin like sound)
+                    playTone(600, 0.1, 'sine', 0.2, 1200);
+                    break;
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            if (isMuted) {
+                stopBGM();
+            } else {
+                if (gameState !== 'INIT') {
+                    startBGM();
+                }
+            }
+        }
+
+        let bgmTimeout = null;
+
+        function startBGM() {
+            initAudio();
+            if (bgmTimeout) clearTimeout(bgmTimeout);
+            if (isMuted) return;
+
+            // Electronic melancholic loop (Am9 style arpeggio)
+            // Notes: A3, C4, E4, B4, G3, B3, D4, A4 ...
+            const melody = [
+                220.00, 261.63, 329.63, 493.88, // Am ...
+                196.00, 246.94, 293.66, 440.00, // G ...
+                174.61, 220.00, 261.63, 392.00, // F ...
+                164.81, 207.65, 246.94, 329.63  // E7 ...
+            ];
+
+            bgmNoteIndex = 0;
+
+            const scheduleNext = () => {
+                if (!isMuted && gameState !== 'GAMEOVER' && audioCtx.state === 'running') {
+                    let freq = melody[bgmNoteIndex % melody.length];
+
+                    // Bass tone (every 4 notes)
+                    if (bgmNoteIndex % 4 === 0) {
+                        playTone(freq / 2, 0.8, 'triangle', 0.05);
+                    }
+
+                    // Melody tone
+                    playTone(freq, 0.2, 'sine', 0.03);
+
+                    bgmNoteIndex++;
+
+                    // Dynamic Tempo based on Invincibility
+                    let currentTempo = 300;
+                    if (player.invincibleTimer > 0) {
+                        currentTempo = 200; // Faster!
+                    }
+                    bgmTimeout = setTimeout(scheduleNext, currentTempo);
+                }
+            };
+
+            scheduleNext();
+        }
+
+        function stopBGM() {
+            if (bgmTimeout) {
+                clearTimeout(bgmTimeout);
+                bgmTimeout = null;
+            }
+        }
+
+        // --- Entities ---
+        let player = {
+            x: 50,
+            y: 0,
+            vy: 0,
+            balanceY: 0,
+            targetLaneIndex: 1, // 0: Top, 1: Bottom. Start at Bottom.
+            visualLaneY: 100, // For smooth transition
+            baseY: 100,
+            isJumping: false,
+            isFalling: false,
+            invincibleTimer: 0,
+            respawnTimer: 0,
+            animFrame: 0
+        };
+
+        let keys = {}; // Track keys for demo mode
+
+        let obstacles = [];
+        let particles = [];
+        let kickedEffects = []; // For items/poles flying away
+        let wireOffset = 0;
+        let spawnTimer = 0; // New timer for stable spawning
+
+        // --- Assets ---
+        let imgAM, imgPM;
+        let currentBgMode = 'day'; // 'day' or 'evening'
+
+        // --- Initialization ---
+
+        window.onload = function () {
+            // Setup ORPHE
+            initORPHE();
+
+            // Note: UI Events have been moved to core/ui.js and are handled in mousePressed() via handleMouseClick()
+            // The following are kept for backward compatibility if elements exist
+            const safeAddListener = (id, event, callback) => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener(event, callback);
+            };
+
+            safeAddListener('btn-connect', 'click', async () => {
+                try { await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES'); gameState = 'CONNECTED'; } catch (e) { }
+            });
+            safeAddListener('btn-calibrate', 'click', () => startCalibration());
+            safeAddListener('btn-start', 'click', () => startGame());
+
+            // Debug Panel Close
+            if (document.getElementById('btn-debug-close')) {
+                document.getElementById('btn-debug-close').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent propagation
+                    if (typeof toggleDebugPanel === 'function') toggleDebugPanel();
+                });
+            }
+
+            // Debug Panel Toggle (from URL)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('debug')) {
+                debugMode = true;
+                if (typeof toggleDebugPanel === 'function') toggleDebugPanel();
+            }
+        };
+
+        // --- Logic Functions ---
+
+        function checkJump(gyroMag) {
+            // Impact Trigger for Jumping over obstacles
+            if (gyroMag > GAME_CONFIG.GYRO_THRESH) {
+                let now = millis();
+                if (now - lastJumpTime > GAME_CONFIG.JUMP_COOLDOWN) {
+                    handleCommand('UP');
+                    lastJumpTime = now;
+                    logDebug(`JUMP! Gyro: ${gyroMag.toFixed(2)}`);
+                }
+            }
+        }
+
+        // Action: Just hop vertically (to clear obstacles on the current lane)
+        function performJump() {
+            if (gameState !== 'PLAYING' && gameState !== 'TUTORIAL') return;
+            if (!player.isFalling && !player.isJumping) {
+                player.vy = GAME_CONFIG.JUMP_FORCE;
+                player.isJumping = true;
+                playSFX('jump');
+                createParticles(player.x, player.y + player.baseY);
+            }
+        }
+
+        function handleCommand(cmd) {
+            if (gameState === 'TUTORIAL') {
+                let step = tutorialSteps[tutorialStep];
+                if (step.condition === "JUMP" && cmd === "UP") {
+                    nextTutorialStep();
+                } else if (step.condition === "MOVE") {
+                    if (cmd === "UP") tutorialActionDone.up = true;
+                    if (cmd === "DOWN") tutorialActionDone.down = true;
+                    if (tutorialActionDone.up && tutorialActionDone.down) {
+                        nextTutorialStep();
+                    }
+                }
+            }
+
+            if (gameState !== 'PLAYING' && gameState !== 'TUTORIAL') {
+                if (gameState === 'GAMEOVER' && (cmd === 'UP' || cmd === 'DOWN' || cmd === 'SPACE')) {
+                    startGame();
+                }
+                return;
+            }
+
+            if (cmd === 'UP') {
+                if (player.targetLaneIndex === 1) {
+                    // Position 2 (Bottom) -> Position 1 (Top)
+                    player.targetLaneIndex = 0;
+                    performJump();
+                } else {
+                    // Position 1 (Top) -> Jump on same wire
+                    performJump();
+                }
+            } else if (cmd === 'DOWN') {
+                if (player.targetLaneIndex === 0) {
+                    // Position 1 (Top) -> Position 2 (Bottom)
+                    player.targetLaneIndex = 1;
+                    performJump(); // "jump down" effect
+                } else {
+                    // Position 2 (Bottom) -> Fall
+                    fallVar();
+                }
+            }
+        }
+
+        function createParticles(x, y, color = 'white', count = 5) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: random(-2, 2),
+                    vy: random(-2, 2),
+                    color: color,
+                    life: 30
+                });
+            }
+        }
+
+        function triggerJump() {
+            // Validating legacy calls, redirect to performJump
+            performJump();
+        }
+
+        function startGame() {
+            gameState = 'PLAYING';
+            startBGM();
+            // document.getElementById('start-panel-wrapper').classList.add('hidden'); // Removed: UI is now on Canvas
+            score = 0;
+            distance = 0;
+            falls = 0;
+            gameTime = 0;
+            frameCountScore = 0;
+            spawnTimer = 0;
+            currentScrollSpeed = GAME_CONFIG.BASE_SCROLL_SPEED;
+            player.isFalling = false;
+            player.isJumping = false;
+            player.invincibleTimer = 0;
+            player.balanceY = 0;
+            player.y = 0;
+            player.vy = 0;
+            player.x = 50;
+            player.targetLaneIndex = 1; // Start Bottom
+            player.visualLaneY = GAME_CONFIG.WIRE_LANES[1];
+            obstacles = [];
+            kickedEffects = [];
+            // document.getElementById('btn-start').innerText = "RETRY GAME"; // Removed: UI is now on Canvas
+            // Important: do not disable start button, acts as retry
+            logDebug("Game Started");
+        }
+
+        function logDebug(msg) {
+            const logPanel = document.getElementById('debug-log');
+            const entry = document.createElement('div');
+            entry.textContent = `[${millis().toFixed(0)}] ${msg}`;
+            logPanel.prepend(entry);
+            console.log(msg);
+        }
+
+        // --- p5.js Sketch ---
+
+        function preload() {
+            imgAM = loadImage('./9/assets/images/am.png');
+            imgPM = loadImage('./9/assets/images/pm.png');
+        }
+
+        function setup() {
+            let canvas = createCanvas(GAME_CONFIG.LOGICAL_WIDTH, GAME_CONFIG.LOGICAL_HEIGHT);
+            canvas.parent('game-container');
+            noSmooth(); // Pixel art style
+
+            // Adjust CSS size to fill screen while keeping aspect ratio or covering
+            adjustCanvasSize();
+            window.addEventListener('resize', adjustCanvasSize);
+
+            // Initialize UI Buttons
+            if (typeof initUIButtons === 'function') {
+                initUIButtons();
+            }
+        }
+
+        function mousePressed(event) {
+            // Check if the click was directly on the canvas to avoid conflict with HTML UI
+            if (event && event.target && event.target.tagName !== 'CANVAS') {
+                return;
+            }
+
+            // p5.js の mouseX/mouseY は論理座標 (320x240) に自動的にスケールされています。
+            // 余計な計算を省き、直接 handleMouseClick に渡します。
+            let logicalMX = mouseX;
+            let logicalMY = mouseY;
+
+            if (typeof handleMouseClick === 'function') {
+                handleMouseClick(logicalMX, logicalMY);
+            }
+        }
+
+        function adjustCanvasSize() {
+            let canvasEl = document.querySelector('canvas');
+            let frameEl = document.querySelector('.window-frame');
+            let scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+            let w = width * scale;
+            let h = height * scale;
+
+            canvasEl.style.width = `${w}px`;
+            canvasEl.style.height = `${h}px`;
+
+            if (frameEl) {
+                frameEl.style.width = `${w}px`;
+                frameEl.style.height = `${h}px`;
+                frameEl.style.left = `${(window.innerWidth - w) / 2}px`;
+                frameEl.style.top = `${(window.innerHeight - h) / 2}px`;
+                frameEl.style.display = 'block';
+            }
+        }
+
+        function keyPressed() {
+            keys[keyCode] = true;
+            if (keyCode === UP_ARROW) handleCommand('UP');
+            if (keyCode === DOWN_ARROW) handleCommand('DOWN');
+            if (keyCode === LEFT_ARROW) handleCommand('LEFT');
+            if (keyCode === RIGHT_ARROW) handleCommand('RIGHT');
+
+            if (keyCode === 32) { // Space
+                if (gameState === 'GAMEOVER') {
+                    startGame();
+                }
+            }
+        }
+
+        function keyReleased() {
+            keys[keyCode] = false;
+        }
+
+        function startTutorial() {
+            console.log("startTutorial called");
+            gameState = 'TUTORIAL';
+            startBGM();
+            tutorialStep = 0;
+            tutorialTimer = 0;
+            tutorialActionDone = { up: false, down: false };
+            currentScrollSpeed = 0;
+            player.x = 50;
+            player.y = 0;
+            player.targetLaneIndex = 1;
+            player.visualLaneY = GAME_CONFIG.WIRE_LANES[1];
+            player.isFalling = false;
+            player.isJumping = false;
+            obstacles = [];
+            kickedEffects = [];
+        }
+
+        function nextTutorialStep() {
+            tutorialStep++;
+            tutorialTimer = 0;
+            tutorialActionDone = { up: false, down: false };
+            if (tutorialStep >= tutorialSteps.length) {
+                gameState = 'INIT'; // Return to menu after finish
+            }
+        }
+
+        function drawTutorial() {
+            let step = tutorialSteps[tutorialStep];
+            if (!step) return;
+
+            // Dialog Box
+            let boxW = 280;
+            let boxH = 70;
+            let boxX = width / 2 - boxW / 2;
+            let boxY = 125; // Below the wires (60, 100)
+
+            stroke(255);
+            strokeWeight(2);
+            fill(0, 0, 0, 180); // SEMI-TRANSPARENT
+            rect(boxX, boxY, boxW, boxH, 5);
+
+            // Title
+            textAlign(CENTER, TOP);
+            textSize(14);
+            fill(255);
+            noStroke();
+            textStyle(BOLD);
+            text(step.title, width / 2, boxY + 8);
+
+            // Message
+            textSize(11);
+            textStyle(NORMAL);
+            text(step.msg, width / 2, boxY + 28);
+
+            // Action Description / Progress
+            textSize(10);
+            fill(150, 255, 150);
+            textAlign(CENTER, TOP);
+            text(step.actionDesc, width / 2, boxY + boxH - 18);
+
+            // Step Indicator
+            fill(180);
+            textAlign(RIGHT, BOTTOM);
+            textSize(9);
+            text(`${tutorialStep + 1}/ ${tutorialSteps.length}`, boxX + boxW - 8, boxY + boxH - 5);
+
+            // Progress Logic
+            if (step.condition === "STAY") {
+                // チュートリアル中、バランスステップでは強制的に左右に揺らす
+                // 自然な揺れにするため、強さと速さを控えめに調整
+                sensorData.rollFiltered += sin(frameCount * 0.08) * 0.25;
+
+                tutorialTimer++;
+                // Progress bar inside the box
+                stroke(255, 100);
+                noFill();
+                rect(width / 2 - 50, boxY + boxH - 22, 100, 2);
+                fill(100, 255, 100);
+                noStroke();
+                rect(width / 2 - 50, boxY + boxH - 22, 100 * (tutorialTimer / step.timer), 2);
+
+                if (tutorialTimer >= step.timer) {
+                    nextTutorialStep();
+                }
+            }
+
+            // Animation/Visual Aids
+            if (step.condition === "MOVE") {
+                // Show UP/DOWN arrows near the right edge
+                if (frameCount % 60 < 30) {
+                    fill(255, 255, 0);
+                    if (!tutorialActionDone.up) triangle(width - 30, 60 - 20, width - 40, 60 - 10, width - 20, 60 - 10);
+                    if (!tutorialActionDone.down) triangle(width - 30, 100 + 20, width - 40, 100 + 10, width - 20, 100 + 10);
+                }
+            } else if (step.condition === "STAY") {
+                // Highlight the balance meter on the left
+                if (frameCount % 60 < 30) {
+                    noFill();
+                    stroke(255, 255, 0);
+                    strokeWeight(2);
+                    rect(5, 65, 22, 90, 5); // Box around the meter
+                }
+            }
+        }
+
+        function draw() {
+            if (currentBgMode === 'day') {
+                background(50, 100, 150); // Sky color (Day)
+            } else {
+                background(150, 80, 50); // Sky color (Evening/Sunset)
+            }
+
+            // 1. Process Sensor Data Filter
+            let rollDiff = sensorData.roll - sensorData.rollOffset;
+            let pitchDiff = sensorData.pitch - sensorData.pitchOffset;
+
+            sensorData.rollFiltered = lerp(sensorData.rollFiltered, rollDiff, 0.1);
+            sensorData.pitchFiltered = lerp(sensorData.pitchFiltered, pitchDiff, 0.1);
+
+            // Update Debug UI text
+            document.getElementById('val-roll').innerText = sensorData.rollFiltered.toFixed(2);
+            document.getElementById('val-pitch').innerText = sensorData.pitchFiltered.toFixed(2);
+            document.getElementById('val-gyro').innerText = sensorData.gyroCombined.toFixed(2);
+
+            // Display current recognition (Raw/Realtime)
+            let currentStatus = "LEVEL";
+            if (sensorData.pitchFiltered > 0.5) currentStatus = "TOE UP";
+            else if (sensorData.pitchFiltered < -0.5) currentStatus = "TOE DOWN";
+            document.getElementById('val-status').innerText = currentStatus;
+
+            // Save for Debug Graph
+            if (debugMode) {
+                debugHistory.roll.push(sensorData.roll);
+                debugHistory.rollF.push(sensorData.rollFiltered * 5); // Amplify for visibility
+                debugHistory.gyro.push(sensorData.pitchFiltered * 5); // Show pitch in cyan
+                if (debugHistory.roll.length > debugHistory.limit) {
+                    debugHistory.roll.shift();
+                    debugHistory.rollF.shift();
+                    debugHistory.gyro.shift();
+                }
+                drawDebugGraph();
+            }
+
+            // 2. Logic per state
+            if (gameState === 'CALIBRATING') {
+                calibrationSum += sensorData.roll;
+                calibrationSumPitch += sensorData.pitch;
+                calibrationCount++;
+
+                fill(255);
+                textAlign(CENTER, CENTER);
+                textSize(20);
+                text("CALIBRATING...", width / 2, height / 2);
+
+                // Progress bar
+                let progress = (millis() - calibrationTimer) / 1000;
+                rect(width / 2 - 50, height / 2 + 20, 100 * progress, 10);
+                rect(width / 2 - 50, height / 2 + 20, 100, 10, 0); // border
+
+                if (millis() - calibrationTimer > 1000) {
+                    finishCalibration();
+                }
+                return;
+            }
+
+            // Update Kicked Effects (Always run so they clear off screen)
+            for (let i = kickedEffects.length - 1; i >= 0; i--) {
+                let k = kickedEffects[i];
+                k.x += k.vx - (gameState === 'PLAYING' ? currentScrollSpeed * 0.5 : 0);
+                k.y += k.vy;
+                k.vy += 0.5; // gravity
+                k.rot += k.vrot;
+                // Remove if off screen (all sides)
+                if (k.y > height + 200 || k.x > width + 200 || k.x < -200 || k.y < -500) {
+                    kickedEffects.splice(i, 1);
+                }
+            }
+
+            if (gameState === 'PLAYING' || gameState === 'TUTORIAL') {
+                updateGame(sensorData.pitchFiltered); // Pass pitch specifically
+            }
+
+            // 3. Render Game
+
+            // Wire logic
+            if (gameState === 'PLAYING') {
+                wireOffset += currentScrollSpeed;
+            }
+
+            // Draw Background Scenery (Mountains/Clouds - parallax)
+            drawScenery();
+
+            // Draw Wire
+            drawWire();
+
+            // Draw Obstacles
+            drawObstacles();
+
+            // Draw Kicked Effects
+            drawKickedEffects();
+
+            // Draw Player
+            drawPlayer();
+
+            // Draw Particles
+            drawParticles();
+
+            // Draw HUD
+            drawHUD(window);
+
+            // Tutorial Overlay
+            if (gameState === 'TUTORIAL') {
+                drawTutorial();
+            }
+
+            // Update UI State (Visibility, labels)
+            if (typeof updateButtonState === 'function') updateButtonState();
+
+            // Draw UI Overlay (Start Menu, Buttons)
+            if (gameState !== 'PLAYING' && gameState !== 'GAMEOVER' && gameState !== 'TUTORIAL') {
+                drawStartMenu(window);
+            }
+
+            // Game Over overlay
+            if (gameState === 'GAMEOVER') {
+                drawGameOver(window);
+            }
+
+            // Draw Common UI (DBG, BG toggle) on top
+            drawCommonUI(window);
+        }
+
+        // --- Game Logic Updates ---
+
+        function updateGame(currentPitch) {
+            if (player.isFalling) {
+                player.y += player.vy;
+                player.vy += GAME_CONFIG.GRAVITY;
+
+                // 画面外に落ちるか、一定時間経過でゲームオーバーへ
+                if (player.y > height || millis() > player.respawnTimer) {
+                    respawnPlayer();
+                }
+                return;
+            }
+
+            // --- Lane Switching & Jump Logic (Simplified) ---
+            let currentPitchState = 0;
+            if (currentPitch > GAME_CONFIG.PITCH_THRESH_UP) currentPitchState = 1;
+            else if (currentPitch < GAME_CONFIG.PITCH_THRESH_DOWN) currentPitchState = -1;
+
+            if (currentPitchState !== lastPitchState) {
+                if (currentPitchState === 1) handleCommand('UP');
+                else if (currentPitchState === -1) handleCommand('DOWN');
+                lastPitchState = currentPitchState;
+            }
+
+            gameTime++;
+            frameCountScore++; // Restore frameCountScore for animations
+
+            // Speed and Invincibility Logic
+            if (gameState === 'TUTORIAL') {
+                currentScrollSpeed = 0;
+            } else if (player.invincibleTimer > 0) {
+                player.invincibleTimer--;
+                currentScrollSpeed = lerp(currentScrollSpeed, GAME_CONFIG.INVINCIBLE_SPEED, 0.1);
+            } else {
+                currentScrollSpeed = lerp(currentScrollSpeed, GAME_CONFIG.BASE_SCROLL_SPEED, 0.05);
+            }
+
+            // Distance increases based on scroll speed
+            distance += currentScrollSpeed * 0.1;
+            score = floor(distance);
+
+            if (demoMode) {
+                // Keyboard Control Demo
+                // Roll Simulation
+                if (keys[LEFT_ARROW]) sensorData.rollFiltered = lerp(sensorData.rollFiltered, -10, 0.1);
+                else if (keys[RIGHT_ARROW]) sensorData.rollFiltered = lerp(sensorData.rollFiltered, 10, 0.1);
+                else sensorData.rollFiltered = lerp(sensorData.rollFiltered, 0, 0.05);
+            }
+
+            // Roll (Balance) controls the unsteadiness *on* that lane
+            let rollDeviation = sensorData.rollFiltered * GAME_CONFIG.ROLL_SENSITIVITY;
+            player.balanceY = lerp(player.balanceY, rollDeviation, 0.1);
+
+            // Smoothly interpolate Between Lanes
+            let targetY = GAME_CONFIG.WIRE_LANES[player.targetLaneIndex];
+            player.visualLaneY = lerp(player.visualLaneY, targetY, 0.1);
+
+            // Get current base Y from wire (including sag)
+            player.baseY = getWireY(player.x + wireOffset, player.visualLaneY);
+
+            // Fall check
+            // BALANCE_LIMIT is 5.0, check absolute deviation
+            if (abs(player.balanceY) >= GAME_CONFIG.BALANCE_LIMIT) {
+                if (!player.isFalling && player.invincibleTimer <= 0) {
+                    fallVar();
+                    createParticles(player.x, player.baseY, 'red', 10);
+                }
+            }
+
+            // Invincibility Auto-Particles
+            if (player.invincibleTimer > 0 && frameCount % 2 === 0) {
+                createParticles(player.x, player.baseY, 'yellow', 2);
+            }
+
+            // Player Jump Physics
+            if (player.isJumping) {
+                player.y += player.vy;
+                player.vy += GAME_CONFIG.GRAVITY;
+
+                if (player.y > 0) {
+                    player.y = 0;
+                    player.vy = 0;
+                    player.isJumping = false;
+                }
+            }
+
+            // --- Spawn Obstacles ---
+            if (gameState !== 'TUTORIAL') {
+                // Use currentScrollSpeed to increase frequency naturally
+                spawnTimer += currentScrollSpeed;
+                let spawnInterval = 300; // Logically about every 100px world distance
+                if (spawnTimer >= spawnInterval) {
+                    spawnTimer = 0;
+                    spawnObstacle();
+                }
+            }
+
+            // --- Background Utility Pole Collision ---
+            if (gameState !== 'TUTORIAL') {
+                let relX = (player.x + wireOffset) % GAME_CONFIG.POLE_DISTANCE;
+                if (relX < 15 || relX > GAME_CONFIG.POLE_DISTANCE - 15) {
+                    // Utility Pole check
+                    let clearThreshold = 40 - player.baseY + 5;
+                    if (player.y > clearThreshold) {
+                        if (player.invincibleTimer > 0) {
+                            // Kick pole if NOT already kicked nearby
+                            // Match with the ID logic in drawWire
+                            let poleWorldX = round((player.x + wireOffset) / GAME_CONFIG.POLE_DISTANCE) * GAME_CONFIG.POLE_DISTANCE;
+                            if (!kickedEffects.find(k => k.id === `pole-${poleWorldX}`)) {
+                                kickedEffects.push({
+                                    id: `pole-${poleWorldX}`,
+                                    type: 'pole',
+                                    x: player.x,
+                                    y: player.baseY + 60,
+                                    vx: 10,
+                                    vy: -15,
+                                    rot: 0,
+                                    vrot: 0.2
+                                });
+                                playSFX('kick');
+                                logDebug(`Pole Kicked at worldX: ${poleWorldX}`);
+                            }
+                        } else {
+                            hitObstacle();
+                            createParticles(player.x, player.baseY, 'red', 10);
+                        }
+                    }
+                }
+            }
+
+            // Update Obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= currentScrollSpeed;
+
+                if (obstacles[i].passed) continue;
+
+                // Collision Detection Box
+                if (gameState !== 'TUTORIAL' && Math.abs(player.x - obstacles[i].x) < 25) {
+                    // Check lane
+                    if (player.targetLaneIndex === obstacles[i].laneIndex) {
+
+                        if (obstacles[i].type === 'power-up') {
+                            // Eat power-up
+                            player.invincibleTimer = GAME_CONFIG.INVINCIBLE_DURATION;
+                            obstacles[i].passed = true;
+                            obstacles.splice(i, 1);
+                            createParticles(player.x, player.baseY, 'yellow', 15);
+                            continue;
+                        }
+
+                        // Regular collision logic
+                        if (player.invincibleTimer > 0) {
+                            // Kick enemy/obstacle
+                            let obs = obstacles[i];
+                            kickedEffects.push({
+                                type: 'enemy',
+                                subType: obs.type,
+                                x: obs.x,
+                                y: getWireY(obs.x + wireOffset, obs.baseLaneY),
+                                vx: 15,
+                                vy: -10,
+                                rot: 0,
+                                vrot: 0.3
+                            });
+                            obstacles.splice(i, 1);
+                            playSFX('kick');
+                            logDebug("Enemy Kicked!");
+                            continue; // Move to next obstacle
+                        } else {
+                            // Birds/Signs
+                            if (player.y > -15) {
+                                hitObstacle();
+                                obstacles[i].passed = true;
+                            }
+                        }
+                    }
+                }
+
+                if (i < obstacles.length && obstacles[i].x < -50) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            updateUI();
+        }
+
+        function fallVar() {
+            if (player.isFalling) return;
+            player.isFalling = true;
+            player.vy = 0;
+            player.respawnTimer = millis() + 500;
+            playSFX('hit');
+            logDebug("Fell off wire!");
+        }
+
+        function hitObstacle() {
+            if (player.isFalling) return;
+            player.isFalling = true;
+            player.vy = -4;
+            player.respawnTimer = millis() + 500;
+            playSFX('hit');
+            logDebug("Hit obstacle!");
+        }
+
+        function respawnPlayer() {
+            if (gameState === 'TUTORIAL') {
+                // Just reset position in tutorial instead of game over
+                player.isFalling = false;
+                player.isJumping = false;
+                player.y = 0;
+                player.vy = 0;
+                player.balanceY = 0;
+                logDebug("Tutorial Respawn");
+                return;
+            }
+            // 落下や衝突が終わったらゲームオーバー画面へ
+            gameState = 'GAMEOVER';
+            stopBGM(); // Stop music on game over
+            logDebug("Game Over");
+        }
+
+        function spawnObstacle() {
+            // Explicitly pick 0 or 1
+            let laneIndex = (Math.random() < 0.5) ? 0 : 1;
+            let type = 'bird';
+
+            if (laneIndex === 0) {
+                // High Lane: mostly Birds
+                type = 'bird';
+            } else {
+                // Low Lane: Birds, Signs, or Power-ups
+                let r = Math.random();
+                if (r < 0.4) { // Increased to 40% for the low lane
+                    type = 'power-up';
+                } else if (r < 0.7) {
+                    type = 'bird';
+                } else {
+                    type = 'sign';
+                }
+            }
+
+            obstacles.push({
+                x: width + 50,
+                baseLaneY: GAME_CONFIG.WIRE_LANES[laneIndex],
+                laneIndex: laneIndex,
+                type: type,
+                passed: false
+            });
+
+            logDebug(`Spawned ${type} on Lane ${laneIndex === 0 ? 'LINE 1' : 'LINE 2'}`);
+        }
+
+        function getWireY(x, baseLaneY) {
+            // Drop/Sag design
+            let relX = x % GAME_CONFIG.POLE_DISTANCE;
+            let normX = relX / GAME_CONFIG.POLE_DISTANCE;
+            let sag = 4 * GAME_CONFIG.WIRE_SAG * normX * (1 - normX);
+            return baseLaneY + sag;
+        }
+
+        function drawScenery() {
+            // Draw background image
+            let img = (currentBgMode === 'day') ? imgAM : imgPM;
+            if (img) {
+                image(img, 0, 0, width, height);
+            }
+
+            // Draw Clouds (Parallax)
+            noStroke();
+            if (currentBgMode === 'day') {
+                fill(255, 255, 255, 100);
+            } else {
+                fill(255, 200, 150, 100); // Tinted clouds for evening
+            }
+            ellipse(100 - (wireOffset * 0.1) % (width + 200), 50, 60, 40);
+            ellipse(300 - (wireOffset * 0.2) % (width + 200), 80, 80, 50);
+        }
+
+        function drawWire() {
+            stroke(0);
+            strokeWeight(1.5);
+            noFill();
+
+            // Draw drooping wires
+            for (let laneY of GAME_CONFIG.WIRE_LANES) {
+                beginShape();
+                for (let x = 0; x <= width; x += 20) {
+                    let wy = getWireY(x + wireOffset, laneY);
+                    vertex(x, wy);
+                }
+                endShape();
+            }
+
+            // Draw simple utility poles
+            // A pole exists at every world position: 0, 400, 800...
+            // Screen X = World X - wireOffset
+            let firstWorldIndex = floor(wireOffset / GAME_CONFIG.POLE_DISTANCE);
+
+            for (let i = 0; i < 3; i++) { // Check a few poles around the screen
+                let worldX = (firstWorldIndex + i) * GAME_CONFIG.POLE_DISTANCE;
+                let poleX = worldX - wireOffset;
+
+                if (poleX > -100 && poleX < width + 100) {
+                    // Only draw if NOT kicked
+                    if (!kickedEffects.find(k => k.id === `pole-${worldX}`)) {
+                        fill(80, 60, 40); // Wooden pole
+                        noStroke();
+                        rect(poleX - 3, 40, 6, height); // Pillar
+
+                        // Crossbar near the top lane
+                        fill(60);
+                        rect(poleX - 15, 55, 30, 4);
+                        // Support
+                        stroke(100);
+                        line(poleX - 10, 59, poleX, 70);
+                        line(poleX + 10, 59, poleX, 70);
+                        noStroke();
+                    }
+                }
+            }
+        }
+
+        function drawPlayer() {
+            // Using character design from external file
+            drawPlayerCharacter(window, player, gameState === 'PLAYING', frameCountScore);
+
+            // Balance Meter (Visualizing BALANCE_LIMIT)
+            if ((gameState === 'PLAYING' || gameState === 'TUTORIAL') && !player.isFalling) {
+                let barH = 80; // Height of the meter
+                let barX = 10;
+                let barY = 70; // Position below HUD
+
+                // 1. Background Bar
+                fill(0, 0, 0, 150);
+                noStroke();
+                rect(barX, barY, 12, barH, 2);
+
+                // 2. Danger Zones (The "Do not exceed" parts)
+                fill(255, 255, 255, 100);
+                rect(barX, barY, 12, 5);          // TOP LIMIT
+                rect(barX, barY + barH - 5, 12, 5); // BOTTOM LIMIT
+
+                // 3. Perfect Balance Marker (Center)
+                stroke(255, 50);
+                line(barX, barY + barH / 2, barX + 12, barY + barH / 2);
+                noStroke();
+
+                // 4. Current Indicator
+                // Map the balance to the meter
+                let limitedBal = constrain(player.balanceY, -GAME_CONFIG.BALANCE_LIMIT, GAME_CONFIG.BALANCE_LIMIT);
+                let indicatorY = map(limitedBal, -GAME_CONFIG.BALANCE_LIMIT, GAME_CONFIG.BALANCE_LIMIT, 0, barH);
+
+                // Light up based on danger level
+                let dangerLevel = abs(player.balanceY) / GAME_CONFIG.BALANCE_LIMIT;
+                let col = lerpColor(color(150), color(255), dangerLevel);
+                fill(col);
+
+                // Glowing indicator
+                if (dangerLevel > 0.8) {
+                    if (frameCount % 10 < 5) fill(255, 255, 255); // Flash white at extreme danger
+                }
+                rect(barX - 2, barY + indicatorY - 2, 16, 4, 1);
+
+                // Label
+                fill(255);
+                noStroke();
+                textSize(8);
+                textAlign(CENTER);
+                text("BALANCE", barX + 6, barY - 5);
+            }
+        }
+
+        function drawObstacles() {
+            for (let obs of obstacles) {
+                let wy = getWireY(obs.x + wireOffset, obs.baseLaneY);
+                push();
+                translate(obs.x, wy);
+
+                if (obs.type === 'power-up') {
+                    drawItem(window, obs, frameCountScore);
+                } else {
+                    drawEnemy(window, obs, frameCountScore);
+                }
+                pop();
+            }
+        }
+
+        function drawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+
+                // Draw trails/sparkles
+                fill(p.color === 'yellow' ? color(255, 255, 0) : color(255), p.life * 8);
+                noStroke();
+                rect(p.x, p.y, 3, 3);
+
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function drawKickedEffects() {
+            for (let k of kickedEffects) {
+                try {
+                    push();
+                    translate(k.x, k.y);
+                    rotate(k.rot);
+
+                    if (k.type === 'pole') {
+                        // Draw a mini-pole
+                        fill(80, 60, 40);
+                        noStroke();
+                        rect(-3, -100, 6, 200);
+                        fill(60);
+                        rect(-15, -85, 30, 4);
+                    } else if (k.type === 'enemy') {
+                        // Draw the enemy that was kicked
+                        // Directly use window as the p5 context to ensure visibility of global constants
+                        drawEnemy(window, { type: k.subType }, frameCountScore);
+                    }
+                    pop();
+                } catch (e) {
+                    console.error("Error drawing kicked effect:", e);
+                    pop();
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>

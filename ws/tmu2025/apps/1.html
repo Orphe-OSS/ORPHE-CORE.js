@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1" />
+  <title>ORPHE BOXING - V6.5</title>
+  <style>
+    :root {
+      --bg-color: #1a1a1a;
+      --accent: #d32f2f;
+      --sp-color: #00e5ff;
+      --text-main: #eee;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 0;
+      background: var(--bg-color); color: var(--text-main);
+      overflow: hidden;
+      height: 100vh; width: 100vw;
+      display: flex; flex-direction: column;
+      user-select: none;
+    }
+    
+    /* Utility */
+    .hidden { display: none !important; }
+    .btn { 
+      background: #333; color: white; border: 2px solid #555; 
+      padding: 12px; border-radius: 8px; font-size: 1.1rem; 
+      cursor: pointer; width: 100%; transition: 0.2s; font-weight: bold;
+      touch-action: manipulation;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); border-color: #b71c1c; }
+    .btn-secondary { background: #455a64; border-color: #37474f; margin-top: 10px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Screens */
+    .screen {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      /* background: #222; Removed for shared BG */
+      background: rgba(34, 34, 34, 0.9); /* Semi-transparent for traffic visibility if needed, or just opaque? */
+      /* Actually, let's make it transparent where needed or use a separate layer */
+      background: transparent;
+      z-index: 10;
+      padding: 20px; box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    /* Menu Background with Traffic */
+    #menuBG {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #222; z-index: 1;
+        overflow: hidden;
+    }
+    .city-skyline {
+        position: absolute; bottom: 100px; width: 100%; height: 200px;
+        background: linear-gradient(to top, #111 0%, transparent 100%);
+        z-index: 2;
+    }
+    .highway {
+        position: absolute; bottom: 0; width: 100%; height: 350px;
+        background: #1a1a1a;
+        z-index: 3;
+        border-top: 6px solid #555;
+    }
+    .car {
+        position: absolute; width: 800px; height: 350px;
+        /* Car side profile shape */
+        clip-path: polygon(5% 45%, 20% 5%, 75% 5%, 90% 45%, 100% 50%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 50%);
+        box-shadow: none; 
+        opacity: 0.9;
+    }
+    
+    .car-left { animation: driveLeft linear infinite; }
+    .car-right { animation: driveRight linear infinite; }
+    
+    @keyframes driveLeft { from { transform: translateX(150vw); } to { transform: translateX(-150vw); } }
+    @keyframes driveRight { from { transform: translateX(-150vw); } to { transform: translateX(150vw); } }
+    
+    h1, h2, h3 { margin: 10px 0 20px 0; text-align: center; }
+
+    /* Selection Grid */
+    .char-list, .stage-list { 
+      display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 500px; 
+      margin-bottom: 20px;
+    }
+    .char-card, .stage-card {
+      background: #333; border: 2px solid #444; border-radius: 12px;
+      padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 15px;
+      transition: 0.2s;
+    }
+    .char-card:hover, .stage-card:hover { background: #3a3a3a; }
+    .char-card.selected, .stage-card.selected { border-color: var(--accent); background: #3e2723; }
+
+    .char-preview, .stage-preview { 
+      width: 70px; height: 70px; background: #222; border-radius: 50%; 
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #555; overflow: hidden;
+      font-size: 2rem; flex-shrink: 0;
+    }
+    .char-preview img { width: 100%; height: 100%; object-fit: contain; }
+
+    .char-info, .stage-info { flex: 1; }
+    .char-name, .stage-name { font-size: 1.1rem; font-weight: bold; display: block; margin-bottom: 5px; }
+
+    /* Stats Bars */
+    .stat-row { display: flex; align-items: center; font-size: 0.75rem; color: #aaa; margin-bottom: 3px; }
+    .stat-label { width: 60px; }
+    .stat-track { flex: 1; height: 6px; background: #111; border-radius: 3px; overflow: hidden; }
+    .stat-fill { height: 100%; border-radius: 3px; }
+
+    /* Difficulty Select */
+    .diff-btn {
+      width: 100%; max-width: 300px; padding: 15px; margin: 10px 0;
+      font-size: 1.2rem; text-align: center; border: 3px solid #555; border-radius: 10px;
+      background: #333; color: white; cursor: pointer;
+    }
+    .diff-btn:hover { background: #444; }
+    .diff-btn.selected { border-color: var(--accent); background: #3e2723; }
+
+
+    /* --- GAME SCENE (FPS View) --- */
+    #gameScene {
+      position: relative; width: 100%; height: 100%;
+      /* Base Style */
+      background-color: #111;
+      background-size: cover;
+      background-position: center;
+    }
+    
+    /* Dynamic Backgrounds */
+    .bg-ring {
+         background-color: #1a1a1a !important; 
+         background-image: radial-gradient(circle at center, #555 10%, #222 60%, #000 100%) !important;
+    }
+    .bg-ring::before {
+        content: ""; position: absolute; top:0; left:0; width:100%; height:100%;
+        /* Floor grid and Ropes */
+        background-image: 
+             linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+             linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+             linear-gradient(to bottom, transparent 40%, rgba(200,0,0,0.3) 40%, rgba(200,0,0,0.3) 42%, transparent 42%, transparent 55%, rgba(255,255,255,0.3) 55%, rgba(255,255,255,0.3) 57%, transparent 57%, transparent 70%, rgba(0,0,200,0.3) 70%, rgba(0,0,200,0.3) 72%, transparent 72%);
+        background-size: 50px 50px, 50px 50px, 100% 100%;
+        pointer-events: none; z-index: 0;
+    }
+
+    .bg-alley { 
+         background-color: #050505 !important;
+         /* Brick walls on sides (dark red/brown), dark asphalt in middle */
+         background-image: linear-gradient(90deg, 
+             #2c1e1e 0%, #3e2723 5%, #2c1e1e 5%, #3e2723 10%, #2c1e1e 10%, #3e2723 15%, #2c1e1e 15%, #3e2723 20%, 
+             #111 20%, #000 80%, 
+             #2c1e1e 80%, #3e2723 85%, #2c1e1e 85%, #3e2723 90%, #2c1e1e 90%, #3e2723 95%, #2c1e1e 95%, #3e2723 100%
+         ) !important;
+         background-size: 100% 100%;
+    }
+    .bg-alley::before {
+         content: ""; position: absolute; inset:0;
+         /* Graffiti / Dirt details */
+         background-image: 
+             radial-gradient(circle at 50% 80%, rgba(255,255,255,0.05) 0%, transparent 60%),
+             linear-gradient(to bottom, #000 0%, transparent 40%, transparent 100%);
+         pointer-events: none; z-index: 0;
+    }
+
+    .bg-plaza { 
+         background-color: #81d4fa !important;
+         background-image: linear-gradient(to bottom, #29b6f6 0%, #b3e5fc 40%, #aed581 40%, #33691e 100%) !important; 
+    }
+
+    /* HUD */
+    .hud-top {
+      position: absolute; top: 0; left: 0; width: 100%;
+      padding: 10px; box-sizing: border-box;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      z-index: 20;
+    }
+    .fighter-hud { width: 42%; position: relative; }
+    .hud-name { font-weight: bold; font-size: 0.8rem; text-shadow: 1px 1px 2px #000; margin-bottom: 4px; display: block; }
+    
+    .hp-bar-wrap { width: 100%; height: 16px; background: #000; border: 2px solid #555; border-radius: 4px; overflow: hidden; position: relative; margin-bottom: 4px; }
+    .hp-bar-fill { height: 100%; background: #4caf50; width: 100%; transition: width 0.2s; }
+    .hp-bar-fill.danger { background: #f44336; }
+    
+    /* SPECIAL GAUGE */
+    .sp-bar-wrap { width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 4px; overflow: hidden; position: relative; }
+    .sp-bar-fill { height: 100%; background: #555; width: 0%; transition: width 0.1s; }
+    .sp-bar-fill.charging { background: var(--sp-color); box-shadow: 0 0 10px var(--sp-color); }
+    .sp-bar-fill.max { background: #fff; animation: rainbow 0.5s infinite; }
+    @keyframes rainbow { 0%{background:#f00} 20%{background:#ff0} 40%{background:#0f0} 60%{background:#0ff} 80%{background:#00f} 100%{background:#f0f} }
+
+    .hp-val { position: absolute; top:0; left:5px; font-size: 10px; line-height: 16px; color: #fff; text-shadow: 1px 1px 1px #000; }
+
+    /* Timer */
+    #gameTimer {
+        position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+        font-size: 2.5rem; font-weight: bold; color: #fff; z-index: 25;
+        text-shadow: 0 0 5px #000;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    #gameTimer.low { color: #f44336; animation: pulsate 0.5s infinite alternate; }
+    @keyframes pulsate { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.1); } }
+
+    /* Enemy Display */
+    .enemy-container {
+      position: absolute; 
+      left: 50%; bottom: 20%;
+      transform: translateX(-50%);
+      width: 580px; height: 580px;
+      z-index: 5;
+      pointer-events: none;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .enemy-img {
+      width: 100%; height: 100%;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+      transition: transform 0.1s;
+    }
+
+    /* Spectators */
+    .spectators-layer {
+        position: absolute; bottom: 38%; width: 100%; height: 300px;
+        z-index: 2; pointer-events: none;
+        /* display: flex removed to use absolute positioning for children */
+    }
+    .spectator-img {
+        position: absolute; bottom: 0;
+        width: 280px; height: 280px;
+        filter: brightness(0.5) blur(1px); 
+        opacity: 0.9;
+    }
+    /* Group 1: Left Side */
+    .spectator-img:nth-child(1) { left: -50px; z-index: 2; }
+    .spectator-img:nth-child(2) { left: 80px; z-index: 1; transform: scale(0.9); filter: brightness(0.4) blur(2px); }
+    
+    /* Group 2: Right Side */
+    /* Since there are only 3 spectators usually, the 3rd one goes right. 
+       If a 4th existed, it would also go right */
+    .spectator-img:nth-child(3) { right: -50px; z-index: 2; transform: scaleX(-1); }
+    .spectator-img:nth-child(4) { right: 80px; z-index: 1; transform: scaleX(-1) scale(0.9); filter: brightness(0.4) blur(2px); }
+
+    /* Timing Circle for Special (New) */
+    .timing-container {
+        position: absolute; 
+        left: 50%; top: 40%; 
+        transform: translate(-50%, -50%);
+        width: 300px; height: 300px;
+        z-index: 30; pointer-events: none;
+        display: none; /* hidden by default */
+        justify-content: center; align-items: center;
+    }
+    .timing-container.active { display: flex; }
+    .timing-ring-static {
+        position: absolute; width: 100%; height: 100%;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+    }
+    .timing-circle-dynamic {
+        position: absolute; width: 100%; height: 100%;
+        background: radial-gradient(circle, rgba(0,229,255,0.4) 0%, transparent 70%);
+        border: 2px solid var(--sp-color);
+        border-radius: 50%;
+        transform: scale(0);
+        opacity: 0.8;
+    }
+    .timing-label {
+        position: absolute; bottom: -40px; width: 100%; text-align: center;
+        color: var(--sp-color); font-weight: bold; font-size: 1.2rem;
+        text-shadow: 0 0 5px #000;
+    }
+
+
+    /* Player Hands */
+    .hands-layer {
+      position: absolute; bottom: -20px; left: 0; width: 100%; height: 350px;
+      z-index: 10; pointer-events: none;
+      display: flex; justify-content: space-between; padding: 0 10px; box-sizing: border-box;
+    }
+    .player-hand {
+      width: 250px; height: 250px;
+      transition: transform 0.1s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.2s;
+    }
+    .hand-left { transform-origin: bottom left; transform: translate(-30px, 40px); }
+    .hand-right { transform-origin: bottom right; transform: translate(30px, 40px); }
+
+    /* States */
+    .hands-layer.guard .player-hand { transform: translate(0, 0); }
+    .hands-layer.punching-left .hand-left { transform: translate(60px, -100px) scale(1.3) rotate(15deg); }
+    .hands-layer.punching-right .hand-right { transform: translate(-60px, -100px) scale(1.3) rotate(-15deg); }
+    .hands-layer.vulnerable .player-hand { transform: translate(0, 150px) rotate(20deg); opacity: 0.6; }
+    .hands-layer.vulnerable .hand-left { transform: translate(0, 150px) rotate(-20deg); }
+    
+    /* Effects */
+    .shake { animation: shakeAnim 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shakeAnim {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(6px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-10px, 0, 0); }
+      40%, 60% { transform: translate3d(10px, 0, 0); }
+    }
+    .damage-flash { animation: flashRed 0.2s; }
+    @keyframes flashRed { 0% { background: rgba(255,0,0,0.5); } 100% { background: transparent; } }
+
+    .super-flash { animation: flashWhite 1s; }
+    @keyframes flashWhite { 0% { background: #fff; } 100% { background: transparent; } }
+
+    /* Dmg Popup */
+    .dmg-popup {
+       position: absolute; font-size: 2.5rem; font-weight: 900;
+       text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 100;
+       animation: popUp 0.8s forwards;
+    }
+    .dmg-popup.player-dmg { color: #ffeb3b; left: 60%; } /* Yellow (Player dealt) */
+    .dmg-popup.enemy-dmg { color: #f44336; left: 40%; } /* Red (Player received) */
+
+    @keyframes popUp {
+        0% { transform: translateY(0) scale(0.5); opacity: 0; }
+        20% { transform: translateY(-30px) scale(1.2); opacity: 1; }
+        100% { transform: translateY(-70px) scale(1.0); opacity: 0; }
+    }
+
+
+    /* Center Message */
+    .overlay-msg {
+      position: absolute; top: 30%; left: 0; width: 100%; text-align: center;
+      font-size: 3rem; font-weight: 900; color: #ffeb3b; 
+      text-shadow: 0 0 10px rgba(0,0,0,0.8), 2px 2px 0 #d32f2f;
+      z-index: 50; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s; transform: scale(0.5);
+    }
+    .overlay-msg.show { opacity: 1; transform: scale(1); }
+    .overlay-msg.crit-good { color: #ffeb3b; text-shadow: 0 0 15px #ff9800, 3px 3px 0 #d32f2f; font-size: 4rem; } 
+    .overlay-msg.crit-bad { color: #f44336; text-shadow: 0 0 15px #b71c1c, 3px 3px 0 #000; font-size: 4rem; }
+    .overlay-msg.special { color: #00e5ff; text-shadow: 0 0 20px #0091ea, 0 0 40px #fff; font-size: 5rem; top: 20%;}
+
+    /* Result */
+    #resultRank { font-size: 6rem; font-weight: bold; color: yellow; text-shadow: 0 0 20px orange; margin: 10px 0; }
+    #log { position: absolute; bottom: 5px; left: 5px; color: #0f0; font-size: 10px; opacity: 0.7; pointer-events: none; z-index: 100; }
+  </style>
+</head>
+<body>
+
+  <!-- Menu BG (Traffic) -->
+  <div id="menuBG">
+      <div class="city-skyline"></div>
+      <div class="highway">
+          <!-- Cars (Generated by JS or Static) -->
+          <!-- Anchored at 50% and animated across 300vw range to ensure they clear screen. Negative bottom to cut off tires/undercarriage -->
+          <div class="car car-right" style="bottom: -60px; left: 50%; background: #c62828; animation-duration: 5s;"></div>
+          <div class="car car-right" style="bottom: -30px; left: 50%; background: #fbc02d; animation-duration: 7s; animation-delay: 2s;"></div>
+          <div class="car car-left" style="bottom: -50px; left: 50%; background: #1565c0; animation-duration: 6s;"></div>
+          <div class="car car-left" style="bottom: -20px; left: 50%; background: #2e7d32; animation-duration: 8s; animation-delay: 1s;"></div>
+          <div class="car car-left" style="bottom: -80px; left: 50%; background: #eee; animation-duration: 5.5s; animation-delay: 3s;"></div>
+      </div>
+  </div>
+
+  <!-- Screen 1: Connect -->
+  <div id="screenConnect" class="screen">
+    <!-- Dark overlay for readability over traffic -->
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1;"></div>
+    <div style="margin-top:20vh;">
+      <h1>🥊 ORPHE BOXING V6.5</h1>
+      <button id="btnConnect" class="btn btn-primary" style="margin-top:20px;">🔌 ORPHE COREを接続して戦いを始めろ！</button>
+      <p style="font-size:0.8rem; margin-top:10px;">（サウンドを有効にしてお楽しみください）</p>
+    </div>
+  </div>
+
+  <!-- Screen 2: Select Player -->
+  <div id="screenSelectPlayer" class="screen hidden">
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1;"></div>
+    <h2>プレイするキャラを選択しろ！</h2>
+    <div id="playerList" class="char-list"></div>
+    <div style="width:100%; max-width:500px;">
+      <button id="btnConfirmPlayer" class="btn btn-primary" disabled>NEXT</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: Select Enemy -->
+  <div id="screenSelectEnemy" class="screen hidden">
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1;"></div>
+    <h2>対戦相手を選択しろ！</h2>
+    <div id="enemyList" class="char-list"></div>
+    <div style="width:100%; max-width:500px;">
+      <button id="btnConfirmEnemy" class="btn btn-primary" disabled>NEXT</button>
+      <button id="btnBackToPlayer" class="btn btn-secondary">BACK</button>
+    </div>
+  </div>
+
+  <!-- Screen 4: Select Difficulty -->
+  <div id="screenSelectDifficulty" class="screen hidden">
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1;"></div>
+    <h2>難易度を選択しろ！</h2>
+    <div id="diffContainer" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+       <div class="diff-btn" onclick="selectDiff(1)">EASY<br><span style="font-size:0.6em; color:#aaa;">Slow Paced</span></div>
+       <div class="diff-btn" onclick="selectDiff(2)">NORMAL<br><span style="font-size:0.6em; color:#aaa;">Standard</span></div>
+       <div class="diff-btn" onclick="selectDiff(3)">HARD<br><span style="font-size:0.6em; color:#aaa;">Aggressive</span></div>
+       <div class="diff-btn" onclick="selectDiff(4)">CHAMPION<br><span style="font-size:0.6em; color:#aaa;">Extreme</span></div>
+    </div>
+    <div style="width:100%; max-width:500px; margin-top:10px;">
+       <button id="btnToStage" class="btn btn-primary" disabled>NEXT</button>
+       <button id="btnBackToEnemy" class="btn btn-secondary">BACK</button>
+    </div>
+  </div>
+
+  <!-- Screen 5: Select Stage -->
+  <div id="screenSelectStage" class="screen hidden">
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1;"></div>
+    <h2>ステージを選択しろ！</h2>
+    <div id="stageList" class="stage-list"></div>
+    <div style="width:100%; max-width:500px;">
+       <button id="btnStartGame" class="btn btn-primary" disabled>FIGHT START!</button>
+       <button id="btnBackToDiff" class="btn btn-secondary">BACK</button>
+    </div>
+  </div>
+
+  <!-- Screen 6: Game -->
+  <div id="gameScene" class="hidden">
+    <!-- Overlay FX -->
+    <div id="damageOverlay" style="position:absolute; inset:0; pointer-events:none; z-index:15;"></div>
+    
+    <!-- HUD -->
+    <div class="hud-top">
+      <div class="fighter-hud">
+        <span class="hud-name" id="hudPName">PLAYER</span>
+        <div class="hp-bar-wrap"><div id="hpBarP" class="hp-bar-fill"></div><span class="hp-val" id="hpValP">100</span></div>
+        <div class="sp-bar-wrap"> <!-- SP Gauge -->
+            <div id="spBarP" class="sp-bar-fill"></div>
+        </div>
+      </div>
+      
+      <div id="gameTimer">90</div>
+
+      <div class="fighter-hud" style="text-align:right;">
+        <span class="hud-name" id="hudEName" style="color:#ff8a65;">ENEMY</span>
+        <div class="hp-bar-wrap" style="border-color:#ff8a65;"><div id="hpBarE" class="hp-bar-fill danger"></div><span class="hp-val" id="hpValE" style="right:5px; left:auto;">100</span></div>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <div id="centerMsg" class="overlay-msg">FIGHT!</div>
+    <div id="spHint" style="position:absolute; bottom:200px; width:100%; text-align:center; color:#00e5ff; font-weight:bold; text-shadow:0 0 5px #000; display:none; z-index:40; font-size:1.5rem;">
+        SPECIAL READY! TIME YOUR PUNCH!
+    </div>
+    
+    <!-- Timing Circle (New) -->
+    <div id="timingContainer" class="timing-container">
+        <div class="timing-ring-static"></div>
+        <div id="timingCircle" class="timing-circle-dynamic"></div>
+        <div class="timing-label">HIT AT MAX!</div>
+    </div>
+    
+    <!-- Spectators Layer -->
+    <div id="spectatorsLayer" class="spectators-layer"></div>
+
+    <!-- Objects -->
+    <div class="enemy-container">
+      <img id="enemyDisplay" class="enemy-img" />
+    </div>
+
+    <div id="handsLayer" class="hands-layer guard">
+      <img id="handL" class="player-hand hand-left" />
+      <img id="handR" class="player-hand hand-right" />
+    </div>
+
+    <!-- Exit -->
+    <button id="btnExit" style="position:absolute; top:80px; left:20px; width:60px; padding:5px; font-size:10px; z-index:100; opacity:0.8;" class="btn btn-secondary">EXIT</button>
+  </div>
+
+  <!-- Screen 7: Result -->
+  <div id="screenResult" class="screen hidden">
+      <div style="position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:-1;"></div>
+      <h2>RESULT</h2>
+      <div id="resultTitle" style="font-size: 2rem; font-weight:bold; margin-bottom:10px;"></div>
+      <div id="resultRank" class="result-rank">S</div>
+      <div id="resultScore" class="result-score">Score: 12000</div>
+      
+      <div style="width:100%; max-width:300px; text-align:left; background:#333; padding:15px; border-radius:8px; margin-bottom:20px;">
+          <!-- Fixed internal structure for alignment -->
+          <div style="display:flex; justify-content:space-between;"><span>Time:</span> <span id="resTime">00s</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>HP:</span> <span id="resHp">100</span></div>
+      </div>
+
+      <button id="btnReturnTitle" class="btn btn-primary" style="width:200px;">TITLE</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script src="src/ORPHE-CORE.js"></script>
+  <script>
+    // --- Configuration ---
+    const PUNCH_THRESH = 1.3; 
+    const GAME_DURATION = 90;
+
+    // --- Audio Manager ---
+    const Aud = {
+        ctx: null,
+        bgmInterval: null,
+        
+        init: function() {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+        },
+        
+        playTone: function(freq, type, dur, vol=0.1, time=0) {
+            if(!this.ctx) return;
+            const t = this.ctx.currentTime + time;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(vol, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + dur);
+        },
+        
+        playNoise: function(dur, vol=0.5, filterFreq=800) {
+             if(!this.ctx) return;
+             const bufSize = this.ctx.sampleRate * dur;
+             const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+             const d = buffer.getChannelData(0);
+             for(let i=0; i<bufSize; i++) d[i] = Math.random()*2-1;
+             
+             const src = this.ctx.createBufferSource();
+             const gain = this.ctx.createGain();
+             const filter = this.ctx.createBiquadFilter();
+             filter.type = 'lowpass';
+             filter.frequency.value = filterFreq;
+             
+             src.buffer = buffer;
+             gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+             gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+             
+             src.connect(filter);
+             filter.connect(gain);
+             gain.connect(this.ctx.destination);
+             src.start();
+        },
+
+        sfx: {
+            swish: () => Aud.playTone(300, 'triangle', 0.1),
+            hit: () => Aud.playNoise(0.1, 0.4, 600),
+            crit: () => {
+                Aud.playTone(880, 'square', 0.1, 0.1);
+                Aud.playTone(1320, 'square', 0.2, 0.1, 0.1);
+            },
+            specialReady: () => {
+                Aud.playTone(1000, 'sine', 0.5, 0.1); 
+            },
+            specialHit: () => {
+                 Aud.playNoise(1.0, 0.8, 200); 
+                 Aud.playTone(100, 'sawtooth', 0.5, 0.5);
+            },
+            damage: () => {
+                Aud.playTone(150, 'sawtooth', 0.1, 0.3);
+            },
+            uiSelect: () => Aud.playTone(600, 'sine', 0.05, 0.1),
+            uiDecide: () => Aud.playTone(1000, 'triangle', 0.08, 0.2),
+            win: () => {
+                 [523, 659, 783, 1046].forEach((f, i)=>Aud.playTone(f, 'triangle', 0.3, 0.2, i*0.1));
+            },
+            lose: () => {
+                 [300, 250, 200, 150].forEach((f, i)=>Aud.playTone(f, 'sawtooth', 0.4, 0.3, i*0.2));
+            }
+        },
+
+        playPROGBGM: function(type) {
+            this.stopBGM();
+            if(!this.ctx) return;
+            
+            let seq = []; 
+            let tempo = 120;
+            
+            if (type === 'select') {
+                tempo = 250; 
+                seq = [155, 0, 155, 0, 196, 0, 185, 0];
+            } else if (type === 'battle') {
+                tempo = 125; 
+                seq = [110, 110, 0, 110, 130, 0, 110, 146];
+            } else if (type === 'win') {
+                tempo = 200;
+                seq = [523, 0, 659, 0, 783, 0, 1046, 0];
+            } else if (type === 'lose') {
+                tempo = 400;
+                seq = [100, 90, 80, 70];
+            }
+
+            let idx = 0;
+            this.bgmInterval = setInterval(()=> {
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                const f = seq[idx];
+                if (type === 'select') {
+                    // Increased Volume for Select BGM
+                    if(f > 0) this.playTone(f, 'triangle', 0.1, 0.15); 
+                    if(idx%4===0) this.playNoise(0.05, 0.1, 2000);
+                } else {
+                    if(f > 0) this.playTone(f, 'square', 0.1, 0.04);
+                }
+                
+                if (type === 'battle') {
+                    if(idx%2===0) this.playNoise(0.03, 0.03, 3000); 
+                    if(idx%4===0) this.playNoise(0.1, 0.1, 150);   
+                }
+                
+                idx = (idx + 1) % seq.length;
+            }, tempo);
+        },
+        
+        stopBGM: function() {
+            if(this.bgmInterval) clearInterval(this.bgmInterval);
+            this.bgmInterval = null;
+        }
+    };
+
+    // --- Data ---
+    const CHARS = [
+      { id: 'kenta', name: 'ケン',     hp: 120, atk: 12, crt: 30, spd: 3300, gap: 600, color: '#2196f3', skin: '#ffcc80', face: 'normal' },
+      { id: 'goro',  name: 'ゴロー',   hp: 200, atk: 25, crt: 45, spd: 5300, gap: 1000, color: '#4caf50', skin: '#8d6e63', face: 'tough' },
+      { id: 'ren',   name: 'レン',     hp: 90,  atk: 10, crt: 20, spd: 1500, gap: 450, color: '#ffeb3b', skin: '#ffe0b2', face: 'cool' },
+      { id: 'anna',  name: 'アンナ',   hp: 100, atk: 15, crt: 50, spd: 2800, gap: 550, color: '#e91e63', skin: '#f8bbd0', face: 'sharp' },
+      { id: 'boss',  name: 'ミス・クイーン', hp: 180, atk: 20, crt: 40, spd: 2300, gap: 750, color: '#9c27b0', skin: '#e1bee7', face: 'boss' }
+    ];
+
+    const STAGES = [
+        { id: 'alley', name: '路地裏', class: 'bg-alley' },
+        { id: 'ring',  name: 'ボクシングリング', class: 'bg-ring' },
+        { id: 'plaza', name: '広場', class: 'bg-plaza' }
+    ];
+
+    // SVG Builder
+    function generateSVG(type, char, pose) {
+      const c = char.color; 
+      const s = char.skin;
+      let svg = '';
+
+      if (type === 'glove') {
+        const isVulnerable = pose === 'vulnerable';
+        const color = isVulnerable ? '#555' : c;
+        
+        svg = `
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="gHighlight"><stop offset="10%" stop-color="#fff" stop-opacity="0.5"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
+            <linearGradient id="gStrap" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#444"/><stop offset="100%" stop-color="#222"/></linearGradient>
+          </defs>
+          <path d="M25,40 Q20,10 50,8 Q80,10 75,40 L75,65 Q75,85 50,85 Q25,85 25,65 Z" fill="${color}" stroke="#111" stroke-width="2"/>
+          <path d="M75,50 Q85,50 85,65 Q85,75 75,75 L70,70" fill="${color}" stroke="#111" stroke-width="2"/>
+          <circle cx="45" cy="30" r="15" fill="url(#gHighlight)" />
+          <rect x="28" y="70" width="44" height="18" rx="4" fill="url(#gStrap)" stroke="#111" stroke-width="1"/>
+          <path d="M35,65 Q50,70 65,65" fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="2" />
+        </svg>`;
+      } else {
+        const bodyColor = pose === 'lose' ? '#555' : c;
+        // Adjusted Y coordinates to fix clipping (Moved Down by 15 units)
+        const bodyY = pose === 'lose' ? 80 : 65; 
+        const headY = pose === 'lose' ? 85 : 40;
+        const headRot = pose === 'hit' ? -25 : (pose === 'lose' ? 90 : 0);
+        
+        // Face features
+        let eyes = '', mouth = '';
+        if (pose === 'lose') {
+            eyes = `<path d="M-8,-5 L2,5 M2,-5 L-8,5 M18,-5 L28,5 M28,-5 L18,5" stroke="#111" stroke-width="3" />`; 
+            mouth = `<path d="M0,15 Q10,10 20,15" fill="none" stroke="#111" stroke-width="2" />`;
+        } else if (pose === 'hit') {
+            eyes = `<path d="M-10,-5 L-2,5 M-10,5 L-2,-5  M10,-5 L18,5 M10,5 L18,-5" fill="none" stroke="#111" stroke-width="2"/>`; 
+            mouth = `<circle cx="5" cy="15" r="5" fill="#111" />`;
+        } else if (pose === 'attack') {
+            eyes = `<path d="M-8,-2 L5,5 M15,5 L28,-2" stroke="#111" stroke-width="3" fill="none"/> <circle cx="0" cy="5" r="2" fill="#000"/><circle cx="20" cy="5" r="2" fill="#000"/>`; 
+            mouth = `<path d="M0,15 Q10,10 20,15" fill="none" stroke="#111" stroke-width="2" />`;
+        } else {
+            const eyeColor = pose === 'win' ? '#000' : '#111';
+            eyes = `<ellipse cx="-5" cy="0" rx="4" ry="5" fill="${eyeColor}"/><ellipse cx="25" cy="0" rx="4" ry="5" fill="${eyeColor}"/><path d="M-8,-8 Q-5,-10 0,-5 M20,-5 Q25,-10 28,-8" fill="none" stroke="#666" stroke-width="1"/>`;
+            mouth = `<path d="M5,15 Q10,18 15,15" fill="none" stroke="#111" stroke-width="2" />`;
+        }
+
+        // Hair
+        let hair = '';
+        if (char.face === 'normal') {
+             hair = `<path d="M-25,-5 Q-30,-25 0,-30 Q30,-25 25,-5 Q20,-10 10,-10 Q0,-10 -10,-10 Q-20,-10 -25,-5 Z" fill="#3e2723" />`;
+        } else if (char.face === 'cool') {
+             hair = `<path d="M-25,0 L-20,-25 L0,-35 L20,-15 L25,0 L10,-10 L-10,-10 Z" fill="#ffeb3b" />`;     
+        } else if (char.face === 'tough') {
+             hair = `<path d="M-5,-30 L5,-30 L5,-5 L-5,-5 Z" fill="#111" />`;
+        } else if (char.face === 'sharp') {
+             hair = `<path d="M-25,5 Q-30,-30 0,-30 Q30,-30 25,5 L0,-15 Z" fill="#d81b60" />`;
+        } else if (char.face === 'boss') {
+             hair = `<path d="M-30,-15 L-20,-40 L0,-30 L20,-40 L30,-15 Z" fill="#9c27b0" />
+                   <circle cx="0" cy="-40" r="10" fill="none" stroke="#ffd700" stroke-width="2" stroke-dasharray="2,2"/>`;
+        }
+        
+        // Body Paths
+        let bodyPath = '';
+        if (pose === 'lose') {
+             // Lying down body
+             bodyPath = `<path d="M0,80 Q50,60 100,80 L100,100 L0,100 Z" fill="${c}" stroke="#111" stroke-width="1"/>`;
+        } else {
+             // Standing
+             bodyPath = `<path d="M30,${bodyY} Q50,${bodyY+50} 70,${bodyY} L70,100 L30,100 Z" fill="${c}" stroke="#111" stroke-width="1"/>`;
+        }
+
+        svg = `
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          ${bodyPath}
+          <g transform="translate(50, ${headY}) rotate(${headRot})">
+            <circle cx="0" cy="0" r="23" fill="${s}" stroke="#111" stroke-width="1"/> <!-- Head -->
+            <g transform="translate(-10, 0)"> 
+               ${eyes}
+               ${mouth}
+            </g>
+            ${hair}
+          </g>
+           ${type === 'char' && pose === 'attack' ? 
+             `<circle cx="20" cy="50" r="15" fill="${c}" stroke="#000" /><circle cx="50" cy="50" r="40" fill="${c}" stroke="#000" stroke-width="3" />` :
+             (pose === 'lose' ? '' :
+             `<circle cx="20" cy="${pose==='win'?30:70}" r="15" fill="${c}" stroke="#000" />
+              <circle cx="80" cy="${pose==='win'?30:70}" r="15" fill="${c}" stroke="#000" />`)
+           }
+        </svg>`;
+      }
+      return 'data:image/svg+xml;base64,' + btoa(svg);
+    }
+    
+    // --- Application ---
+    const app = {
+      ble: new Orphe(0),
+      state: 'INIT', 
+      player: null, enemy: null, baseEnemy: null,
+      difficulty: 2, diffMult: 1,
+      stageClass: 'bg-ring',
+      game: {
+        startTime: 0, timeLeft: 90,
+        pHp: 0, eHp: 0, 
+        spVal: 0, eInvincible: false,
+        // Special Timing
+        timingOn: false,
+        timingStart: 0,
+        currentPhase: 0, // 0 to 1
+        
+        pState: 'GUARD', eState: 'IDLE',
+        aiTimer: null, mainLoop: null, animFrame: null
+      },
+      el: {}
+    };
+
+    const ids = ['screenConnect','screenSelectPlayer','screenSelectEnemy','screenSelectDifficulty','screenSelectStage','gameScene','screenResult',
+     'playerList','enemyList','stageList',
+     'btnConnect','btnConfirmPlayer','btnConfirmEnemy','btnToStage','btnStartGame',
+     'btnBackToPlayer','btnBackToEnemy','btnBackToDiff','btnExit','btnReturnTitle',
+     'handsLayer','handL','handR','enemyDisplay','centerMsg','spHint',
+     'hudPName','hudEName','hpBarP','hpValP','hpBarE','hpValE','spBarP','damageOverlay',
+     'resultTitle','resultRank','resultScore','gameTimer', 'timingContainer', 'timingCircle',
+     'resTime', 'resHp', 'menuBG', 'spectatorsLayer'
+    ];
+    ids.forEach(id => app.el[id] = document.getElementById(id));
+    const log = (m) => { document.getElementById('log').innerText = m; };
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen, #gameScene').forEach(e => {
+        e.classList.add('hidden');
+        if(e.id !== 'gameScene') e.style.display = '';
+      });
+      const el = document.getElementById(id);
+      if(el) {
+        el.classList.remove('hidden');
+        if(id === 'gameScene') el.style.display = 'block';
+      }
+      
+      // Toggle Menu BG
+      if(app.el.menuBG) {
+          if (id === 'gameScene' || id === 'screenResult') {
+             app.el.menuBG.style.display = 'none';
+          } else {
+             app.el.menuBG.style.display = 'block';
+          }
+      }
+    }
+
+    // --- Init ---
+    window.onload = () => {
+      app.ble.setup();
+      app.ble.gotConvertedAcc = (acc) => handleMotion(acc, null);
+      // Removed Gyro
+      setupUI();
+    };
+
+    function setupUI() {
+      // 1. Connect
+      app.el.btnConnect.onclick = async () => {
+        Aud.sfx.uiDecide();
+        Aud.init();
+        try {
+            await app.ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+            app.state = 'CONNECTED';
+            Aud.playPROGBGM('select'); 
+            resetPlayerSelection();
+            showScreen('screenSelectPlayer');
+            renderList(app.el.playerList, CHARS, 'char', (c) => {
+                Aud.sfx.uiSelect();
+                app.player = c; app.el.btnConfirmPlayer.disabled = false;
+            });
+        } catch(e) { alert(e); }
+      };
+
+      // 2. Flow
+      app.el.btnConfirmPlayer.onclick = () => {
+          Aud.sfx.uiDecide();
+          showScreen('screenSelectEnemy');
+          resetEnemySelection();
+          renderList(app.el.enemyList, CHARS, 'char', (c) => {
+              Aud.sfx.uiSelect();
+              app.baseEnemy = c; app.el.btnConfirmEnemy.disabled = false;
+          });
+      };
+      
+      app.el.btnConfirmEnemy.onclick = () => { showScreen('screenSelectDifficulty'); Aud.sfx.uiDecide(); };
+      
+      app.el.btnToStage.onclick = () => {
+          Aud.sfx.uiDecide();
+          showScreen('screenSelectStage');
+          resetStageSelection();
+          renderList(app.el.stageList, STAGES, 'stage', (s) => {
+              Aud.sfx.uiSelect();
+              app.stageClass = s.class; app.el.btnStartGame.disabled = false;
+          });
+      };
+
+      app.el.btnStartGame.onclick = () => { Aud.sfx.uiDecide(); startGame(); };
+
+      app.el.btnBackToPlayer.onclick = () => {
+          Aud.sfx.uiSelect();
+          resetPlayerSelection();
+          showScreen('screenSelectPlayer');
+      };
+
+      app.el.btnBackToEnemy.onclick = () => {
+          Aud.sfx.uiSelect();
+          resetEnemySelection();
+          showScreen('screenSelectEnemy');
+      };
+
+      app.el.btnBackToDiff.onclick = () => { showScreen('screenSelectDifficulty'); Aud.sfx.uiSelect(); };
+      
+      app.el.btnExit.onclick = app.el.btnReturnTitle.onclick = () => {
+          Aud.sfx.uiSelect();
+          clearGame();
+          Aud.playPROGBGM('select');
+          resetPlayerSelection();
+          showScreen('screenSelectPlayer');
+      };
+    }
+
+    function resetPlayerSelection() {
+        app.player = null;
+        app.el.btnConfirmPlayer.disabled = true;
+        Array.from(app.el.playerList.children).forEach(c=>c.classList.remove('selected'));
+    }
+    
+    function resetEnemySelection() {
+        app.baseEnemy = null;
+        app.el.btnConfirmEnemy.disabled = true;
+        Array.from(app.el.enemyList.children).forEach(c=>c.classList.remove('selected'));
+    }
+
+    function resetStageSelection() {
+        app.stageClass = null;
+        app.el.btnStartGame.disabled = true;
+        Array.from(app.el.stageList.children).forEach(c=>c.classList.remove('selected'));
+    }
+    
+    window.selectDiff = (lvl) => {
+        Aud.sfx.uiSelect();
+        document.querySelectorAll('.diff-btn').forEach((b, i) => b.classList.toggle('selected', i+1 === lvl));
+        const mults = [0.8, 1.0, 1.3, 1.6];
+        app.difficulty = lvl;
+        app.diffMult = mults[lvl-1];
+        app.el.btnToStage.disabled = false;
+    };
+
+    function renderList(container, data, type, onSel) {
+        container.innerHTML = '';
+        data.forEach(item => {
+            const d = document.createElement('div');
+            d.className = type === 'char' ? 'char-card' : 'stage-card';
+            
+            let preview = '';
+            if (type==='char') preview = `<img src="${generateSVG('char', item, 'idle')}">`;
+            else preview = item.id === 'alley' ? '🧱' : (item.id === 'ring' ? '🥊' : '🌳');
+
+            let infoHTML = '';
+            if (type === 'char') {
+                infoHTML = `
+                <div class="char-info">
+                    <span class="char-name">${item.name}</span>
+                    <div class="stat-row"><div class="stat-label">HP</div><div class="stat-track"><div class="stat-fill" style="width:${item.hp/2}%; background:#4caf50"></div></div></div>
+                    <div class="stat-row"><div class="stat-label">POW</div><div class="stat-track"><div class="stat-fill" style="width:${item.atk*3}%; background:#f44336"></div></div></div>
+                    <div class="stat-row"><div class="stat-label">SPD</div><div class="stat-track"><div class="stat-fill" style="width:${(6000-item.spd)/50}%; background:#29b6f6"></div></div></div>
+                    <div class="stat-row"><div class="stat-label">GAP</div><div class="stat-track"><div class="stat-fill" style="width:${(1500-item.gap)/15}%; background:#ab47bc"></div></div></div>
+                </div>`;
+            } else {
+                infoHTML = `<div class="stage-info"><span class="stage-name">${item.name}</span></div>`;
+            }
+
+            d.innerHTML = `<div class="${type}-preview">${preview}</div>${infoHTML}`;
+            
+            d.onclick = () => {
+                Array.from(container.children).forEach(c=>c.classList.remove('selected'));
+                d.classList.add('selected');
+                onSel(item);
+            };
+            container.appendChild(d);
+        });
+    }
+
+    // --- GAMEPLAY ---
+    function clearGame() {
+        if(app.game.aiTimer) clearTimeout(app.game.aiTimer);
+        if(app.game.mainLoop) clearInterval(app.game.mainLoop);
+        if(app.game.animFrame) cancelAnimationFrame(app.game.animFrame);
+    }
+
+    function startGame() {
+        clearGame();
+        // Stats
+        app.enemy = JSON.parse(JSON.stringify(app.baseEnemy));
+        app.enemy.hp = Math.floor(app.enemy.hp * app.diffMult);
+        app.enemy.atk = Math.floor(app.enemy.atk * app.diffMult);
+        app.enemy.spd = Math.floor(app.enemy.spd * (app.difficulty > 2 ? 0.8 : 1.0)); 
+
+        app.game.pHp = app.player.hp;
+        app.game.eHp = app.enemy.hp;
+        app.game.spVal = 0;
+        app.game.timingOn = false;
+        
+        app.game.pState = 'GUARD';
+        app.game.eState = 'IDLE';
+        app.game.timeLeft = GAME_DURATION;
+        
+        // Visuals
+        app.el.hudPName.innerText = app.player.name;
+        app.el.hudEName.innerText = app.enemy.name;
+        
+        // Set BG
+        app.el.gameScene.className = ''; 
+        if(app.stageClass) app.el.gameScene.classList.add(app.stageClass);
+        
+        app.el.spHint.style.display = 'none';
+        app.el.timingContainer.classList.remove('active');
+
+        updateHP();
+        updateSP();
+        updateTimer();
+        updateVisuals();
+
+        // Setup Spectators
+        if (app.el.spectatorsLayer) {
+            app.el.spectatorsLayer.innerHTML = '';
+            CHARS.forEach(c => {
+               if (c.id !== app.player.id && c.id !== app.enemy.id) {
+                   const sImg = document.createElement('img');
+                   sImg.src = generateSVG('char', c, 'idle');
+                   sImg.className = 'spectator-img';
+                   app.el.spectatorsLayer.appendChild(sImg);
+               }
+            });
+        }
+
+        // Start
+        Aud.stopBGM();
+        showScreen('gameScene');
+        showOverlay("READY...", 1000);
+
+        setTimeout(() => {
+            showOverlay("FIGHT!", 800);
+            Aud.playPROGBGM('battle');
+            app.state = 'GAME';
+            
+            scheduleAI();
+            
+            // Background Logic
+            app.game.mainLoop = setInterval(() => {
+                if(app.state !== 'GAME') return;
+                app.game.timeLeft--;
+                updateTimer();
+                if(app.game.timeLeft <= 0) endGame(app.game.pHp > app.game.eHp);
+            }, 1000);
+            
+            // Animation Loop for Timing Circle
+            const frame = () => {
+                if(app.state === 'GAME') {
+                    updateTimingCircle();
+                    app.game.animFrame = requestAnimationFrame(frame);
+                }
+            };
+            frame();
+
+        }, 1500);
+    }
+
+    // --- SENSOR INPUT ---
+    function handleMotion(acc, gyro) {
+        if(app.state !== 'GAME') return;
+
+        // 2. Acc for Punch
+        if (acc) {
+            const mag = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2);
+            if (app.game.pState === 'GUARD' && mag > PUNCH_THRESH) {
+                playerPunch();
+            }
+        }
+    }
+
+    function updateTimingCircle() {
+        if (app.game.spVal >= 100) {
+            if (!app.game.timingOn) {
+                app.game.timingOn = true;
+                app.game.timingStart = Date.now();
+                app.el.timingContainer.classList.add('active');
+                app.el.spHint.style.display = 'block';
+                Aud.sfx.specialReady();
+            }
+            
+            // Loop: 2 seconds period
+            const period = 2000;
+            const t = (Date.now() - app.game.timingStart) % period;
+            let phase = t / (period / 2); // 0 to 2
+            if(phase > 1) phase = 2 - phase; // 0->1->0
+            
+            app.game.currentPhase = phase;
+            app.el.timingCircle.style.transform = `scale(${phase})`;
+            
+            // Stricter Threshold Visual
+            if (phase > 0.92) {
+                app.el.timingCircle.style.background = `radial-gradient(circle, #fff 0%, var(--sp-color) 70%)`;
+                app.el.timingCircle.style.opacity = 1;
+            } else {
+                app.el.timingCircle.style.background = `radial-gradient(circle, rgba(0,229,255,0.4) 0%, transparent 70%)`;
+                app.el.timingCircle.style.opacity = 0.8;
+            }
+
+        } else {
+            if (app.game.timingOn) {
+                app.game.timingOn = false;
+                app.el.timingContainer.classList.remove('active');
+                app.el.spHint.style.display = 'none';
+            }
+        }
+    }
+
+    function showDamage(val, type) {
+        // type: 'player-dmg' (yellow) or 'enemy-dmg' (red)
+        const el = document.createElement('div');
+        el.className = `dmg-popup ${type}`;
+        el.innerText = val;
+        // Random slight jitter
+        el.style.transform = `rotate(${Math.random()*20-10}deg)`;
+        el.style.top = '40%'; 
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 800);
+    }
+
+    function playerPunch() {
+        if (app.game.eInvincible) return; // Invincible check
+
+        app.game.pState = 'PUNCHING';
+        updateVisuals();
+        Aud.sfx.swish();
+
+        let dmg = app.player.atk;
+        let isSpecial = false;
+        let wasAttacking = (app.game.eState === 'ATTACK'); // Check if counter
+
+        // Special Check
+        if (app.game.spVal >= 100) {
+            // Check Timing STRICTER > 0.92
+            if (app.game.currentPhase > 0.92) {
+                // Success
+                isSpecial = true;
+                dmg *= 4.0; 
+                Aud.sfx.specialHit();
+                app.el.damageOverlay.classList.add('super-flash');
+                setTimeout(()=>app.el.damageOverlay.classList.remove('super-flash'), 1000);
+                showOverlay("PERFECT TIMING!", 1000, 'special');
+            } else {
+                // Fail
+                showOverlay("MISSED!", 500, 'crit-bad');
+            }
+            app.game.spVal = 0; 
+        } else {
+            // Normal Punch
+             if (wasAttacking) { // Counter
+                dmg = Math.floor(dmg * 1.5);
+                Aud.sfx.crit();
+                showOverlay("COUNTER!", 500, 'crit-good');
+            } else {
+                Aud.sfx.hit();
+            }
+            app.game.spVal = Math.min(100, app.game.spVal + 10);
+        }
+        
+        dmg = Math.floor(dmg);
+        showDamage(dmg, 'player-dmg');
+
+        app.game.eHp = Math.max(0, app.game.eHp - dmg);
+        app.game.eState = 'HIT';
+        
+        // Add Invincibility for brief moment on hit
+        app.game.eInvincible = true;
+        setTimeout(() => { app.game.eInvincible = false; }, 600);
+
+        updateHP();
+        updateSP();
+        updateVisuals();
+
+        // 2. AI Timer Stun Logic (Push Back)
+        if (wasAttacking) {
+             // If we interrupted an attack, the old timer is gone/fired. 
+             // We start a new cycle.
+             scheduleAI();
+        } else {
+            // If enemy was IDLE/Waiting, push back the attack
+            if (app.game.aiTimer) {
+                clearTimeout(app.game.aiTimer);
+                let remaining = app.game.aiEndTime - Date.now();
+                if(remaining < 0) remaining = 0;
+                
+                // Stun = ATK * 30ms (e.g. 10 atk -> 300ms, 25 atk -> 750ms)
+                const stun = app.player.atk * 30; 
+                let newDelay = remaining + stun;
+                
+                // Cap max delay to prevent excessive stacking? maybe 5s?
+                // newDelay = Math.min(newDelay, 5000); 
+
+                app.game.aiEndTime = Date.now() + newDelay;
+                app.game.aiTimer = setTimeout(() => enemyAttack(false), newDelay);
+            } else {
+                // Fallback (shouldn't be reached if IDLE, but safe)
+                scheduleAI();
+            }
+        }
+
+        // 1. Enemy Recovery - Very Short to prevent LOCK
+        const recoveryTime = 200; 
+
+        setTimeout(() => {
+            if(app.game.eHp <= 0) { endGame(true); return; }
+            if(app.state !== 'GAME') return;
+            
+            app.game.pState = 'VULNERABLE';
+            updateVisuals();
+            
+            // Enemy Recovery
+            if (app.game.eState === 'HIT') {
+                setTimeout(() => {
+                    if (app.game.eState === 'HIT') {
+                        app.game.eState = 'IDLE';
+                        updateVisuals();
+                        // Spam prevention logic: Timer continues running in bg (pushed back above)
+                    }
+                }, recoveryTime);
+            }
+
+            // Normal 'random' counter check for high diff
+            if (app.difficulty >= 3 && Math.random() < 0.5) {
+                // If high diff, small chance to ignore stun and force attack?
+                // No, stick to the push back logic for consistency.
+            }
+
+            setTimeout(() => {
+                if(app.state === 'GAME') {
+                    app.game.pState = 'GUARD';
+                    updateVisuals();
+                }
+            }, app.player.gap); 
+        }, 300);
+    }
+
+    // --- AI ---
+    // Added isRetaliation param to break spam
+    function scheduleAI(isRetaliation=false) {
+        if(app.state !== 'GAME') return;
+        if(app.game.aiTimer) clearTimeout(app.game.aiTimer);
+        
+        let base = app.enemy.spd;
+        let variance = 500;
+        let minDelay = 400;
+
+        if (isRetaliation) {
+            // Fast attack to break combos
+            base = 400; 
+            variance = 100;
+            minDelay = 200;
+        }
+
+        if (app.difficulty === 1 && !isRetaliation) base *= 1.5; 
+        if (app.difficulty === 4 && !isRetaliation) base *= 0.7; 
+
+        const delay = Math.max(minDelay, base - Math.random() * variance);
+        app.game.aiEndTime = Date.now() + delay;
+        app.game.aiTimer = setTimeout(() => enemyAttack(false), delay);
+    }
+
+    function enemyAttack(isCounter) {
+        if(app.state !== 'GAME' || app.game.eHp <= 0) return;
+        
+        // If hit, delay attack slightly (retry) instead of aborting
+        // This ensures AI doesn't die if stun < recovery time
+        if (app.game.eState === 'HIT') {
+             setTimeout(() => enemyAttack(isCounter), 100);
+             return;
+        }
+
+        app.game.eState = 'ATTACK';
+        updateVisuals();
+        const windup = isCounter ? 200 : 500; 
+
+        setTimeout(() => {
+            if(app.state !== 'GAME') return;
+            // If interrupted by hit during windup (Countered), abort.
+            // Player punch logic will handle rescheduling in this case
+            if (app.game.eState === 'HIT') return;
+
+            let dmg = app.enemy.atk;
+            
+            // Difficulty Dmg Multiplier (Received)
+            const dMult = [1.0, 1.2, 1.4, 1.6][app.difficulty-1] || 1.0;
+            dmg = Math.floor(dmg * dMult);
+
+            let isCrit = false;
+
+            if (app.game.pState === 'GUARD') {
+                dmg = Math.floor(dmg * 0.2); 
+                Aud.sfx.damage();
+            } else {
+                if (app.game.pState === 'VULNERABLE') {
+                    dmg = Math.floor(dmg * 1.5);
+                    isCrit = true;
+                    showOverlay("CRITICAL!", 800, 'crit-bad');
+                    Aud.sfx.crit();
+                    app.el.damageOverlay.classList.remove('damage-flash');
+                    void app.el.damageOverlay.offsetWidth; 
+                    app.el.damageOverlay.classList.add('damage-flash');
+                } else Aud.sfx.damage();
+            }
+            
+            showDamage(dmg, 'enemy-dmg');
+
+            app.game.pHp = Math.max(0, app.game.pHp - dmg);
+            app.game.spVal = Math.min(100, app.game.spVal + 5);
+            updateHP();
+            updateSP();
+
+            if (app.game.pHp <= 0) { endGame(false); return; }
+
+            setTimeout(() => {
+                if(app.state==='GAME') {
+                   // Ensure we go back to IDLE only if not Hit in the meantime
+                   if (app.game.eState !== 'HIT') {
+                       app.game.eState = 'IDLE'; 
+                       updateVisuals();
+                   }
+                   scheduleAI(); 
+                }
+            }, 300); // Shortened gap (was 500)
+
+        }, windup);    
+    }
+
+    // --- VIEW ---
+    function updateVisuals() {
+        app.el.handsLayer.className = `hands-layer ${app.game.pState.toLowerCase()}`;
+        app.el.handL.src = generateSVG('glove', app.player, app.game.pState.toLowerCase());
+        app.el.handR.src = generateSVG('glove', app.player, app.game.pState.toLowerCase());
+        app.el.enemyDisplay.src = generateSVG('char', app.enemy, app.game.eState.toLowerCase());
+    }
+
+    function updateHP() {
+        app.el.hpBarP.style.width = (app.game.pHp / app.player.hp * 100) + '%';
+        app.el.hpBarE.style.width = (app.game.eHp / app.enemy.hp * 100) + '%';
+        app.el.hpValP.innerText = app.game.pHp;
+        app.el.hpValE.innerText = app.game.eHp;
+    }
+
+    function updateSP() {
+        app.el.spBarP.style.width = app.game.spVal + '%';
+        if(app.game.spVal >= 100) app.el.spBarP.classList.add('max');
+        else app.el.spBarP.classList.remove('max');
+    }
+
+    function updateTimer() {
+        app.el.gameTimer.innerText = app.game.timeLeft;
+        app.el.gameTimer.classList.toggle('low', app.game.timeLeft <= 10);
+    }
+
+    function showOverlay(txt, time, type='') {
+        app.el.centerMsg.innerText = txt;
+        app.el.centerMsg.className = `overlay-msg show ${type}`;
+        if(time) setTimeout(()=>app.el.centerMsg.classList.remove('show'), time);
+    }
+
+    function endGame(win) {
+        app.state = 'RESULT';
+        clearGame();
+        
+        app.game.eState = win ? 'LOSE' : 'WIN';
+        updateVisuals();
+        showOverlay(win?"YOU WIN!":"LOSE...", 0, win?'crit-good':'crit-bad');
+        
+        Aud.stopBGM();
+        Aud.sfx[win?'win':'lose']();
+        setTimeout(()=>Aud.playPROGBGM(win?'win':'lose'), 1200);
+
+        setTimeout(() => {
+            showScreen('screenResult');
+            // Update Title
+            document.getElementById('resultTitle').innerText = win ? "YOU WIN!" : "YOU LOSE...";
+            
+            let score = win ? (10000 + app.game.timeLeft*100 + app.game.pHp*50) : (app.enemy.hp - app.game.eHp)*50;
+            score = Math.floor(score * app.diffMult);
+            
+            let rank = 'C';
+            if(score > 15000) rank = 'B'; 
+            if(score > 25000) rank = 'A';
+            if(score > 35000) rank = 'S'; 
+
+            app.el.resultRank.innerText = rank;
+            app.el.resultRank.className = `result-rank`; 
+            app.el.resultRank.style.color = rank==='S'?'gold':(rank==='A'?'red':'white');
+            
+            app.el.resultScore.innerText = `Score: ${score}`;
+            if(app.el.resTime) app.el.resTime.innerText = Math.max(0, app.game.timeLeft) + 's';
+            if(app.el.resHp) app.el.resHp.innerText = `${app.game.pHp} / ${app.player.hp}`;
+        }, 3000);
+    }
+  </script>
+</body>
+</html>

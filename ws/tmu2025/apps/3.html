@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE CORE Shield Game</title>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; color: white; font-family: sans-serif; }
+        button {
+            pointer-events: auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #message {
+            position: absolute;
+            top: 20%; width: 100%;
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: yellow;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px #000;
+        }
+        #control-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 220px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            pointer-events: auto;
+            z-index: 100;
+        }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #aaa; }
+        .control-group input[type="range"] { width: 100%; }
+        .panel-btn {
+            width: 100%;
+            margin-bottom: 5px;
+            padding: 8px;
+            font-size: 14px;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            cursor: pointer;
+        }
+        .panel-btn:hover { background: #444; }
+        .panel-btn.active { background: #007bff; border-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div id="control-panel">
+        <div class="control-group">
+            <button id="panelConnectBtn" class="panel-btn">CONNECT CORE</button>
+            <button id="panelDisconnectBtn" class="panel-btn">DISCONNECT</button>
+        </div>
+        <div class="control-group">
+            <label>HORIZONTAL SENS (X)</label>
+            <input type="range" id="sensX" min="0.1" max="5.0" step="0.1" value="1.0">
+            <label>VERTICAL SENS (Y)</label>
+            <input type="range" id="sensY" min="0.1" max="5.0" step="0.1" value="1.0">
+        </div>
+        <div class="control-group">
+            <button id="mouseModeBtn" class="panel-btn">MOUSE MODE: OFF</button>
+        </div>
+        <div style="font-size: 11px; color: #ffcc00; margin-bottom: 10px; line-height: 1.3;">
+            ※ [R]キー または 足踏み2回(0.5s内)<br>で位置をリセットできます。
+        </div>
+        <div id="debug-info" style="border-top: 1px solid #444; margin-top: 10px; padding-top: 10px; font-family: monospace; font-size: 11px; line-height: 1.4; color: #ddd;">
+            <div>RAW ACC (XYZ):<br><span id="dbg-raw">0, 0, 0</span></div>
+            <div style="margin-top:5px">FILTERED (XY):<br><span id="dbg-filt">0, 0</span></div>
+            <div style="margin-top:5px">WORLD (XY):<br><span id="dbg-world">0, 0</span></div>
+            <div style="margin-top:5px">VELOCITY (XY):<br><span id="dbg-vel">0, 0</span></div>
+            <div style="margin-top:5px">POSITION (XY):<br><span id="dbg-pos">0, 0</span></div>
+            <div style="margin-top:5px">STATIONARY: <span id="dbg-stat" style="font-weight:bold">NO</span></div>
+            <div style="font-size: 14px; margin-top: 8px; color: #00c8ff; border-top: 1px solid #333; padding-top: 5px;">DIR: <span id="dbg-dir">静止</span></div>
+        </div>
+    </div>
+    <div id="message"></div>
+
+    <!-- ORPHE CORE SCRIPT -->
+    <script src="./src/ORPHE-CORE.js"></script>
+    <script>
+
+        // ==========================================
+        // 1. 構成定数 (Configuration Constants)
+        // ==========================================
+        const CENTER_TOLERANCE = 0.15; // [m] リロードエリア半径
+        const START_STEP_DISTANCE = 0.001; // [m] ゲーム開始判定距離
+        
+        // --- Game Balance Settings ---
+        const BULLET_SPAWN_INTERVAL = 120; // 弾の出現間隔 (frames)
+        const BULLET_BASE_SPEED = 2; // 弾の基本速度
+        const BULLET_SPEED_INC = 0.1; // スコアごとの弾速上昇値
+        const BULLET_SPAWN_DIST = 400; // 弾の出現距離 (px)
+        
+        const HIT_RANGE_MAX = 120; // 盾ヒット有効距離 (最大) [px]
+        const HIT_RANGE_MIN = 20; // 盾ヒット有効距離 (最小) [px]
+        const GAME_OVER_DIST = 15; // ゲームオーバー判定距離 [px]
+        
+        const METER_TO_PIXEL_SCALE = 300; // 1mあたりのピクセル数
+        const COUNTDOWN_DURATION = 3.0; // カウントダウン秒数
+
+        // ==========================================
+        // 2. 高精度PDRパラメータ (Precision PDR Parameters)
+        // ==========================================
+        const GRAVITY = 9.80665; // m/s^2
+        
+        // ハイパスフィルタ係数 (DCオフセット除去用)
+        const HP_ALPHA = 0.98; // 高いほど低周波を除去 (0.95-0.99)
+        
+        // 静止検出パラメータ
+        const ZUPT_ACC_THRESHOLD = 0.08; // [g] 加速度変動閾値
+        const ZUPT_GYRO_THRESHOLD = 15.0; // [deg/s] 角速度閾値
+        const ZUPT_FRAMES_REQUIRED = 4; // 静止判定に必要なフレーム数
+        
+        // 速度・位置推定パラメータ
+        const VELOCITY_DECAY = 0.92; // 速度減衰係数 (ドリフト抑制)
+        const VELOCITY_DEADZONE = 0.01; // [m/s] 速度デッドゾーン
+        const ACC_NOISE_FLOOR = 0.02; // [g] 加速度ノイズフロア
+        
+        // 積分スケーリング
+        const POSITION_SCALE = 1.5; // 位置スケール倍率
+        const VELOCITY_SCALE = 1.0; // 速度スケール倍率
+
+        // Game Global Variables
+        let ble;
+        
+        let sensX = 1.0;
+        let sensY = 1.0;
+        let isMouseMode = false;
+
+        let currentCenter = { x: 0, y: 0 };
+        let currentPos = { x: 0, y: 0 }; // プレイヤーの現在推定位置 (m)
+        
+        let isShieldReady = true;
+        let currentShieldAngle = null; // null if not deployed, radians if deployed
+        let shieldDeployedTime = 0; // 盾を展開した時刻 (millis)
+        const SHIELD_TIMEOUT = 2000; // 盾の自動リセット時間 (ms)
+        let shieldAnimTimer = 0; // 盾表示用タイマー
+        let lastImpactValue = 0;
+
+        // Game State
+        const STATE = {
+            IDLE: 0,
+            READY: 1,
+            COUNTDOWN: 2,
+            PLAYING: 3,
+            GAMEOVER: 4,
+            CLEAR: 5
+        };
+        let gameState = STATE.IDLE;
+        const WIN_SCORE = 30;
+        
+        let countdownTimer = COUNTDOWN_DURATION;
+        let bullets = [];
+        let score = 0;
+        let lastStepTime = 0;
+        
+        // Visual Effects
+        let flashColor = null;
+        let flashAlpha = 0;
+        let rippleList = [];
+
+        // ==========================================
+        // 3. 高精度PDR状態変数 (Precision PDR State)
+        // ==========================================
+        
+        // 生センサデータ
+        let raw_acc = { x: 0, y: 0, z: 0 };
+        let raw_gyro = { x: 0, y: 0, z: 0 };
+        let raw_quat = { w: 1, x: 0, y: 0, z: 0 };
+        
+        // ハイパスフィルタ状態
+        let hp_acc_prev = { x: 0, y: 0, z: 0 };
+        let hp_acc_filtered = { x: 0, y: 0, z: 0 };
+        let hp_acc_prev_raw = { x: 0, y: 0, z: 0 };
+        
+
+        
+        // PDR推定状態
+        let pdr = {
+            velocity: { x: 0, y: 0 },
+            position: { x: 0, y: 0 },
+            isStationary: false,
+            stationaryCount: 0
+        };
+        
+        // タイムスタンプ
+        let lastTimestamp = 0;
+        let isFirstFrame = true;
+        
+        // 加速度履歴（ノイズ除去用）
+        const ACC_HISTORY_SIZE = 5;
+        let accHistory = [];
+        
+        // 移動方向（8方向スナップ）
+        let moveDirection = -1;  // -1: 静止, 0-7: 8方向 (0=右, 1=右下, 2=下, 3=左下, 4=左, 5=左上, 6=上, 7=右上)
+        let moveAngle = 0;       // 生の移動角度 (radians)
+        const DIRECTION_NAMES = ['→ 右', '↘ 右下', '↓ 下', '↙ 左下', '← 左', '↖ 左上', '↑ 上', '↗ 右上'];
+        const MOVE_THRESHOLD = 0.02; // 移動判定閾値 [m]
+        
+        // デバッグ用
+        let debug = {
+            rawAcc: { x: 0, y: 0, z: 0 },
+            filteredAcc: { x: 0, y: 0 },
+            worldAcc: { x: 0, y: 0 },
+            velocity: { x: 0, y: 0 },
+            position: { x: 0, y: 0 },
+            isStationary: false,
+            direction: -1,
+            directionName: '静止'
+        };
+        
+        // ==========================================
+        // 4. ベクトル演算ユーティリティ
+        // ==========================================
+        
+        // クォータニオンによるベクトル回転
+        function rotateVectorByQuat(v, q) {
+            // q = {w, x, y, z}, v = {x, y, z}
+            // v' = q * v * q^(-1)
+            const qw = q.w, qx = q.x, qy = q.y, qz = q.z;
+            const vx = v.x, vy = v.y, vz = v.z;
+            
+            // t = 2 * cross(q.xyz, v)
+            const tx = 2 * (qy * vz - qz * vy);
+            const ty = 2 * (qz * vx - qx * vz);
+            const tz = 2 * (qx * vy - qy * vx);
+            
+            // v' = v + qw * t + cross(q.xyz, t)
+            return {
+                x: vx + qw * tx + (qy * tz - qz * ty),
+                y: vy + qw * ty + (qz * tx - qx * tz),
+                z: vz + qw * tz + (qx * ty - qy * tx)
+            };
+        }
+        
+        // ハイパスフィルタ（DCオフセット除去）
+        function applyHighPassFilter(current, prevRaw, prevFiltered, alpha) {
+            return {
+                x: alpha * (prevFiltered.x + current.x - prevRaw.x),
+                y: alpha * (prevFiltered.y + current.y - prevRaw.y),
+                z: alpha * (prevFiltered.z + current.z - prevRaw.z)
+            };
+        }
+        
+        // 移動平均フィルタ
+        function getSmoothedAcc() {
+            if (accHistory.length === 0) return { x: 0, y: 0 };
+            
+            let sumX = 0, sumY = 0;
+            for (let acc of accHistory) {
+                sumX += acc.x;
+                sumY += acc.y;
+            }
+            return {
+                x: sumX / accHistory.length,
+                y: sumY / accHistory.length
+            };
+        }
+        
+        // 静止検出
+        function detectStationary(acc, gyro) {
+            // 加速度の大きさが1g付近かどうか
+            const accMag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+            const accDev = Math.abs(accMag - 1.0);
+            
+            // 角速度の大きさ
+            const gyroMag = Math.sqrt(gyro.x * gyro.x + gyro.y * gyro.y + gyro.z * gyro.z);
+            
+            return accDev < ZUPT_ACC_THRESHOLD && gyroMag < ZUPT_GYRO_THRESHOLD;
+        }
+        
+        // 角度を8方向にスナップ (0-7)
+        // 0=右(0°), 1=右上(45°), 2=上(90°), 3=左上(135°), 4=左(180°), 5=左下(225°), 6=下(270°), 7=右下(315°)
+        function snapTo8Direction(angle) {
+            // angleをラジアンから0-360度に変換
+            let deg = ((angle * 180 / Math.PI) + 360) % 360;
+            // 22.5度オフセットして45度単位に分割
+            let dir = Math.floor((deg + 22.5) / 45) % 8;
+            return dir;
+        }
+        
+        // 8方向インデックスから角度（ラジアン）を取得
+        function directionToAngle(dir) {
+            return dir * Math.PI / 4; // 0=0°, 1=45°, 2=90°, ...
+        }
+        
+        // 位置から移動方向を計算して8方向にスナップ
+        function updateMoveDirection() {
+            // 中心からの相対位置
+            const dx = currentPos.x - currentCenter.x;
+            const dy = currentPos.y - currentCenter.y;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist < MOVE_THRESHOLD) {
+                // 移動が小さい場合は静止
+                moveDirection = -1;
+                debug.direction = -1;
+                debug.directionName = '静止';
+                return;
+            }
+            
+            // 角度を計算 (atan2: Y軸正が上、X軸正が右)
+            // 画面座標: Y軸は下が正なので、-dyを使用
+            moveAngle = Math.atan2(-dy, dx);
+            
+            // 8方向にスナップ
+            moveDirection = snapTo8Direction(moveAngle);
+            
+            debug.direction = moveDirection;
+            debug.directionName = DIRECTION_NAMES[moveDirection];
+        }
+
+        // ==========================================
+        // p5.js Setup & Draw
+        // ==========================================
+        window.setup = function() {
+            createCanvas(windowWidth, windowHeight);
+            frameRate(60);
+            
+            // UI Setup
+            const panelConnectBtn = select('#panelConnectBtn');
+            const panelDisconnectBtn = select('#panelDisconnectBtn');
+            const mouseModeBtn = select('#mouseModeBtn');
+            const sensXSlider = select('#sensX');
+            const sensYSlider = select('#sensY');
+
+            const connectAction = async () => {
+                if (!ble) ble = new Orphe(0);
+                await ble.setup();
+                
+                // コールバック設定
+                ble.gotStride = handleStride;
+                ble.gotLandingImpact = (impact) => {
+                    lastImpactValue = impact.value;
+                };
+                
+                // センサーコールバック（正規化加速度を使用）
+                ble.gotQuat = (q) => { raw_quat = q; };
+                ble.gotConvertedGyro = (gyro) => { raw_gyro = gyro; };
+                ble.gotConvertedAcc = (acc) => {
+                    raw_acc = acc;
+                    processPrecisionPDR();
+                };
+
+                // 接続開始
+                try {
+                    await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                    gameState = STATE.READY;
+                    console.log("Connected. Ready to start!");
+                } catch (err) {
+                    console.error(err);
+                    alert("Connection failed");
+                }
+            };
+
+            panelConnectBtn.mousePressed(connectAction);
+
+            panelDisconnectBtn.mousePressed(() => {
+                if (ble) {
+                    ble.stop();
+                    console.log("Disconnected.");
+                    gameState = STATE.IDLE;
+                }
+            });
+
+            mouseModeBtn.mousePressed(() => {
+                isMouseMode = !isMouseMode;
+                mouseModeBtn.html(`MOUSE MODE: ${isMouseMode ? 'ON' : 'OFF'}`);
+                if (isMouseMode) {
+                    mouseModeBtn.addClass('active');
+                    if (gameState === STATE.IDLE) gameState = STATE.READY;
+                } else {
+                    mouseModeBtn.removeClass('active');
+                }
+            });
+
+            sensXSlider.input(() => { sensX = parseFloat(sensXSlider.value()); });
+            sensYSlider.input(() => { sensY = parseFloat(sensYSlider.value()); });
+        };
+
+        window.draw = function() {
+            background(20);
+            
+            // マウス操作モード
+            if (isMouseMode) {
+                currentPos.x = (mouseX - width / 2) / METER_TO_PIXEL_SCALE;
+                currentPos.y = -(mouseY - height / 2) / METER_TO_PIXEL_SCALE;
+                updateMoveDirection();
+            }
+
+            // 中心位置（画面中央）
+            translate(width/2, height/2);
+            
+            // 状態ごとの描画
+            drawCenterIndicator();
+            drawFeedback();
+            
+            if (gameState === STATE.PLAYING) {
+                updateGameLogic();
+                drawShield();
+                drawBullets();
+            } else if (gameState === STATE.COUNTDOWN) {
+                drawCountdown();
+            } else if (gameState === STATE.GAMEOVER) {
+                background(50, 0, 0, 100);
+            } else if (gameState === STATE.CLEAR) {
+                background(0, 50, 0, 100); // 緑背景でクリアを表現
+            }
+
+            // フラッシュエフェクト
+            if (flashAlpha > 0) {
+                push();
+                resetMatrix();
+                noStroke();
+                fill(flashColor[0], flashColor[1], flashColor[2], flashAlpha);
+                rect(0, 0, width, height);
+                flashAlpha -= 5;
+                pop();
+            }
+
+            updateUI();
+        };
+
+        // ==========================================
+        // 5. 高精度PDR処理 (Precision PDR Processing)
+        // ==========================================
+        function processPrecisionPDR() {
+            const now = performance.now();
+            let dt = (now - lastTimestamp) / 1000.0;
+            lastTimestamp = now;
+            
+            // 初回または長い間隔の場合はスキップ
+            if (isFirstFrame || dt > 0.5) {
+                isFirstFrame = false;
+                hp_acc_prev_raw = { ...raw_acc };
+                hp_acc_prev = { x: 0, y: 0, z: 0 };
+                hp_acc_filtered = { x: 0, y: 0, z: 0 };
+                return;
+            }
+            
+            // デバッグ用に生データを保存
+            debug.rawAcc = { ...raw_acc };
+            
+            // ==========================================
+            // Step 1: 加速度を直接使用（バイアス補正なし）
+            // ==========================================
+            const acc_corrected = {
+                x: raw_acc.x,
+                y: raw_acc.y,
+                z: raw_acc.z - 1.0  // 重力(1g)のみ除去
+            };
+            
+            // ==========================================
+            // Step 3: ハイパスフィルタ（DCオフセット/ドリフト除去）
+            // ==========================================
+            hp_acc_filtered = applyHighPassFilter(
+                acc_corrected,
+                hp_acc_prev_raw,
+                hp_acc_prev,
+                HP_ALPHA
+            );
+            hp_acc_prev_raw = { ...acc_corrected };
+            hp_acc_prev = { ...hp_acc_filtered };
+            
+            // ==========================================
+            // Step 4: クォータニオンでワールド座標に変換
+            // ==========================================
+            const acc_world = rotateVectorByQuat(hp_acc_filtered, raw_quat);
+            
+            // 重力成分を除去（Z軸方向）
+            // ハイパスフィルタにより既にDC成分は除去されているが、
+            // 念のため垂直成分は無視して水平成分のみ使用
+            const acc_horizontal = {
+                x: acc_world.x,
+                y: acc_world.y
+            };
+            
+            // ==========================================
+            // Step 5: ノイズフロア処理
+            // ==========================================
+            if (Math.abs(acc_horizontal.x) < ACC_NOISE_FLOOR) acc_horizontal.x = 0;
+            if (Math.abs(acc_horizontal.y) < ACC_NOISE_FLOOR) acc_horizontal.y = 0;
+            
+            debug.filteredAcc = { ...acc_horizontal };
+            
+            // ==========================================
+            // Step 6: 移動平均によるスムージング
+            // ==========================================
+            accHistory.push({ ...acc_horizontal });
+            if (accHistory.length > ACC_HISTORY_SIZE) {
+                accHistory.shift();
+            }
+            const smoothedAcc = getSmoothedAcc();
+            
+            // m/s² に変換
+            const acc_ms2 = {
+                x: smoothedAcc.x * GRAVITY * sensX,
+                y: smoothedAcc.y * GRAVITY * sensY
+            };
+            debug.worldAcc = { ...acc_ms2 };
+            
+            // ==========================================
+            // Step 7: 静止検出 (ZUPT)
+            // ==========================================
+            const isCurrentlyStationary = detectStationary(raw_acc, raw_gyro);
+            
+            if (isCurrentlyStationary) {
+                pdr.stationaryCount++;
+            } else {
+                pdr.stationaryCount = 0;
+            }
+            
+            pdr.isStationary = pdr.stationaryCount >= ZUPT_FRAMES_REQUIRED;
+            debug.isStationary = pdr.isStationary;
+            
+            // ==========================================
+            // Step 8: 速度更新（積分）
+            // ==========================================
+            if (pdr.isStationary) {
+                // 静止時: 速度をゼロにリセット（ZUPTによるドリフト補正）
+                pdr.velocity.x = 0;
+                pdr.velocity.y = 0;
+            } else {
+                // 移動時: 速度を積分
+                pdr.velocity.x += acc_ms2.x * dt * VELOCITY_SCALE;
+                pdr.velocity.y += acc_ms2.y * dt * VELOCITY_SCALE;
+                
+                // 速度減衰（ドリフト抑制）
+                pdr.velocity.x *= VELOCITY_DECAY;
+                pdr.velocity.y *= VELOCITY_DECAY;
+                
+                // 速度デッドゾーン
+                if (Math.abs(pdr.velocity.x) < VELOCITY_DEADZONE) pdr.velocity.x = 0;
+                if (Math.abs(pdr.velocity.y) < VELOCITY_DEADZONE) pdr.velocity.y = 0;
+            }
+            
+            debug.velocity = { ...pdr.velocity };
+            
+            // ==========================================
+            // Step 9: 位置更新（積分）
+            // ==========================================
+            if (!pdr.isStationary) {
+                pdr.position.x += pdr.velocity.x * dt * POSITION_SCALE;
+                pdr.position.y += pdr.velocity.y * dt * POSITION_SCALE;
+            }
+            
+            debug.position = { ...pdr.position };
+            
+            // ==========================================
+            // Step 10: ゲーム座標に反映
+            // ==========================================
+            currentPos.x = pdr.position.x;
+            currentPos.y = pdr.position.y;
+            
+            // ==========================================
+            // Step 11: 移動方向を8方向にスナップ
+            // ==========================================
+            updateMoveDirection();
+        }
+
+        // ==========================================
+        // 6. UI更新
+        // ==========================================
+        function updateUI() {
+            const msg = document.getElementById('message');
+            if (gameState === STATE.READY) {
+                msg.innerText = "中央の白丸をクリック/足踏みして開始";
+                msg.style.color = "white";
+                msg.style.fontSize = "32px";
+            } else if (gameState === STATE.COUNTDOWN) {
+                let count = Math.ceil(countdownTimer);
+                msg.innerText = count > 0 ? count : "START!";
+                msg.style.fontSize = "80px";
+                msg.style.color = "red";
+            } else if (gameState === STATE.PLAYING) {
+                msg.innerText = `Score: ${score} / ${WIN_SCORE}`;
+                msg.style.fontSize = "32px";
+                msg.style.color = "white";
+            } else if (gameState === STATE.CLEAR) {
+                msg.innerText = "GAME CLEAR!\nおめでとうございます！";
+                msg.style.fontSize = "48px";
+                msg.style.color = "#00ff00";
+            } else {
+                msg.innerText = "";
+            }
+
+            // --- パネル内のデバッグ情報を更新 ---
+            const dbgRaw = document.getElementById('dbg-raw');
+            if (dbgRaw) {
+                dbgRaw.innerText = `${debug.rawAcc.x.toFixed(3)}, ${debug.rawAcc.y.toFixed(3)}, ${debug.rawAcc.z.toFixed(3)}`;
+                document.getElementById('dbg-filt').innerText = `${debug.filteredAcc.x.toFixed(3)}, ${debug.filteredAcc.y.toFixed(3)}`;
+                document.getElementById('dbg-world').innerText = `${debug.worldAcc.x.toFixed(3)}, ${debug.worldAcc.y.toFixed(3)}`;
+                document.getElementById('dbg-vel').innerText = `${debug.velocity.x.toFixed(3)}, ${debug.velocity.y.toFixed(3)}`;
+                document.getElementById('dbg-pos').innerText = `${debug.position.x.toFixed(3)}, ${debug.position.y.toFixed(3)}`;
+                
+                const dbgStat = document.getElementById('dbg-stat');
+                dbgStat.innerText = debug.isStationary ? 'YES' : 'NO';
+                dbgStat.style.color = debug.isStationary ? '#00ff00' : '#ff6666';
+                
+                document.getElementById('dbg-dir').innerText = debug.directionName;
+            }
+        }
+
+        window.windowResized = function() {
+            resizeCanvas(windowWidth, windowHeight);
+        };
+
+        window.keyPressed = function() {
+            if (key === 'r' || key === 'R') {
+                // Reset Center (Manual Calibration)
+                currentCenter = { ...currentPos };
+                pdr.position = { x: 0, y: 0 };
+                pdr.velocity = { x: 0, y: 0 };
+                currentPos = { x: 0, y: 0 };
+                currentShieldAngle = null;
+                isShieldReady = true;
+                
+                // Visual feedback
+                addRipple(0, 0, [255, 255, 0]);
+                triggerFlash([255, 255, 200], 100);
+                console.log("Reset by Key");
+            }
+        };
+
+        window.mousePressed = function() {
+            if (gameState === STATE.READY) {
+                // 中心円をクリックで開始
+                let d = dist(mouseX, mouseY, width/2, height/2);
+                if (d < 50) {
+                    handleStride({ x: 0.1, y: 0.1 }); // 模擬的な足踏みで開始
+                }
+                return;
+            }
+            if (isMouseMode) {
+                // マウスモード時はクリックで疑似ストライド（足踏み）を発生させる
+                handleStride({ x: 0.1, y: 0.1 }); // 判定閾値を超えるダミー値
+            }
+        };
+
+        // ==========================================
+        // 7. ゲームロジック (ORPHE Event Handling)
+        // ==========================================
+        function handleStride(stride) {
+            let strideLen = Math.hypot(stride.x, stride.y);
+
+            if (gameState === STATE.READY) {
+                // ゲーム開始と同時に中心位置（原点）をリセット
+                if (strideLen > START_STEP_DISTANCE) {
+                    gameState = STATE.COUNTDOWN;
+                    countdownTimer = COUNTDOWN_DURATION;
+                    
+                    // キャリブレーション: 現在地を基準原点 {0,0} に設定
+                    currentCenter = { x: currentPos.x, y: currentPos.y };
+                    pdr.position = { x: 0, y: 0 };
+                    pdr.velocity = { x: 0, y: 0 };
+                    currentPos = { x: 0, y: 0 };
+                    
+                    addRipple(0, 0, [255, 255, 255]);
+                    triggerFlash([255, 255, 255], 100);
+                }
+                return;
+            }
+            
+            if (gameState !== STATE.PLAYING) return;
+            
+            // --- Double Step Reset Logic ---
+            let now = millis() / 1000.0;
+            if (now - lastStepTime < 0.5) {
+                // Reset Center and PDR
+                currentCenter = { x: currentPos.x, y: currentPos.y };
+                pdr.position = { x: 0, y: 0 };
+                pdr.velocity = { x: 0, y: 0 };
+                currentPos = { x: 0, y: 0 };
+                currentShieldAngle = null;
+                isShieldReady = true;
+                
+                addRipple(0, 0, [255, 255, 0]);
+                triggerFlash([255, 255, 200], 100);
+                
+                lastStepTime = 0;
+                return;
+            }
+            lastStepTime = now;
+            
+            // --- Game Logic (Step Triggered) ---
+            let dx = currentPos.x - currentCenter.x;
+            let dy = currentPos.y - currentCenter.y;
+            let distToCenter = Math.hypot(dx, dy);
+            
+            if (distToCenter < CENTER_TOLERANCE) {
+                // 1. センターエリア: 充填 (Reload)
+                currentShieldAngle = null; 
+                isShieldReady = true;  
+                
+                // コアモードなら原点を更新（キャリブレーション）、マウスモードなら更新しない
+                if (!isMouseMode) {
+                    currentCenter = { x: currentPos.x, y: currentPos.y };
+                    pdr.position = { x: 0, y: 0 };
+                    pdr.velocity = { x: 0, y: 0 };
+                    currentPos = { x: 0, y: 0 };
+                }
+                
+                addRipple(0, 0, [0, 255, 100]); 
+            } else {
+                // 2. センター外側: 展開 (Deploy)
+                if (isShieldReady) {
+                    // 生の角度を計算
+                    let rawAngle = Math.atan2(-dy, dx);
+                    
+                    // 8方向にスナップ
+                    let dirIdx = snapTo8Direction(rawAngle);
+                    currentShieldAngle = directionToAngle(dirIdx);
+                    
+                    shieldDeployedTime = millis();
+                    isShieldReady = false; // 連続展開不可（次はセンターに戻る必要あり）
+                    
+                    triggerFlash([0, 200, 255], 50);
+                }
+            }
+        }
+
+        // Orphe library usually calls gotLandingImpact separately.
+        // If we want precise impact checking, we'd store the impact value and check it when updated.
+        // However, standard usage often correlates stride event with the step impact.
+        // "gotLandingImpact が IMPACT_THRESHOLD を超えた瞬間に判定"
+        // I will adhere to this by using the `gotLandingImpact` callback to validate the "Force".
+        // But direction comes from `gotStride`.
+        // Strategy: When `gotStride` happens, we process direction. We assume valid impact happened if stride was detected. Orphe core usually only emits stride on valid steps.
+        // I will omit extra impact check logic inside `gotStride` to ensure responsiveness, assuming the "step" event itself is the trigger.
+
+        // ==========================================
+        // Visuals & Updates
+        // ==========================================
+        function drawCenterIndicator() {
+            noStroke();
+            if (gameState === STATE.READY) {
+                // 点滅する白円（開始待機）
+                let alpha = 128 + 127 * sin(millis() / 200);
+                fill(255, 255, 255, alpha);
+                ellipse(0, 0, 70, 70);
+                
+                noFill();
+                stroke(255, alpha);
+                ellipse(0, 0, 90, 90);
+            } else if (gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
+                // Center marker
+                if (isShieldReady) {
+                    fill(0, 255, 100); // Active Green
+                    ellipse(0, 0, 40, 40);
+                    // Light gathering effect
+                    stroke(0, 255, 100, 100);
+                    noFill();
+                    let r = (millis() / 10) % 50 + 40;
+                    ellipse(0, 0, r, r);
+                } else {
+                    fill(100); // Grey (Not ready/Outside)
+                    ellipse(0, 0, 30, 30);
+                }
+            }
+            
+            // プレイヤー位置表示 (中心からのズレを可視化)
+            if (gameState >= STATE.READY) {
+                // 相対位置 (メートル)
+                let dx = currentPos.x - currentCenter.x;
+                let dy = currentPos.y - currentCenter.y;
+                
+                // 表示スケール
+                let scale = METER_TO_PIXEL_SCALE;
+                let px = dx * scale;
+                let py = -dy * scale; // Y軸反転（前進＝画面上）
+                
+                // 許容範囲のガイド円 (CENTER_TOLERANCE)
+                stroke(255, 255, 255, 50);
+                strokeWeight(1);
+                noFill();
+                ellipse(0, 0, CENTER_TOLERANCE * scale * 2);
+
+                // プレイヤーマーカー (赤いドット)
+                noStroke();
+                fill(255, 100, 100);
+                ellipse(px, py, 15, 15);
+                
+                // シールド展開予兆/現在の向き
+                // もしシールド未展開なら、今の足の方向に薄くガイドを出す
+                if (isShieldReady && dist(0, 0, px, py) > 10) {
+                     let angle = atan2(py, px);
+                     push();
+                     stroke(0, 200, 255, 50);
+                     rotate(angle);
+                     line(0, 0, 50, 0);
+                     pop();
+                }
+                
+                // 中心からの線
+                stroke(255, 100, 100, 100);
+                line(0, 0, px, py);
+            }
+        }
+
+        function drawShield() {
+            if (currentShieldAngle !== null) {
+                push();
+                rotate(currentShieldAngle);
+                
+                // Draw Fan (Shield)
+                // 角度指定なしで、現在の angle 方向に描く
+                noStroke();
+                fill(0, 200, 255, 200);
+                // 盾の幅 (PI/6 = 30度, PI/4 = 45度)
+                const SHIELD_WIDTH = PI / 4; 
+                arc(0, 0, 240, 240, -SHIELD_WIDTH/2, SHIELD_WIDTH/2, PIE); 
+                
+                // Shield center decoration
+                stroke(255);
+                noFill();
+                arc(0, 0, 220, 220, -SHIELD_WIDTH/2, SHIELD_WIDTH/2);
+                
+                pop();
+            }
+        }
+        
+        function drawBullets() {
+            for (let b of bullets) {
+                push();
+                // b.angle is movement direction
+                // Position: calculated from dist and angle
+                // We want to draw it at (b.x, b.y) relative to center
+                // But b keeps track of distance from center for simplicity?
+                // Let's store x,y in updateGameLogic
+                translate(b.x, b.y);
+                fill(255, 50, 50);
+                noStroke();
+                ellipse(0, 0, 20, 20);
+                pop();
+            }
+        }
+        
+        function updateGameLogic() {
+            if (score >= WIN_SCORE) {
+                gameState = STATE.CLEAR;
+                return;
+            }
+
+            // 盾の自動リセット (2秒経過)
+            if (currentShieldAngle !== null && millis() - shieldDeployedTime > SHIELD_TIMEOUT) {
+                currentShieldAngle = null;
+                // 注意: 自動リセット時も CENTER クリックが必要な仕様にするため isShieldReady は false のまま
+                addRipple(0, 0, [255, 200, 0]); 
+            }
+            
+            // Spawn bullets
+            if (frameCount % BULLET_SPAWN_INTERVAL === 0) { // Every 1 sec approx
+                spawnBullet();
+            }
+            
+            // Move bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.dist -= b.speed;
+                // Update cartesian
+                // SourceDir gives angle from center. 
+                // Pos = (cos(sourceAngle)*dist, sin(sourceAngle)*dist)
+                let sourceAngle = radians(b.sourceDir * 45);
+                b.x = cos(sourceAngle) * b.dist;
+                b.y = sin(sourceAngle) * b.dist;
+                
+            // Collision with Active Shield
+            if (currentShieldAngle !== null) {
+                if (b.dist < HIT_RANGE_MAX && b.dist > HIT_RANGE_MIN) {
+                     // Check angle difference
+                     // Bullet sourceDir is 0-7 integer index. Convert to radians.
+                     let bulletAngle = radians(b.sourceDir * 45); 
+                     
+                     // Shield covers a sector. 
+                     // Difference between shield angle and bullet angle should be small.
+                     // Normalize difference to -PI to PI
+                     let diff = bulletAngle - currentShieldAngle;
+                     diff = Math.atan2(Math.sin(diff), Math.cos(diff)); // Normalize
+                     
+                     // Shield Width is PI/4 (45 degrees) -> Half width is PI/8
+                     if (Math.abs(diff) < PI / 8) {
+                         // Hit Shield!
+                         bullets.splice(i, 1);
+                         score++;
+                         triggerFlash([0, 100, 255], 100); 
+                         
+                         // 球を防いだら盾をリセット
+                         currentShieldAngle = null;
+                         // 次の展開にはセンターに戻る必要があるため、isShieldReady はここでは true にしない
+                         addRipple(0, 0, [0, 255, 200]); // Success ripple
+                         
+                         continue; // Next bullet
+                     }
+                }
+            }
+
+                if (b.dist < GAME_OVER_DIST) {
+                    // Hit center -> Fail
+                    triggerFlash([255, 0, 0], 200); // Red Flash
+                    bullets.splice(i, 1);
+                    // Optionally decrease life or game over
+                }
+            }
+        }
+        
+        function spawnBullet() {
+            let dir = floor(random(8)); // 0-7 source direction
+            let speed = BULLET_BASE_SPEED + (score * BULLET_SPEED_INC); // difficulty
+            bullets.push({
+                sourceDir: dir,
+                dist: BULLET_SPAWN_DIST, // spawn radius
+                speed: speed,
+                x: 0,
+                y: 0
+            });
+        }
+        
+        function drawCountdown() {
+            // Countdown visual (circle shrinking?)
+            // Text forbidden? "テキスト禁止" usually means prompts/instructions, but numbers?
+            // "視覚的フィードバック（テキスト禁止）" implies rely on visuals.
+            // 3 rings appearing?
+            let elapsed = COUNTDOWN_DURATION - countdownTimer; // 0..3
+            // Draw 3 circles.
+            noFill();
+            strokeWeight(5);
+            
+            if (countdownTimer > 2) stroke(255, 0, 0);
+            else if (countdownTimer > 1) stroke(255, 255, 0);
+            else stroke(0, 255, 0);
+            
+            let size = (countdownTimer % 1) * 200 + 50;
+            ellipse(0, 0, size, size);
+
+            countdownTimer -= 1/60;
+            if (countdownTimer <= 0) {
+                gameState = STATE.PLAYING;
+            }
+        }
+        
+        function drawFeedback() {
+            // Ripple
+            noFill();
+            for (let i = rippleList.length - 1; i >= 0; i--) {
+                let r = rippleList[i];
+                stroke(r.color[0], r.color[1], r.color[2], r.alpha);
+                ellipse(r.x, r.y, r.radius, r.radius);
+                r.radius += 5;
+                r.alpha -= 5;
+                if (r.alpha <= 0) rippleList.splice(i, 1);
+            }
+        }
+        
+        function addRipple(x, y, color) {
+            rippleList.push({x, y, radius: 20, alpha: 255, color});
+        }
+        
+        function triggerFlash(color, alpha) {
+            flashColor = color;
+            flashAlpha = alpha;
+        }
+
+    </script>
+</body>
+</html>

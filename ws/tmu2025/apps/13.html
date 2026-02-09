@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE CORE Taiko</title>
+    <style>
+        /* Cute pastel UI */
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(180deg,#fff7fb 0%, #f0f9ff 100%); color:#263044; display:flex; align-items:center; justify-content:center; height:100vh; margin:0 }
+        .app { display:flex; gap:28px; align-items:flex-start; padding:20px }
+        .panel { background: linear-gradient(180deg,#ffffff 0%, #fffefc 100%); padding:20px; border-radius:14px; box-shadow:0 8px 30px rgba(60,64,90,0.06); color:#2b2b2b }
+        canvas { background: radial-gradient(circle at 10% 10%, #fff4f8, #eef8ff); display:block; border-radius:12px; box-shadow: 0 10px 30px rgba(80,60,120,0.06); width: min(92vw, 900px); height: min(84vh, 760px); max-width: calc(100vw - 360px); }
+        .game-hud { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin-bottom:8px }
+        .score-large { font-size:38px; font-weight:900; color:#40325f; text-shadow: 0 6px 18px rgba(99,32,100,0.08); }
+        .combo-badge { background: linear-gradient(90deg,#ffd6ea,#ffb3c6); color:#fff; padding:6px 10px; border-radius:20px; font-weight:800; box-shadow: 0 6px 18px rgba(88,36,88,0.06); }
+        /* use a subtle highlight instead of scale to avoid layout jitter */
+        .score-highlight { display:inline-block; transform-origin:center center; will-change: box-shadow; box-shadow: 0 0 0 rgba(0,0,0,0); transition: box-shadow 160ms ease-out; }
+        .score-highlight.active { box-shadow: 0 12px 30px rgba(255,111,144,0.14); }
+        button { padding:10px 14px; margin:6px; border-radius:10px; border:none; cursor:pointer; font-weight:700 }
+        #connect { background:#ff90b3; color:#fff; }
+        #start { background:#7ee787; color:#fff; }
+        .status { margin-top:8px; font-size:13px; color:#7a8a99 }
+        .controls { display:flex; flex-direction:column; gap:10px }
+        label { font-size:13px; color:#7a8a99 }
+        input[type=range] { width:180px }
+        .score { font-size:20px; font-weight:800; text-align:center; color:#40325f }
+        .hint { font-size:12px; color:#9aa6b2; margin-top:8px }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="panel">
+            <h2>ORPHE CORE ぽんぽん</h2>
+            <div>
+                <button id="connect">ORPHE CORE に接続</button>
+                <button id="start" disabled>ゲーム開始</button>
+                <div class="status" id="status">デバイス未接続</div>
+            </div>
+
+            <div style="margin-top:12px">
+                <div class="score">Score: <span id="score">0</span>  Combo: <span id="combo">0</span></div>
+                <div class="hit-text" id="hit-text"> </div>
+                <div style="margin-top:6px; color:#9aa6b2; font-size:13px">操作: 腕を振って打つ（縦振り → 左、横フリ → 右）。キャリブレーションで数回大きく振ってください。</div>
+            </div>
+
+            <div class="controls">
+                <label>ヒット閾値 (Δg): <span id="hit-th-val">0.80</span></label>
+                <input id="hit-th" type="range" min="0.1" max="3.0" step="0.01" value="0.80">
+                <label>強打閾値 (Δg): <span id="strong-th-val">1.60</span></label>
+                <input id="strong-th" type="range" min="0.2" max="4.0" step="0.01" value="1.60">
+
+                <label>デバウンス (ms): <span id="debounce-val">400</span></label>
+                <input id="debounce" type="range" min="150" max="1200" step="50" value="400">
+                <button id="calibrate">キャリブレーション（腕振り）</button>
+
+                <label><input id="synth-on" type="checkbox" checked> 合成サウンドを有効にする</label>
+                <label><input id="cute-mode" type="checkbox" checked> キュートモード</label>
+                <label>音量: <span id="vol-val">60%</span></label>
+                <input id="volume" type="range" min="0" max="1" step="0.01" value="0.6">
+
+                <div style="margin-top:6px; color:#9aa6b2; font-size:12px">ライブ: mag: <span id="mag-val">0.00</span>  Δ: <span id="delta-val">0.00</span>  軸: <span id="axis-val">—</span>  dx:<span id="dx-val">0.00</span> dy:<span id="dy-val">0.00</span> dz:<span id="dz-val">0.00</span>  avgX: <span id="avgx-val">0.00</span></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="game-hud">
+                <div class="score-large" id="score-big">0</div>
+                <div class="combo-badge" id="combo-badge">COMBO x0</div>
+            </div>
+            <canvas id="game" width="900" height="760"></canvas>
+            <div style="margin-top:8px; color:#9aa6b2; font-size:12px; text-align:center">Hit window: 緑ラインで判定。Good/Great/Miss が表示されます。</div>
+        </div>
+    </div>
+
+    <script src="src/ORPHE-CORE.js"></script>
+    <script>
+        // ORPHE と Tetris の統合版 (日本語コメント)
+        const ble = new Orphe(0);
+        let connected = false;
+
+        // UI
+        const connectBtn = document.getElementById('connect');
+        const startBtn = document.getElementById('start');
+        const statusText = document.getElementById('status');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const hitText = document.getElementById('hit-text');
+        // HUD elements
+        const scoreBigEl = document.getElementById('score-big');
+        const comboBadgeEl = document.getElementById('combo-badge');
+        const hitTh = document.getElementById('hit-th');
+        const hitThVal = document.getElementById('hit-th-val');
+        const strongTh = document.getElementById('strong-th');
+        const strongThVal = document.getElementById('strong-th-val');
+        const synthOn = document.getElementById('synth-on');
+        const cuteOn = document.getElementById('cute-mode');
+        const volume = document.getElementById('volume');
+        const volVal = document.getElementById('vol-val');
+        const debounceSlider = document.getElementById('debounce');
+        const debounceVal = document.getElementById('debounce-val');
+        const calibrateBtn = document.getElementById('calibrate');
+        const magVal = document.getElementById('mag-val');
+        const avgxVal = document.getElementById('avgx-val');
+
+        // defaults
+        let debounceMs = parseInt(debounceSlider?.value || 600);
+        let isCalibrating = false;
+        let calSamples = [];
+
+        hitThVal.innerText = parseFloat(hitTh.value).toFixed(2);
+        strongThVal.innerText = parseFloat(strongTh.value).toFixed(2);
+        volVal.innerText = Math.round(volume.value*100) + '%';
+        debounceVal.innerText = debounceMs;
+
+        hitTh.addEventListener('input', ()=> hitThVal.innerText = parseFloat(hitTh.value).toFixed(2));
+        strongTh.addEventListener('input', ()=> strongThVal.innerText = parseFloat(strongTh.value).toFixed(2));
+        volume.addEventListener('input', ()=> volVal.innerText = Math.round(volume.value*100) + '%');
+        debounceSlider.addEventListener('input', (e)=>{ debounceMs = parseInt(e.target.value); debounceVal.innerText = debounceMs; });
+        calibrateBtn.addEventListener('click', ()=> startCalibration());
+
+        function startCalibration(){
+            isCalibrating = true; calSamples = []; lastSpikeTime = 0;
+            statusText.innerText = 'キャリブレーション: 5秒間、腕を大きく振ってください';
+            setTimeout(()=> finishCalibration(), 5200);
+        }
+        function finishCalibration(){
+            isCalibrating = false;
+            if (!calSamples || calSamples.length === 0){ statusText.innerText = 'キャリブレーション失敗: サンプルが取得できませんでした'; return; }
+            const vals = calSamples.map(s=>s.delta);
+            const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+            const std = Math.sqrt(vals.map(v => (v-mean)*(v-mean)).reduce((a,b)=>a+b,0)/vals.length);
+            const hit = Math.max(0.25, mean * 0.55);
+            const strong = Math.max(hit * 1.8, mean * 1.2 + std);
+            hitTh.value = hit.toFixed(2); strongTh.value = strong.toFixed(2);
+            hitThVal.innerText = parseFloat(hitTh.value).toFixed(2);
+            strongThVal.innerText = parseFloat(strongTh.value).toFixed(2);
+            statusText.innerText = `キャリブレーション完了（${calSamples.length}サンプル）`;
+        }
+
+        // 初期化
+        window.onload = () => ble.setup();
+
+        connectBtn.addEventListener('click', async () => {
+            try {
+                await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                connected = true;
+                statusText.innerText = '接続済み';
+                connectBtn.disabled = true;
+                startBtn.disabled = false;
+                resumeAudio();
+
+                // センサー登録
+                ble.gotConvertedAcc = (acc) => handleAcc(acc);
+                // 切断ハンドラ
+                ble.onDisconnect = () => {
+                    connected = false;
+                    statusText.innerText = '切断されました';
+                    connectBtn.disabled = false;
+                    startBtn.disabled = true;
+                    stopGame();
+                    if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; countdownActive = false; countdownValue = ''; countdownTickTime = 0; }
+                };
+            } catch (e) {
+                console.error(e);
+                statusText.innerText = '接続エラー';
+            }
+        });
+
+        // LED utilities
+        function blinkLED(times = 3, interval = 150, pattern = 1) {
+            if (!connected) return;
+            let t = 0;
+            const id = setInterval(() => {
+                ble.setLED(t % 2, pattern);
+                t++;
+                if (t >= times * 2) {
+                    clearInterval(id);
+                    ble.setLED(0, 0);
+                }
+            }, interval);
+        }
+
+        function setLEDPattern(pattern = 2) {
+            if (!connected) return;
+            ble.setLED(1, pattern);
+        }
+
+        // Audio placeholder — Taiko の synth を使用します
+        function resumeAudio(){ if (typeof initAudio === 'function') initAudio(); if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
+
+        // Taiko game using ORPHE CORE
+        // (replaces the Tetris engine)
+        // Audio & UI
+        let audioCtx = null, masterGain = null, reverbInput = null, reverbDelay = null, reverbFeedback = null, reverbWet = null, reverbLP = null;
+        const MAX_REVERB_DELAY = 0.26;
+        function initAudio(){
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+            // master gain
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = parseFloat(volume.value);
+            masterGain.connect(audioCtx.destination);
+
+            // simple feedback delay as a lightweight reverb
+            reverbInput = audioCtx.createGain();
+            reverbDelay = audioCtx.createDelay(MAX_REVERB_DELAY);
+            reverbDelay.delayTime.value = 0.08;
+            reverbFeedback = audioCtx.createGain();
+            reverbFeedback.gain.value = 0.42;
+            reverbLP = audioCtx.createBiquadFilter(); reverbLP.type = 'lowpass'; reverbLP.frequency.value = 3400;
+            reverbWet = audioCtx.createGain(); reverbWet.gain.value = 0.18; // default light wet
+
+            // feedback loop: delay -> lp -> feedback -> delay
+            reverbDelay.connect(reverbLP); reverbLP.connect(reverbFeedback); reverbFeedback.connect(reverbDelay);
+            reverbDelay.connect(reverbWet); reverbWet.connect(masterGain);
+
+            // connect dry path via masterGain directly
+        }
+        function resumeAudio(){ if (!audioCtx) initAudio(); if (audioCtx.state==='suspended') audioCtx.resume(); }
+
+        function playHitSound(strong=false, side='left'){
+            if (!synthOn.checked) return; resumeAudio();
+            const now = audioCtx.currentTime;
+
+            // Stereo panning for cute spatial feel
+            const panner = audioCtx.createStereoPanner();
+            panner.pan.value = side === 'left' ? -0.5 : 0.5;
+
+            // Main bell/pluck oscillator with slight chorus (detuned copy)
+            const osc = audioCtx.createOscillator();
+            osc.type = 'triangle';
+            const baseFreq = strong ? 220 : (side === 'left' ? 520 : 600);
+            osc.frequency.setValueAtTime(baseFreq, now);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.62, now + (strong ? 0.45 : 0.18));
+
+            const osc2 = audioCtx.createOscillator(); osc2.type = 'triangle'; osc2.frequency.setValueAtTime(baseFreq * 1.003, now);
+
+            const env = audioCtx.createGain(); env.gain.setValueAtTime(0.0001, now);
+            env.gain.linearRampToValueAtTime(strong ? 1.0 : 0.7, now + 0.006);
+            env.gain.exponentialRampToValueAtTime(0.0001, now + (strong ? 0.6 : 0.22));
+
+            // gentle lowpass to warm the timbre
+            const filt = audioCtx.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.setValueAtTime(strong ? 2200 : 5200, now); filt.Q.value = 0.6;
+
+            // sparkling high partials when cute mode is on
+            let sparkleGain = null;
+            if (typeof cuteOn !== 'undefined' && cuteOn && cuteOn.checked){
+                const sparkle = audioCtx.createOscillator(); sparkle.type = 'sine'; sparkle.frequency.setValueAtTime(baseFreq * 4.5, now + 0.002);
+                sparkleGain = audioCtx.createGain(); sparkleGain.gain.setValueAtTime(strong ? 0.06 : 0.12, now);
+                sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + (strong ? 0.35 : 0.12));
+                sparkle.connect(sparkleGain);
+                sparkle.start(now); sparkle.stop(now + (strong ? 0.45 : 0.14));
+            }
+
+            // soft sub for strong hits
+            let sub = null; let subG = null;
+            if (strong){ sub = audioCtx.createOscillator(); sub.type = 'sine'; sub.frequency.setValueAtTime(120, now); subG = audioCtx.createGain(); subG.gain.setValueAtTime(0.0, now); subG.gain.linearRampToValueAtTime(0.18, now + 0.01); subG.gain.exponentialRampToValueAtTime(0.001, now + 0.5); sub.connect(subG); subG.connect(panner); sub.start(now); sub.stop(now + 0.55); }
+
+            // connect nodes
+            osc.connect(filt); osc2.connect(filt);
+            filt.connect(env);
+            env.connect(panner);
+            if (sparkleGain) sparkleGain.connect(panner);
+            panner.connect(masterGain);
+
+            // route a bit through the reverb unit if available (cute mode increases wet)
+            if (reverbInput && reverbWet){
+                const dryToReverb = audioCtx.createGain(); dryToReverb.gain.value = (typeof cuteOn !== 'undefined' && cuteOn && cuteOn.checked) ? 0.28 : 0.12;
+                panner.connect(dryToReverb); dryToReverb.connect(reverbDelay);
+            }
+
+            // start/stop
+            osc.start(now); osc2.start(now);
+            osc.stop(now + (strong ? 0.55 : 0.22)); osc2.stop(now + (strong ? 0.55 : 0.22));
+        }
+
+        function playMissSound(){
+            if (!synthOn.checked) return; resumeAudio();
+            const now = audioCtx.currentTime;
+            const p = audioCtx.createStereoPanner(); p.pan.value = 0;
+
+            const o1 = audioCtx.createOscillator(); o1.type = 'sine'; o1.frequency.setValueAtTime(900, now);
+            const o2 = audioCtx.createOscillator(); o2.type = 'triangle'; o2.frequency.setValueAtTime(620, now);
+            o1.frequency.exponentialRampToValueAtTime(420, now + 0.18);
+            o2.frequency.exponentialRampToValueAtTime(300, now + 0.18);
+
+            const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.36, now + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+
+            o1.connect(g); o2.connect(g);
+            g.connect(p); p.connect(masterGain);
+
+            // route a little to reverb for a wistful feel
+            if (reverbDelay && reverbWet) { const send = audioCtx.createGain(); send.gain.value = 0.12; p.connect(send); send.connect(reverbDelay); }
+
+            o1.start(now); o2.start(now); o1.stop(now + 0.35); o2.stop(now + 0.35);
+        }
+        volume.addEventListener('input', ()=>{ if (masterGain) masterGain.gain.value = parseFloat(volume.value); });
+
+        // LED blink helper
+        function blink(pattern=1){ if (!connected) return; let t=0; const id = setInterval(()=>{ ble.setLED(t%2, pattern); t++; if (t>=4){ clearInterval(id); ble.setLED(0,0); } },80); }
+
+        // Game canvas
+        const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        // Note model
+        class Note { constructor(time, side){ this.time=time; this.side=side; this.hit=false; } }
+
+        let notes = [], startTime=0, playing=false, score=0, combo=0;
+        // countdown state
+        let countdownActive = false; let countdownValue = ''; let countdownTimer = null; let countdownTickTime = 0;
+        // Visual feedback
+        let particles = [];
+        const overlay = { text: '', alpha: 0, size: 1, x: 0, y: 0 };
+
+        function spawnParticles(x, y, color = null, count = 28) {
+            const pastel = ['#FFB3C6','#FFD6A5','#C6F6D5','#B3F0FF','#DCC8FF'];
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 3.2;
+                const c = color || pastel[Math.floor(Math.random()*pastel.length)];
+                particles.push({ x: x + (Math.random()-0.5)*20, y: y + (Math.random()-0.5)*10, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed * 0.6 - Math.random(), life: 1, color: c });
+            }
+        }
+
+        // cute character note drawing
+        function drawCuteNote(x, y, side, now, n){
+            const r = 28;
+            ctx.save();
+            ctx.translate(x,y);
+            // gentle rotation wobble
+            const wob = Math.sin((now || performance.now())/120 + (n.time||0)/180) * (n.hit ? 1 : 3) * Math.PI/180;
+            ctx.rotate(wob);
+            // drop shadow
+            ctx.fillStyle = 'rgba(60,40,80,0.06)';
+            ctx.beginPath(); ctx.ellipse(0, r*0.9, r*1.0, r*0.55, 0, 0, Math.PI*2); ctx.fill();
+
+            // body gradient
+            const g = ctx.createRadialGradient(-r*0.25,-r*0.25,r*0.4, 0,0,r);
+            if (side === 'left') { g.addColorStop(0,'#fff7f9'); g.addColorStop(1,'#ffb3c6'); }
+            else { g.addColorStop(0,'#f7ffff'); g.addColorStop(1,'#b3e8ff'); }
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
+
+            // highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.ellipse(-r*0.25,-r*0.25,r*0.8,r*0.5,0,0,Math.PI*2); ctx.fill();
+
+            // face (eyes)
+            ctx.fillStyle = '#38283b'; ctx.beginPath(); ctx.arc(-r*0.12,-r*0.05,r*0.07,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r*0.12,-r*0.05,r*0.07,0,Math.PI*2); ctx.fill();
+            // mouth
+            ctx.strokeStyle = '#38283b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-r*0.12,r*0.15); ctx.quadraticCurveTo(0,r*0.22,r*0.12,r*0.15); ctx.stroke();
+            // blush
+            ctx.fillStyle = 'rgba(255,95,130,0.85)'; ctx.beginPath(); ctx.arc(-r*0.32,r*0.06,r*0.08,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(r*0.32,r*0.06,r*0.08,0,Math.PI*2); ctx.fill();
+
+            // small accessory for right ones
+            if (side === 'right'){
+                ctx.fillStyle = '#fff4a3'; ctx.beginPath(); ctx.arc(-r*0.05,-r*0.4,r*0.06,0,Math.PI*2); ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        const BPM = 100; const beatMs = 60000/BPM; // simple
+
+        // Generate a simple pattern (for demo)
+        function generatePattern(){ notes = []; const totalBeats = 64; for (let i=0;i<totalBeats;i++){ const side = Math.random()<0.5 ? 'left' : 'right'; if (Math.random()<0.7) notes.push(new Note(i*0.5*beatMs, side)); } }
+
+        function startGame(){ generatePattern(); startTime = performance.now(); playing=true; score=0; combo=0; updateUI(); hitText.innerText=''; requestAnimationFrame(loop); }
+        function stopGame(){ playing=false; }
+
+        // Countdown before game start
+        function startCountdown(sec = 3){
+            if (countdownActive) return;
+            countdownActive = true; countdownValue = String(sec); countdownTickTime = performance.now(); statusText.innerText = `開始準備: ${sec}`;
+            // ensure the render loop is running so countdown is visible
+            requestAnimationFrame(loop);
+            let remaining = sec;
+            countdownTimer = setInterval(()=>{
+                remaining -= 1;
+                if (remaining > 0){ countdownValue = String(remaining); countdownTickTime = performance.now(); statusText.innerText = `開始準備: ${remaining}`; }
+                else {
+                    clearInterval(countdownTimer); countdownTimer = null; countdownActive = false; countdownValue = 'GO!'; countdownTickTime = performance.now(); statusText.innerText = 'プレイ中';
+                    // small visible GO! then start
+                    setTimeout(()=>{ countdownValue = ''; countdownTickTime = 0; startGame(); }, 600);
+                }
+            }, 1000);
+        }
+
+        function updateUI(){
+            // small panel
+            scoreEl.innerText = score; comboEl.innerText = combo;
+            // big HUD
+            if (scoreBigEl){ scoreBigEl.innerText = score; // subtle highlight without scaling to avoid screen twitch
+                scoreBigEl.classList.add('score-highlight','active'); setTimeout(()=>scoreBigEl.classList.remove('active'),160); }
+            if (comboBadgeEl){ comboBadgeEl.innerText = combo>0?`COMBO x${combo}`:'COMBO x0'; comboBadgeEl.style.opacity = combo>0?1:0.7; }
+        }
+
+        // Render: notes fall from top to hit line
+        function loop(now){ if (!playing && !countdownActive) return; const t = now - startTime; ctx.clearRect(0,0,W,H); // draw lane
+                // soft pastel background
+                ctx.fillStyle='#fff7fb'; ctx.fillRect(0,0,W,H);
+                // hit line (cute pastel)
+                const hitY = H - 90; ctx.fillStyle = '#ffd6ea'; ctx.fillRect(0,hitY-6,W,12);
+                // draw notes (cute characters)
+                for (let n of notes){ const dt = n.time - t; const progress = 1 - dt / 3000; // 3s window
+                    const baseY = Math.max(-40, progress * (H - 140));
+                    const bob = Math.sin((now + n.time)/240) * 6; // gentle bob
+                    const y = baseY + bob;
+                    const x = n.side==='left' ? W*0.30 : W*0.70;
+                    ctx.globalAlpha = n.hit ? 0.22 : 1.0;
+                    drawCuteNote(x, y, n.side, now, n);
+                    ctx.globalAlpha = 1.0;
+                }
+
+                // particles update & draw
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= 0.02;
+                    if (p.life <= 0) particles.splice(i, 1);
+                    else {
+                        ctx.globalAlpha = Math.max(0, p.life);
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath(); ctx.arc(p.x, p.y, 3 + (1 - p.life) * 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+
+                // countdown display (animated: scale -> fade)
+                if (countdownActive && countdownValue) {
+                    const age = countdownTickTime ? (performance.now() - countdownTickTime) : 0;
+                    const dur = 700;
+                    const p = Math.min(1, age / dur);
+                    const scale = 1 + 0.8 * (1 - p);
+                    const alpha = Math.max(0, 1 - p);
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    ctx.translate(W/2, H/2);
+                    ctx.scale(scale, scale);
+                    ctx.fillStyle = '#ff6fa8'; ctx.font = `bold ${Math.floor(Math.min(W,H)/5)}px 'Segoe UI', sans-serif`;
+                    ctx.textAlign = 'center'; ctx.shadowColor = 'rgba(0,0,0,0.12)'; ctx.shadowBlur = 18;
+                    ctx.fillText(countdownValue, 0, 0);
+                    ctx.restore();
+                }
+                // overlay text
+                if (overlay.alpha > 0) {
+                    ctx.save(); ctx.globalAlpha = overlay.alpha; ctx.fillStyle = '#ff6fa8'; ctx.font = `${48 * overlay.size}px 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif`; ctx.textAlign = 'center'; ctx.shadowColor = 'rgba(0,0,0,0.12)'; ctx.shadowBlur = 12; ctx.fillText(overlay.text, overlay.x, overlay.y - 30 * (overlay.size - 1)); ctx.restore();
+                    overlay.alpha -= 0.02; overlay.size += 0.02;
+                }
+
+                // remove past notes
+                for (let n of notes){ if (!n.hit && t - n.time > 300){ // missed
+                        n.hit=true; combo=0; playMissSound(); blink(2); hitText.innerText='Miss'; setTimeout(()=>hitText.innerText='',200); updateUI();
+                    } }
+                requestAnimationFrame(loop);
+        }
+
+        // Judgement: call when hit input happens (side 'left'/'right', strong boolean)
+        function judgeHit(side, strong){ if (!playing) return; const now = performance.now(); const t = now - startTime; // find nearest unhit note on that side
+            let best = null; let bestDiff = 1e9;
+            for (let n of notes){ if (n.side!==side || n.hit) continue; const diff = Math.abs(n.time - t); if (diff < bestDiff){ bestDiff = diff; best = n; } }
+            if (!best || bestDiff > 300){ // too far
+                // miss
+                combo=0; playMissSound(); blink(2); hitText.innerText='Miss'; setTimeout(()=>hitText.innerText='',200); updateUI(); return; }
+            // judgement windows
+            const ms = bestDiff;
+            let judgement = 'Bad';
+            if (ms <= 80){ score += strong ? 400:300; combo++; hitText.innerText='Great'; judgement = 'Great'; }
+            else if (ms <= 160){ score += strong ? 200:150; combo++; hitText.innerText='Good'; judgement = 'Good'; }
+            else { combo=0; hitText.innerText='Bad'; judgement = 'Bad'; }
+            best.hit = true;
+            // Visual & haptic feedback
+            const x = best.side==='left' ? W*0.33 : W*0.66; const y = H - 80;
+            spawnParticles(x, y, judgement==='Great' ? '#FFD6A5' : (judgement==='Good' ? '#C6F6D5' : '#D1D9E6'), 36);
+            overlay.text = judgement; overlay.alpha = 1.0; overlay.size = 1.0; overlay.x = x; overlay.y = y;
+            // LED pattern: stronger for Great
+            blink(judgement==='Great' ? 3 : 1);
+            // vibrate if available
+            if (navigator.vibrate) navigator.vibrate(strong ? 70 : 35);
+
+            playHitSound(strong, side); updateUI(); setTimeout(()=>hitText.innerText='',180);
+        }
+
+// ORPHE acc handling (腕振りモード) — Δ(変化量)ベースのキャリブレーション対応
+let prevMag = 0;
+let prevAcc = {x:0,y:0,z:0};
+let lastSpikeTime = 0;
+// Use rising-edge detection to avoid long-press: only trigger when delta crosses the threshold upwards
+let prevDelta = 0;
+const accXHistory = [];
+function handleAcc(acc){
+    // acc: {x,y,z} normalized in g
+    accXHistory.push(acc.x);
+    if (accXHistory.length > 12) accXHistory.shift();
+    const avgX = accXHistory.reduce((s,v)=>s+v,0)/accXHistory.length;
+
+    const magRaw = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+    const delta = magRaw - prevMag;
+    // smooth prevMag with light LPF
+    prevMag = prevMag * 0.65 + magRaw * 0.35;
+
+    // component deltas
+    const dx = acc.x - prevAcc.x;
+    const dy = acc.y - prevAcc.y;
+    const dz = acc.z - prevAcc.z;
+
+    // update prevAcc for next frame (light smoothing)
+    prevAcc.x = prevAcc.x * 0.6 + acc.x * 0.4;
+    prevAcc.y = prevAcc.y * 0.6 + acc.y * 0.4;
+    prevAcc.z = prevAcc.z * 0.6 + acc.z * 0.4;
+
+    const now = Date.now();
+
+    // detect dominant axis: x=horizontal, z or y = vertical
+    const ax = Math.abs(dx), ay = Math.abs(dy), az = Math.abs(dz);
+    let dominant = 'x'; let maxv = ax;
+    if (ay > maxv) { dominant = 'y'; maxv = ay; }
+    if (az > maxv) { dominant = 'z'; maxv = az; }
+
+    // live display
+    if (magVal) magVal.innerText = magRaw.toFixed(2);
+    const deltaEl = document.getElementById('delta-val'); if (deltaEl) deltaEl.innerText = delta.toFixed(2);
+    if (avgxVal) avgxVal.innerText = avgX.toFixed(2);
+    const axisEl = document.getElementById('axis-val'); if (axisEl) axisEl.innerText = dominant;
+    const dxEl = document.getElementById('dx-val'); if (dxEl) dxEl.innerText = dx.toFixed(2);
+    const dyEl = document.getElementById('dy-val'); if (dyEl) dyEl.innerText = dy.toFixed(2);
+    const dzEl = document.getElementById('dz-val'); if (dzEl) dzEl.innerText = dz.toFixed(2);
+
+    // calibration mode: record delta peaks when swinging
+    if (isCalibrating) {
+        if (delta > 0.15 && now - lastSpikeTime > 120) {
+            calSamples.push({ delta, avgX, dx, dy, dz, axis: dominant });
+            lastSpikeTime = now;
+            playHitSound(false, avgX>=0 ? 'right' : 'left');
+        }
+        return;
+    }
+
+    const hitThreshold = parseFloat(hitTh.value);
+    const strongThreshold = parseFloat(strongTh.value);
+
+    // Rising-edge detection: trigger only when delta crosses upward past hitThreshold
+    if (prevDelta < hitThreshold && delta >= hitThreshold && now - lastSpikeTime > debounceMs) {
+        // map dominant axis to side: horizontal (x) => right, vertical (y/z) => left
+        const side = (dominant === 'x') ? 'right' : 'left';
+        const strong = delta >= strongThreshold;
+        judgeHit(side, strong);
+        lastSpikeTime = now;
+        blink(1);
+    }
+
+    // store for next frame
+    prevDelta = delta;
+}
+
+// Keyboard controls: keep existing accelerometer behavior, add key input
+// Keys: ArrowLeft / Z / A => left, ArrowRight / X / S => right
+// Hold Shift for a "strong" hit. Press Enter or Space to start the game.
+function handleKeyInput(e){
+    if (e.repeat) return; // ignore held-down repeats
+
+    // Start game with Enter or Space when not already running
+    if (!playing && !countdownActive && (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar')) {
+        startBtn.disabled = true;
+        startCountdown(3);
+        e.preventDefault();
+        return;
+    }
+
+    // Only accept hit keys while playing
+    if (!playing) return;
+
+    let side = null;
+    const k = e.key;
+    if (k === 'ArrowLeft' || k === 'z' || k === 'Z' || k === 'a' || k === 'A') side = 'left';
+    else if (k === 'ArrowRight' || k === 'x' || k === 'X' || k === 's' || k === 'S') side = 'right';
+    if (!side) return;
+
+    const now = Date.now();
+    if (now - lastSpikeTime < debounceMs) return; // respect debounce
+
+    const strong = e.shiftKey; // hold Shift for strong hit
+    judgeHit(side, strong);
+    lastSpikeTime = now;
+    blink(1);
+    e.preventDefault();
+}
+
+// attach to window and controls so Enter works even when inputs are focused
+window.addEventListener('keydown', handleKeyInput);
+document.querySelectorAll('input, button').forEach((el) => el.addEventListener('keydown', handleKeyInput));
+
+        // UI hooks
+        startBtn.addEventListener('click', ()=>{ startBtn.disabled=true; startCountdown(3); });
+
+        // End of Taiko replacement
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE 3D Tetris - Cyberpunk Edition</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #0ff; /* Neon Cyan */
+        }
+        
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* UI Panel Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 350px;
+            height: 100%;
+            padding: 20px;
+            background: linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.0));
+            pointer-events: auto; /* Allow interactions */
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        /* Ranking Panel (Bottom Right) */
+        #ranking-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 350px; /* Widened for 2 cols */
+            padding: 20px;
+            background: rgba(0, 20, 40, 0.9);
+            border: 2px solid #0ff;
+            border-radius: 10px;
+            z-index: 10;
+            text-align: right;
+            pointer-events: none;
+        }
+        #ranking-panel h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+        #current-score-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+        #current-score-val {
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px #0ff;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: right;
+        }
+        .ranking-list li {
+            font-size: 16px;
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        .ranking-list li:first-child {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .ranking-list li span.rank {
+            margin-right: 10px;
+            color: #666;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #0ff;
+        }
+        
+        #score-display {
+            font-size: 30px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 20px;
+            display: none; /* Hidden, moved to new panel */
+        }
+            background: linear-gradient(90deg, rgba(0, 10, 20, 0.9) 0%, rgba(0, 10, 20, 0.5) 100%);
+            padding: 20px;
+            box-sizing: border-box;
+            border-right: 1px solid #0ff;
+            overflow-y: auto;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            text-shadow: 0 0 10px #0ff;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #0ff;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 16px;
+            color: #f0f;
+            text-shadow: 0 0 5px #f0f;
+            margin-top: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .value-display {
+            font-family: 'Consolas', monospace;
+            color: #fff;
+        }
+
+        button {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 8px 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 15px #0ff;
+        }
+
+        button:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .visualizer-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            margin-bottom: 5px;
+            position: relative;
+            border: 1px solid #555;
+        }
+
+        .visualizer-fill {
+            height: 100%;
+            background: #0ff;
+            width: 50%; /* center */
+            position: absolute;
+            left: 0;
+            transition: width 0.1s;
+        }
+        
+        .visualizer-indicator {
+            height: 100%;
+            width: 2px;
+            background: #f00;
+            position: absolute;
+            top: 0;
+            transition: left 0.1s;
+            z-index: 10;
+        }
+
+        .range-markers {
+            display: flex;
+            height: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .range-segment {
+            flex: 1;
+            border-right: 1px solid #555;
+            height: 100%;
+        }
+        .range-segment:last-child { border-right: none; }
+        .range-segment.active { background-color: rgba(0, 255, 255, 0.5); }
+
+        input[type="number"] {
+            background: transparent;
+            border: 1px solid #0ff;
+            color: #fff;
+            padding: 4px;
+            width: 60px;
+            text-align: right;
+        }
+
+        #score-display {
+            font-size: 32px;
+            color: #ff0;
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Consolas', monospace;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            color: #f00;
+            text-shadow: 0 0 20px #f00;
+            display: none;
+            background: rgba(0,0,0,0.8);
+            padding: 40px;
+            border: 2px solid #f00;
+            z-index: 100;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Game Render Area -->
+    <div id="game-container"></div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        GAME OVER<br>
+        <button id="retry-btn" style="margin-top: 20px; width: auto; font-size: 24px;">RETRY</button>
+    </div>
+
+    <!-- UI Panel -->
+    <div id="ui-layer">
+        <h1>ORPHE 3D TETRIS</h1>
+        
+        <div id="score-display">000000</div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="color: #fff; font-weight: bold; margin-right: 10px;">Foot:</label>
+            <select id="foot-select" style="background: #002233; color: #0ff; border: 1px solid #0ff; padding: 5px;">
+                <option value="right">Right Foot</option>
+                <option value="left">Left Foot</option>
+            </select>
+        </div>
+
+        <button id="connect-btn">CONNECT DEVICE</button>
+        <div class="status-row">
+            <span>Status:</span>
+            <span id="connection-status" class="value-display">Disconnected</span>
+        </div>
+        <div class="status-row">
+            <span>Battery:</span>
+            <span id="battery-level" class="value-display">--%</span>
+        </div>
+
+        <h2>ROLL (Move L/R)</h2>
+        <div class="status-row">
+            <span>Current Roll:</span>
+            <span id="val-roll" class="value-display">0.00</span>
+        </div>
+        
+        <div class="visualizer-bar">
+            <!-- Indicates the 7 segments -->
+            <div class="range-markers" style="position: absolute; top: 0; left: 0; height: 100%; z-index: 0;">
+                <div class="range-segment" id="seg-0"></div>
+                <div class="range-segment" id="seg-1"></div>
+                <div class="range-segment" id="seg-2"></div>
+                <div class="range-segment" id="seg-3"></div> <!-- Center -->
+                <div class="range-segment" id="seg-4"></div>
+                <div class="range-segment" id="seg-5"></div>
+                <div class="range-segment" id="seg-6"></div>
+            </div>
+            <!-- Indicator cursor -->
+            <div id="cursor-roll" class="visualizer-indicator" style="left: 50%;"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button id="set-roll-min">Set Left (Min)</button>
+            <button id="set-roll-max">Set Right (Max)</button>
+        </div>
+        <div class="status-row">
+            <span>Range:</span>
+            <span class="value-display">
+                <span id="disp-roll-min">-45</span>° ~ <span id="disp-roll-max">45</span>°
+            </span>
+        </div>
+
+
+        <h2>PITCH (Rotate)</h2>
+        <div class="status-row">
+            <span>Current Pitch:</span>
+            <span id="val-pitch" class="value-display">0.00</span>
+        </div>
+        <div class="status-row">
+            <span>Threshold:</span>
+            <input type="number" id="input-pitch-limit" value="30"> °
+        </div>
+        <div class="visualizer-bar">
+            <div id="fill-pitch" class="visualizer-fill" style="width: 0%; background: #f0f;"></div>
+        </div>
+        <div class="status-row">
+            <span>Action:</span>
+            <span id="state-pitch" class="value-display" style="color: #888">Neutral</span>
+        </div>
+
+
+        <h2>ACCEL (Hard Drop)</h2>
+        <div class="status-row">
+            <span>Intensity:</span>
+            <span id="val-acc" class="value-display">0.00 g</span>
+        </div>
+        <div class="status-row">
+            <span>Threshold:</span>
+            <input type="number" id="input-acc-limit" value="2.0" step="0.1"> g
+        </div>
+        <div class="visualizer-bar">
+            <div id="fill-acc" class="visualizer-fill" style="width: 0%; background: #ff0;"></div>
+        </div>
+
+        <button id="start-btn" disabled style="margin-top: 30px; border-color: #0f0; color: #0f0;">START GAME</button>
+        
+        <div style="margin-top: 20px; font-size: 12px; color: #666;">
+            Instructions:<br>
+            - Tilt Left/Right to Move<br>
+            - Lift Toe Up to Rotate<br>
+            - Stomp to Drop
+        </div>
+    </div>
+
+    <div id="ranking-panel">
+        <span id="current-score-label">CURRENT SCORE</span>
+        <span id="current-score-val">000000</span>
+        
+        <h2>HIGH SCORES</h2>
+        <div style="display: flex; gap: 15px; justify-content: flex-end;">
+            <div style="width: 45%;">
+                <div style="font-size: 12px; color: #888; margin-bottom: 5px; text-align: center;">RIGHT FOOT</div>
+                <ul class="ranking-list" id="ranking-list-right"></ul>
+            </div>
+            <div style="width: 45%;">
+                 <div style="font-size: 12px; color: #888; margin-bottom: 5px; text-align: center;">LEFT FOOT</div>
+                <ul class="ranking-list" id="ranking-list-left"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    <!-- Load ORPHE-CORE.js as a classic script to expose global 'Orphe' class -->
+    <script src="./src/ORPHE-CORE.js"></script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        // import { Orphe } from './src/ORPHE-CORE.js'; 
+
+        // --- Sound Manager ---
+        const SoundManager = {
+            ctx: null,
+            init: function() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            playTone: function(freq, type, duration, vol=0.1) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            playMove: function() {
+                this.playTone(400, 'square', 0.05, 0.05);
+            },
+            playRotate: function() {
+                this.playTone(600, 'square', 0.05, 0.05);
+            },
+            playDrop: function() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playClear: function(lines) {
+                if (!this.ctx) return;
+                // Simple Arpeggio
+                const scale = [523.25, 659.25, 783.99, 1046.50]; // C Major
+                scale.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 'square', 0.1, 0.1);
+                    }, i * 50);
+                });
+            },
+            playGameOver: function() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 1.0);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.0);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 1.0);
+            }
+        };
+
+        // --- Ranking System ---
+        const ScoreManager = {
+            scores: {
+                right: [0, 0, 0],
+                left: [0, 0, 0]
+            },
+            load: function() {
+                const saved = localStorage.getItem('orphe_tetris_scores');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (parsed.right && parsed.left) {
+                            this.scores = parsed;
+                        }
+                    } catch(e) {}
+                }
+                this.updateDisplay();
+            },
+            save: function() {
+                localStorage.setItem('orphe_tetris_scores', JSON.stringify(this.scores));
+                this.updateDisplay();
+            },
+            addScore: function(foot, score) {
+                const list = this.scores[foot];
+                list.push(score);
+                list.sort((a, b) => b - a);
+                this.scores[foot] = list.slice(0, 3);
+                this.save();
+            },
+            updateDisplay: function() {
+                const updateList = (foot, elementId) => {
+                    const list = this.scores[foot] || [0, 0, 0];
+                    const el = document.getElementById(elementId);
+                    if(el) {
+                        el.innerHTML = `
+                            <li><span class="rank">1st</span><span class="val">${(list[0]||0).toString().padStart(6,'0')}</span></li>
+                            <li><span class="rank">2nd</span><span class="val">${(list[1]||0).toString().padStart(6,'0')}</span></li>
+                            <li><span class="rank">3rd</span><span class="val">${(list[2]||0).toString().padStart(6,'0')}</span></li>
+                        `;
+                    }
+                };
+                updateList('right', 'ranking-list-right');
+                updateList('left', 'ranking-list-left');
+            }
+        };
+
+        const COLS = 7;
+        const ROWS = 15;
+        const BLOCK_SIZE = 1;
+        const BOARD_WIDTH = COLS * BLOCK_SIZE;
+        const BOARD_HEIGHT = ROWS * BLOCK_SIZE;
+        
+        // Colors
+        const COLORS = [
+            0x00FFFF, // I: Cyan
+            0x0000FF, // J: Blue
+            0xFFA500, // L: Orange
+            0xFFFF00, // O: Yellow
+            0x00FF00, // S: Green
+            0x800080, // T: Purple
+            0xFF0000  // Z: Red
+        ];
+
+        // Tetromino Definitions
+        const TETROMINOS = [
+            // I
+            { shape: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]], color: 0 },
+            // J
+            { shape: [[1,0,0], [1,1,1], [0,0,0]], color: 1 },
+            // L
+            { shape: [[0,0,1], [1,1,1], [0,0,0]], color: 2 },
+            // O
+            { shape: [[1,1], [1,1]], color: 3 },
+            // S
+            { shape: [[0,1,1], [1,1,0], [0,0,0]], color: 4 },
+            // T
+            { shape: [[0,1,0], [1,1,1], [0,0,0]], color: 5 },
+            // Z
+            { shape: [[1,1,0], [0,1,1], [0,0,0]], color: 6 }
+        ];
+
+        // --- Game State ---
+        let board = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+        let activePiece = null;
+        let score = 0;
+        let isGameOver = false;
+        let lastTime = 0;
+        let dropCounter = 0;
+        let dropInterval = 1000; // ms
+
+        // --- ORPHE State ---
+        let ble = new Orphe(0);
+        let currentFoot = 'right';
+
+        let configRollMin = -45;
+        let configRollMax = 45;
+        let configPitchLimit = 30;
+        let configAccLimit = 2.0;
+        
+        // ... (rest of vars)
+        
+        let currentRoll = 0;
+        let currentPitch = 0;
+        let currentAcc = 0;
+        
+        let pitchTriggered = false; // To prevent continuous rotation
+
+        // --- Three.js Globals ---
+        let scene, cameraUser, cameraMap, renderer;
+        let boardGroup, activePieceGroup;
+        let gridHelper;
+
+        // --- Initialization ---
+        window.onload = () => {
+            initThree();
+            setupUI();
+            ble.setup();
+            ScoreManager.load();
+            animate();
+        };
+
+        // --- UI Setup & Event Listeners ---
+        function setupUI() {
+            // Foot select listener
+            document.getElementById('foot-select').onchange = (e) => {
+                currentFoot = e.target.value;
+            };
+
+            document.getElementById('connect-btn').onclick = async () => {
+                const status = document.getElementById('connection-status');
+                status.innerText = "Connecting...";
+                try {
+                    await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                    status.innerText = "Connected";
+                    status.style.color = "#0f0";
+                    document.getElementById('connect-btn').disabled = true;
+                    document.getElementById('start-btn').disabled = false;
+                } catch (error) {
+                    console.error("BLE connection error:", error);
+                    status.innerText = "Connection Failed: " + error;
+                    status.style.color = "#f00";
+                    alert("Bluetooth Connection Failed. Please ensure:\n1. Bluetooth is ON\n2. Device is powered on\n3. You are using Chrome/Edge\n4. You have granted bluetooth permissions if asked.\n\nError: " + error);
+                }
+            };
+
+            document.getElementById('start-btn').onclick = () => {
+                resetGame();
+                document.getElementById('start-btn').disabled = true;
+                document.getElementById('start-btn').innerText = "Game Running";
+            };
+
+            document.getElementById('retry-btn').onclick = () => {
+                document.getElementById('game-over').style.display = 'none';
+                resetGame();
+            };
+
+            // Calibration Buttons
+            document.getElementById('set-roll-min').onclick = () => {
+                configRollMin = currentRoll;
+                document.getElementById('disp-roll-min').innerText = configRollMin.toFixed(0);
+            };
+            document.getElementById('set-roll-max').onclick = () => {
+                configRollMax = currentRoll;
+                document.getElementById('disp-roll-max').innerText = configRollMax.toFixed(0);
+            };
+
+            // Inputs
+            const inputPitch = document.getElementById('input-pitch-limit');
+            inputPitch.onchange = () => { configPitchLimit = Number(inputPitch.value); };
+
+            const inputAcc = document.getElementById('input-acc-limit');
+            inputAcc.onchange = () => { configAccLimit = Number(inputAcc.value); };
+        }
+
+        // --- Three.js Setup ---
+        function initThree() {
+            const container = document.getElementById('game-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050510); // Dark Blue-ish Black
+            scene.fog = new THREE.FogExp2(0x050510, 0.02);
+
+            // Cameras
+            // Main Camera (3rd Person)
+            cameraUser = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            
+            // Map Camera (Top Down) - Orthographic for clarity usually, but Perspective requested "2D view"
+            const mapAspect = 300 / 300; // rough square
+            // Or use Perspective looking straight down
+            cameraMap = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+            cameraMap.position.set(0, ROWS/1.5, 20); // slightly above center
+            cameraMap.up.set(0, 1, 0);
+            cameraMap.lookAt(0, ROWS/2, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // Enable Scissor Test for multiple viewports
+            renderer.setScissorTest(true);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const gridColor = new THREE.Color(0x004444);
+            const gridCenterColor = new THREE.Color(0x008888);
+
+            // Board Container
+            boardGroup = new THREE.Group();
+            scene.add(boardGroup);
+
+            // We want the board centered horizontally.
+            // Board coords: x: 0..COLS, y: 0..ROWS
+            // Shift to center X: -COLS/2
+            boardGroup.position.x = -BOARD_WIDTH / 2;
+            
+            // Visual Grid (Back panel) -- Hidden as requested "Don't show back wall"
+            // A plane with grid material
+            const gridGeom = new THREE.PlaneGeometry(BOARD_WIDTH, BOARD_HEIGHT);
+            const gridMat = new THREE.MeshBasicMaterial({ 
+                color: 0x111122,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.1 // made very faint or invisible
+            });
+            const backPlane = new THREE.Mesh(gridGeom, gridMat);
+            // Align bottom-left corner to (0,0) then offset
+            backPlane.position.set(BOARD_WIDTH/2, BOARD_HEIGHT/2, -0.5); 
+            backPlane.visible = false; // Hidden
+            boardGroup.add(backPlane);
+
+            // Wireframe grid lines
+            // Original GridHelper is square. 
+            // We want rectangles? Or square cells?
+            // User said: "Now 7*7, apply squares to all".
+            // Currently using GridHelper(BOARD_WIDTH, COLS) -> 7x7 size, 7 divs -> 1x1 squares.
+            // But we scaled it Y by ~2.14. So visuals are 1x2.14 rectangles.
+            // We want 1x1 squares covering the whole 7x15 board.
+            // Solution: Build manual grid lines.
+            
+            const gridGroup = new THREE.Group();
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x004444, transparent: true, opacity: 0.3 });
+            
+            // Vertical lines (COLS + 1)
+            for (let i = 0; i <= COLS; i++) {
+                const x = i * BLOCK_SIZE;
+                const pts = [
+                   new THREE.Vector3(x, 0, 0),
+                   new THREE.Vector3(x, BOARD_HEIGHT, 0)
+                ];
+                const g = new THREE.BufferGeometry().setFromPoints(pts);
+                const l = new THREE.Line(g, lineMat);
+                gridGroup.add(l);
+            }
+            // Horizontal lines (ROWS + 1)
+            for (let i = 0; i <= ROWS; i++) {
+                const y = i * BLOCK_SIZE;
+                const pts = [
+                   new THREE.Vector3(0, y, 0),
+                   new THREE.Vector3(BOARD_WIDTH, y, 0)
+                ];
+                const g = new THREE.BufferGeometry().setFromPoints(pts);
+                const l = new THREE.Line(g, lineMat);
+                gridGroup.add(l);
+            }
+            // Center the gridGroup
+            // Local 0,0 is bottom left.
+            // BoardGroup center is 0,0 (at bottom center of board in X).
+            // Actually BoardGroup is shifted by -BOARD_WIDTH/2.
+            // So inside boardGroup, X=0 is left edge.
+            // Z needs to be slightly behind blocks.
+            gridGroup.position.z = -0.49;
+            boardGroup.add(gridGroup);
+
+            // Remove old gridHelper
+            // const gridHelper = new THREE.GridHelper(BOARD_WIDTH, COLS, 0x00ffff, 0x003333);
+            // ...
+
+            // Walls (Cyberpunk Neon Lines)
+            const wallMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 });
+            const wallPoints = [];
+            wallPoints.push(new THREE.Vector3(0, 0, 0));
+            wallPoints.push(new THREE.Vector3(0, BOARD_HEIGHT, 0));
+            wallPoints.push(new THREE.Vector3(BOARD_WIDTH, BOARD_HEIGHT, 0));
+            wallPoints.push(new THREE.Vector3(BOARD_WIDTH, 0, 0));
+            wallPoints.push(new THREE.Vector3(0, 0, 0));
+            const wallGeom = new THREE.BufferGeometry().setFromPoints(wallPoints);
+            const walls = new THREE.Line(wallGeom, wallMat);
+            boardGroup.add(walls);
+
+            // Resize handler
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            cameraUser.aspect = window.innerWidth / window.innerHeight;
+            cameraUser.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- Game Logic ---
+
+        function createPiece() {
+            const typeId = Math.floor(Math.random() * TETROMINOS.length);
+            const type = TETROMINOS[typeId];
+            
+            // Initial Position: Top Center
+            const startX = Math.floor((COLS - type.shape[0].length) / 2);
+            const startY = ROWS; // Spawn just above board
+
+            activePiece = {
+                shape: type.shape, // 2D array
+                color: type.color,
+                x: startX,
+                y: startY,
+                visualX: startX,
+                visualY: startY,
+                typeId: typeId
+            };
+
+            // If collision immediately, Game Over
+            if (checkCollision(activePiece.x, activePiece.y, activePiece.shape)) {
+                gameOver();
+                return;
+            }
+
+            rebuildActivePieceGeometry();
+        }
+
+        function rebuildActivePieceGeometry() {
+            if (activePieceGroup) {
+                boardGroup.remove(activePieceGroup);
+                
+                activePieceGroup.traverse((obj) => {
+                    if (obj.isMesh) {
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) obj.material.dispose();
+                    }
+                });
+            }
+            if (!activePiece) return;
+
+            activePieceGroup = new THREE.Group();
+            // Initial position
+            activePieceGroup.position.set(
+                activePiece.visualX * BLOCK_SIZE, 
+                activePiece.visualY * BLOCK_SIZE, 
+                0
+            );
+            
+            const mat = new THREE.MeshPhongMaterial({ 
+                color: COLORS[activePiece.color],
+                emissive: COLORS[activePiece.color],
+                emissiveIntensity: 0.4,
+                specular: 0xffffff,
+                shininess: 30
+            });
+            const geom = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+
+            for(let py=0; py < activePiece.shape.length; py++) {
+                for(let px=0; px < activePiece.shape[py].length; px++) {
+                    if (activePiece.shape[py][px]) {
+                        const box = new THREE.Mesh(geom, mat);
+                        const h = activePiece.shape.length;
+                        // Position blocks relative to local group origin (0,0)
+                        box.position.set(
+                            px * BLOCK_SIZE + BLOCK_SIZE/2, 
+                            (h - py - 1) * BLOCK_SIZE + BLOCK_SIZE/2,
+                            0.5
+                        );
+                        activePieceGroup.add(box);
+                    }
+                }
+            }
+            boardGroup.add(activePieceGroup);
+        }
+
+        function checkCollision(x, y, shape) {
+            const h = shape.length;
+            const w = shape[0].length;
+
+            for(let py=0; py < h; py++) {
+                for(let px=0; px < w; px++) {
+                    if (shape[py][px]) {
+                        // World grid coords
+                        const gridX = x + px;
+                        const gridY = y + (h - py - 1);
+
+                        // Wall Check
+                        if (gridX < 0 || gridX >= COLS || gridY < 0) return true;
+                        
+                        // Existing Block Check
+                        if (gridY < ROWS && board[gridY] && board[gridY][gridX] !== null) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function lockPiece() {
+            if (!activePiece) return;
+            const shape = activePiece.shape;
+            const h = shape.length;
+            let overflow = false;
+
+            for(let py=0; py < h; py++) {
+                for(let px=0; px < shape[py].length; px++) {
+                    if(shape[py][px]) {
+                        const gridX = activePiece.x + px;
+                        const gridY = activePiece.y + (h - py - 1);
+                        
+                        // Game Over Check: If locked above ROWS
+                        if (gridY >= ROWS) {
+                            overflow = true;
+                        } else if (gridY >= 0) {
+                            board[gridY][gridX] = activePiece.color;
+                            addStaticBlock(gridX, gridY, activePiece.color);
+                        }
+                    }
+                }
+            }
+
+            if (overflow) {
+                gameOver();
+                return;
+            }
+
+            checkForLines();
+            activePiece = null;
+            if (activePieceGroup) {
+                boardGroup.remove(activePieceGroup);
+                activePieceGroup.traverse((obj) => {
+                    if (obj.isMesh) {
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) obj.material.dispose();
+                    }
+                });
+                activePieceGroup = null;
+            }
+            createPiece();
+        }
+
+        let staticBlocks = []; // Array of meshes
+
+        function addStaticBlock(x, y, colorIdx) {
+            const mat = new THREE.MeshPhongMaterial({ 
+                color: COLORS[colorIdx],
+                emissive: COLORS[colorIdx],
+                emissiveIntensity: 0.2
+            });
+            const geom = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+            const box = new THREE.Mesh(geom, mat);
+            box.position.set(
+                x * BLOCK_SIZE + BLOCK_SIZE/2,
+                y * BLOCK_SIZE + BLOCK_SIZE/2,
+                0.5
+            );
+            box.userData = { gridX: x, gridY: y };
+            boardGroup.add(box);
+            staticBlocks.push(box);
+        }
+
+        function checkForLines() {
+            // Re-build check logic properly
+            // 1. Identify full rows
+            const fullRows = [];
+            for(let y=0; y<ROWS; y++) {
+                if(board[y].every(c => c !== null)) fullRows.push(y);
+            }
+
+            if(fullRows.length > 0) {
+                SoundManager.playClear(fullRows.length); // Sound
+
+                // Remove blocks visually
+                // Simple approach: clear all static blocks and rebuild from `board`
+                // But `board` needs to be updated first
+                
+                // Logic: Filter out full rows from board, then fill top with nulls
+                const newBoard = board.filter((row, idx) => !fullRows.includes(idx));
+                while(newBoard.length < ROWS) {
+                    newBoard.push(Array(COLS).fill(null));
+                }
+                board = newBoard;
+
+                // Score Logic Updated
+                // Single line: 100
+                // Multi lines: 200 * N
+                let addScore = 0;
+                if (fullRows.length === 1) {
+                    addScore = 100;
+                } else {
+                    addScore = 200 * fullRows.length;
+                }
+                score += addScore;
+                document.getElementById('current-score-val').innerText = score.toString().padStart(6, '0');
+
+                refreshStaticBlocks();
+            }
+        }
+
+        function refreshStaticBlocks() {
+            // Remove all
+            staticBlocks.forEach(b => boardGroup.remove(b));
+            staticBlocks = [];
+            
+            // Rebuild
+            for(let y=0; y<ROWS; y++) {
+                for(let x=0; x<COLS; x++) {
+                    if (board[y][x] !== null) {
+                        addStaticBlock(x, y, board[y][x]);
+                    }
+                }
+            }
+        }
+
+        function rotate(matrix) {
+            // Matrix rotation
+            const N = matrix.length;
+            const M = matrix[0].length;
+            const result = [];
+            for (let i = 0; i < M; i++) {
+                result[i] = [];
+                for (let j = 0; j < N; j++) {
+                    result[i][j] = matrix[N - j - 1][i];
+                }
+            }
+            return result;
+        }
+
+        function resetGame() {
+            board = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            refreshStaticBlocks();
+            isGameOver = false;
+            score = 0;
+            document.getElementById('current-score-val').innerText = "000000";
+            document.getElementById('game-over').style.display = 'none'; // Add this line which was missing or I should check implementation
+            createPiece();
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            SoundManager.playGameOver(); // Sound
+            ScoreManager.addScore(currentFoot, score); // Save Score
+            document.getElementById('game-over').style.display = 'block';
+        }
+
+        let dropAccCooldown = 0; // Timestamp for cooldown
+
+        // --- ORPHE Callbacks & Processing ---
+        ble.gotEuler = (euler) => {
+            // euler: {pitch, roll, yaw} degrees
+            // Amplification requested by user: Pitch * 40, Roll * 200
+            // Pitch absolute value requested
+            currentPitch = Math.abs(euler.pitch * 40);
+            currentRoll = euler.roll * 200;
+            
+            // Update UI
+            document.getElementById('val-roll').innerText = currentRoll.toFixed(2);
+            document.getElementById('val-pitch').innerText = currentPitch.toFixed(2);
+
+            updateVisualizers();
+
+            // --- Game Controls (Only if running) ---
+            if (isGameOver || !activePiece) return;
+
+            // 1. Handle Roll (Movement)
+            handleRollInput();
+
+            // 2. Handle Pitch (Rotation)
+            handlePitchInput();
+        };
+
+        ble.gotConvertedAcc = (acc) => {
+            // acc: {x, y, z}
+            // Magnitude
+            const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z) * 7.0;
+            currentAcc = mag;
+            
+            document.getElementById('val-acc').innerText = mag.toFixed(2) + " g";
+            
+            // Visualizer
+            const pct = Math.min((mag / 4.0) * 100, 100);
+            document.getElementById('fill-acc').style.width = pct + "%";
+
+            if (isGameOver || !activePiece) return;
+            
+            // 3. Handle Hard Drop
+            if (mag > configAccLimit) {
+                const now = Date.now();
+                if (now - dropAccCooldown > 2000) { // 2 seconds delay
+                    hardDrop();
+                    // Set cooldown
+                    dropAccCooldown = now;
+                }
+            }
+        };
+
+        function updateVisualizers() {
+            // Roll
+            // Map current roll [configRollMin, configRollMax] to 0-100%
+            const range = configRollMax - configRollMin;
+            let rollPct = 50;
+            if (range !== 0) {
+                rollPct = ((currentRoll - configRollMin) / range) * 100;
+            }
+            // Clamp
+            rollPct = Math.max(0, Math.min(100, rollPct));
+            document.getElementById('cursor-roll').style.left = rollPct + "%";
+            
+            // Highlight current segment
+            const seg = Math.floor((rollPct / 100) * 7); // 0-6
+            for(let i=0; i<7; i++) {
+                const el = document.getElementById(`seg-${i}`);
+                if (el) el.classList.remove('active');
+            }
+            const activeEl = document.getElementById(`seg-${Math.min(seg, 6)}`);
+            if (activeEl) activeEl.classList.add('active');
+
+            // Pitch
+            const pitchPct = Math.min((currentPitch / 60) * 100, 100); // assume 60 is full bar visual
+            document.getElementById('fill-pitch').style.width = pitchPct + "%";
+            
+            const pState = document.getElementById('state-pitch');
+            if (currentPitch > configPitchLimit) {
+                pState.innerText = "TRIGGERED";
+                pState.style.color = "#f0f";
+            } else {
+                pState.innerText = "Neutral";
+                pState.style.color = "#888";
+            }
+        }
+
+        function handleRollInput() {
+            // Map [configRollMin, configRollMax] -> [0, 6]
+            const range = configRollMax - configRollMin;
+            if (Math.abs(range) < 1) return; // avoid div 0
+
+            let normalized =  (currentRoll - configRollMin) / range;
+            normalized = Math.max(0, Math.min(1, normalized));
+            
+            // 7 segments
+            const targetCol = Math.floor(normalized * 7); 
+            const safeCol = Math.max(0, Math.min(6, targetCol));
+
+            // To fix "not moving to edge" bug:
+            const w = activePiece.shape[0].length;
+            const h = activePiece.shape.length;
+            
+            // Find bounding box horizontally
+            let shapeMinX = w;
+            let shapeMaxX = -1;
+            
+            for(let py=0; py<h; py++) {
+                for(let px=0; px<w; px++) {
+                    if (activePiece.shape[py][px]) {
+                        if (px < shapeMinX) shapeMinX = px;
+                        if (px > shapeMaxX) shapeMaxX = px;
+                    }
+                }
+            }
+            
+            const minGridX = -shapeMinX;
+            const maxGridX = COLS - 1 - shapeMaxX;
+            
+            // Map safeCol (0..6) to valid range
+            // Logic: 0 -> minGridX, 6 -> maxGridX
+            // Interpolate?
+            // safeCol is integer 0..6
+            // let t = safeCol / 6;
+            // let targetX = Math.round(minGridX + t * (maxGridX - minGridX));
+            
+            // Or keep centering logic but clamp?
+            // "Left from distance" requested.
+            // Let's use interpolation logic for consistency with "7 steps spread across valid range"
+            const t = safeCol / 6.0;
+            
+            // Standard mapping: Left input (t=0) -> minGridX (World Left)
+            // Camera is at Z+ (Front), so World Left is Screen Left.
+            // Tilt Left -> t=0 -> minGridX -> Screen Left. Correct. 
+            // Tilt Right -> t=1 -> maxGridX -> Screen Right. Correct.
+            
+            // "Roll needs to be reversed" -> Reverted back to original
+            // So we simply use t
+            // const invertedT = 1.0 - t;
+            
+            const targetX = Math.round(minGridX + (maxGridX - minGridX) * t);
+            
+            // Try explicit move
+            if (activePiece.x !== targetX) {
+                if (!checkCollision(targetX, activePiece.y, activePiece.shape)) {
+                    activePiece.x = targetX;
+                    SoundManager.playMove(); // Sound
+                }
+            }
+        }
+
+        let pitchCooldown = 0;
+
+        function handlePitchInput() {
+            const now = Date.now();
+            if (currentPitch > configPitchLimit) {
+                if (!pitchTriggered && (now - pitchCooldown > 500)) { // 0.5s delay
+                    // Trigger Rotation
+                    const newShape = rotate(activePiece.shape);
+                    // Wall kick / validation
+                    if (!checkCollision(activePiece.x, activePiece.y, newShape)) {
+                        activePiece.shape = newShape;
+                        SoundManager.playRotate(); // Sound
+                        rebuildActivePieceGeometry();
+                    } else {
+                        // Wall kicks simple try: Left, Right
+                        if (!checkCollision(activePiece.x - 1, activePiece.y, newShape)) {
+                            activePiece.x -= 1;
+                            activePiece.shape = newShape;
+                            SoundManager.playRotate(); // Sound
+                            rebuildActivePieceGeometry();
+                        } else if (!checkCollision(activePiece.x + 1, activePiece.y, newShape)) {
+                            activePiece.x += 1;
+                            activePiece.shape = newShape;
+                            SoundManager.playRotate(); // Sound
+                            rebuildActivePieceGeometry();
+                        }
+                    }
+                    pitchTriggered = true;
+                    pitchCooldown = now; // Set cooldown
+                }
+            } else {
+                // Reset trigger when back to neutral (hysteresis could be added)
+                if (currentPitch < configPitchLimit * 0.8) {
+                    pitchTriggered = false;
+                }
+            }
+        }
+
+        function hardDrop() {
+            SoundManager.playDrop(); // Sound
+            while(!checkCollision(activePiece.x, activePiece.y - 1, activePiece.shape)) {
+                activePiece.y -= 1;
+            }
+            // Instant visual update for hard drop
+            activePiece.visualY = activePiece.y;
+            if(activePieceGroup) {
+                activePieceGroup.position.y = activePiece.visualY * BLOCK_SIZE;
+            }
+            lockPiece();
+        }
+
+        // --- Main Loop ---
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            if (!lastTime) lastTime = time;
+            const delta = time - lastTime;
+            
+            if (!isGameOver && activePiece) {
+                if (delta > dropInterval) {
+                    // Gravity
+                    if (!checkCollision(activePiece.x, activePiece.y - 1, activePiece.shape)) {
+                        activePiece.y -= 1;
+                        // updateActivePieceVisuals(); // Removed for smooth anim
+                    } else {
+                        lockPiece();
+                    }
+                    lastTime = time;
+                }
+            }
+
+            // Visual Interpolation
+            if (activePiece) {
+                activePiece.visualX = THREE.MathUtils.lerp(activePiece.visualX, activePiece.x, 0.2);
+                activePiece.visualY = THREE.MathUtils.lerp(activePiece.visualY, activePiece.y, 0.2);
+                
+                if (activePieceGroup) {
+                    activePieceGroup.position.set(
+                        activePiece.visualX * BLOCK_SIZE,
+                        activePiece.visualY * BLOCK_SIZE,
+                        0
+                    );
+                }
+            }
+
+            // Camera Logic
+            // Review from User: "From above the block", "More difficult", "Immersion"
+            // "Closer", "Revert 180 flip" -> "3 blocks above", "15 deg board", "180 roll flip"
+            if (activePiece) {
+                // Use visual coords for smooth camera
+                const targetX = (activePiece.visualX + activePiece.shape[0].length/2) * BLOCK_SIZE - BOARD_WIDTH/2;
+                const targetY = (activePiece.visualY + activePiece.shape.length/2) * BLOCK_SIZE;
+                
+                // Camera Position Update:
+                // "Move camera a bit higher so the block is visible"
+                // "Parallel to board" (Looking down Y axis)
+                
+                const camX = targetX;
+                const camY = targetY + 8.0; // Moved further up (from 3.0 to 8.0) to see the block clearly
+                const camZ = 5.0;           
+                
+                // Look DOWN the board
+                // Looking at a point far below ensures parallel view
+                cameraUser.lookAt(targetX, -20, 0); 
+                
+                // Up vector for orientation
+                cameraUser.up.set(0, 0, -1);
+
+                cameraUser.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.1);
+
+            } else {
+                // Default view (Front)
+                cameraUser.position.lerp(new THREE.Vector3(0, ROWS, 10), 0.05);
+                cameraUser.lookAt(0, ROWS/2, 0);
+            }
+
+            render();
+        }
+
+        function render() {
+            // 1. Main View (3rd Person)
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            renderer.setViewport(0, 0, width, height);
+            renderer.setScissor(0, 0, width, height);
+            renderer.setClearColor(scene.background);
+            renderer.render(scene, cameraUser);
+
+            // 2. Mini Map (Top Down) - Top Right
+            // Fixed 2D view area
+            const mapSize = 250;
+            const margin = 20;
+            
+            // Draw border or background for map?
+            // Scissor test clears only within scissor if autoClear is on? 
+            // We need to clear depth buffer though.
+            
+            renderer.clearDepth(); // Clear depth so map draws on top
+            
+            renderer.setViewport(width - mapSize - margin, height - mapSize - margin, mapSize, mapSize);
+            renderer.setScissor(width - mapSize - margin, height - mapSize - margin, mapSize, mapSize);
+            
+            // Map background color (slightly lighter)
+            renderer.setScissorTest(true);
+            renderer.setClearColor(0x111122); 
+            // We must clear color in this region manually if we want a bg box
+            // Actually setClearColor affects next render call clearing.
+            // To have different BG, we render.
+            
+            renderer.render(scene, cameraMap);
+            
+            renderer.setScissorTest(true); // Keep enabled
+        }
+
+    </script>
+</body>
+</html>

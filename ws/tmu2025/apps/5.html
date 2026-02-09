@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ORPHE 刀剣リズム - 剣で切るトレーニング</title>
+  <style>
+    :root{--bg:#071021;--panel:#0f1722;--accent:#ff6b6b;--accent-2:#ff8b6b;--good:#6be3ff;--perfect:#ffd86b}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;background:var(--bg);color:#fff}
+    #ui{position:fixed;left:18px;top:18px;z-index:60;display:flex;flex-direction:column;gap:12px;max-width:320px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015));padding:14px;border-radius:12px;backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(4,6,10,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .btn{padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#111;font-weight:800;cursor:pointer;transition:transform 140ms ease, box-shadow 140ms ease, opacity 160ms;box-shadow:0 6px 18px rgba(255,107,107,0.12)}
+    .btn:active{transform:translateY(1px) scale(0.998)}
+    .btn:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(255,107,107,0.16)}
+    .btn.secondary{background:#333;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,0.4)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    label{font-size:13px;color:#ddd}
+    #c{display:block;width:100%;height:100%;border-radius:4px}
+    /* game over modal */
+    .game-over{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.98);min-width:320px;max-width:560px;padding:22px;border-radius:14px;background:linear-gradient(180deg, rgba(10,10,12,0.98), rgba(8,8,10,0.96));box-shadow:0 30px 80px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.04);text-align:center;z-index:120;opacity:0;transition:opacity 200ms ease, transform 220ms cubic-bezier(.2,.9,.2,1)}
+    .game-over.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .game-over h2{margin:0 0 8px 0;font-size:28px}
+    .game-over .sub{color:#ddd;margin-bottom:12px}
+    .game-over .score{font-size:18px;margin-bottom:14px}
+    .game-over .controls{display:flex;gap:10px;justify-content:center}
+    #message{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center}
+    /* toasts */
+    .toast{background:rgba(0,0,0,0.75);color:#fff;padding:8px 12px;border-radius:8px;margin-top:8px;box-shadow:0 6px 16px rgba(0,0,0,0.6);pointer-events:auto;}
+    .toast.small{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.04)}
+    .row{display:flex;gap:8px;align-items:center}
+    label{font-size:13px;color:#ddd}
+    .stat{font-size:14px}
+    #message{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center}
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="panel">
+      <div class="row" style="gap:10px;margin-bottom:8px">
+        <button id="connect" class="btn">ORPHE に接続</button>
+        <button id="start" class="btn primary">ゲーム開始</button>
+        <button id="stop" class="btn secondary" style="display:none">停止</button>
+        <label style="margin-left:auto;font-size:13px;color:#ddd;display:flex;align-items:center;gap:8px"><input id="advToggle" type="checkbox"> 詳細表示</label>
+      </div>
+      <div id="advancedControls">
+      <div class="row">
+        <label>BPM <input id="bpm" type="range" min="60" max="160" value="100"> <span id="bpmVal">100</span></label>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label>出現頻度 <input id="spawnRate" type="range" min="0.2" max="1.0" step="0.05" value="0.45"> <span id="spawnRateVal">0.45</span></label>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label>角速度閾値 (mag) <input id="sens" type="range" min="0.2" max="8" step="0.1" value="0.8"> <span id="sensVal">0.8</span></label>
+        <label>判定(Perfectms) <input id="pw" type="range" min="30" max="160" step="2" value="80"> <span id="pwVal">80</span></label>
+      </div> 
+      <div class="row" style="margin-top:6px;gap:8px;align-items:center">
+        <label>加速度併用 <input id="useAcc" type="checkbox"> </label>
+        <label>加速度閾値 (g) <input id="accThr" type="range" min="0.1" max="2.5" step="0.05" value="0.5"> <span id="accThrVal">0.5</span></label>
+        <label>加速度スムージング <input id="accSmooth" type="range" min="0" max="0.9" step="0.01" value="0.86"> <span id="accSmoothVal">0.86</span></label>
+        <button id="calibrate" style="margin-left:6px;background:#1f6feb;color:#fff;padding:6px;border-radius:6px">オートキャリブレート</button>
+      </div>
+      <div class="row" style="margin-top:6px;gap:10px;align-items:center">
+        <label><input id="debugToggle" type="checkbox"> デバッグ: センサ可視化</label>
+        <label style="margin-left:8px"><input id="notifyToggle" type="checkbox"> 検知通知</label>
+        <button id="swingTest" style="background:#444;color:#fff;padding:6px 8px;border-radius:6px">振りテスト</button>
+      </div>
+      </div> <!-- /advancedControls -->
+      <div id="status" class="stat">ステータス: 未接続（スペース / タップ / 振りで判定）</div>
+      <div id="score" class="stat">スコア: 0</div>
+      <div id="hp" class="stat">HP: 5</div>
+      <div id="combo" class="stat">コンボ: 0</div>
+      <div id="debugPanel" style="display:none;margin-top:8px;font-size:12px;color:#ccc">
+        <div>Gyro X: <span id="gx">0</span> Y: <span id="gy">0</span> Z: <span id="gz">0</span></div>
+        <div>Gyro Peak: <span id="gpeak">0</span></div>
+        <div style="margin-top:6px">Acc X: <span id="ax">0</span> Y: <span id="ay">0</span> Z: <span id="az">0</span></div>
+        <div>Acc Peak: <span id="apeak">0</span></div>
+        <div style="margin-top:6px">検知ログ: <button id="clearLog" style="background:#333;color:#fff;border-radius:6px;padding:2px 6px;margin-left:6px">クリア</button></div>
+        <ul id="swingLog" style="max-height:80px;overflow:auto;padding-left:16px;margin-top:6px"></ul>
+      </div>
+      <div id="toasts" style="position:fixed;right:12px;top:12px;z-index:9999;pointer-events:none"></div> <!-- transient notifications -->
+    </div>
+  </div>
+
+  <canvas id="c"></canvas>
+  <div id="message"></div>
+  <!-- Game Over modal -->
+  <div id="gameOver" class="panel game-over" style="display:none">
+    <h2>敗北</h2>
+    <div class="sub">残念！しかし次はもっと強くなれる。</div>
+    <div class="score">スコア: <span id="goScore">0</span></div>
+    <div class="controls">
+      <button id="goRestart" class="btn">リトライ</button>
+      <button id="goClose" class="btn secondary">閉じる</button>
+    </div>
+  </div>
+
+  <script src="src/ORPHE-CORE.js"></script>
+  <script>
+    // ---- 基本設定 ----
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = innerWidth;
+    let H = canvas.height = innerHeight;
+    addEventListener('resize',()=>{W=canvas.width=innerWidth;H=canvas.height=innerHeight; setTimeout(()=>initBackground && initBackground(), 0);});
+    // initialize background asynchronously (avoid TDZ on initial script run)
+    setTimeout(()=>initBackground && initBackground(), 0);
+
+    // UI elements
+    const connectBtn = document.getElementById('connect');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const bpmEl = document.getElementById('bpm');
+    const bpmVal = document.getElementById('bpmVal');
+    const sensEl = document.getElementById('sens');
+    const sensVal = document.getElementById('sensVal');
+    const status = document.getElementById('status');
+    const scoreEl = document.getElementById('score');
+    const comboEl = document.getElementById('combo');
+    const pwEl = document.getElementById('pw');
+    const pwVal = document.getElementById('pwVal');
+    const message = document.getElementById('message');
+
+    bpmEl.addEventListener('input',()=>bpmVal.innerText=bpmEl.value);
+    sensEl.addEventListener('input',()=>sensVal.innerText=sensEl.value);
+    pwEl.addEventListener('input',()=>pwVal.innerText=pwEl.value);
+
+    // Audio
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, time=0.06, type='sine'){ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=0.0001; o.connect(g); g.connect(audioCtx.destination); g.gain.exponentialRampToValueAtTime(0.2,audioCtx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+time); o.start(); setTimeout(()=>o.stop(), (time+0.02)*1000); }
+    function playHit(kind){ if(kind==='miss'){ playTone(200,0.06,'sine'); } else { playTone(280,0.06,'triangle'); } }
+    function playSwoosh(){ // short filtered noise as swing whoosh
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.14, audioCtx.sampleRate); const d = buf.getChannelData(0); for(let i=0;i<d.length;i++){ d[i] = (Math.random()*2-1) * (1 - i/d.length) * 0.55; }
+      const src = audioCtx.createBufferSource(); src.buffer = buf; const filter = audioCtx.createBiquadFilter(); filter.type='bandpass'; filter.frequency.value = 900 + Math.random()*900; const g = audioCtx.createGain(); g.gain.value = 0.0001; src.connect(filter); filter.connect(g); g.connect(audioCtx.destination); g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime+0.005); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.14); src.start(); setTimeout(()=>src.stop(), 200);
+    }
+    function playImpact(kind){ if(kind==='perfect'){ playTone(1200,0.08,'sawtooth'); const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type='square'; o.frequency.value = 220; o.connect(g); g.connect(audioCtx.destination); g.gain.value = 0.0001; g.gain.exponentialRampToValueAtTime(0.28,audioCtx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.28); o.start(); setTimeout(()=>o.stop(), 320); } else { playTone(520,0.06,'triangle'); } }
+
+    // ORPHE セットアップ
+    const ble = new Orphe(0);
+    ble.setup();
+    let orpheConnected = false;
+    let rawGyro = {x:0,y:0,z:0};
+
+    // Debug visualization controls
+    const debugToggle = document.getElementById('debugToggle');
+    const debugPanel = document.getElementById('debugPanel');
+    const gxEl = document.getElementById('gx');
+    const gyEl = document.getElementById('gy');
+    const gzEl = document.getElementById('gz');
+    const gpeakEl = document.getElementById('gpeak');
+    const axEl = document.getElementById('ax');
+    const ayEl = document.getElementById('ay');
+    const azEl = document.getElementById('az');
+    const apeakEl = document.getElementById('apeak');
+    let debugEnabled = false;
+    let gyroHistory = new Array(160).fill(0);
+    let gyroCurrMag = 0;
+    let rawAcc = {x:0,y:0,z:0};
+    let accPeak = 0; let accHistory = new Array(160).fill(0); let accCurrMag = 0;
+    debugToggle && debugToggle.addEventListener('change', ()=>{ debugEnabled = debugToggle.checked; debugPanel.style.display = debugEnabled ? 'block' : 'none'; });
+
+    // acc UI bindings
+    const useAcc = document.getElementById('useAcc');
+    const accThrEl = document.getElementById('accThr');
+    const accThrVal = document.getElementById('accThrVal');
+    const accSmoothEl = document.getElementById('accSmooth');
+    const accSmoothVal = document.getElementById('accSmoothVal');
+    const calibrateBtn = document.getElementById('calibrate');
+    accThrEl && accThrEl.addEventListener('input', ()=> accThrVal.innerText = accThrEl.value);
+    accSmoothEl && accSmoothEl.addEventListener('input', ()=> accSmoothVal.innerText = accSmoothEl.value);
+
+    // sens as float
+    sensEl && sensEl.addEventListener('input',()=>{ sensVal.innerText = parseFloat(sensEl.value).toFixed(1); });
+    sensVal.innerText = parseFloat(sensEl.value).toFixed(1);
+
+    // spawn rate binding
+    const spawnRateEl = document.getElementById('spawnRate');
+    const spawnRateVal = document.getElementById('spawnRateVal');
+    spawnRateEl && spawnRateEl.addEventListener('input', ()=> spawnRateVal.innerText = spawnRateEl.value);
+
+    // Advanced controls toggle (persisted)
+    const advToggle = document.getElementById('advToggle'); const advControls = document.getElementById('advancedControls');
+    try{ const showAdv = localStorage.getItem('showAdvanced') === '1'; if(advToggle){ advToggle.checked = showAdv; advControls.style.display = showAdv ? 'block' : 'none'; advToggle.addEventListener('change', ()=>{ advControls.style.display = advToggle.checked ? 'block' : 'none'; localStorage.setItem('showAdvanced', advToggle.checked ? '1' : '0'); }); } }catch(e){ if(advControls) advControls.style.display = 'none'; }
+
+
+    // calibrate handler
+    calibrateBtn && calibrateBtn.addEventListener('click', ()=>{ calibrateSensors(); });
+
+    // damage flash & critical cleave settings
+    let damageFlash = 0; function triggerDamageFlash(a){ damageFlash = Math.max(damageFlash, a); }
+    const criticalPx = 12; // tighter than perfect
+    const cleaveRadius = Math.min(220, Math.floor(Math.min(W,H)*0.22));
+
+    // Notify / swing test
+    const notifyToggle = document.getElementById('notifyToggle');
+    const swingTestBtn = document.getElementById('swingTest');
+    const toasts = document.getElementById('toasts');
+    const swingLog = document.getElementById('swingLog');
+    const clearLog = document.getElementById('clearLog');
+    let notifyEnabled = false; let swingHistory = [];
+    notifyToggle && notifyToggle.addEventListener('change', ()=>{ notifyEnabled = notifyToggle.checked; });
+    swingTestBtn && swingTestBtn.addEventListener('click', ()=>{ onSwing(); notifySwing(null,'manual'); });
+    clearLog && clearLog.addEventListener('click', ()=>{ swingHistory.length = 0; if(swingLog) swingLog.innerHTML = ''; });
+
+    function showToast(text, small=false, time=900){ const d = document.createElement('div'); d.className = 'toast' + (small? ' small':''); d.innerText = text; toasts.appendChild(d); setTimeout(()=>{ d.style.transition = 'transform 250ms, opacity 250ms'; d.style.transform = 'translateX(8px)'; d.style.opacity = '0'; setTimeout(()=>d.remove(), 300); }, time); }
+    function notifySwing(mag, source='gyro'){ const t = new Date(); const entry = {t:t.toLocaleTimeString(), mag:mag, source}; swingHistory.unshift(entry); if(swingHistory.length>30) swingHistory.pop(); if(swingLog){ swingLog.innerHTML = ''; for(const s of swingHistory){ const li = document.createElement('li'); li.style.fontSize='12px'; li.innerText = `${s.t} [${s.source}] mag:${s.mag===null?'-':Math.round(s.mag)}`; swingLog.appendChild(li); } }
+      if(notifyEnabled){ showToast(`Swing detected (${source}) ${mag?Math.round(mag):''}`); if('vibrate' in navigator) navigator.vibrate && navigator.vibrate(40); }
+      // also visual micro-slash
+      spawnSlash(W*0.5, H*0.45, 'good', true);
+    }
+
+    // Global error capture to help diagnose non-responsive buttons
+    window.addEventListener('error', (evt)=>{
+      const msg = evt && evt.message ? evt.message : String(evt);
+      console.error('Captured error:', evt);
+      try{ showToast('エラー: '+msg, false, 4000); const st = document.getElementById('status'); if(st) st.innerText = 'エラー: '+msg; const lg = document.getElementById('swingLog'); if(lg){ const li = document.createElement('li'); li.style.fontSize='12px'; li.innerText = 'Error: '+msg; lg.insertBefore(li, lg.firstChild); } }catch(e){ console.error(e); }
+    });
+    window.addEventListener('unhandledrejection', (evt)=>{
+      console.error('Unhandled rejection', evt);
+      const reason = evt.reason ? (evt.reason.message || String(evt.reason)) : 'Unknown';
+      try{ showToast('UnhandledRejection: '+reason, false, 4000); const lg = document.getElementById('swingLog'); if(lg){ const li = document.createElement('li'); li.style.fontSize='12px'; li.innerText = 'Rejection: '+reason; lg.insertBefore(li, lg.firstChild); } }catch(e){ console.error(e); }
+    });
+
+    // Diagnostic routine: ensure buttons are enabled and report
+    setTimeout(()=>{
+      try{
+        if(connectBtn) connectBtn.disabled = false;
+        if(startBtn) startBtn.disabled = false;
+        if(swingTestBtn) swingTestBtn.disabled = false;
+        showToast('診断: UI 初期化済み', true, 900);
+      }catch(e){ console.error('Diagnostic failure', e); }
+    }, 300);
+
+    // オートキャリブレーション: 数秒間サンプリングして閾値を推定
+    async function calibrateSensors(){ showToast('キャリブレーション開始：数秒間静止してください...', true, 1800);
+      const samples = {gyro:[], acc:[]}; const dur = 2200; const start = performance.now();
+      while(performance.now() - start < dur){ samples.gyro.push(gyroCurrMag); samples.acc.push(accCurrMag); await new Promise(r=>setTimeout(r, 30)); }
+      const gmax = Math.max(...samples.gyro); const gmean = samples.gyro.reduce((a,b)=>a+b,0)/samples.gyro.length; const gstd = Math.sqrt(samples.gyro.reduce((a,b)=>a+(b-gmean)*(b-gmean),0)/samples.gyro.length);
+      const amax = Math.max(...samples.acc); const amean = samples.acc.reduce((a,b)=>a+b,0)/samples.acc.length; const astd = Math.sqrt(samples.acc.reduce((a,b)=>a+(b-amean)*(b-amean),0)/samples.acc.length);
+      // decide thresholds: gyro thr = max(gmax*3, gmean + 3*gstd, 0.4)
+      const suggestedGyro = Math.max(gmax*3, gmean + 3*gstd, 0.4);
+      const suggestedAcc = Math.max(amax*2.5, amean + 3*astd, 0.12);
+      // apply
+      sensEl.value = suggestedGyro.toFixed(2); sensVal.innerText = parseFloat(sensEl.value).toFixed(2);
+      accThrEl.value = suggestedAcc.toFixed(2); accThrVal.innerText = parseFloat(accThrEl.value).toFixed(2);
+      showToast(`キャリブレーション完了: 推奨 Gyro=${suggestedGyro.toFixed(2)}, Acc=${suggestedAcc.toFixed(2)}`, false, 2800);
+    }
+
+    connectBtn.addEventListener('click', async ()=>{
+      try{
+        await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+        status.innerText = 'ステータス: 接続済み - 振り検出可';
+        orpheConnected = true; connectBtn.style.display='none';
+        // Update raw values and *immediately* process gyro samples for snappier detection
+        ble.gotGyro = g=>{ rawGyro = g; try{ handleGyro(g); }catch(e){} };
+        ble.gotAcc = a=>{ rawAcc = a; };
+        ble.onDisconnect = ()=>{ orpheConnected=false; status.innerText='ステータス: 切断'; connectBtn.style.display='inline-block' }; 
+      }catch(e){ status.innerText='接続失敗'; console.error(e); }
+    });
+
+    // ---- ゲーム変数 ----
+    let running = false;
+    let enemies = [];
+    let splits = [];
+    let particles = [];
+    let slashes = [];
+    let score = 0, combo = 0;
+    const travelTime = 1.6; // legacy, unused for enemies but kept for reference
+
+    // background: layered starfield / fog
+    let bgParticles = [];
+    let bgTime = 0;
+    const BG_MAX_STARS = Math.min(220, Math.floor((W*H)/18000));
+    function initBackground(){ bgParticles = []; const count = Math.max(40, Math.min(220, Math.floor((W*H)/18000))); for(let i=0;i<count;i++){ const layer = Math.random(); bgParticles.push({ x: Math.random()*W, y: Math.random()*H, r: (0.6 + Math.random()*1.6) * (1 + layer*1.6), aBase: 0.18 + Math.random()*0.6, layer, vx: (Math.random()-0.5)*(0.02 + layer*0.12), vy: (layer*0.02 + 0.01) }); } }
+
+
+    // screen shake & flash
+    let screenShake = 0;
+    const screenShakeDecay = 8.0;
+    let screenFlash = 0;
+
+    function triggerShake(mag){ screenShake = Math.max(screenShake, mag); }
+    function flashScreen(a){ screenFlash = Math.max(screenFlash, a); }
+
+    // 現在時刻関数（秒）
+    // Use AudioContext time when available/running, otherwise fall back to performance.now()
+    function now(){ try{ if(audioCtx && audioCtx.state && audioCtx.state !== 'suspended') return audioCtx.currentTime; }catch(e){} return performance.now() / 1000; }
+
+    // 敵生成（BPMに合わせて継続的に生成）
+    let nextSpawnTime = 0; let gameStartTime = 0;
+
+    function spawnEnemy(){ const x = Math.random()*(W*0.6) + W*0.2; const z = 1.0;
+      // type distribution: ~56% normal, ~12% fast, ~12% tank, ~8% brute
+      const roll = Math.random(); let type = 'normal'; let speedZ = 0.16 + Math.random()*0.18; let hp = 1; let r = 28; let color = `hsl(${Math.floor(Math.random()*360)},60%,60%)`; let damage = 1;
+      if(roll < 0.12){ type = 'fast'; speedZ = 0.35 + Math.random()*0.25; hp = 1; r = 20; color = '#7be37b'; damage = 1; }
+      else if(roll < 0.24){ type = 'tank'; speedZ = 0.08 + Math.random()*0.06; hp = 3; r = 36; color = '#c56bff'; damage = 1; }
+      else if(roll < 0.32){ type = 'brute'; speedZ = 0.14 + Math.random()*0.12; hp = 2; r = 34; color = '#ff6b3d'; damage = 2; }
+      enemies.push({x,z,speedZ,hp,maxHp:hp,r, color, type, damage, attacked:false,dead:false,timeOfDeath:0}); }
+    function spawnEnemySplit(e){ // create two halves
+      const mag = Math.min(18, 6 + Math.random()*12);
+      for(let i=-1;i<=1;i+=2){ splits.push({x:e.x + i*6, y:e.y, vx:i*(40 + Math.random()*80), vy:-40 - Math.random()*30, rot: (Math.random()-0.5)*2, drot: (Math.random()-0.5)*6, color:e.color, ttl:1.6}); }
+      // big particles
+      for(let i=0;i<28;i++){ const c = '#ff6b6b'; particles.push({x:e.x + (Math.random()-0.5)*16, y:e.y + (Math.random()-0.5)*16, dx:(Math.random()-0.5)*12, dy:(Math.random()-0.8)*12, ttl:0.6+Math.random()*1.0, color:c}); }
+      triggerShake(18); flashScreen(0.36);
+    }
+    function scheduleEnemies(){ const bpm = parseFloat(bpmEl.value); const beat = 60/bpm; const baseChance = parseFloat(spawnRateEl ? spawnRateEl.value : 0.45); if(nextSpawnTime === 0) nextSpawnTime = now() + 0.25;
+      const elapsed = gameStartTime ? Math.max(0, now() - gameStartTime) : 0; // seconds since game start
+      // Faster ramp: reach full extra spawn chance in 30s (was 60s)
+      const extra = Math.min(0.6, (elapsed / 30) * 0.6); // ramp up to +0.6 over 30s
+      const spawnChance = Math.min(0.98, baseChance + extra);
+      // Allow more concurrent enemies earlier: increase every 15s up to +3 (max 4)
+      const maxLiving = 1 + Math.min(3, Math.floor(elapsed / 15)); // allow more concurrent enemies over time (max 4)
+      while(nextSpawnTime < now() + 10){ if(Math.random() < spawnChance){ const aliveCount = enemies.filter(e => !e.dead).length; if(aliveCount < maxLiving) spawnEnemy(); } nextSpawnTime += beat; } }
+
+    // 入力検出（振り / キー / タップ）
+    let lastSwingAt = 0;
+    function onSwing(strong=false){ const t = now(); // デバウンス
+      if(t - lastSwingAt < 0.12) return; lastSwingAt = t;
+      // 即時の微斬撃エフェクト（検出時の視覚フィードバック）
+      spawnSlash(W*0.5, H*0.45, 'good', true);
+      // スウィッシュ音
+      playSwoosh();
+
+      // 判定: 横長の判定エリア（矩形）にいるすべての敵をヒット（敵の半径を考慮して端でも当たる）
+      const hitY = H*0.45; const hitRangeY = Math.min(100, H*0.12); // 縦方向に少し広げる
+      const hitTop = hitY - hitRangeY; const hitBottom = hitY + hitRangeY; const hits = [];
+      for(const e of enemies){ if(e.dead) continue; const ers = e.r * (e.scale || 1); // enemy radius
+        // vertical overlap
+        if(e.y + ers < hitTop || e.y - ers > hitBottom) continue;
+        // horizontal: consider enemy visual extents so edge enemies count as hit
+        if(e.x + ers < 0 || e.x - ers > W) continue;
+        const dy = Math.max(0, Math.abs(e.y - hitY) - ers);
+        hits.push({e,d:dy}); }
+
+      if(hits.length > 0){ // at least one hit — choose visual kind by closest hit
+        const minD = Math.min(...hits.map(h=>h.d)); const kind = (minD <= Math.min(36, hitRangeY)) ? 'perfect' : 'good';
+        playImpact(kind);
+        // 大振りの斬撃エフェクトを中央に表示（複数敵を貫く）
+        spawnSlash(W*0.5, hitY, kind, false);
+        flashLED(kind);
+
+        let anyKill = false; let hitCount = 0;
+        for(const h of hits){ const e = h.e; const d = h.d; const dmg = (d <= Math.min(36, hitRangeY)) ? 2 : 1; e.hp -= dmg; spawnParticles(e.x, hitY, kind); spawnSlash(e.x, hitY, kind, true); triggerShake(kind==='perfect'?12:6); hitCount += 1;
+          if(e.hp <= 0){ e.dead = true; e.timeOfDeath = now(); spawnEnemySplit(e); score += 1; scoreEl.innerText = 'スコア: '+score; combo = combo + 1; comboEl.innerText = 'コンボ: '+combo; anyKill = true; }
+        }
+        // 敵を倒せていなくてもヒットは連続コンボに繋げる
+        if(!anyKill && hitCount > 0){ combo = combo + 1; comboEl.innerText = 'コンボ: '+combo; }
+      } else { combo = 0; playHit('miss'); spawnSlash(W/2, H*0.45, 'miss'); }
+    }
+
+    // adjust spawnSlash to handle small flag (bigger, longer for satisfying impact)
+    // (replace previous spawnSlash implementation)
+    function spawnSlash(x,y,kind,small=false){ const ang = (Math.random()-0.5)*Math.PI*0.8; const len = small ? Math.min(W*0.5, 420) : Math.max(W*0.9, W*1.2); const dur = small? 0.22 : 0.6; slashes.push({x,y,t:now(),dur,kind,ang,len}); if(kind==='perfect'){ triggerShake(small?12:26); flashScreen(small?0.18:0.42); } else if(kind==='good'){ triggerShake(small?6:14); flashScreen(small?0.10:0.2); } else { triggerShake(small?3:6); } }
+
+    // LED フラッシュ
+    function flashLED(kind){ if(!orpheConnected) return; if(kind==='perfect'){ ble.setLED(1,2); setTimeout(()=>ble.setLED(0,0),200); } else if(kind==='good'){ ble.setLED(1,1); setTimeout(()=>ble.setLED(0,0),120); } }
+
+    // スラッシュ・パーティクル（強化）
+
+    function spawnParticles(x,y,kind){ const c = kind==='perfect'? '#ffd86b': kind==='good'? '#6be3ff':'#a0a0a0'; for(let i=0;i<18;i++){ particles.push({x,y,dx:(Math.random()-0.5)*8,dy:(Math.random()-0.8)*8,ttl:0.6+Math.random()*0.8,color:c}); } }
+
+    // helper to draw rounded rects
+    function roundRect(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath(); }
+
+    // Background update (moves even when paused) and draw helpers
+    function updateBackground(dt){ bgTime += dt; for(const p of bgParticles){ p.x += p.vx * dt * 60; p.y += p.vy * dt * 60; if(p.y > H + 8) p.y = -8; if(p.x < -8) p.x = W + 8; if(p.x > W + 8) p.x = -8; p.tw = Math.sin((bgTime*2 + p.x*0.01) * (0.8 + p.layer*2)) * 0.35; } }
+
+    function drawBackground(ctx){ // sky gradient
+      const grd = ctx.createLinearGradient(0,0,0,H);
+      grd.addColorStop(0, '#071426'); grd.addColorStop(0.5, '#051428'); grd.addColorStop(1, '#061026'); ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+      // radial soft glow at center
+      const rg = ctx.createRadialGradient(W*0.5, H*0.42, 30, W*0.5, H*0.42, Math.max(W,H)*0.7);
+      rg.addColorStop(0, 'rgba(255,220,180,0.04)'); rg.addColorStop(0.3, 'rgba(255,220,180,0.02)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+      // faint horizon fog
+      const fog = ctx.createLinearGradient(0,H*0.7,0,H); fog.addColorStop(0,'rgba(40,36,60,0.07)'); fog.addColorStop(1,'rgba(10,10,12,0)'); ctx.fillStyle = fog; ctx.fillRect(0,H*0.7,W,H*0.3);
+      // stars
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for(const p of bgParticles){ const alpha = Math.max(0.06, Math.min(0.95, p.aBase + (p.tw * 0.12))); ctx.beginPath(); ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.arc(p.x, p.y, Math.max(0.6, p.r * (1 - p.layer*0.6)), 0, Math.PI*2); ctx.fill(); }
+      ctx.restore();
+      // faint distant hills (soft sine)
+      ctx.save(); ctx.globalAlpha = 0.06; ctx.fillStyle = '#000'; ctx.beginPath(); const h0 = H*0.78; ctx.moveTo(0,H); ctx.lineTo(0,h0);
+      for(let x=0;x<=W;x+=40){ ctx.lineTo(x, h0 - Math.sin((x*0.004 + bgTime*0.4))*18); }
+      ctx.lineTo(W,H); ctx.closePath(); ctx.fill(); ctx.restore(); }
+
+
+    // センサー振り検出: 角速度の大きさ（デバッグ用ヒストリ保持）
+    let gyroPeak = 0; setInterval(()=>{ // 振幅を滑らかに低下させる
+      gyroPeak *= 0.86; }, 40);
+    // acc decay similar
+    let accDecayFactor = parseFloat(accSmoothEl.value || 0.86);
+    setInterval(()=>{ accPeak *= accDecayFactor; }, 40);
+    accSmoothEl && accSmoothEl.addEventListener('input', ()=>{ accDecayFactor = parseFloat(accSmoothEl.value); });
+
+    function handleGyro(g){ const mag = Math.hypot(g.x||0, g.y||0, g.z||0); gyroPeak = Math.max(gyroPeak, mag); gyroCurrMag = mag; gyroHistory.push(mag); if(gyroHistory.length > 160) gyroHistory.shift(); if(debugEnabled){ gxEl.innerText = (g.x||0).toFixed(1); gyEl.innerText = (g.y||0).toFixed(1); gzEl.innerText = (g.z||0).toFixed(1); gpeakEl.innerText = Math.round(gyroPeak); }
+      // acc handling
+      const ax = rawAcc.x || 0; const ay = rawAcc.y || 0; const az = rawAcc.z || 0; const accMag = Math.hypot(ax,ay,az); // approx g magnitude
+      const linearAcc = Math.abs(accMag - 1.0); accPeak = Math.max(accPeak, linearAcc); accCurrMag = linearAcc; accHistory.push(linearAcc); if(accHistory.length > 160) accHistory.shift(); if(debugEnabled){ axEl.innerText = ax.toFixed(2); ayEl.innerText = ay.toFixed(2); azEl.innerText = az.toFixed(2); apeakEl.innerText = accPeak.toFixed(2); }
+
+      const thr = parseFloat(sensEl.value);
+      const accThr = parseFloat(accThrEl.value);
+      // Composite decision: if useAcc checked, trigger if gyroPeak > thr OR accPeak > accThr.
+      // If both exceed, treat as strong swing (pass strong=true)
+      if(useAcc && useAcc.checked){
+        if(accPeak > accThr && gyroPeak > thr){ onSwing(true); notifySwing(Math.max(gyroPeak, accPeak),'gyro+acc'); gyroPeak = 0; accPeak = 0; }
+        else if(accPeak > accThr){ onSwing(true); notifySwing(accPeak,'accel'); accPeak = 0; }
+        else if(gyroPeak > thr){ onSwing(true); notifySwing(gyroPeak,'gyro'); gyroPeak = 0; }
+      } else {
+        if(gyroPeak > thr){ onSwing(true); notifySwing(gyroPeak,'gyro'); gyroPeak = 0; }
+      }
+    }
+
+    // ORPHE のコールバックでは rawGyro が更新されるのでポーリングして検出
+    setInterval(()=>{ if(orpheConnected) handleGyro(rawGyro); }, 30);
+
+    // キーボード・タッチ
+    addEventListener('keydown',e=>{ if(e.code==='Space') { onSwing(); e.preventDefault(); } });
+    canvas.addEventListener('pointerdown', e=>{ onSwing(); });
+
+    // ゲーム管理
+    function startGame(){ running = true; enemies.length = 0; splits.length = 0; particles=[]; slashes=[]; score=0; combo=0; scoreEl.innerText='スコア: 0'; comboEl.innerText='コンボ: 0'; nextSpawnTime = 0; gameStartTime = now(); playerHP = playerMaxHP; const hpEl = document.getElementById('hp'); if(hpEl) hpEl.innerText = 'HP: '+playerHP; startBtn.style.display='none'; stopBtn.style.display='inline-block'; message.style.display='none'; }
+    function stopGame(){ running=false; startBtn.style.display='inline-block'; stopBtn.style.display='none'; }
+    startBtn.addEventListener('click', ()=>{ audioCtx.resume(); startGame(); });
+    stopBtn.addEventListener('click', ()=>stopGame());
+
+    // Game Over control
+    const gameOverEl = document.getElementById('gameOver'); const goScoreEl = document.getElementById('goScore'); const goRestart = document.getElementById('goRestart'); const goClose = document.getElementById('goClose');
+    function showGameOver(finalScore){ if(gameOverEl){ goScoreEl.innerText = finalScore; gameOverEl.style.display='block'; setTimeout(()=>gameOverEl.classList.add('show'), 10); }
+      // stop and show start button
+      running = false; startBtn.style.display = 'inline-block'; stopBtn.style.display = 'none'; playTone(120,0.48,'sawtooth'); flashScreen(0.6); triggerShake(18);
+    }
+    function hideGameOver(){ if(gameOverEl){ gameOverEl.classList.remove('show'); setTimeout(()=>gameOverEl.style.display='none', 240); } }
+    goRestart && goRestart.addEventListener('click', ()=>{ hideGameOver(); setTimeout(()=>{ audioCtx.resume(); startGame(); }, 220); });
+    goClose && goClose.addEventListener('click', ()=>{ hideGameOver(); });
+
+    // 描画・更新ループ
+    let playerHP = 5; const playerMaxHP = 5; const playerZoneY = H*0.82;
+    function performCleave(cx, cy){ // AoE damage
+      let killed = 0; for(const e of enemies){ if(e.dead) continue; const dx = e.x - cx; const dy = (e.y||0) - cy; const d = Math.hypot(dx,dy); if(d < cleaveRadius){ e.hp -= 2; spawnParticles(e.x, e.y, 'perfect'); if(e.hp <= 0){ e.dead = true; e.timeOfDeath = now(); spawnEnemySplit(e); score += 1; scoreEl.innerText = 'スコア: '+score; killed++; combo++; comboEl.innerText = 'コンボ: '+combo; } else { triggerShake(8); } } }
+      if(killed > 0){ playTone(1200,0.28,'sawtooth'); flashScreen(0.6); triggerShake(22); }
+    }
+
+    function update(dt){ if(!running) return; scheduleEnemies(); const t = now();
+      // enemies update using depth z
+      const farY = H*0.06; for(let i=enemies.length-1;i>=0;i--){ const e = enemies[i]; e.z -= (e.speedZ || 0.2) * dt; e.z = Math.max(e.z, -0.2);
+        // project to screen Y
+        e.y = farY + (1 - Math.max(0,e.z)) * (playerZoneY - farY);
+        // scale for rendering
+        e.scale = 0.5 + (1 - Math.max(0,e.z)) * 0.9;
+        // reached player?
+        if(!e.dead && e.z <= 0){ // enemy hits player
+          e.dead = true; e.attacked = true; spawnParticles(e.x, e.y, 'miss');
+          // damage amount depends on enemy type / damage property
+          const dmg = (e.damage || (e.type==='brute' ? 2 : 1));
+          triggerShake(12 + dmg*6); flashScreen(0.25 + dmg*0.15); triggerDamageFlash(0.45 + dmg*0.3);
+          playerHP = Math.max(0, playerHP - dmg); const hpEl = document.getElementById('hp'); if(hpEl) hpEl.innerText = 'HP: '+playerHP; if(playerHP <= 0){ running = false; showGameOver(score); }
+          // remove enemy (keep corpse particles)
+          spawnEnemySplit(e);
+          enemies.splice(i,1); continue;
+        }
+        // remove long-dead enemies if any
+        if(e.dead && (t - e.timeOfDeath > 1.6)){ enemies.splice(i,1); continue; }
+      }
+
+      // update splits
+      for(let i=splits.length-1;i>=0;i--){ const s = splits[i]; s.vy += 200 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.rot += s.drot * dt; s.ttl -= dt; if(s.ttl <= 0) splits.splice(i,1); }
+
+      // particles
+      for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x += p.dx; p.y += p.dy; p.dy += 0.15; p.ttl -= dt; if(p.ttl <= 0) particles.splice(i,1); }
+      // slashes lifetime
+      for(let i=slashes.length-1;i>=0;i--){ const s=slashes[i]; if(now() - s.t > s.dur) slashes.splice(i,1); }
+    }
+
+    let last = performance.now();
+    function draw(){ const cur = performance.now(); const dt = (cur - last)/1000; last = cur; updateBackground && updateBackground(dt); update(dt);
+      // decay shake and flash
+      if(screenShake > 0) screenShake = Math.max(0, screenShake - screenShakeDecay * dt);
+      if(screenFlash > 0) screenFlash = Math.max(0, screenFlash - 1.8 * dt);
+
+      // apply screen shake transform
+      ctx.save();
+      if(screenShake > 0){ const sx = (Math.random()-0.5) * screenShake; const sy = (Math.random()-0.5) * screenShake; const rot = (Math.random()-0.5) * (screenShake*0.002); ctx.translate(sx, sy); ctx.rotate(rot); }
+
+      // 背景（グラデーション + 星層）
+      drawBackground(ctx);
+      // hit line / guide (enhanced: pulsing gradient + judgment band)
+      const _hitY = H*0.45;
+      const _pulse = 0.5 + 0.5 * Math.sin(now() * 8);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const _grd = ctx.createLinearGradient(0, _hitY - 22, 0, _hitY + 22);
+      _grd.addColorStop(0, `rgba(107,227,255,${0.02 * _pulse})`);
+      _grd.addColorStop(0.5, `rgba(255,216,107,${0.08 * _pulse})`);
+      _grd.addColorStop(1, `rgba(107,227,255,${0.02 * _pulse})`);
+      ctx.fillStyle = _grd; ctx.fillRect(0, _hitY - 18, W, 36);
+      ctx.restore();
+      // center bright core line
+      ctx.fillStyle = `rgba(255,255,255,${0.9 * _pulse})`; ctx.fillRect(0, _hitY - 2, W, 4);
+      // faint border showing judgment band (vertical size shown)
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1; const _hitRangeY = Math.min(100, H*0.12); ctx.strokeRect(8, _hitY - _hitRangeY, W - 16, _hitRangeY * 2);
+
+      // enemies (projected with depth) — distinct silhouettes per type
+      for(const e of enemies){ if(e.dead) continue; const s = (e.scale || 1); const r = Math.max(6, Math.floor(e.r * s)); ctx.save(); ctx.translate(e.x, e.y);
+        if(e.type === 'fast'){
+          // arrow / dagger silhouette with tail streaks
+          ctx.beginPath(); ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 8 * s; ctx.moveTo(0, -r*0.6); ctx.lineTo(r*1.6, 0); ctx.lineTo(0, r*0.6); ctx.lineTo(-r*1.6, 0); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = 'rgba(155,227,123,0.16)'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(-r*1.2,0); ctx.lineTo(-r*2.6,0); ctx.moveTo(r*1.2,0); ctx.lineTo(r*2.6,0); ctx.stroke();
+          // slit eyes
+          ctx.fillStyle = '#071018'; ctx.fillRect(-6*s, -6*s, 4*s, 2*s); ctx.fillRect(2*s, -6*s, 4*s, 2*s);
+        } else if(e.type === 'tank'){
+          // shield / block silhouette
+          const w = r*1.4; const h = r*1.2; ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 18 * s; roundRect(ctx, -w/2, -h/2, w, h, 8 * s); ctx.fill();
+          // center stripe
+          ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(-w*0.15, -h/2, w*0.3, h);
+          // visor
+          ctx.fillStyle = '#071018'; ctx.fillRect(-w*0.28, -6*s, w*0.56, 6*s);
+        } else if(e.type === 'brute'){
+          // bulky silhouette with horns and rugged spikes
+          ctx.fillStyle = e.color; ctx.beginPath(); ctx.ellipse(0, 0, r*1.05, r*0.95, 0, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.08)'; for(let i=0;i<6;i++){ const a = i*(Math.PI*2/6) - 0.4; ctx.beginPath(); ctx.moveTo(Math.cos(a)*(r+2), Math.sin(a)*(r+2)); ctx.lineTo(Math.cos(a)*(r+10), Math.sin(a)*(r+10)); ctx.lineTo(Math.cos(a)*(r+2), Math.sin(a)*(r+2)); ctx.fill(); }
+          // horns (top)
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-r*0.6, -r*0.9); ctx.lineTo(-r*1.3, -r*1.6); ctx.lineTo(-r*0.2, -r*1.1); ctx.fill(); ctx.beginPath(); ctx.moveTo(r*0.6, -r*0.9); ctx.lineTo(r*1.3, -r*1.6); ctx.lineTo(r*0.2, -r*1.1); ctx.fill();
+          // angry eyes
+          ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(-6*s, -6*s, 3*s, 4*s, -0.6, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(6*s, -6*s, 3*s, 4*s, 0.6, 0, Math.PI*2); ctx.fill();
+        } else {
+          // normal (soft blob)
+          ctx.beginPath(); ctx.fillStyle = e.color; ctx.shadowColor = e.color; ctx.shadowBlur = 16 * s; ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#071018'; ctx.beginPath(); ctx.arc(-6*s, -6*s, 3.4*s, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(7*s, -6*s, 3.4*s, 0, Math.PI*2); ctx.fill();
+        }
+        // HP bar (colorized by type)
+        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(-22*s, -r - 12*s, 44*s, 8*s);
+        const hpColor = e.type === 'tank' ? '#ff9b9b' : e.type === 'fast' ? '#9be37b' : e.type === 'brute' ? '#ffb86b' : '#ff6b6b';
+        ctx.fillStyle = hpColor; ctx.fillRect(-22*s, -r - 12*s, 44 * (e.hp / e.maxHp) * s, 8*s);
+        ctx.restore();
+      }
+
+      // splits (enemy halves)
+      for(const s of splits){ ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.rot); ctx.fillStyle = s.color; ctx.beginPath(); ctx.fillRect(-10, -8, 22, 16); ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(-4, -8, 8, 16); ctx.restore(); }
+
+      // particles
+      for(const p of particles){ ctx.beginPath(); ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.ttl/1.2); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
+
+      // HUD small: Score, Combo (top-left HP removed; bottom HP bar remains)
+      ctx.fillStyle = '#fff'; ctx.font = '18px system-ui'; ctx.fillText(`Score: ${score}`, 16, H-28); ctx.fillText(`Combo: ${combo}`, 160, H-28);
+
+      // Bottom player HP bar (centered)
+      const bottomHpW = Math.min(320, W*0.6); const bottomHpX = (W - bottomHpW) / 2; const bottomHpY = H - 48; ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(bottomHpX-3, bottomHpY-10, bottomHpW+6, 18); ctx.fillStyle = '#111'; ctx.fillRect(bottomHpX, bottomHpY-8, bottomHpW, 14); const bottomHpFrac = (playerHP||0) / playerMaxHP; ctx.fillStyle = '#ff6b6b'; ctx.fillRect(bottomHpX, bottomHpY-8, bottomHpW * bottomHpFrac, 14); ctx.fillStyle = '#fff'; ctx.font='14px system-ui'; ctx.textAlign = 'center'; ctx.fillText(`HP ${playerHP || 0} / ${playerMaxHP}`, bottomHpX + bottomHpW/2, bottomHpY+2); ctx.textAlign = 'start';
+      // difficulty indicator
+      const elapsed = gameStartTime ? Math.max(0, now() - gameStartTime) : 0; const difficultyPct = Math.round(Math.min(100, (elapsed / 60) * 100)); ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font='12px system-ui'; ctx.textAlign = 'left'; ctx.fillText(`Difficulty +${difficultyPct}%`, 16, H - 18); ctx.textAlign = 'start';
+
+      // screen flash overlay
+      if(screenFlash > 0){ ctx.fillStyle = `rgba(255,255,255,${Math.min(0.9, screenFlash)})`; ctx.fillRect(0,0,W,H); }
+
+      // damage red flash
+      if(damageFlash > 0){ ctx.fillStyle = `rgba(255,40,40,${Math.min(0.9, damageFlash)})`; ctx.fillRect(0,0,W,H); damageFlash = Math.max(0, damageFlash - 1.8 * dt); }
+
+
+      // slashes (draw long slicing ribbons)
+      for(const s of slashes){ const p = (now()-s.t)/s.dur; const a = 1 - Math.min(1,p); ctx.save(); ctx.globalAlpha = a; ctx.translate(s.x, s.y); ctx.rotate(s.ang); const grad = ctx.createLinearGradient(-s.len*0.2,0,s.len*0.9,0); grad.addColorStop(0, 'rgba(255,255,255,0.0)'); grad.addColorStop(0.5, s.kind==='perfect'?'#ffd86b':'#6be3ff'); grad.addColorStop(1,'rgba(255,255,255,0.0)'); ctx.fillStyle = grad; ctx.beginPath(); ctx.fillRect(-s.len*0.5, -12, s.len, 24); // soft ribbon
+        // add a bright core
+        ctx.globalAlpha = a*0.9; ctx.fillStyle = s.kind==='perfect'?'rgba(255,216,107,0.95)':'rgba(107,227,255,0.75)'; ctx.fillRect(-s.len*0.4, -4, s.len*0.8, 8); ctx.restore(); }
+
+      // particles
+      for(const p of particles){ ctx.beginPath(); ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.ttl/1.2); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
+
+      ctx.restore(); // restore after shake
+
+      // debug visualization overlay
+      if(debugEnabled){ const dx = W - 320; const dy = 16; ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(dx-8, dy-8, 308, 140);
+        // draw gyro bars
+        ctx.fillStyle = '#ff9b9b'; ctx.fillRect(dx, dy, Math.min(200, (gyroCurrMag/1000)*200), 8); ctx.fillStyle='#fff'; ctx.fillText(`Gyro ${gyroCurrMag.toFixed(1)}`, dx, dy+26);
+        // draw small gyro history graph
+        ctx.beginPath(); ctx.strokeStyle = '#6be3ff'; for(let i=0;i<gyroHistory.length;i++){ const v = gyroHistory[i]; const x = dx + (i/gyroHistory.length)*200; const h = Math.min(64, v/8); const y = dy+40 + 64 - h; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke();
+        // acc bars and history
+        const adx = dx + 208; ctx.fillStyle = '#ffd86b'; ctx.fillRect(adx, dy, Math.min(200, accCurrMag*60), 8); ctx.fillStyle='#fff'; ctx.fillText(`Acc ${accCurrMag.toFixed(2)}`, adx, dy+26);
+        ctx.beginPath(); ctx.strokeStyle = '#ffd86b'; for(let i=0;i<accHistory.length;i++){ const v = accHistory[i]; const x = adx + (i/accHistory.length)*90; const h = Math.min(64, v*40); const y = dy+40 + 64 - h; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke(); ctx.restore(); }
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // デバッグ用: 外部から操作できる関数
+    window._onSwing = onSwing;
+    window._startGame = startGame;
+    window._stopGame = stopGame;
+
+    // 画面メッセージ
+    message.innerHTML = `<div style="background:rgba(0,0,0,0.6);padding:12px;border-radius:8px;"><strong>敵が近づいてくる！剣で切り裂いて倒そう</strong><div style="margin-top:6px;color:#ddd;font-size:13px">ORPHE を振って敵を切る。近づいてきた敵が接触するとダメージを受けます。</div></div>`;
+  </script>
+</body>
+</html>

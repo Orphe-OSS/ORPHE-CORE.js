@@ -1,0 +1,853 @@
+/* リセットとベーススタイル */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #ffffff;
+    min-height: 100vh;
+    overflow-x: auto;
+}
+
+.game-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ヘッダー */
+.game-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.game-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.connection-status {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.device-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.status-label {
+    font-weight: bold;
+}
+
+.status-indicator {
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.status-indicator.connected {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.status-indicator.disconnected {
+    background-color: #f44336;
+    color: white;
+}
+
+.connect-btn {
+    background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.connect-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+/* メインゲーム画面 */
+.game-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 20px;
+    grid-template-areas: 
+        "game-area game-area"
+        "sensor-panel controls";
+}
+
+.game-area {
+    grid-area: game-area;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    min-height: 500px;
+    overflow: hidden;
+}
+
+/* 音ゲー風ノーツエリア */
+.notes-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.note-lane {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.left-lane {
+    left: 32%;
+    transform: translateX(-50%);
+}
+
+.right-lane {
+    right: 32%;
+    transform: translateX(50%);
+}
+
+/* ヒットライン */
+.hit-line {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 10px;
+    right: 10px;
+    height: 8px;
+    background: linear-gradient(90deg, #ffeb3b, #ffc107);
+    border-radius: 4px;
+    box-shadow: 0 0 20px #ffeb3b;
+    animation: hit-line-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes hit-line-glow {
+    from { box-shadow: 0 0 20px #ffeb3b; }
+    to { box-shadow: 0 0 30px #ffeb3b, 0 0 40px #ffc107; }
+}
+
+/* 落下ノーツ */
+.note {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ff6b6b, #ff8e53);
+    border: 4px solid #ffffff;
+    box-shadow: 0 5px 20px rgba(255, 107, 107, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: white;
+    animation: note-fall linear;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: all 0.1s ease;
+}
+
+.note.left-note {
+    background: linear-gradient(145deg, #4ecdc4, #45b7d1);
+    box-shadow: 0 5px 20px rgba(78, 205, 196, 0.6);
+}
+
+.note.right-note {
+    background: linear-gradient(145deg, #ff6b6b, #ff8e53);
+    box-shadow: 0 5px 20px rgba(255, 107, 107, 0.6);
+}
+
+@keyframes note-fall {
+    from {
+        top: -100px;
+        opacity: 1;
+    }
+    to {
+        top: calc(100% + 100px);
+        opacity: 1;
+    }
+}
+
+/* ノーツ爆発エフェクト */
+.note-explosion {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 235, 59, 0.9) 0%, rgba(255, 193, 7, 0.7) 30%, rgba(255, 152, 0, 0.5) 60%, transparent 100%);
+    animation: note-explode 0.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 20;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.note-explosion.perfect {
+    background: radial-gradient(circle, rgba(255, 235, 59, 1) 0%, rgba(255, 193, 7, 0.8) 30%, rgba(255, 152, 0, 0.6) 60%, transparent 100%);
+    box-shadow: 0 0 30px rgba(255, 235, 59, 0.8);
+}
+
+.note-explosion.good {
+    background: radial-gradient(circle, rgba(76, 175, 80, 0.9) 0%, rgba(139, 195, 74, 0.7) 30%, rgba(102, 187, 106, 0.5) 60%, transparent 100%);
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.6);
+}
+
+@keyframes note-explode {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2.5);
+        opacity: 0;
+    }
+}
+
+/* ノーツパーティクル */
+.note-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: particle-burst 0.8s ease-out forwards;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.note-particle.perfect {
+    background: #ffeb3b;
+    box-shadow: 0 0 10px #ffeb3b;
+}
+
+.note-particle.good {
+    background: #4CAF50;
+    box-shadow: 0 0 8px #4CAF50;
+}
+
+@keyframes particle-burst {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) translateY(-60px);
+        opacity: 0;
+    }
+}
+
+/* 判定表示 */
+.judgment {
+    position: absolute;
+    font-size: 2rem;
+    font-weight: bold;
+    animation: judgment-show 1s ease-out forwards;
+    pointer-events: none;
+    z-index: 100;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%);
+}
+
+.judgment.perfect {
+    color: #ffeb3b;
+    text-shadow: 0 0 20px #ffeb3b;
+}
+
+.judgment.good {
+    color: #4CAF50;
+    text-shadow: 0 0 20px #4CAF50;
+}
+
+.judgment.miss {
+    color: #f44336;
+    text-shadow: 0 0 20px #f44336;
+}
+
+@keyframes judgment-show {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    40% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+/* 相手の顔 */
+.opponent-face {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+    z-index: 5;
+}
+
+.face-image {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.face-circle {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ffa726, #ff9800);
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.face-circle.damaged {
+    animation: shake 0.5s ease-in-out;
+    background: linear-gradient(145deg, #ff5722, #d32f2f);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.eyes {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 40px;
+}
+
+.eye {
+    width: 20px;
+    height: 20px;
+    background: #333;
+    border-radius: 50%;
+    position: relative;
+}
+
+.eye::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+}
+
+.mouth {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 20px;
+    border: 3px solid #333;
+    border-top: none;
+    border-radius: 0 0 40px 40px;
+}
+
+/* 旧ターゲット（非表示） */
+.target-indicator {
+    display: none;
+}
+
+/* パンチパワー表示円 */
+.punch-power-indicator {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border: 4px solid #ffeb3b;
+    border-radius: 50%;
+    background: rgba(255, 235, 59, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffeb3b;
+    animation: punch-power-show 1.5s ease-out forwards;
+    z-index: 10;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+@keyframes punch-power-show {
+    0% {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1.2);
+    }
+    40% {
+        transform: translateY(-50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.8);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: translateY(-50%) scale(1); }
+    50% { transform: translateY(-50%) scale(1.1); }
+}
+
+/* ゲームUI */
+.game-ui {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 30px;
+}
+
+.score-display {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.score, .combo, .time {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 16px;
+    border-radius: 10px;
+}
+
+.punch-power {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.power-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.power-meter {
+    width: 200px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.power-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A, #FFC107, #FF9800, #F44336);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.power-value {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+/* 楽曲進行表示 */
+.song-progress {
+    margin-top: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    text-align: center;
+}
+
+.progress-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.progress-label {
+    font-size: 0.9rem;
+    color: #ffeb3b;
+    font-weight: bold;
+}
+
+.progress-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+/* パンチ統計表示 */
+.punch-stats {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 15px;
+}
+
+.stats-item {
+    text-align: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    color: #ffeb3b;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.stats-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+/* センサーパネル */
+.sensor-panel {
+    grid-area: sensor-panel;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sensor-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.sensor-section h3 {
+    margin-bottom: 15px;
+    text-align: center;
+    color: #ffeb3b;
+}
+
+.chart-container {
+    height: 200px;
+    margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.sensor-values {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.sensor-values > div {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+/* コントロール */
+.game-controls {
+    grid-area: controls;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.calibration-section,
+.game-control-section,
+.settings-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.calibration-section h3,
+.game-control-section h3,
+.settings-section h3 {
+    margin-bottom: 15px;
+    color: #ffeb3b;
+    text-align: center;
+}
+
+.control-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    margin: 5px;
+    width: 100%;
+}
+
+.control-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.start-btn {
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
+}
+
+.pause-btn {
+    background: linear-gradient(45deg, #FF9800, #FFC107);
+}
+
+.reset-btn {
+    background: linear-gradient(45deg, #f44336, #e91e63);
+}
+
+.calibration-status {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.9rem;
+}
+
+.calibration-status > div {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.setting-item label {
+    font-weight: bold;
+    min-width: 80px;
+}
+
+.setting-item input[type="range"] {
+    flex: 1;
+    min-width: 100px;
+}
+
+.difficulty-select {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    min-width: 120px;
+    cursor: pointer;
+}
+
+.difficulty-select:focus {
+    outline: none;
+    border-color: #ffeb3b;
+    box-shadow: 0 0 10px rgba(255, 235, 59, 0.3);
+}
+
+.difficulty-select option {
+    background: #2a5298;
+    color: white;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 1200px) {
+    .game-main {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "game-area"
+            "sensor-panel"
+            "controls";
+    }
+    
+    .sensor-panel {
+        flex-direction: row;
+    }
+    
+    .connection-status {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-container {
+        padding: 10px;
+    }
+    
+    .game-header h1 {
+        font-size: 2rem;
+    }
+    
+    .sensor-panel {
+        flex-direction: column;
+    }
+    
+    .game-ui {
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .opponent-face {
+        height: 300px;
+    }
+    
+    .face-image {
+        width: 220px;
+        height: 220px;
+    }
+    
+    .face-circle {
+        width: 220px;
+        height: 220px;
+    }
+    
+    .note-lane {
+        width: 100px;
+    }
+    
+    .note {
+        width: 60px;
+        height: 60px;
+        font-size: 1rem;
+    }
+    
+    .left-lane {
+        left: 25%;
+    }
+    
+    .right-lane {
+        right: 25%;
+    }
+    
+    .punch-stats {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .stats-value {
+        font-size: 1.2rem;
+    }
+    
+    .song-progress {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* アニメーション効果 */
+.hit-effect {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 0, 0.8) 0%, transparent 70%);
+    animation: hit-explosion 0.5s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes hit-explosion {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* パーティクル効果 */
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffeb3b;
+    border-radius: 50%;
+    animation: particle-float 1s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes particle-float {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+} 

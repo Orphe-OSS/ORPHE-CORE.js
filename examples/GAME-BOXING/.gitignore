@@ -1,0 +1,27 @@
+# HTTPSサーバー用の証明書ファイル（セキュリティ上除外）
+*.pem
+*.key
+*.crt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# macOS
+.DS_Store
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.swp
+
+# IDE
+.vscode/
+.idea/ 

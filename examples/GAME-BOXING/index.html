@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORPHE FIGHT CORE</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1>ORPHE FIGHT CORE 🥊</h1>
+            <div class="connection-status">
+                <div class="device-status" id="leftStatus">
+                    <span class="status-label">左手:</span>
+                    <span class="status-indicator" id="leftIndicator">未接続</span>
+                    <button id="connectLeft" class="connect-btn">接続</button>
+                </div>
+                <div class="device-status" id="rightStatus">
+                    <span class="status-label">右手:</span>
+                    <span class="status-indicator" id="rightIndicator">未接続</span>
+                    <button id="connectRight" class="connect-btn">接続</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="game-main">
+            <!-- ゲーム画面 -->
+            <div class="game-area" id="gameArea">
+                <!-- 音ゲー風ノーツエリア -->
+                <div class="notes-area" id="notesArea">
+                    <div class="note-lane left-lane">
+                        <div class="hit-line"></div>
+                    </div>
+                    <div class="note-lane right-lane">
+                        <div class="hit-line"></div>
+                    </div>
+                </div>
+                
+                <div class="opponent-face" id="opponentFace">
+                    <img src="images/normal.png" alt="対戦相手の顔" class="face-image" id="faceImage">
+                    <div class="target-indicator left-target" id="leftTarget">
+                    </div>
+                    <div class="target-indicator right-target" id="rightTarget">
+                    </div>
+                </div>
+                
+                <div class="game-ui">
+                    <div class="score-display">
+                        <div class="score">スコア: <span id="score">0</span></div>
+                        <div class="combo">コンボ: <span id="combo">0</span></div>
+                    </div>
+                    
+                    <div class="punch-power">
+                        <div class="power-bar">
+                            <div class="power-label">パンチ力</div>
+                            <div class="power-meter">
+                                <div class="power-fill" id="powerFill"></div>
+                            </div>
+                            <div class="power-value" id="powerValue">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 楽曲進行表示 -->
+                <div class="song-progress">
+                    <div class="progress-item">
+                        <div class="progress-label">進行状況</div>
+                        <div class="progress-value" id="currentNote">0 / 20</div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">コンビネーション</div>
+                        <div class="progress-value" id="comboProgress">0 / 0</div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">達成率</div>
+                        <div class="progress-value" id="achievementRate">0%</div>
+                    </div>
+                </div>
+                
+                <!-- パンチ統計表示 -->
+                <div class="punch-stats">
+                    <div class="stats-item">
+                        <div class="stats-label">パンチ回数</div>
+                        <div class="stats-value" id="totalPunches">0</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">成功回数</div>
+                        <div class="stats-value" id="successfulHits">0</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">成功率</div>
+                        <div class="stats-value" id="hitRate">0%</div>
+                    </div>
+                    <div class="stats-item">
+                        <div class="stats-label">平均パンチ力</div>
+                        <div class="stats-value" id="avgPower">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- センサーデータ表示 -->
+            <div class="sensor-panel">
+                <div class="sensor-section">
+                    <h3>左手センサーデータ</h3>
+                    <div class="chart-container">
+                        <canvas id="leftChart"></canvas>
+                    </div>
+                    <div class="sensor-values" id="leftValues">
+                        <div>加速度: <span id="leftAccel">-</span> m/s²</div>
+                        <div>ジャイロ: <span id="leftGyro">-</span> °/s</div>
+                        <div>合成加速度: <span id="leftResultant">-</span> m/s²</div>
+                    </div>
+                </div>
+                
+                <div class="sensor-section">
+                    <h3>右手センサーデータ</h3>
+                    <div class="chart-container">
+                        <canvas id="rightChart"></canvas>
+                    </div>
+                    <div class="sensor-values" id="rightValues">
+                        <div>加速度: <span id="rightAccel">-</span> m/s²</div>
+                        <div>ジャイロ: <span id="rightGyro">-</span> °/s</div>
+                        <div>合成加速度: <span id="rightResultant">-</span> m/s²</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ゲームコントロール -->
+            <div class="game-controls">
+                <div class="calibration-section">
+                    <h3>キャリブレーション</h3>
+                    <button id="calibrateBtn" class="control-btn">最大速度測定</button>
+                    <div class="calibration-status">
+                        <div>基準値: <span id="baselineValue">未測定</span></div>
+                        <div>測定状況: <span id="calibrationStatus">待機中</span></div>
+                    </div>
+                </div>
+                
+                <div class="game-control-section">
+                    <h3>ゲームコントロール</h3>
+                    <button id="startBtn" class="control-btn start-btn" disabled>ゲーム開始</button>
+                    <button id="pauseBtn" class="control-btn pause-btn" disabled>一時停止</button>
+                    <button id="resetBtn" class="control-btn reset-btn">リセット</button>
+                </div>
+
+                <div class="settings-section">
+                    <h3>設定</h3>
+                    <div class="setting-item">
+                        <label for="difficulty">難易度:</label>
+                        <select id="difficulty" class="difficulty-select">
+                            <option value="beginner">初級（1個）</option>
+                            <option value="intermediate">中級（2個）</option>
+                            <option value="advanced">上級（3個）</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="comboInterval">コンビネーション間隔:</label>
+                        <input type="range" id="comboInterval" min="300" max="1000" value="600" step="50">
+                        <span id="comboIntervalValue">600</span> ms
+                    </div>
+                    <div class="setting-item">
+                        <label for="lowerThreshold">下限閾値:</label>
+                        <input type="range" id="lowerThreshold" min="1" max="5" value="2" step="0.1">
+                        <span id="lowerThresholdValue">2.0</span> m/s²
+                    </div>
+                    <div class="setting-item">
+                        <label for="upperThreshold">上限閾値:</label>
+                        <input type="range" id="upperThreshold" min="5" max="30" value="15" step="0.5">
+                        <span id="upperThresholdValue">15.0</span> m/s²
+                    </div>
+                    <div class="setting-item">
+                        <label for="gameTime">楽曲ノーツ数:</label>
+                        <input type="range" id="gameTime" min="10" max="30" value="20" step="1">
+                        <span id="gameTimeValue">20</span> 個
+                    </div>
+                    <div class="setting-item">
+                        <label for="targetDisplayTime">判定窓:</label>
+                        <input type="range" id="targetDisplayTime" min="1" max="3" value="2" step="0.1">
+                        <span id="targetDisplayTimeValue">2.0</span> (Good判定)
+                    </div>
+                    <div class="setting-item">
+                        <label for="targetInterval">ノーツ落下速度:</label>
+                        <input type="range" id="targetInterval" min="2" max="5" value="3" step="0.1">
+                        <span id="targetIntervalValue">3.0</span> 秒
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/chart.js"></script>
+    <script src="js/ORPHE-CORE.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html> 

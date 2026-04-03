@@ -34,10 +34,27 @@ let judgementText = "";
 let judgementTimer = 0;
 let startTime; // ゲーム開始時間
 
+// --- ヒット効果音 (Web Audio API) ---
+let audioCtx;
+function playHitSound() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  let osc = audioCtx.createOscillator();
+  let gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = 880;
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
 // --- プレイヤー（星）の設定 ---
 let playerX;
 const PLAYER_Y = 500;
 const STAR_SIZE = 40;
+
+
 
 // --- リズムゲーム設定 ---
 const BPM = 120; // 曲のテンポ (Beats Per Minute)
@@ -56,6 +73,7 @@ function setup() {
   textAlign(CENTER, CENTER);
   textSize(20);
   playerX = width / 2;
+
 }
 
 function startGame() {
@@ -269,6 +287,7 @@ function judgeStep(noteIndex) {
   if (game_state !== state.PLAYING) return;
 
   score += 100;
+  playHitSound();
   combo++;
   setJudgementText("GOOD");
   effects.push(new Effect(notes[noteIndex].x, JUDGE_LINE_Y, color(255, 215, 0)));

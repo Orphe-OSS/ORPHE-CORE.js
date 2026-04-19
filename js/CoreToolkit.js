@@ -197,11 +197,14 @@ async function toggleCoreModule(dom, options = {}) {
                 </i>`;
                 freqEl.title = '別タブのBLE接続を共有中';
             }
-            // Primary が切れたら自動でトグルをリセット
+            // Primary が切れたら UI をリセット（ユーザ設定の onDisconnect は保持）
+            const userOnDisconnect = ble.onDisconnect;
             ble.onDisconnect = function () {
+                if (typeof userOnDisconnect === 'function') userOnDisconnect.call(this);
                 const sw = document.querySelector(`#switch_ble${number}`);
                 if (sw) sw.checked = false;
-                document.querySelector(`#ui${number}`).style.visibility = 'hidden';
+                const uiEl = document.querySelector(`#ui${number}`);
+                if (uiEl) uiEl.style.visibility = 'hidden';
             };
         } else {
             ble.gotBLEFrequency = function (freq) {

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>BleSharedBridge 単体テスト</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; background: #f8f9fa; }
+    h1 { font-size: 1.3em; }
+    #results { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; }
+    .pass { color: #0f5132; }
+    .fail { color: #842029; font-weight: bold; }
+    .info { color: #6c757d; }
+    .head { color: #084298; font-weight: bold; margin-top: 10px; }
+    .summary { margin-top: 20px; padding: 12px; border-radius: 6px; }
+    .ok   { background: #d1e7dd; color: #0f5132; }
+    .ng   { background: #f8d7da; color: #842029; }
+    button { padding: 8px 20px; background: #0d6efd; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; }
+    button:disabled { opacity: 0.5; }
+    iframe { display: none; }
+  </style>
+</head>
+<body>
+  <h1>🔬 BleSharedBridge 単体テスト</h1>
+  <p>BLE実機は不要です。<code>BroadcastChannel</code> と <code>localStorage</code> の動作を自動検証します。</p>
+
+  <button id="run_btn">テスト実行</button>
+
+  <div id="summary" class="summary" style="display:none"></div>
+  <pre id="results"></pre>
+
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script>
+    const DEVICE_ID = 99; // テスト専用に 0/1 と衝突しないIDを使う
+    const resultsEl = document.getElementById('results');
+    const summaryEl = document.getElementById('summary');
+
+    let passed = 0, failed = 0;
+
+    function log(msg, cls = 'info') {
+      const line = document.createElement('div');
+      line.className = cls;
+      line.textContent = msg;
+      resultsEl.appendChild(line);
+    }
+    function head(msg)      { log(msg, 'head'); }
+    function assert(cond, msg) {
+      if (cond) { log('  ✓ ' + msg, 'pass'); passed++; }
+      else      { log('  ✗ ' + msg, 'fail'); failed++; }
+      return cond;
+    }
+    const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+    /**
+     * iframeを1つ作成し、その中でbridgeを扱える関数を返す。
+     * iframe内はメインページと別browsing contextなのでBroadcastChannelが
+     * 両者間で機能する。
+     */
+    async function createTabSimulator(label) {
+      const iframe = document.createElement('iframe');
+      // srcdoc だと opaque origin で BroadcastChannel が分離されるため
+      // 外部 HTML として読み込み、親と同一オリジンを保つ
+      iframe.src = 'test-frame.html';
+      document.body.appendChild(iframe);
+      await new Promise(resolve => {
+        const handler = (e) => {
+          if (e.source === iframe.contentWindow && e.data?.id === 'ready') {
+            window.removeEventListener('message', handler);
+            resolve();
+          }
+        };
+        window.addEventListener('message', handler);
+      });
+      let counter = 0;
+      async function call(action, args = {}) {
+        const id = `${label}_${counter++}`;
+        return new Promise(resolve => {
+          const handler = (e) => {
+            if (e.source === iframe.contentWindow && e.data?.id === id) {
+              window.removeEventListener('message', handler);
+              resolve(e.data.result);
+            }
+          };
+          window.addEventListener('message', handler);
+          iframe.contentWindow.postMessage({ id, action, args }, '*');
+        });
+      }
+      return { iframe, call, destroy: () => iframe.remove() };
+    }
+
+    async function runTests() {
+      // クリーンアップ
+      try { localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`); } catch (_) {}
+
+      head('■ セットアップ: 2つのタブをシミュレート');
+      const tabA = await createTabSimulator('A');
+      const tabB = await createTabSimulator('B');
+      log(`  iframe A / B ready`);
+
+      head('■ テスト1: Primary検出');
+      await tabA.call('create', { deviceId: DEVICE_ID });
+      await tabB.call('create', { deviceId: DEVICE_ID });
+
+      const initialCheck = await tabB.call('isRemotePrimaryAvailable');
+      assert(initialCheck === false, 'Primaryが存在しない初期状態でfalseを返す');
+
+      await tabA.call('claimPrimary');
+      await wait(50);
+
+      const afterClaimCheck = await tabB.call('isRemotePrimaryAvailable');
+      assert(afterClaimCheck === true, 'Primary確立後、別タブからtrueを返す');
+
+      const selfCheck = await tabA.call('isRemotePrimaryAvailable');
+      assert(selfCheck === false, '自タブは"他タブのPrimary"とはみなさない');
+
+      const storageEntry = await tabA.call('readStorageKey', { deviceId: DEVICE_ID });
+      assert(storageEntry !== null, 'claimPrimaryでlocalStorageにエントリが書き込まれる');
+      const parsed = JSON.parse(storageEntry);
+      assert(typeof parsed.timestamp === 'number', '  └ timestampが数値');
+      assert(typeof parsed.tabId === 'string',      '  └ tabIdが文字列');
+
+      head('■ テスト2: Secondary購読 & バッチブロードキャスト');
+      await tabB.call('subscribeAsSecondary');
+      await wait(100);
+
+      await tabB.call('clearReceived');
+      await tabA.call('broadcastBatch', {
+        batch: {
+          gotAcc:  { x: 1.1, y: 2.2, z: 3.3 },
+          gotGait: { direction: 2, steps: 42 },
+        }
+      });
+      await wait(100);
+
+      const recv = await tabB.call('getReceived');
+      assert(recv.length === 2, `バッチ1回で2コールバックが発火 (actual: ${recv.length})`);
+      const accMsg  = recv.find(r => r.cb === 'gotAcc');
+      const gaitMsg = recv.find(r => r.cb === 'gotGait');
+      assert(accMsg && accMsg.data.x === 1.1,        'gotAccデータが正しく伝搬');
+      assert(gaitMsg && gaitMsg.data.direction === 2, 'gotGaitデータが正しく伝搬');
+
+      head('■ テスト3: 複数バッチの連続送信');
+      await tabB.call('clearReceived');
+      for (let i = 0; i < 10; i++) {
+        await tabA.call('broadcastBatch', { batch: { gotAcc: { x: i, y: 0, z: 0 } } });
+      }
+      await wait(300);
+      const recvMulti = await tabB.call('getReceived');
+      assert(recvMulti.length === 10, `連続10バッチが全て到達 (actual: ${recvMulti.length})`);
+      const xs = recvMulti.map(r => r.data.x);
+      assert(JSON.stringify(xs) === JSON.stringify([0,1,2,3,4,5,6,7,8,9]), '順序が保持される');
+
+      head('■ テスト4: broadcastDisconnectで即時通知');
+      await tabB.call('clearReceived');
+      await tabA.call('broadcastDisconnect');
+      await wait(100);
+      const recvDisc = await tabB.call('getReceived');
+      const hasLost = recvDisc.some(r => r.cb === 'onPrimaryLost');
+      assert(hasLost, 'disconnectedメッセージでonPrimaryLostが発火');
+
+      const storageAfterDisc = await tabA.call('readStorageKey', { deviceId: DEVICE_ID });
+      assert(storageAfterDisc === null, 'broadcastDisconnectでlocalStorageがクリーンアップされる');
+
+      head('■ テスト5: release時の自エントリ保護');
+      await tabA.call('create', { deviceId: DEVICE_ID });
+      await tabA.call('claimPrimary');
+      await wait(50);
+
+      // 故意に別タブIDで上書き（他タブが Primary を奪った状況を再現）
+      localStorage.setItem(`orphe_bridge_primary_${DEVICE_ID}`,
+        JSON.stringify({ timestamp: Date.now(), tabId: 'FAKE_OTHER_TAB' }));
+
+      await tabA.call('release');
+      await wait(50);
+
+      const rawAfterRelease = localStorage.getItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      const parsedOther = JSON.parse(rawAfterRelease);
+      assert(parsedOther?.tabId === 'FAKE_OTHER_TAB',
+        '他タブの Primary エントリは release で破壊されない（自タブIDのみ削除）');
+
+      head('■ テスト6: heartbeat タイムアウトでの無効判定');
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      // タイムアウト超過のheartbeatを偽装
+      localStorage.setItem(`orphe_bridge_primary_${DEVICE_ID}`,
+        JSON.stringify({ timestamp: Date.now() - 10000, tabId: 'STALE_TAB' }));
+
+      await tabB.call('create', { deviceId: DEVICE_ID });
+      const staleCheck = await tabB.call('isRemotePrimaryAvailable');
+      assert(staleCheck === false, 'HEARTBEAT_TIMEOUT_MS(5s)を超えたエントリは無効扱い');
+
+      head('■ テスト7: 複数Secondaryへの同時配信');
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      const tabC = await createTabSimulator('C');
+      await tabA.call('create', { deviceId: DEVICE_ID });
+      await tabB.call('create', { deviceId: DEVICE_ID });
+      await tabC.call('create', { deviceId: DEVICE_ID });
+
+      await tabA.call('claimPrimary');
+      await tabB.call('subscribeAsSecondary');
+      await tabC.call('subscribeAsSecondary');
+      await wait(100);
+
+      await tabB.call('clearReceived');
+      await tabC.call('clearReceived');
+      await tabA.call('broadcastBatch', { batch: { gotAcc: { x: 9.9, y: 0, z: 0 } } });
+      await wait(100);
+
+      const recvB = await tabB.call('getReceived');
+      const recvC = await tabC.call('getReceived');
+      assert(recvB.length === 1 && recvB[0].data.x === 9.9, 'Secondary B が受信');
+      assert(recvC.length === 1 && recvC[0].data.x === 9.9, 'Secondary C が同じデータを受信');
+
+      head('■ テスト8: Primary喪失→全Secondaryが onPrimaryLost 発火');
+      await tabB.call('clearReceived');
+      await tabC.call('clearReceived');
+      await tabA.call('release'); // Primary が消える
+      await wait(200);
+
+      const lostB = await tabB.call('getReceived');
+      const lostC = await tabC.call('getReceived');
+      assert(lostB.some(r => r.cb === 'onPrimaryLost'), 'Tab B が onPrimaryLost 検知');
+      assert(lostC.some(r => r.cb === 'onPrimaryLost'), 'Tab C が onPrimaryLost 検知');
+
+      head('■ テスト9: Secondary→新Primary昇格');
+      // 全タブをクリーンな状態にして再構築
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      await tabA.call('release');
+      await tabB.call('release');
+      await tabC.call('release');
+      await tabA.call('create', { deviceId: DEVICE_ID });
+      await tabB.call('create', { deviceId: DEVICE_ID });
+
+      // B は最初 Secondary ではなく、Primary 昇格を試みる
+      await tabA.call('claimPrimary');
+      await wait(50);
+      const bCheckBefore = await tabB.call('isRemotePrimaryAvailable');
+      assert(bCheckBefore === true, 'B は A が Primary であると認識');
+
+      // A が消え、B が Primary を奪取
+      await tabA.call('release');
+      await wait(100);
+      const bCheckAfter = await tabB.call('isRemotePrimaryAvailable');
+      assert(bCheckAfter === false, 'A 喪失後、B は他の Primary を認識しない');
+
+      await tabB.call('claimPrimary');
+      await wait(50);
+      const bStorageEntry = await tabB.call('readStorageKey', { deviceId: DEVICE_ID });
+      assert(bStorageEntry !== null, 'B が新 Primary として localStorage に登録される');
+      const bParsed = JSON.parse(bStorageEntry);
+      assert(typeof bParsed.tabId === 'string' && bParsed.tabId !== '', '  └ B の tabId が記録される');
+
+      head('■ テスト10: 不正メッセージの耐性');
+      await tabB.call('release');
+      await tabA.call('release');
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      await tabA.call('create', { deviceId: DEVICE_ID });
+      await tabB.call('create', { deviceId: DEVICE_ID });
+      await tabA.call('claimPrimary');
+      await tabB.call('subscribeAsSecondary');
+      await wait(100);
+      await tabB.call('clearReceived');
+
+      // 不正データをチャネルに流しても Secondary がクラッシュしないことを確認
+      await tabA.call('broadcastBatch', { batch: { nonexistent_callback: { foo: 1 } } });
+      await wait(100);
+      // エラーにならずここまで到達したら OK
+      const afterBadMsg = await tabB.call('getReceived');
+      assert(afterBadMsg.length === 0, '未登録コールバックは静かに無視される');
+
+      head('■ テスト11: deviceId分離（干渉しない）');
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      await tabA.call('create', { deviceId: DEVICE_ID });     // device 99
+      await tabB.call('create', { deviceId: DEVICE_ID + 1 }); // device 100
+
+      await tabA.call('claimPrimary');
+      await wait(50);
+
+      const crossCheck = await tabB.call('isRemotePrimaryAvailable');
+      assert(crossCheck === false, 'device 99のPrimaryはdevice 100から見えない');
+
+      head('■ クリーンアップ');
+      await tabA.call('release');
+      await tabB.call('release');
+      try { await tabC.call('release'); } catch (_) {}
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID + 1}`);
+      tabA.destroy();
+      tabB.destroy();
+      try { tabC.destroy(); } catch (_) {}
+      log('  OK');
+
+      // サマリ
+      summaryEl.style.display = 'block';
+      if (failed === 0) {
+        summaryEl.className = 'summary ok';
+        summaryEl.textContent = `✓ 全 ${passed} テストがパスしました`;
+      } else {
+        summaryEl.className = 'summary ng';
+        summaryEl.textContent = `✗ ${passed} passed / ${failed} failed`;
+      }
+    }
+
+    async function runAll() {
+      resultsEl.innerHTML = '';
+      summaryEl.style.display = 'none';
+      passed = 0; failed = 0;
+      try { await runTests(); }
+      catch (err) { log('実行エラー: ' + err.message + '\n' + err.stack, 'fail'); }
+      // ヘッドレステスト用にDOMにマーカーを置く
+      const marker = document.createElement('div');
+      marker.id = 'test_complete_marker';
+      marker.setAttribute('data-passed', String(passed));
+      marker.setAttribute('data-failed', String(failed));
+      document.body.appendChild(marker);
+      document.title = failed === 0 ? `PASS ${passed}/${passed}` : `FAIL ${failed}/${passed+failed}`;
+    }
+
+    document.getElementById('run_btn').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      await runAll();
+      e.target.disabled = false;
+    });
+
+    // ?autorun=1 で自動実行（ヘッドレステスト用）
+    if (new URLSearchParams(location.search).has('autorun')) {
+      window.addEventListener('load', () => runAll());
+    }
+  </script>
+</body>
+</html>

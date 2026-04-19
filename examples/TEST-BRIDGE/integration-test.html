@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Orphe + BleSharedBridge 統合テスト</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; background: #f8f9fa; }
+    h1 { font-size: 1.3em; }
+    #results { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; white-space: pre-wrap; }
+    .pass { color: #0f5132; }
+    .fail { color: #842029; font-weight: bold; }
+    .info { color: #6c757d; }
+    .head { color: #084298; font-weight: bold; margin-top: 10px; }
+    .summary { margin-top: 20px; padding: 12px; border-radius: 6px; }
+    .ok   { background: #d1e7dd; color: #0f5132; }
+    .ng   { background: #f8d7da; color: #842029; }
+    button { padding: 8px 20px; background: #0d6efd; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Orphe + BleSharedBridge 統合テスト</h1>
+  <p>Orpheクラスのbegin()・reset()・onReadブロードキャストとBleSharedBridgeの連携を検証します。</p>
+
+  <button id="run_btn">テスト実行</button>
+  <div id="summary" class="summary" style="display:none"></div>
+  <pre id="results"></pre>
+
+  <script src="../../js/float16.min.js"></script>
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+
+  <script>
+    const DEVICE_ID = 77;
+    const resultsEl = document.getElementById('results');
+    const summaryEl = document.getElementById('summary');
+    let passed = 0, failed = 0;
+
+    function log(msg, cls='info') {
+      const l = document.createElement('div');
+      l.className = cls;
+      l.textContent = msg;
+      resultsEl.appendChild(l);
+    }
+    const head = (m) => log(m, 'head');
+    const assert = (c, m) => {
+      if (c) { log('  ✓ ' + m, 'pass'); passed++; }
+      else   { log('  ✗ ' + m, 'fail'); failed++; }
+    };
+    const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+    async function runAll() {
+      resultsEl.innerHTML = '';
+      summaryEl.style.display = 'none';
+      passed = 0; failed = 0;
+      try { await runTests(); }
+      catch (err) { log('実行エラー: ' + err.message + '\n' + err.stack, 'fail'); failed++; }
+
+      const marker = document.createElement('div');
+      marker.id = 'test_complete_marker';
+      marker.setAttribute('data-passed', String(passed));
+      marker.setAttribute('data-failed', String(failed));
+      document.body.appendChild(marker);
+      document.title = failed === 0 ? `PASS ${passed}/${passed}` : `FAIL ${failed}/${passed+failed}`;
+
+      summaryEl.style.display = 'block';
+      if (failed === 0) {
+        summaryEl.className = 'summary ok';
+        summaryEl.textContent = `✓ 全 ${passed} テストがパスしました`;
+      } else {
+        summaryEl.className = 'summary ng';
+        summaryEl.textContent = `✗ ${passed} passed / ${failed} failed`;
+      }
+    }
+
+    async function runTests() {
+      head('■ テスト1: OrpheクラスのBridge関連プロパティ初期化');
+      const ble = new Orphe(DEVICE_ID);
+      assert(ble._bridge === null, '初期状態で_bridge = null');
+      assert(ble._isBridgeSecondary === false, '初期状態で_isBridgeSecondary = false');
+      assert(typeof ble._notifyBridge === 'function', '_notifyBridgeメソッドが存在');
+      assert(typeof ble._notifyBridgeBatch === 'function', '_notifyBridgeBatchメソッドが存在');
+      assert(typeof ble._beginAsSecondary === 'function', '_beginAsSecondaryメソッドが存在');
+      assert(typeof ble._handlePrimaryLost === 'function', '_handlePrimaryLostメソッドが存在');
+
+      head('■ テスト2: Secondary自動判定 (Primaryが存在する場合)');
+      // 別タブが Primary である状態を localStorage に偽装
+      const fakePrimary = {
+        timestamp: Date.now(),
+        tabId: 'FAKE_PRIMARY_TAB_' + Math.random().toString(36).slice(2),
+      };
+      localStorage.setItem(`orphe_bridge_primary_${DEVICE_ID}`, JSON.stringify(fakePrimary));
+
+      // Orpheのbegin()はBLE接続せずSecondaryとして起動するはず
+      const ble2 = new Orphe(DEVICE_ID);
+      const result = await ble2.begin('STEP_ANALYSIS');
+      assert(typeof result === 'string' && result.includes('BRIDGE SECONDARY'),
+        'begin()が"BRIDGE SECONDARY"を返す (actual: ' + result + ')');
+      assert(ble2._isBridgeSecondary === true, 'Secondary モードフラグがtrue');
+      assert(ble2._bridge !== null, '_bridge にインスタンスが設定される');
+      assert(ble2.bluetoothDevice === null, 'BLE接続は行われない (bluetoothDevice === null)');
+
+      head('■ テスト3: Secondaryがブロードキャストを受信してコールバック発火');
+      let receivedAcc = null, receivedGait = null;
+      ble2.gotAcc = function(acc) { receivedAcc = acc; };
+      ble2.gotGait = function(gait) { receivedGait = gait; };
+
+      // 別タブの Primary がブロードキャストする動作を iframe で再現
+      const iframe = document.createElement('iframe');
+      iframe.src = 'test-frame.html';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      await new Promise(resolve => {
+        const h = (e) => {
+          if (e.source === iframe.contentWindow && e.data?.id === 'ready') {
+            window.removeEventListener('message', h);
+            resolve();
+          }
+        };
+        window.addEventListener('message', h);
+      });
+
+      let callId = 0;
+      async function iframeCall(action, args={}) {
+        const id = 'int_' + callId++;
+        return new Promise(resolve => {
+          const h = (e) => {
+            if (e.source === iframe.contentWindow && e.data?.id === id) {
+              window.removeEventListener('message', h);
+              resolve(e.data.result);
+            }
+          };
+          window.addEventListener('message', h);
+          iframe.contentWindow.postMessage({ id, action, args }, '*');
+        });
+      }
+
+      // 偽装していた localStorage を削除してから実在のPrimaryを作る
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      await iframeCall('create', { deviceId: DEVICE_ID });
+      await iframeCall('claimPrimary');
+      await wait(100);
+
+      await iframeCall('broadcastBatch', {
+        batch: {
+          gotAcc:  { x: 7.7, y: 8.8, z: 9.9 },
+          gotGait: { direction: 4, steps: 99 },
+        }
+      });
+      await wait(150);
+
+      assert(receivedAcc !== null && receivedAcc.x === 7.7, 'ble.gotAccが正しいデータで呼ばれる');
+      assert(receivedGait !== null && receivedGait.direction === 4, 'ble.gotGaitが正しいデータで呼ばれる');
+
+      head('■ テスト4: reset() でBridgeがリリースされる');
+      ble2.reset();
+      assert(ble2._bridge === null, 'reset後、_bridgeがnull');
+      assert(ble2._isBridgeSecondary === false, 'reset後、_isBridgeSecondary=false');
+
+      head('■ テスト5: Primary側の_notifyBridgeBatchが配信される');
+      // ble3 を Primary として直接セットアップ
+      await iframeCall('release');
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      await wait(50);
+
+      const ble3 = new Orphe(DEVICE_ID);
+      ble3._bridge = new BleSharedBridge(DEVICE_ID);
+      ble3._bridge.claimPrimary();
+      await wait(50);
+
+      // 別タブ(iframe)をSecondaryとして購読させる
+      await iframeCall('create', { deviceId: DEVICE_ID });
+      await iframeCall('subscribeAsSecondary');
+      await wait(100);
+      await iframeCall('clearReceived');
+
+      // Orpheの_notifyBridgeBatch呼び出しを再現
+      ble3._notifyBridgeBatch({
+        gotAcc: { x: 1, y: 2, z: 3 },
+        gotGyro: { x: 4, y: 5, z: 6 },
+      });
+      await wait(150);
+
+      const received = await iframeCall('getReceived');
+      assert(received.some(r => r.cb === 'gotAcc' && r.data.x === 1), 'Secondaryが gotAcc を受信');
+      // gotGyro は test-frame に登録していないので届かない想定だが、エラーにならない
+      assert(received.filter(r => r.cb === 'gotAcc').length === 1, '重複なく1回だけ受信');
+
+      head('■ テスト6: Primaryのbroadcastは自Secondary(同タブ内)には届かない');
+      // BroadcastChannelは自ページには送信しない仕様
+      // ble3 は Primary、同じタブに別の Orphe Secondary は作れないが、
+      // Primary自身が送ったデータは自分では受信しないことを間接的に確認
+      let selfLoopback = false;
+      const ble3OrigGotAcc = ble3.gotAcc;
+      ble3.gotAcc = function(d) { selfLoopback = true; if (ble3OrigGotAcc) ble3OrigGotAcc(d); };
+
+      ble3._notifyBridgeBatch({ gotAcc: { x: 99, y: 99, z: 99 } });
+      await wait(100);
+      assert(selfLoopback === false, 'Primaryは自身の送信したbroadcastで自gotAccを発火させない');
+
+      head('■ クリーンアップ');
+      ble3._bridge?.release();
+      ble3._bridge = null;
+      await iframeCall('release');
+      iframe.remove();
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      log('  OK');
+    }
+
+    document.getElementById('run_btn').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      await runAll();
+      e.target.disabled = false;
+    });
+
+    if (new URLSearchParams(location.search).has('autorun')) {
+      window.addEventListener('load', () => runAll());
+    }
+  </script>
+</body>
+</html>

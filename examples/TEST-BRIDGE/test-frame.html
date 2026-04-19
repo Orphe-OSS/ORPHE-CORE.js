@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><script src="../../js/BleSharedBridge.js"></script></head>
+<body>
+<script>
+  let bridge = null;
+  const received = [];
+
+  window.addEventListener('message', (e) => {
+    const { id, action, args } = e.data || {};
+    if (!id) return;
+    let result = null;
+    try {
+      if (action === 'create') {
+        // 古いブリッジが残っているとチャネルが二重に購読されてしまうため必ず解放
+        if (bridge) { try { bridge.release(); } catch (_) {} }
+        bridge = new BleSharedBridge(args.deviceId);
+        result = 'ok';
+      }
+      else if (action === 'claimPrimary')             { bridge.claimPrimary(); result = 'ok'; }
+      else if (action === 'isRemotePrimaryAvailable') { result = bridge.isRemotePrimaryAvailable(); }
+      else if (action === 'broadcastBatch')           { bridge.broadcastBatch(args.batch); result = 'ok'; }
+      else if (action === 'broadcastDisconnect')      { bridge.broadcastDisconnect(); result = 'ok'; }
+      else if (action === 'subscribeAsSecondary') {
+        bridge.subscribeAsSecondary({
+          gotAcc:        (d) => received.push({ cb: 'gotAcc', data: d }),
+          gotGait:       (d) => received.push({ cb: 'gotGait', data: d }),
+          onPrimaryLost: ()  => received.push({ cb: 'onPrimaryLost' }),
+        });
+        result = 'ok';
+      }
+      else if (action === 'getReceived')      { result = received.slice(); }
+      else if (action === 'debugBridgeState') {
+        result = {
+          isPrimary: bridge?.isPrimary,
+          hasChannel: !!bridge?._channel,
+          hasCallbacks: Object.keys(bridge?._callbacks || {}),
+          channelName: bridge?._channelName,
+        };
+      }
+      else if (action === 'clearReceived')    { received.length = 0; result = 'ok'; }
+      else if (action === 'release')          { bridge.release(); result = 'ok'; }
+      else if (action === 'readStorageKey')   { result = localStorage.getItem('orphe_bridge_primary_' + args.deviceId); }
+    } catch (err) { result = { error: String(err) }; }
+    parent.postMessage({ id, result }, '*');
+  });
+
+  parent.postMessage({ id: 'ready' }, '*');
+</script>
+</body>
+</html>

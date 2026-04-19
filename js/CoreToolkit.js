@@ -173,7 +173,6 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ST
  * 
  */
 async function toggleCoreModule(dom, options = {}) {
-    // console.log("toggleCoreModule", options);
     let checked = dom.checked;
     let number = parseInt(dom.value);
     let ble = bles[number];
@@ -186,14 +185,33 @@ async function toggleCoreModule(dom, options = {}) {
         }
 
         document.querySelector(`#ui${number}`).style.visibility = 'visible';
-        ble.gotBLEFrequency = function (freq) {
-            document.querySelector(`#freq${this.id} `).innerHTML = `${Math.floor(freq)} Hz`;
-        };
+
+        // BleSharedBridge: Secondary モードの場合は「共有接続中」を表示
+        if (ble._isBridgeSecondary) {
+            const freqEl = document.querySelector(`#icon_bluetooth${number}`);
+            if (freqEl) {
+                freqEl.innerHTML = `<i class="bi bi-broadcast position-relative">
+                  <span class="position-absolute top-0 start-50 translate-middle badge text-muted" style="font-size:0.2em;" id="freq${number}">
+                    共有
+                  </span>
+                </i>`;
+                freqEl.title = '別タブのBLE接続を共有中';
+            }
+            // Primary が切れたら自動でトグルをリセット
+            ble.onDisconnect = function () {
+                const sw = document.querySelector(`#switch_ble${number}`);
+                if (sw) sw.checked = false;
+                document.querySelector(`#ui${number}`).style.visibility = 'hidden';
+            };
+        } else {
+            ble.gotBLEFrequency = function (freq) {
+                document.querySelector(`#freq${this.id} `).innerHTML = `${Math.floor(freq)} Hz`;
+            };
+        }
     }
     else {
         ble.reset();
         document.querySelector(`#ui${number}`).style.visibility = 'hidden';
-        //setHeaderStatusOffline(ble.id);
     }
 }
 

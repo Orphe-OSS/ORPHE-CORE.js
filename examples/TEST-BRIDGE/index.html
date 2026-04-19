@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLE Shared Bridge テスト</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"></script>
+  <style>
+    body { padding: 20px; background: #f8f9fa; }
+    .card { margin-bottom: 12px; }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: bold;
+    }
+    .status-primary   { background: #d1e7dd; color: #0f5132; }
+    .status-secondary { background: #cfe2ff; color: #084298; }
+    .status-offline   { background: #e2e3e5; color: #41464b; }
+    .data-val { font-family: monospace; font-size: 1.1em; }
+    #log { height: 160px; overflow-y: auto; font-size: 0.78em; background: #212529; color: #adb5bd; padding: 8px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid" style="max-width:640px">
+    <h5 class="mb-3">BLE Shared Bridge テスト
+      <span id="mode_badge" class="status-badge status-offline ms-2">未接続</span>
+    </h5>
+
+    <div id="toolkit_placeholder"></div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="card bg-light">
+              <div class="card-body py-2">
+                <small class="text-muted">加速度 X / Y / Z</small>
+                <div class="data-val" id="acc_val">-- / -- / --</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card bg-light">
+              <div class="card-body py-2">
+                <small class="text-muted">歩行方向</small>
+                <div class="data-val" id="dir_val">--</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card bg-light">
+              <div class="card-body py-2">
+                <small class="text-muted">歩数</small>
+                <div class="data-val" id="steps_val">--</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card bg-light">
+              <div class="card-body py-2">
+                <small class="text-muted">Euler pitch / roll</small>
+                <div class="data-val" id="euler_val">-- / --</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body py-2">
+        <small class="text-muted d-block mb-1">イベントログ</small>
+        <div id="log"></div>
+      </div>
+    </div>
+
+    <div class="alert alert-info py-2 mt-2" style="font-size:0.82em">
+      <b>使い方:</b> このページを2つのタブで開き、片方で接続ボタンをONにしてください。
+      もう一方のタブで同じボタンをONにすると、BLE接続なしに「共有接続中」でデータを受信します。
+    </div>
+  </div>
+
+  <script>
+    const DIR_NAMES = { 0: '左', 2: '前', 4: '後', 6: '右' };
+
+    function addLog(msg) {
+      const el = document.getElementById('log');
+      const t = new Date().toLocaleTimeString();
+      el.innerHTML = `<span class="text-warning">[${t}]</span> ${msg}<br>` + el.innerHTML;
+    }
+
+    function updateModeBadge() {
+      const badge = document.getElementById('mode_badge');
+      const ble = bles[0];
+      if (!ble) return;
+      if (ble._isBridgeSecondary) {
+        badge.className = 'status-badge status-secondary ms-2';
+        badge.textContent = '📡 共有接続中（Secondary）';
+      } else if (ble.bluetoothDevice && ble.bluetoothDevice.gatt.connected) {
+        badge.className = 'status-badge status-primary ms-2';
+        badge.textContent = '🔵 BLE接続中（Primary）';
+      } else {
+        badge.className = 'status-badge status-offline ms-2';
+        badge.textContent = '未接続';
+      }
+    }
+
+    buildCoreToolkit(
+      document.getElementById('toolkit_placeholder'),
+      'ORPHE CORE',
+      0,
+      'STEP_ANALYSIS_AND_SENSOR_VALUES'
+    );
+
+    window.onload = function () {
+      bles[0].setup();
+
+      bles[0].gotAcc = function (acc) {
+        document.getElementById('acc_val').textContent =
+          `${acc.x.toFixed(2)} / ${acc.y.toFixed(2)} / ${acc.z.toFixed(2)}`;
+      };
+
+      bles[0].gotGait = function (gait) {
+        document.getElementById('dir_val').textContent =
+          DIR_NAMES[gait.direction] ?? gait.direction;
+      };
+
+      bles[0].gotStepsNumber = function (s) {
+        document.getElementById('steps_val').textContent = s.value;
+      };
+
+      bles[0].gotEuler = function (euler) {
+        document.getElementById('euler_val').textContent =
+          `${(euler.pitch * 180 / Math.PI).toFixed(1)}° / ${(euler.roll * 180 / Math.PI).toFixed(1)}°`;
+      };
+
+      bles[0].onConnect = function (uuid) {
+        addLog(`接続: ${uuid}`);
+        updateModeBadge();
+      };
+
+      bles[0].onDisconnect = function () {
+        addLog('切断');
+        updateModeBadge();
+      };
+
+      bles[0].onError = function (err) {
+        addLog(`エラー: ${err}`);
+      };
+
+      // モードバッジを定期更新
+      setInterval(updateModeBadge, 2000);
+    };
+  </script>
+</body>
+</html>

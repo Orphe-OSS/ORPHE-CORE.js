@@ -132,6 +132,10 @@ class Orphe {
     this.hashUUID = {}; // UUIDを保持するハッシュ
     this.hashUUID_lastConnected; // 最後に接続したUUIDを保持する
     this.id = id;
+
+    // BleSharedBridge: 複数タブ間接続共有
+    this._bridge = null;
+    this._isBridgeSecondary = false;
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
     /**
@@ -412,6 +416,15 @@ class Orphe {
     } = options;
     this.notification_type = str_type;
 
+    // ── BleSharedBridge: 別タブに Primary が存在するか確認 ──────────────
+    if (typeof BleSharedBridge !== 'undefined') {
+      const bridge = new BleSharedBridge(this.id);
+      if (bridge.isRemotePrimaryAvailable()) {
+        return this._beginAsSecondary(bridge, str_type);
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────
+
     let obj = await this.getDeviceInformation();
 
     if (range.acc == 16) obj.range.acc = 3;
@@ -458,8 +471,13 @@ class Orphe {
         });
       }
     })
-      .then(async (result) => {  // この関数をasyncで宣言
-        // ここにresolveされたときに実行する共通のコードを書く
+      .then(async (result) => {
+        // BleSharedBridge: BLE接続成功後にこのタブを Primary として登録
+        if (typeof BleSharedBridge !== 'undefined' && result) {
+          this._bridge = new BleSharedBridge(this.id);
+          this._isBridgeSecondary = false;
+          this._bridge.claimPrimary();
+        }
         return result;
       })
       .catch(error => {  // ダイアログのキャンセルはそのまま閉じる
@@ -810,14 +828,113 @@ class Orphe {
    * reset(disconnect & clear)
    */
   reset() {
+    // BleSharedBridge: 切断を他タブに通知してリソース解放
+    if (this._bridge) {
+      if (this._bridge.isPrimary) this._bridge.broadcastDisconnect();
+      else this._bridge.release();
+      this._bridge = null;
+      this._isBridgeSecondary = false;
+    }
     this.disconnect(); //disconnect() is not Promise Object
     this.clear();
     this.onReset();
   }
 
+  /**
+   * Secondary モードとして begin する内部メソッド（BleSharedBridge 用）
+   * @param {BleSharedBridge} bridge
+   * @param {string} str_type - notification type
+   * @returns {Promise<string>}
+   */
+  _beginAsSecondary(bridge, str_type) {
+    this._bridge = bridge;
+    this._isBridgeSecondary = true;
+
+    const self = this;
+    bridge.subscribeAsSecondary({
+      gotAcc:                    (d) => self.gotAcc(d),
+      gotGyro:                   (d) => self.gotGyro(d),
+      gotQuat:                   (d) => self.gotQuat(d),
+      gotEuler:                  (d) => self.gotEuler(d),
+      gotConvertedAcc:           (d) => self.gotConvertedAcc(d),
+      gotConvertedGyro:          (d) => self.gotConvertedGyro(d),
+      gotDelta:                  (d) => self.gotDelta(d),
+      gotGait:                   (d) => self.gotGait(d),
+      gotType:                   (d) => self.gotType(d),
+      gotDirection:              (d) => self.gotDirection(d),
+      gotDistance:               (d) => self.gotDistance(d),
+      gotCalorie:                (d) => self.gotCalorie(d),
+      gotStandingPhaseDuration:  (d) => self.gotStandingPhaseDuration(d),
+      gotSwingPhaseDuration:     (d) => self.gotSwingPhaseDuration(d),
+      gotStride:                 (d) => self.gotStride(d),
+      gotFootAngle:              (d) => self.gotFootAngle(d),
+      gotPronation:              (d) => self.gotPronation(d),
+      gotLandingImpact:          (d) => self.gotLandingImpact(d),
+      gotStepsNumber:            (d) => self.gotStepsNumber(d),
+      gotBLEFrequency:           (d) => self.gotBLEFrequency(d),
+
+      onPrimaryConnected: () => {
+        self.onConnect('BRIDGE_SECONDARY');
+      },
+      onDisconnect: () => {
+        self._isBridgeSecondary = false;
+        self.onDisconnect();
+      },
+      onReconnectNeeded: () => {
+        // Primary が消えた → Fast Reconnect を試みる
+        self._tryBridgeReconnect(str_type);
+      },
+    });
+
+    this.onConnect('BRIDGE_SECONDARY');
+    return Promise.resolve('done begin(); BRIDGE SECONDARY');
+  }
+
+  /**
+   * Primary タブが閉じた際に自動再接続を試みる
+   * navigator.bluetooth.getDevices() でペアリング済みデバイスがあればダイアログ不要で接続
+   * @param {string} str_type
+   */
+  async _tryBridgeReconnect(str_type) {
+    if (this._bridge) {
+      this._bridge.release();
+      this._bridge = null;
+      this._isBridgeSecondary = false;
+    }
+    this.onDisconnect();
+
+    // Fast Reconnect: ペアリング済みデバイスがあればダイアログなしで再接続
+    if (navigator.bluetooth?.getDevices) {
+      try {
+        const devices = await navigator.bluetooth.getDevices();
+        if (devices.length > 0) {
+          this.bluetoothDevice = devices[0];
+          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          // 直接 GATT 接続（requestDevice 不要）
+          await this.begin(str_type);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // Fast Reconnect 不可 → UI 側で手動接続を促す
+    this.onError('Primary tab closed. Please reconnect.');
+  }
 
 
 
+
+
+  /**
+   * BleSharedBridge 用: Primary タブからセンサーデータをブロードキャストする
+   * @param {string} callbackName
+   * @param {Object} data
+   */
+  _notifyBridge(callbackName, data) {
+    if (this._bridge && this._bridge.isPrimary) {
+      this._bridge.broadcast(callbackName, data);
+    }
+  }
 
   // Readコールバック
   /**
@@ -929,6 +1046,7 @@ class Orphe {
       const steps_now = data.getUint16(2);
       if ((0 <= header && header <= 2) && steps_now > this.steps_number) {
         this.gotStepsNumber({ value: steps_now });
+        this._notifyBridge('gotStepsNumber', { value: steps_now });
         this.steps_number = steps_now;
       }
 
@@ -956,6 +1074,13 @@ class Orphe {
         this.gotCalorie({ value: this.gait.calorie });
         this.gotStandingPhaseDuration({ value: this.gait.standing_phase_duration });
         this.gotSwingPhaseDuration({ value: this.gait.swing_phase_duration });
+        this._notifyBridge('gotGait', this.gait);
+        this._notifyBridge('gotType', { value: this.gait.type });
+        this._notifyBridge('gotDistance', { value: this.gait.distance });
+        this._notifyBridge('gotDirection', { value: this.gait.direction });
+        this._notifyBridge('gotCalorie', { value: this.gait.calorie });
+        this._notifyBridge('gotStandingPhaseDuration', { value: this.gait.standing_phase_duration });
+        this._notifyBridge('gotSwingPhaseDuration', { value: this.gait.swing_phase_duration });
       }
       // Stride
       else if (data.getUint8(1) == 1 && steps_now > this.stride.steps) {
@@ -971,6 +1096,8 @@ class Orphe {
           z: this.stride.z,
           steps_number: this.stride.steps
         });
+        this._notifyBridge('gotFootAngle', { value: this.stride.foot_angle });
+        this._notifyBridge('gotStride', { x: this.stride.x, y: this.stride.y, z: this.stride.z, steps_number: this.stride.steps });
       }
       // Pronation
       else if (data.getUint8(1) == 2 && steps_now > this.pronation.steps) {
@@ -984,7 +1111,9 @@ class Orphe {
           y: this.pronation.y,
           z: this.pronation.z
         });
-        this.gotLandingImpact({ value: this.pronation.landing_impact })
+        this.gotLandingImpact({ value: this.pronation.landing_impact });
+        this._notifyBridge('gotPronation', { x: this.pronation.x, y: this.pronation.y, z: this.pronation.z });
+        this._notifyBridge('gotLandingImpact', { value: this.pronation.landing_impact });
 
       }
       // Stride Attitude -- Not implemented
@@ -1011,6 +1140,9 @@ class Orphe {
         this.gotQuat(this.quat);
         this.gotDelta(this.delta);
         this.gotEuler(this.euler);
+        this._notifyBridge('gotQuat', this.quat);
+        this._notifyBridge('gotDelta', this.delta);
+        this._notifyBridge('gotEuler', this.euler);
       }
       // Sensor test
       else if (data.getUint8(1) == 5) {
@@ -1154,6 +1286,12 @@ class Orphe {
           let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
           this.euler = q.toEuler();
           this.gotEuler(this.euler);
+          this._notifyBridge('gotAcc', this.acc);
+          this._notifyBridge('gotQuat', this.quat);
+          this._notifyBridge('gotGyro', this.gyro);
+          this._notifyBridge('gotConvertedAcc', this.converted_acc);
+          this._notifyBridge('gotConvertedGyro', this.converted_gyro);
+          this._notifyBridge('gotEuler', this.euler);
         }
 
       }
@@ -1209,6 +1347,12 @@ class Orphe {
         let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
         this.euler = q.toEuler();
         this.gotEuler(this.euler);
+        this._notifyBridge('gotAcc', this.acc);
+        this._notifyBridge('gotQuat', this.quat);
+        this._notifyBridge('gotGyro', this.gyro);
+        this._notifyBridge('gotConvertedAcc', this.converted_acc);
+        this._notifyBridge('gotConvertedGyro', this.converted_gyro);
+        this._notifyBridge('gotEuler', this.euler);
       }
     }
   }

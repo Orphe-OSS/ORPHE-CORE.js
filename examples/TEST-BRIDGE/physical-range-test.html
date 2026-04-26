@@ -22,6 +22,10 @@
     .metric-label { color: #64748b; font-size: 0.78rem; }
     .metric-value { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem; }
     #log { height: 280px; overflow-y: auto; background: #111827; color: #d1d5db; border-radius: 8px; padding: 10px; font-size: 0.82rem; }
+    .raw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+    .raw-cell { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; background: #fbfcfe; }
+    .raw-label { color: #64748b; font-size: 0.78rem; }
+    .raw-value { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.98rem; white-space: pre-wrap; }
     button { white-space: nowrap; }
   </style>
 </head>
@@ -104,6 +108,39 @@
     </div>
 
     <div class="panel">
+      <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+        <div class="fw-bold">リアルタイム生データ</div>
+        <div class="small text-muted">受信数 <span id="packetCountValue">0</span></div>
+      </div>
+      <div class="raw-grid">
+        <div class="raw-cell">
+          <div class="raw-label">加速度 acc</div>
+          <div id="rawAccValue" class="raw-value">--</div>
+        </div>
+        <div class="raw-cell">
+          <div class="raw-label">ジャイロ gyro</div>
+          <div id="rawGyroValue" class="raw-value">--</div>
+        </div>
+        <div class="raw-cell">
+          <div class="raw-label">クォータニオン quat</div>
+          <div id="rawQuatValue" class="raw-value">--</div>
+        </div>
+        <div class="raw-cell">
+          <div class="raw-label">Euler</div>
+          <div id="rawEulerValue" class="raw-value">--</div>
+        </div>
+        <div class="raw-cell">
+          <div class="raw-label">歩数 steps</div>
+          <div id="rawStepsValue" class="raw-value">--</div>
+        </div>
+        <div class="raw-cell">
+          <div class="raw-label">BLE周波数</div>
+          <div id="rawFreqValue" class="raw-value">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
       <div class="fw-bold mb-2">歩いて離れるテスト手順</div>
       <ol class="mb-0">
         <li>「デバイス選択して開始」を押してORPHE COREを選ぶ。</li>
@@ -129,6 +166,7 @@
     let reconnectAttempts = 0;
     let disconnectCount = 0;
     let lastDataAt = null;
+    let packetCount = 0;
 
     function now() {
       return new Date().toLocaleTimeString();
@@ -184,6 +222,7 @@
       document.getElementById('lastDataValue').textContent = lastDataAt
         ? `${Math.round((Date.now() - lastDataAt) / 1000)}s`
         : '--';
+      document.getElementById('packetCountValue').textContent = String(packetCount);
     }
 
     async function beginWithCurrentDevice() {
@@ -282,8 +321,13 @@
       }
     }
 
-    function markDataReceived() {
+    function formatVector(data, keys) {
+      return keys.map(key => `${key}:${Number(data?.[key] ?? 0).toFixed(3)}`).join(' ');
+    }
+
+    function markDataReceived(label) {
       lastDataAt = Date.now();
+      packetCount++;
       updateStatus();
     }
 
@@ -317,19 +361,33 @@
     };
 
     ble.gotBLEFrequency = function(freq) {
-      markDataReceived();
+      document.getElementById('rawFreqValue').textContent = `${Math.floor(freq)} Hz`;
+      markDataReceived('freq');
     };
 
-    ble.gotStepsNumber = function() {
-      markDataReceived();
+    ble.gotStepsNumber = function(steps) {
+      document.getElementById('rawStepsValue').textContent = JSON.stringify(steps);
+      markDataReceived('steps');
     };
 
-    ble.gotAcc = function() {
-      markDataReceived();
+    ble.gotAcc = function(acc) {
+      document.getElementById('rawAccValue').textContent = formatVector(acc, ['x', 'y', 'z']);
+      markDataReceived('acc');
     };
 
-    ble.gotEuler = function() {
-      markDataReceived();
+    ble.gotGyro = function(gyro) {
+      document.getElementById('rawGyroValue').textContent = formatVector(gyro, ['x', 'y', 'z']);
+      markDataReceived('gyro');
+    };
+
+    ble.gotQuat = function(quat) {
+      document.getElementById('rawQuatValue').textContent = formatVector(quat, ['w', 'x', 'y', 'z']);
+      markDataReceived('quat');
+    };
+
+    ble.gotEuler = function(euler) {
+      document.getElementById('rawEulerValue').textContent = formatVector(euler, ['pitch', 'roll', 'yaw']);
+      markDataReceived('euler');
     };
 
     document.getElementById('selectStartBtn').addEventListener('click', startWithDeviceSelection);

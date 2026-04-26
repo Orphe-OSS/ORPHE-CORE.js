@@ -157,13 +157,21 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ST
   <div class="d-grid gap-2 col-10 mx-auto mt-4">
   <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(${core_id});">Reset
     Attitude & Gait Analysis</button>
-</div>`, 'modal-body', '', div_modal_content);
+  <button class="btn btn-outline-primary" type="button" id="button_switch_device${core_id}">Select another CORE</button>
+	</div>`, 'modal-body', '', div_modal_content);
 
     // div_modal_bodyにある notificationセレクタを設定値にあわせる
     let select_notify = div_modal_body.querySelector(`#select_notify${core_id}`);
     if (notification == 'STEP_ANALYSIS') select_notify.options[0].selected = true;
     else if (notification == 'SENSOR_VALUES') select_notify.options[1].selected = true;
     else if (notification == 'STEP_ANALYSIS_AND_SENSOR_VALURS') select_notify.options[2].selected = true;
+
+    const switchDeviceButton = div_modal_body.querySelector(`#button_switch_device${core_id}`);
+    if (switchDeviceButton) {
+        switchDeviceButton.addEventListener('click', function () {
+            switchCoreBluetoothDevice(core_id, options);
+        });
+    }
 }
 
 /**
@@ -215,6 +223,30 @@ async function toggleCoreModule(dom, options = {}) {
     else {
         ble.reset();
         document.querySelector(`#ui${number}`).style.visibility = 'hidden';
+    }
+}
+
+/**
+ * CoreToolkitから別のBluetoothデバイスを手動選択して接続し直す。
+ * @param {number} no - core_id(0,1)
+ * @param {object} options
+ */
+async function switchCoreBluetoothDevice(no, options = {}) {
+    const ble = bles[no];
+    const sw = document.querySelector(`#switch_ble${no}`);
+    const uiEl = document.querySelector(`#ui${no}`);
+    const notification = sw?.getAttribute('notification') || 'STEP_ANALYSIS_AND_SENSOR_VALUES';
+
+    try {
+        if (uiEl) uiEl.style.visibility = 'hidden';
+        await ble.selectBluetoothDevice('DEVICE_INFORMATION');
+        const ret = await ble.begin(notification, options);
+        if (sw) sw.checked = !!ret;
+        if (ret && uiEl) uiEl.style.visibility = 'visible';
+    } catch (error) {
+        if (sw) sw.checked = false;
+        if (uiEl) uiEl.style.visibility = 'hidden';
+        ble.onError(error);
     }
 }
 

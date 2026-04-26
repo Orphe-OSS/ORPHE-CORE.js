@@ -970,7 +970,7 @@ class Orphe {
       this._isBridgeSecondary = false;
     }
 
-    if (!wasBridgeSecondary) {
+    if (!wasBridgeSecondary && this.bluetoothDevice?.gatt?.connected) {
       this.disconnect(); //disconnect() is not Promise Object
     }
     this.clear();

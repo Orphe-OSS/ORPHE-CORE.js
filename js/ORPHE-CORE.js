@@ -587,7 +587,10 @@ class Orphe {
     this.steps_number = 0;
   }
   scan(uuid, options = {}) {
-    return (this.bluetoothDevice ? Promise.resolve() : this._requestRememberedBluetoothDevice())
+    if (this.bluetoothDevice) return Promise.resolve();
+
+    const useRememberedDevice = !options.forceDeviceSelection && this._getLastBluetoothDeviceInfo();
+    return (useRememberedDevice ? this._requestRememberedBluetoothDevice() : Promise.resolve(null))
       .then(device => {
         if (!device) return this.requestDevice(uuid);
         this.bluetoothDevice = device;
@@ -626,6 +629,27 @@ class Orphe {
         this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
         this.onScan(this.bluetoothDevice.name);
       });
+  }
+
+  /**
+   * 前回デバイスの記憶を使わず、必ずブラウザのBLE選択ダイアログを表示する。
+   * 接続済みCOREから別COREへ手動で切り替える場合に利用する。
+   * @param {string} uuid
+   */
+  selectBluetoothDevice(uuid = 'DEVICE_INFORMATION') {
+    this.forgetLastBluetoothDevice();
+    if (this._bridge) {
+      if (this._bridge.isPrimary) this._bridge.broadcastDisconnect();
+      else this._bridge.release();
+      this._bridge = null;
+      this._isBridgeSecondary = false;
+    }
+    if (this.bluetoothDevice?.gatt?.connected) {
+      try { this.bluetoothDevice.gatt.disconnect(); } catch (_) {}
+    }
+    this.bluetoothDevice = null;
+    this.dataCharacteristic = null;
+    return this.requestDevice(uuid);
   }
 
   /**

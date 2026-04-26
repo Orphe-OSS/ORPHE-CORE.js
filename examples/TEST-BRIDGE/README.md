@@ -9,7 +9,7 @@ ORPHE COREのBLE接続を複数タブ間で共有する `BleSharedBridge` 機能
 | `index.html` | 実機BLEを使った動作確認ページ |
 | `physical-reconnect-test.html` | 実機BLEの前回デバイス記憶・自動再接続・手動切り替え確認ページ |
 | `unit-test.html` | BleSharedBridge クラスの単体テスト（25ケース、実機不要） |
-| `integration-test.html` | Orphe + BleSharedBridge の統合テスト（34ケース、実機不要） |
+| `integration-test.html` | Orphe + BleSharedBridge の統合テスト（40ケース、実機不要） |
 | `test-frame.html` | テスト用の補助iframe |
 
 ## 実機での動作確認手順
@@ -47,7 +47,7 @@ python3 -m http.server 8765
 3. Tab B で「接続 / 再接続」を押し、Secondary になることを確認
 4. Tab A で「切断」を押す
 5. Tab B が前回記憶した ORPHE CORE へ自動再接続して Primary になることを確認
-6. 別の ORPHE CORE へ切り替える場合は「前回デバイスを忘れる」を押してから接続し直す
+6. 別の ORPHE CORE へ切り替える場合は、Primary接続中に「接続 / 再接続 / 切り替え」をもう一度押してBLE選択ダイアログから選び直す
 
 ## 自動テスト
 

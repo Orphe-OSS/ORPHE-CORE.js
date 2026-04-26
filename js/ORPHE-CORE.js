@@ -599,6 +599,7 @@ class Orphe {
       })
       .catch(error => {
         this.onError(error);
+        throw error;
       });
   }
   /**
@@ -720,7 +721,7 @@ class Orphe {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
       this.onError(error);
-      return;
+      return Promise.reject(error);
     }
     if (this.bluetoothDevice.gatt.connected && this.dataCharacteristic) {
       if (this.hashUUID_lastConnected == uuid)
@@ -742,6 +743,7 @@ class Orphe {
       })
       .catch(error => {
         this.onError(error);
+        throw error;
       });
   }
   /**
@@ -770,6 +772,7 @@ class Orphe {
       })
       .catch(error => {
         this.onError(error);
+        throw error;
       });
   }
   /**
@@ -792,6 +795,7 @@ class Orphe {
       })
       .catch(error => {
         this.onError(error);
+        throw error;
       });
   }
   /**
@@ -811,6 +815,7 @@ class Orphe {
       .catch(error => {
         console.error('startNotify: Error : ' + error);
         this.onError(error);
+        throw error;
       });
   }
   /**
@@ -844,6 +849,7 @@ class Orphe {
       })
       .catch(error => {
         this.onError(error);
+        throw error;
       });
 
   }

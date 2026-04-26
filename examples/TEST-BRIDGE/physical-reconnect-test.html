@@ -152,7 +152,8 @@
 
     async function connect() {
       try {
-        if (ble._isBridgeSecondary || ble.bluetoothDevice?.gatt?.connected) {
+        const hasHeldDisconnectedDevice = ble.bluetoothDevice && !ble.bluetoothDevice.gatt?.connected;
+        if (ble._isBridgeSecondary || ble.bluetoothDevice?.gatt?.connected || hasHeldDisconnectedDevice) {
           log('manual device switch start');
           await ble.selectBluetoothDevice('DEVICE_INFORMATION');
           log(`manual device selected: ${formatDevice(ble.bluetoothDevice)}`, 'ok');

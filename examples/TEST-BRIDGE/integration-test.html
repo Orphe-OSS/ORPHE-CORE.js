@@ -338,6 +338,41 @@
       ble7.forgetLastBluetoothDevice();
       assert(ble7._getLastBluetoothDeviceInfo() === null, 'forgetLastBluetoothDeviceで記憶を削除');
 
+      head('■ テスト12: 通常scanでも記憶済みデバイスを自動選択する');
+      const ble8 = new Orphe(DEVICE_ID);
+      ble8._rememberBluetoothDevice({ id: 'core-auto', name: 'CR-AUTO' });
+      let scanRequestDeviceCalled = false;
+      ble8.requestDevice = async function() {
+        scanRequestDeviceCalled = true;
+        throw new Error('requestDevice should not be called');
+      };
+      Object.defineProperty(navigator, 'bluetooth', {
+        configurable: true,
+        value: {
+          getDevices: async function() {
+            return [
+              { id: 'core-other', name: 'CR-OTHER', addEventListener: function() {} },
+              { id: 'core-auto', name: 'CR-AUTO', addEventListener: function() {} },
+            ];
+          },
+        },
+      });
+      await ble8.scan('DEVICE_INFORMATION');
+      assert(ble8.bluetoothDevice?.id === 'core-auto', 'scanで記憶済みidに一致するデバイスを選ぶ');
+      assert(scanRequestDeviceCalled === false, '記憶済みデバイスがあればrequestDeviceを呼ばない');
+
+      head('■ テスト13: 記憶削除後のscanは手動選択へフォールバックする');
+      ble8.bluetoothDevice = null;
+      ble8.forgetLastBluetoothDevice();
+      scanRequestDeviceCalled = false;
+      ble8.requestDevice = async function() {
+        scanRequestDeviceCalled = true;
+        this.bluetoothDevice = { id: 'core-manual', name: 'CR-MANUAL', addEventListener: function() {} };
+      };
+      await ble8.scan('DEVICE_INFORMATION');
+      assert(scanRequestDeviceCalled === true, '記憶削除後はrequestDeviceを呼ぶ');
+      assert(ble8.bluetoothDevice?.id === 'core-manual', '手動選択したデバイスへ切り替えられる');
+
       Math.random = originalRandom;
       if (hadBluetooth) {
         Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: originalBluetooth });

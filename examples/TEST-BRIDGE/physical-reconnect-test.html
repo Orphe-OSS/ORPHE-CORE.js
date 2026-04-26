@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORPHE CORE BLE Reconnect Test</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="../../js/float16.min.js"></script>
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <style>
+    body { background: #f6f7f9; color: #1f2933; padding: 16px; }
+    .wrap { max-width: 880px; margin: 0 auto; }
+    .panel { background: #fff; border: 1px solid #d8dee8; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+    .status { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 0.9rem; }
+    .offline { background: #e5e7eb; color: #374151; }
+    .primary { background: #d1e7dd; color: #0f5132; }
+    .secondary { background: #cfe2ff; color: #084298; }
+    .warn { background: #fff3cd; color: #664d03; }
+    .metric { min-height: 68px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; background: #fbfcfe; }
+    .metric-label { color: #64748b; font-size: 0.78rem; }
+    .metric-value { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem; }
+    #log { height: 220px; overflow-y: auto; background: #111827; color: #d1d5db; border-radius: 8px; padding: 10px; font-size: 0.82rem; }
+    .step-list li { margin-bottom: 6px; }
+    button { white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+      <h1 class="h4 m-0">ORPHE CORE BLE Reconnect Test</h1>
+      <span id="modeBadge" class="status offline">未接続</span>
+    </div>
+
+    <div class="panel">
+      <div class="d-flex flex-wrap gap-2">
+        <button id="connectBtn" class="btn btn-primary">接続 / 再接続</button>
+        <button id="disconnectBtn" class="btn btn-outline-danger">切断</button>
+        <button id="forgetBtn" class="btn btn-outline-secondary">前回デバイスを忘れる</button>
+        <button id="devicesBtn" class="btn btn-outline-dark">許可済みBLE一覧</button>
+        <button id="clearLogBtn" class="btn btn-outline-secondary">ログ消去</button>
+      </div>
+      <div class="mt-3 small text-muted">
+        別デバイスへ切り替える時は「前回デバイスを忘れる」を押してから「接続 / 再接続」を押してください。
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="row g-2">
+        <div class="col-md-6">
+          <div class="metric">
+            <div class="metric-label">接続デバイス</div>
+            <div id="deviceValue" class="metric-value">--</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="metric">
+            <div class="metric-label">記憶済みデバイス</div>
+            <div id="rememberedValue" class="metric-value">--</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="metric">
+            <div class="metric-label">BLE Hz</div>
+            <div id="freqValue" class="metric-value">--</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="metric">
+            <div class="metric-label">歩数</div>
+            <div id="stepsValue" class="metric-value">--</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="metric">
+            <div class="metric-label">加速度</div>
+            <div id="accValue" class="metric-value">-- / -- / --</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="metric">
+            <div class="metric-label">Euler</div>
+            <div id="eulerValue" class="metric-value">-- / --</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="fw-bold mb-2">実機チェック手順</div>
+      <ol class="step-list mb-0">
+        <li>このページを2つのタブで開く。</li>
+        <li>Tab Aで「接続 / 再接続」を押し、BLE選択ダイアログからORPHE COREを選ぶ。</li>
+        <li>Tab Bで「接続 / 再接続」を押し、BLEダイアログなしでSecondaryになることを確認する。</li>
+        <li>Tab Aで「切断」を押し、Tab Bが同じORPHE COREへ自動再接続してPrimaryになることを確認する。</li>
+        <li>別のCOREへ切り替える時は「前回デバイスを忘れる」後に接続し直す。</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <div class="fw-bold mb-2">イベントログ</div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const ble = new Orphe(0);
+    const notificationType = 'STEP_ANALYSIS_AND_SENSOR_VALUES';
+
+    function now() {
+      return new Date().toLocaleTimeString();
+    }
+
+    function log(message, level = 'info') {
+      const color = level === 'error' ? '#fca5a5' : level === 'ok' ? '#86efac' : '#fde68a';
+      const line = `<div><span style="color:#93c5fd">[${now()}]</span> <span style="color:${color}">${message}</span></div>`;
+      const el = document.getElementById('log');
+      el.innerHTML = line + el.innerHTML;
+    }
+
+    function formatDevice(device) {
+      if (!device) return '--';
+      return `${device.name || '(no name)'} / ${device.id || '(no id)'}`;
+    }
+
+    function getRememberedInfo() {
+      return ble._getLastBluetoothDeviceInfo ? ble._getLastBluetoothDeviceInfo() : null;
+    }
+
+    function updateStatus() {
+      const badge = document.getElementById('modeBadge');
+      if (ble._isBridgeSecondary) {
+        badge.className = 'status secondary';
+        badge.textContent = 'Secondary: 共有受信中';
+      } else if (ble.bluetoothDevice?.gatt?.connected) {
+        badge.className = 'status primary';
+        badge.textContent = 'Primary: BLE接続中';
+      } else if (ble.bluetoothDevice) {
+        badge.className = 'status warn';
+        badge.textContent = 'デバイス保持 / GATT未接続';
+      } else {
+        badge.className = 'status offline';
+        badge.textContent = '未接続';
+      }
+
+      document.getElementById('deviceValue').textContent = formatDevice(ble.bluetoothDevice);
+      const remembered = getRememberedInfo();
+      document.getElementById('rememberedValue').textContent = remembered
+        ? `${remembered.bluetoothName || '(no name)'} / ${remembered.bluetoothId || '(no id)'}`
+        : '--';
+    }
+
+    async function connect() {
+      try {
+        log('begin() start');
+        const result = await ble.begin(notificationType);
+        log(`begin() result: ${result}`, 'ok');
+      } catch (error) {
+        log(`begin() exception: ${error}`, 'error');
+      } finally {
+        updateStatus();
+      }
+    }
+
+    function disconnect() {
+      try {
+        log('reset() start');
+        ble.reset();
+        log('reset() done', 'ok');
+      } catch (error) {
+        log(`reset() exception: ${error}`, 'error');
+      } finally {
+        updateStatus();
+      }
+    }
+
+    function forgetLastDevice() {
+      ble.forgetLastBluetoothDevice();
+      log('forgot last Bluetooth device', 'ok');
+      updateStatus();
+    }
+
+    async function showPermittedDevices() {
+      if (!navigator.bluetooth?.getDevices) {
+        log('navigator.bluetooth.getDevices() is unavailable', 'error');
+        return;
+      }
+      try {
+        const devices = await navigator.bluetooth.getDevices();
+        if (devices.length === 0) {
+          log('permitted devices: 0');
+          return;
+        }
+        log(`permitted devices: ${devices.map(formatDevice).join(' | ')}`);
+      } catch (error) {
+        log(`getDevices() error: ${error}`, 'error');
+      }
+    }
+
+    ble.setup();
+
+    ble.onScan = function(deviceName) {
+      log(`scan/select: ${deviceName || '(no name)'}`, 'ok');
+      updateStatus();
+    };
+
+    ble.onConnect = function(uuid) {
+      log(`connect: ${uuid}`, 'ok');
+      updateStatus();
+    };
+
+    ble.onStartNotify = function(uuid) {
+      log(`start notify: ${uuid}`, 'ok');
+      updateStatus();
+    };
+
+    ble.onDisconnect = function() {
+      log('disconnect detected');
+      updateStatus();
+    };
+
+    ble.onError = function(error) {
+      log(`error: ${error}`, 'error');
+      updateStatus();
+    };
+
+    ble.gotBLEFrequency = function(freq) {
+      document.getElementById('freqValue').textContent = `${Math.floor(freq)} Hz`;
+    };
+
+    ble.gotStepsNumber = function(steps) {
+      document.getElementById('stepsValue').textContent = steps.value;
+    };
+
+    ble.gotAcc = function(acc) {
+      document.getElementById('accValue').textContent =
+        `${acc.x.toFixed(2)} / ${acc.y.toFixed(2)} / ${acc.z.toFixed(2)}`;
+    };
+
+    ble.gotEuler = function(euler) {
+      document.getElementById('eulerValue').textContent =
+        `${(euler.pitch * 180 / Math.PI).toFixed(1)} / ${(euler.roll * 180 / Math.PI).toFixed(1)}`;
+    };
+
+    document.getElementById('connectBtn').addEventListener('click', connect);
+    document.getElementById('disconnectBtn').addEventListener('click', disconnect);
+    document.getElementById('forgetBtn').addEventListener('click', forgetLastDevice);
+    document.getElementById('devicesBtn').addEventListener('click', showPermittedDevices);
+    document.getElementById('clearLogBtn').addEventListener('click', () => {
+      document.getElementById('log').innerHTML = '';
+    });
+
+    setInterval(updateStatus, 1000);
+    updateStatus();
+    log('ready');
+  </script>
+</body>
+</html>

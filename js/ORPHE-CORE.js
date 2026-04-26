@@ -587,7 +587,13 @@ class Orphe {
     this.steps_number = 0;
   }
   scan(uuid, options = {}) {
-    return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))
+    return (this.bluetoothDevice ? Promise.resolve() : this._requestRememberedBluetoothDevice())
+      .then(device => {
+        if (!device) return this.requestDevice(uuid);
+        this.bluetoothDevice = device;
+        this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+        this.onScan(this.bluetoothDevice.name);
+      })
       .catch(error => {
         this.onError(error);
       });
@@ -669,6 +675,16 @@ class Orphe {
     }
 
     return null;
+  }
+
+  async _requestRememberedBluetoothDevice() {
+    if (!navigator.bluetooth?.getDevices) return null;
+    try {
+      const devices = await navigator.bluetooth.getDevices();
+      return this._findLastBluetoothDevice(devices);
+    } catch (_) {
+      return null;
+    }
   }
 
   /**

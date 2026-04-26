@@ -163,6 +163,9 @@
         log(`begin() result: ${result}`, 'ok');
       } catch (error) {
         log(`begin() exception: ${error}`, 'error');
+        if (ble._rememberedBluetoothDeviceUnavailable) {
+          log('remembered device reconnect failed. Press connect again to choose manually.', 'error');
+        }
       } finally {
         updateStatus();
       }

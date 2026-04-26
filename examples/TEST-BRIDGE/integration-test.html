@@ -370,7 +370,25 @@
       await ble8.scan('DATE_TIME');
       assert(scanRequestDeviceCalled === false, 'bluetoothDevice保持中はrequestDeviceを呼ばない');
 
-      head('■ テスト14: 記憶削除後のscanは手動選択へフォールバックする');
+      head('■ テスト14: 記憶済みデバイス接続失敗後は次回手動選択へ戻る');
+      ble8.bluetoothDevice = {
+        id: 'core-auto',
+        name: 'CR-AUTO',
+        gatt: {
+          connected: false,
+          connect: async function() { throw new Error('remembered device unavailable'); },
+        },
+        addEventListener: function() {},
+      };
+      ble8._usingRememberedBluetoothDevice = true;
+      let rememberedConnectError = null;
+      ble8.onError = function(error) { rememberedConnectError = error; };
+      try { await ble8.connectGATT('DEVICE_INFORMATION'); } catch (_) {}
+      assert(rememberedConnectError !== null, '記憶済みデバイスの接続失敗を通知');
+      assert(ble8._rememberedBluetoothDeviceUnavailable === true, '記憶済みデバイスを一時的に利用不可として扱う');
+      assert(ble8.bluetoothDevice === null, '失敗した保持デバイスをクリア');
+
+      head('■ テスト15: 記憶削除後のscanは手動選択へフォールバックする');
       ble8.bluetoothDevice = null;
       ble8.forgetLastBluetoothDevice();
       scanRequestDeviceCalled = false;
@@ -395,7 +413,7 @@
       assert(scanGetDevicesCalled === false, '記憶がない初回接続ではgetDevicesを先に呼ばない');
       assert(ble8.bluetoothDevice?.id === 'core-manual', '手動選択したデバイスへ切り替えられる');
 
-      head('■ テスト15: selectBluetoothDeviceは接続中でも手動選択へ切り替える');
+      head('■ テスト16: selectBluetoothDeviceは接続中でも手動選択へ切り替える');
       ble8._rememberBluetoothDevice({ id: 'core-manual', name: 'CR-MANUAL' });
       ble8._bridge = new BleSharedBridge(DEVICE_ID);
       ble8._bridge.claimPrimary();

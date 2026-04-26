@@ -137,6 +137,8 @@ class Orphe {
     this._bridge = null;
     this._isBridgeSecondary = false;
     this._lastBluetoothDeviceStorageKey = `orphe_last_bluetooth_device_${id}`;
+    this._usingRememberedBluetoothDevice = false;
+    this._rememberedBluetoothDeviceUnavailable = false;
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
     /**
@@ -589,11 +591,14 @@ class Orphe {
   scan(uuid, options = {}) {
     if (this.bluetoothDevice) return Promise.resolve();
 
-    const useRememberedDevice = !options.forceDeviceSelection && this._getLastBluetoothDeviceInfo();
+    const useRememberedDevice = !options.forceDeviceSelection &&
+      !this._rememberedBluetoothDeviceUnavailable &&
+      this._getLastBluetoothDeviceInfo();
     return (useRememberedDevice ? this._requestRememberedBluetoothDevice() : Promise.resolve(null))
       .then(device => {
         if (!device) return this.requestDevice(uuid);
         this.bluetoothDevice = device;
+        this._usingRememberedBluetoothDevice = true;
         this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
         this.onScan(this.bluetoothDevice.name);
       })
@@ -627,6 +632,8 @@ class Orphe {
     return navigator.bluetooth.requestDevice(options)
       .then(device => {
         this.bluetoothDevice = device;
+        this._usingRememberedBluetoothDevice = false;
+        this._rememberedBluetoothDeviceUnavailable = false;
         this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
         this.onScan(this.bluetoothDevice.name);
       });
@@ -650,6 +657,8 @@ class Orphe {
     }
     this.bluetoothDevice = null;
     this.dataCharacteristic = null;
+    this._usingRememberedBluetoothDevice = false;
+    this._rememberedBluetoothDeviceUnavailable = false;
     return this.requestDevice(uuid);
   }
 
@@ -658,11 +667,13 @@ class Orphe {
    * 次回 begin() 時に手動選択ダイアログから別デバイスへ切り替えたい場合に利用する。
    */
   forgetLastBluetoothDevice() {
+    this._rememberedBluetoothDeviceUnavailable = false;
     try { localStorage.removeItem(this._lastBluetoothDeviceStorageKey); } catch (_) {}
   }
 
   _rememberBluetoothDevice(device) {
     if (!device) return;
+    this._rememberedBluetoothDeviceUnavailable = false;
     try {
       localStorage.setItem(this._lastBluetoothDeviceStorageKey, JSON.stringify({
         deviceId: this.id,
@@ -743,6 +754,12 @@ class Orphe {
       })
       .catch(error => {
         this.onError(error);
+        if (this._usingRememberedBluetoothDevice) {
+          this._rememberedBluetoothDeviceUnavailable = true;
+          this._usingRememberedBluetoothDevice = false;
+          this.bluetoothDevice = null;
+          this.dataCharacteristic = null;
+        }
         throw error;
       });
   }

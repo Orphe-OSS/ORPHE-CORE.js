@@ -267,7 +267,40 @@
       assert(reconnectError === 'Multiple paired devices found. Please reconnect manually.',
         '複数候補では手動再接続を促す');
 
-      head('■ テスト9: 接続成功時に最後のBluetoothデバイスを記憶する');
+      head('■ テスト9: 手動選択済みデバイスがあれば複数候補でも引き継ぐ');
+      const ble5b = new Orphe(DEVICE_ID);
+      ble5b._isBridgeSecondary = true;
+      ble5b._bridge = new BleSharedBridge(DEVICE_ID);
+      ble5b.bluetoothDevice = { id: 'core-selected', name: 'CR-SELECTED', addEventListener: function() {} };
+      let selectedReconnectError = null;
+      let selectedReconnectType = null;
+      ble5b.onDisconnect = function() {};
+      ble5b.onError = function(error) { selectedReconnectError = error; };
+      ble5b.begin = async function(str_type) {
+        selectedReconnectType = str_type;
+        return 'done begin(); STEP ANALYSIS';
+      };
+      localStorage.removeItem(`orphe_last_bluetooth_device_${DEVICE_ID}`);
+      Object.defineProperty(navigator, 'bluetooth', {
+        configurable: true,
+        value: {
+          getDevices: async function() {
+            return [
+              { id: 'core-other', name: 'CR-OTHER', addEventListener: function() {} },
+              { id: 'core-selected', name: 'CR-SELECTED', addEventListener: function() {} },
+            ];
+          },
+        },
+      });
+      await ble5b._handlePrimaryLost('STEP_ANALYSIS');
+      assert(ble5b.bluetoothDevice?.id === 'core-selected', '手動選択済みidに一致するデバイスを選ぶ');
+      assert(selectedReconnectType === 'STEP_ANALYSIS', '手動選択済みデバイスでbeginを再実行する');
+      assert(selectedReconnectError === null, '手動選択済みデバイスがあれば複数候補エラーにしない');
+      ble5b._bridge?.release();
+      ble5b._bridge = null;
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+
+      head('■ テスト10: 接続成功時に最後のBluetoothデバイスを記憶する');
       const ble6 = new Orphe(DEVICE_ID);
       ble6.bluetoothDevice = {
         id: 'core-left',
@@ -295,7 +328,7 @@
       ble6._bridge = null;
       localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
 
-      head('■ テスト10: 複数候補でも記憶済みデバイスへ自動再接続する');
+      head('■ テスト11: 複数候補でも記憶済みデバイスへ自動再接続する');
       const ble7 = new Orphe(DEVICE_ID);
       ble7._rememberBluetoothDevice({ id: 'core-right', name: 'CR-R' });
       ble7._isBridgeSecondary = true;
@@ -334,11 +367,11 @@
       ble7._bridge = null;
       localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
 
-      head('■ テスト11: 記憶を消すと複数候補は手動選択に戻る');
+      head('■ テスト12: 記憶を消すと複数候補は手動選択に戻る');
       ble7.forgetLastBluetoothDevice();
       assert(ble7._getLastBluetoothDeviceInfo() === null, 'forgetLastBluetoothDeviceで記憶を削除');
 
-      head('■ テスト12: 通常scanでも記憶済みデバイスを自動選択する');
+      head('■ テスト13: 通常scanでも記憶済みデバイスを自動選択する');
       const ble8 = new Orphe(DEVICE_ID);
       ble8._rememberBluetoothDevice({ id: 'core-auto', name: 'CR-AUTO' });
       let scanRequestDeviceCalled = false;
@@ -361,7 +394,7 @@
       assert(ble8.bluetoothDevice?.id === 'core-auto', 'scanで記憶済みidに一致するデバイスを選ぶ');
       assert(scanRequestDeviceCalled === false, '記憶済みデバイスがあればrequestDeviceを呼ばない');
 
-      head('■ テスト13: 接続済みscanは追加のBLE選択を行わない');
+      head('■ テスト14: 接続済みscanは追加のBLE選択を行わない');
       ble8.requestDevice = async function() {
         scanRequestDeviceCalled = true;
         throw new Error('requestDevice should not be called');
@@ -370,7 +403,7 @@
       await ble8.scan('DATE_TIME');
       assert(scanRequestDeviceCalled === false, 'bluetoothDevice保持中はrequestDeviceを呼ばない');
 
-      head('■ テスト14: 記憶済みデバイス接続失敗後は次回手動選択へ戻る');
+      head('■ テスト15: 記憶済みデバイス接続失敗後は次回手動選択へ戻る');
       ble8.bluetoothDevice = {
         id: 'core-auto',
         name: 'CR-AUTO',
@@ -388,7 +421,7 @@
       assert(ble8._rememberedBluetoothDeviceUnavailable === true, '記憶済みデバイスを一時的に利用不可として扱う');
       assert(ble8.bluetoothDevice === null, '失敗した保持デバイスをクリア');
 
-      head('■ テスト15: 記憶削除後のscanは手動選択へフォールバックする');
+      head('■ テスト16: 記憶削除後のscanは手動選択へフォールバックする');
       ble8.bluetoothDevice = null;
       ble8.forgetLastBluetoothDevice();
       scanRequestDeviceCalled = false;
@@ -413,7 +446,7 @@
       assert(scanGetDevicesCalled === false, '記憶がない初回接続ではgetDevicesを先に呼ばない');
       assert(ble8.bluetoothDevice?.id === 'core-manual', '手動選択したデバイスへ切り替えられる');
 
-      head('■ テスト16: selectBluetoothDeviceは接続中でも手動選択へ切り替える');
+      head('■ テスト17: selectBluetoothDeviceは接続中でも手動選択へ切り替える');
       ble8._rememberBluetoothDevice({ id: 'core-manual', name: 'CR-MANUAL' });
       ble8._bridge = new BleSharedBridge(DEVICE_ID);
       ble8._bridge.claimPrimary();
@@ -435,7 +468,7 @@
       assert(ble8.bluetoothDevice?.id === 'core-switched', 'selectBluetoothDeviceで選んだ別デバイスを保持');
       localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
 
-      head('■ テスト17: autoReconnectはbegin()のopt-in時だけ有効');
+      head('■ テスト18: autoReconnectはbegin()のopt-in時だけ有効');
       const ble9 = new Orphe(DEVICE_ID);
       ble9.bluetoothDevice = { id: 'core-no-auto', name: 'CR-NO-AUTO', gatt: { connected: false }, addEventListener: function() {} };
       ble9.getDeviceInformation = async function() {
@@ -455,7 +488,7 @@
       ble9._bridge = null;
       localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
 
-      head('■ テスト18: autoReconnect opt-inは設定と切断ハンドラを保持する');
+      head('■ テスト19: autoReconnect opt-inは設定と切断ハンドラを保持する');
       const ble10 = new Orphe(DEVICE_ID);
       const autoEvents = [];
       ble10.bluetoothDevice = {
@@ -487,7 +520,7 @@
       ble10._bridge = null;
       localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
 
-      head('■ テスト19: autoReconnect loopは失敗後に再試行して成功通知する');
+      head('■ テスト20: autoReconnect loopは失敗後に再試行して成功通知する');
       const ble11 = new Orphe(DEVICE_ID);
       ble11.bluetoothDevice = { id: 'core-loop', name: 'CR-LOOP', gatt: { connected: false }, addEventListener: function() {} };
       ble11._enableAutoReconnect('STEP_ANALYSIS', { autoReconnect: true, reconnectIntervalMs: 1, reconnectMaxAttempts: 3 });

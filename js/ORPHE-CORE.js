@@ -833,15 +833,21 @@ class Orphe {
 
   _findLastBluetoothDevice(devices) {
     const info = this._getLastBluetoothDeviceInfo();
-    if (!info || !Array.isArray(devices)) return null;
+    return this._findBluetoothDevice(devices, info);
+  }
 
-    if (info.bluetoothId) {
-      const matchedById = devices.find(device => device.id === info.bluetoothId);
+  _findBluetoothDevice(devices, info) {
+    if (!info || !Array.isArray(devices)) return null;
+    const bluetoothId = info.bluetoothId || info.id || '';
+    const bluetoothName = info.bluetoothName || info.name || '';
+
+    if (bluetoothId) {
+      const matchedById = devices.find(device => device.id === bluetoothId);
       if (matchedById) return matchedById;
     }
 
-    if (info.bluetoothName) {
-      const matchedByName = devices.filter(device => device.name === info.bluetoothName);
+    if (bluetoothName) {
+      const matchedByName = devices.filter(device => device.name === bluetoothName);
       if (matchedByName.length === 1) return matchedByName[0];
     }
 
@@ -1180,6 +1186,13 @@ class Orphe {
       try {
         const devices = await navigator.bluetooth.getDevices();
         const lastDeviceInfo = this._getLastBluetoothDeviceInfo();
+        const selectedDevice = this._findBluetoothDevice(devices, this.bluetoothDevice);
+        if (selectedDevice) {
+          this.bluetoothDevice = selectedDevice;
+          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          await this.begin(str_type);
+          return;
+        }
         const rememberedDevice = this._findLastBluetoothDevice(devices);
         if (rememberedDevice) {
           this.bluetoothDevice = rememberedDevice;

@@ -153,9 +153,12 @@
       assert(receivedGait !== null && receivedGait.direction === 4, 'ble.gotGaitが正しいデータで呼ばれる');
 
       head('■ テスト4: reset() でBridgeがリリースされる');
+      let secondaryResetError = null;
+      ble2.onError = function(error) { secondaryResetError = error; };
       ble2.reset();
       assert(ble2._bridge === null, 'reset後、_bridgeがnull');
       assert(ble2._isBridgeSecondary === false, 'reset後、_isBridgeSecondary=false');
+      assert(secondaryResetError === null, 'SecondaryのresetでBLE未接続エラーを出さない');
 
       head('■ テスト5: Primary側の_notifyBridgeBatchが配信される');
       // ble3 を Primary として直接セットアップ
@@ -197,6 +200,79 @@
       ble3._notifyBridgeBatch({ gotAcc: { x: 99, y: 99, z: 99 } });
       await wait(100);
       assert(selfLoopback === false, 'Primaryは自身の送信したbroadcastで自gotAccを発火させない');
+
+      head('■ テスト7: begin()再実行で古いPrimary Bridgeを解放する');
+      ble3._bridge?.release();
+      ble3._bridge = null;
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      await wait(50);
+
+      const ble4 = new Orphe(DEVICE_ID);
+      ble4.bluetoothDevice = {
+        gatt: { connected: true, disconnect: function() { this.connected = false; } },
+        addEventListener: function() {},
+      };
+      ble4.getDeviceInformation = async function() {
+        return {
+          lr: 0,
+          led_brightness: 0,
+          rec_auto_run: 0,
+          range: { acc: 0, gyro: 0 },
+        };
+      };
+      ble4.setDeviceInformation = async function() {};
+      ble4.syncCoreTime = async function() {};
+      ble4.startNotify = async function() {};
+
+      await ble4.begin('STEP_ANALYSIS');
+      const firstBridge = ble4._bridge;
+      assert(firstBridge && firstBridge.isPrimary === true, '1回目のbeginでPrimary Bridgeを作成');
+
+      await ble4.begin('STEP_ANALYSIS');
+      assert(ble4._bridge !== firstBridge, '2回目のbeginでBridgeを差し替える');
+      assert(firstBridge.isPrimary === false, '古いBridgeはPrimary状態を解除済み');
+      assert(firstBridge._heartbeatInterval === null, '古いBridgeのheartbeat intervalを停止済み');
+      ble4._bridge?.release();
+      ble4._bridge = null;
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+
+      head('■ テスト8: Fast Reconnectは複数候補を自動選択しない');
+      const ble5 = new Orphe(DEVICE_ID);
+      ble5._isBridgeSecondary = true;
+      ble5._bridge = new BleSharedBridge(DEVICE_ID);
+      let reconnectError = null;
+      let reconnectDisconnectCalled = false;
+      ble5.onDisconnect = function() { reconnectDisconnectCalled = true; };
+      ble5.onError = function(error) { reconnectError = error; };
+
+      const originalRandom = Math.random;
+      const hadBluetooth = Object.prototype.hasOwnProperty.call(navigator, 'bluetooth');
+      const originalBluetooth = navigator.bluetooth;
+      Math.random = function() { return 0; };
+      Object.defineProperty(navigator, 'bluetooth', {
+        configurable: true,
+        value: {
+          getDevices: async function() {
+            return [
+              { name: 'CR-1', addEventListener: function() {} },
+              { name: 'CR-2', addEventListener: function() {} },
+            ];
+          },
+        },
+      });
+
+      await ble5._handlePrimaryLost('STEP_ANALYSIS');
+      assert(reconnectDisconnectCalled === true, 'Primary喪失時にonDisconnectを通知');
+      assert(ble5.bluetoothDevice === null, '複数候補ではbluetoothDeviceを自動選択しない');
+      assert(reconnectError === 'Multiple paired devices found. Please reconnect manually.',
+        '複数候補では手動再接続を促す');
+
+      Math.random = originalRandom;
+      if (hadBluetooth) {
+        Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: originalBluetooth });
+      } else {
+        delete navigator.bluetooth;
+      }
 
       head('■ クリーンアップ');
       ble3._bridge?.release();

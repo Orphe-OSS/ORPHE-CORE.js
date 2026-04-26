@@ -416,6 +416,12 @@ class Orphe {
     } = options;
     this.notification_type = str_type;
 
+    if (this._bridge) {
+      this._bridge.release();
+      this._bridge = null;
+      this._isBridgeSecondary = false;
+    }
+
     // ── BleSharedBridge: 別タブに Primary が存在するか確認 ──────────────
     if (typeof BleSharedBridge !== 'undefined') {
       const bridge = new BleSharedBridge(this.id);
@@ -839,6 +845,8 @@ class Orphe {
    * reset(disconnect & clear)
    */
   reset() {
+    const wasBridgeSecondary = this._isBridgeSecondary;
+
     // BleSharedBridge: 切断を他タブに通知してリソース解放
     if (this._bridge) {
       if (this._bridge.isPrimary) this._bridge.broadcastDisconnect();
@@ -846,7 +854,10 @@ class Orphe {
       this._bridge = null;
       this._isBridgeSecondary = false;
     }
-    this.disconnect(); //disconnect() is not Promise Object
+
+    if (!wasBridgeSecondary) {
+      this.disconnect(); //disconnect() is not Promise Object
+    }
     this.clear();
     this.onReset();
   }
@@ -858,6 +869,7 @@ class Orphe {
    * @returns {Promise<string>}
    */
   _beginAsSecondary(bridge, str_type) {
+    if (this._bridge && this._bridge !== bridge) this._bridge.release();
     this._bridge = bridge;
     this._isBridgeSecondary = true;
 
@@ -916,10 +928,14 @@ class Orphe {
     if (navigator.bluetooth?.getDevices) {
       try {
         const devices = await navigator.bluetooth.getDevices();
-        if (devices.length > 0) {
+        if (devices.length === 1) {
           this.bluetoothDevice = devices[0];
           this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
           await this.begin(str_type);
+          return;
+        }
+        if (devices.length > 1) {
+          this.onError('Multiple paired devices found. Please reconnect manually.');
           return;
         }
       } catch (_) {}

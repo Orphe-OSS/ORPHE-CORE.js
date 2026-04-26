@@ -267,6 +267,77 @@
       assert(reconnectError === 'Multiple paired devices found. Please reconnect manually.',
         '複数候補では手動再接続を促す');
 
+      head('■ テスト9: 接続成功時に最後のBluetoothデバイスを記憶する');
+      const ble6 = new Orphe(DEVICE_ID);
+      ble6.bluetoothDevice = {
+        id: 'core-left',
+        name: 'CR-L',
+        gatt: { connected: true, disconnect: function() { this.connected = false; } },
+        addEventListener: function() {},
+      };
+      ble6.getDeviceInformation = async function() {
+        return {
+          lr: 0,
+          led_brightness: 0,
+          rec_auto_run: 0,
+          range: { acc: 0, gyro: 0 },
+        };
+      };
+      ble6.setDeviceInformation = async function() {};
+      ble6.syncCoreTime = async function() {};
+      ble6.startNotify = async function() {};
+
+      await ble6.begin('STEP_ANALYSIS');
+      const remembered = ble6._getLastBluetoothDeviceInfo();
+      assert(remembered?.bluetoothId === 'core-left', '接続成功したBluetooth idを保存');
+      assert(remembered?.bluetoothName === 'CR-L', '接続成功したBluetooth nameを保存');
+      ble6._bridge?.release();
+      ble6._bridge = null;
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+
+      head('■ テスト10: 複数候補でも記憶済みデバイスへ自動再接続する');
+      const ble7 = new Orphe(DEVICE_ID);
+      ble7._rememberBluetoothDevice({ id: 'core-right', name: 'CR-R' });
+      ble7._isBridgeSecondary = true;
+      ble7._bridge = new BleSharedBridge(DEVICE_ID);
+      let rememberedReconnectError = null;
+      ble7.onError = function(error) { rememberedReconnectError = error; };
+      ble7.onDisconnect = function() {};
+      ble7.getDeviceInformation = async function() {
+        return {
+          lr: 0,
+          led_brightness: 0,
+          rec_auto_run: 0,
+          range: { acc: 0, gyro: 0 },
+        };
+      };
+      ble7.setDeviceInformation = async function() {};
+      ble7.syncCoreTime = async function() {};
+      ble7.startNotify = async function() {};
+
+      Object.defineProperty(navigator, 'bluetooth', {
+        configurable: true,
+        value: {
+          getDevices: async function() {
+            return [
+              { id: 'core-left', name: 'CR-L', addEventListener: function() {} },
+              { id: 'core-right', name: 'CR-R', addEventListener: function() {} },
+            ];
+          },
+        },
+      });
+
+      await ble7._handlePrimaryLost('STEP_ANALYSIS');
+      assert(ble7.bluetoothDevice?.id === 'core-right', '記憶済みidに一致するデバイスを選ぶ');
+      assert(rememberedReconnectError === null, '記憶済みデバイスがあれば複数候補でもエラーにしない');
+      ble7._bridge?.release();
+      ble7._bridge = null;
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+
+      head('■ テスト11: 記憶を消すと複数候補は手動選択に戻る');
+      ble7.forgetLastBluetoothDevice();
+      assert(ble7._getLastBluetoothDeviceInfo() === null, 'forgetLastBluetoothDeviceで記憶を削除');
+
       Math.random = originalRandom;
       if (hadBluetooth) {
         Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: originalBluetooth });
@@ -280,6 +351,7 @@
       await iframeCall('release');
       iframe.remove();
       localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+      localStorage.removeItem(`orphe_last_bluetooth_device_${DEVICE_ID}`);
       log('  OK');
     }
 

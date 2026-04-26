@@ -136,6 +136,7 @@ class Orphe {
     // BleSharedBridge: 複数タブ間接続共有
     this._bridge = null;
     this._isBridgeSecondary = false;
+    this._lastBluetoothDeviceStorageKey = `orphe_last_bluetooth_device_${id}`;
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
     /**
@@ -480,6 +481,7 @@ class Orphe {
       .then(async (result) => {
         // BleSharedBridge: BLE接続成功後にこのタブを Primary として登録
         if (typeof BleSharedBridge !== 'undefined' && result) {
+          this._rememberBluetoothDevice(this.bluetoothDevice);
           this._bridge = new BleSharedBridge(this.id);
           this._isBridgeSecondary = false;
           this._bridge.claimPrimary();
@@ -619,6 +621,56 @@ class Orphe {
         this.onScan(this.bluetoothDevice.name);
       });
   }
+
+  /**
+   * 最後に接続成功した Bluetooth デバイス情報を忘れる。
+   * 次回 begin() 時に手動選択ダイアログから別デバイスへ切り替えたい場合に利用する。
+   */
+  forgetLastBluetoothDevice() {
+    try { localStorage.removeItem(this._lastBluetoothDeviceStorageKey); } catch (_) {}
+  }
+
+  _rememberBluetoothDevice(device) {
+    if (!device) return;
+    try {
+      localStorage.setItem(this._lastBluetoothDeviceStorageKey, JSON.stringify({
+        deviceId: this.id,
+        bluetoothId: device.id || '',
+        bluetoothName: device.name || '',
+        lastConnectedAt: Date.now(),
+      }));
+    } catch (_) {}
+  }
+
+  _getLastBluetoothDeviceInfo() {
+    try {
+      const raw = localStorage.getItem(this._lastBluetoothDeviceStorageKey);
+      if (!raw) return null;
+      const info = JSON.parse(raw);
+      if (!info || (!info.bluetoothId && !info.bluetoothName)) return null;
+      return info;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _findLastBluetoothDevice(devices) {
+    const info = this._getLastBluetoothDeviceInfo();
+    if (!info || !Array.isArray(devices)) return null;
+
+    if (info.bluetoothId) {
+      const matchedById = devices.find(device => device.id === info.bluetoothId);
+      if (matchedById) return matchedById;
+    }
+
+    if (info.bluetoothName) {
+      const matchedByName = devices.filter(device => device.name === info.bluetoothName);
+      if (matchedByName.length === 1) return matchedByName[0];
+    }
+
+    return null;
+  }
+
   /**
    * GATT通信を始めるための関数。read, write, startNotify, stopNotifyが呼び出されるとscanと一緒に呼び出されます。
    * @param {string} uuid 
@@ -928,10 +980,22 @@ class Orphe {
     if (navigator.bluetooth?.getDevices) {
       try {
         const devices = await navigator.bluetooth.getDevices();
-        if (devices.length === 1) {
+        const lastDeviceInfo = this._getLastBluetoothDeviceInfo();
+        const rememberedDevice = this._findLastBluetoothDevice(devices);
+        if (rememberedDevice) {
+          this.bluetoothDevice = rememberedDevice;
+          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          await this.begin(str_type);
+          return;
+        }
+        if (!lastDeviceInfo && devices.length === 1) {
           this.bluetoothDevice = devices[0];
           this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
           await this.begin(str_type);
+          return;
+        }
+        if (lastDeviceInfo && devices.length > 0) {
+          this.onError('Last connected Bluetooth device not found. Please reconnect manually.');
           return;
         }
         if (devices.length > 1) {

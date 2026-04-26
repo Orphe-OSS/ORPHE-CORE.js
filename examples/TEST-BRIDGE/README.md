@@ -10,7 +10,7 @@ ORPHE COREのBLE接続を複数タブ間で共有する `BleSharedBridge` 機能
 | `physical-reconnect-test.html` | 実機BLEの前回デバイス記憶・自動再接続・手動切り替え確認ページ |
 | `physical-range-test.html` | 物理的なBLE距離断・復帰時間・再接続試行回数の確認ページ |
 | `unit-test.html` | BleSharedBridge クラスの単体テスト（25ケース、実機不要） |
-| `integration-test.html` | Orphe + BleSharedBridge の統合テスト（43ケース、実機不要） |
+| `integration-test.html` | Orphe + BleSharedBridge の統合テスト（55ケース、実機不要） |
 | `test-frame.html` | テスト用の補助iframe |
 
 ## 実機での動作確認手順

@@ -24,6 +24,8 @@ var cores = bles;
 function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'STEP_ANALYSIS_AND_SENSOR_VALUES', options = {}) {
     // デフォルト値を設定
     options.range = options.range || { acc: -1, gyro: -1 };
+    if (typeof options.autoReconnect === 'undefined') options.autoReconnect = true;
+    bles[core_id]._coreToolkitOptions = options;
 
     // console.log(options)
     if (options.range && options.range.acc != -1 && options.range.gyro != -1) {
@@ -259,17 +261,18 @@ async function switchCoreBluetoothDevice(no, options = {}) {
  * @param {dom} dom  - notificationのセレクタ
  */
 function changeNotify(no, dom) {
+    const options = bles[no]._coreToolkitOptions || {};
     if (bles[no].notification_type == 'STEP_ANALYSIS') {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             setTimeout(function () {
-                bles[no].begin(dom.value);
+                bles[no].begin(dom.value, options);
             }, 500);
         });
     }
     else if (bles[no].notification_type == 'SENSOR_VALUES') {
         bles[no].stopNotify('SENSOR_VALUES').then(() => {
             setTimeout(function () {
-                bles[no].begin(dom.value);
+                bles[no].begin(dom.value, options);
             }, 500);
         });
     }
@@ -277,7 +280,7 @@ function changeNotify(no, dom) {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             bles[no].stopNotify('SENSOR_VALUES').then(() => {
                 setTimeout(function () {
-                    bles[no].begin(dom.value);
+                    bles[no].begin(dom.value, options);
                 }, 500);
             });
         });

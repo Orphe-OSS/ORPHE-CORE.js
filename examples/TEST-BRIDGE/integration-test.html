@@ -435,6 +435,86 @@
       assert(ble8.bluetoothDevice?.id === 'core-switched', 'selectBluetoothDeviceで選んだ別デバイスを保持');
       localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
 
+      head('■ テスト17: autoReconnectはbegin()のopt-in時だけ有効');
+      const ble9 = new Orphe(DEVICE_ID);
+      ble9.bluetoothDevice = { id: 'core-no-auto', name: 'CR-NO-AUTO', gatt: { connected: false }, addEventListener: function() {} };
+      ble9.getDeviceInformation = async function() {
+        return {
+          lr: 0,
+          led_brightness: 0,
+          rec_auto_run: 0,
+          range: { acc: 0, gyro: 0 },
+        };
+      };
+      ble9.setDeviceInformation = async function() {};
+      ble9.syncCoreTime = async function() {};
+      ble9.startNotify = async function() {};
+      await ble9.begin('STEP_ANALYSIS');
+      assert(ble9._autoReconnectEnabled === false, '通常begin()ではautoReconnectを有効化しない');
+      ble9._bridge?.release();
+      ble9._bridge = null;
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+
+      head('■ テスト18: autoReconnect opt-inは設定と切断ハンドラを保持する');
+      const ble10 = new Orphe(DEVICE_ID);
+      const autoEvents = [];
+      ble10.bluetoothDevice = {
+        id: 'core-auto-reconnect',
+        name: 'CR-AUTO-RECONNECT',
+        gatt: { connected: false },
+        addEventListener: function(name) { autoEvents.push(name); },
+        removeEventListener: function() {},
+      };
+      ble10.getDeviceInformation = async function() {
+        return {
+          lr: 0,
+          led_brightness: 0,
+          rec_auto_run: 0,
+          range: { acc: 0, gyro: 0 },
+        };
+      };
+      ble10.setDeviceInformation = async function() {};
+      ble10.syncCoreTime = async function() {};
+      ble10.startNotify = async function() {};
+      await ble10.begin('STEP_ANALYSIS', { autoReconnect: true, reconnectIntervalMs: 5, reconnectMaxAttempts: 3 });
+      assert(ble10._autoReconnectEnabled === true, 'autoReconnect:trueで有効化する');
+      assert(ble10._autoReconnectNotificationType === 'STEP_ANALYSIS', '再接続時の通知タイプを保持する');
+      assert(ble10._autoReconnectOptions.reconnectIntervalMs === 5, '再接続間隔を保持する');
+      assert(autoEvents.includes('gattserverdisconnected'), 'GATT切断ハンドラを登録する');
+      ble10.reset();
+      assert(ble10._autoReconnectEnabled === false, 'reset()でautoReconnectを停止する');
+      ble10._bridge?.release();
+      ble10._bridge = null;
+      localStorage.removeItem(`orphe_bridge_primary_${DEVICE_ID}`);
+
+      head('■ テスト19: autoReconnect loopは失敗後に再試行して成功通知する');
+      const ble11 = new Orphe(DEVICE_ID);
+      ble11.bluetoothDevice = { id: 'core-loop', name: 'CR-LOOP', gatt: { connected: false }, addEventListener: function() {} };
+      ble11._enableAutoReconnect('STEP_ANALYSIS', { autoReconnect: true, reconnectIntervalMs: 1, reconnectMaxAttempts: 3 });
+      let reconnectBeginCalls = 0;
+      const reconnectTypes = [];
+      const reconnectOptions = [];
+      let reconnectAttemptCount = 0;
+      let reconnectSuccessInfo = null;
+      let autoReconnectLoopError = null;
+      ble11.begin = async function(str_type, options) {
+        reconnectBeginCalls++;
+        reconnectTypes.push(str_type);
+        reconnectOptions.push(options);
+        if (reconnectBeginCalls < 2) return;
+        return 'done begin(); STEP ANALYSIS';
+      };
+      ble11.onReconnectAttempt = function(info) { reconnectAttemptCount = info.attempt; };
+      ble11.onReconnectSuccess = function(info) { reconnectSuccessInfo = info; };
+      ble11.onError = function(error) { autoReconnectLoopError = error; };
+      await ble11._startAutoReconnect();
+      assert(reconnectBeginCalls === 2, '1回失敗後に再試行する');
+      assert(reconnectTypes.every(type => type === 'STEP_ANALYSIS'), '再接続時に前回通知タイプを使う');
+      assert(reconnectOptions.every(options => options.autoReconnect === true), '再接続時もautoReconnect設定を維持する');
+      assert(reconnectAttemptCount === 2, '再接続試行イベントを更新する');
+      assert(reconnectSuccessInfo?.attempt === 2, '成功イベントに成功試行回数を渡す');
+      assert(autoReconnectLoopError === null, '成功時はonErrorを出さない');
+
       Math.random = originalRandom;
       if (hadBluetooth) {
         Object.defineProperty(navigator, 'bluetooth', { configurable: true, value: originalBluetooth });

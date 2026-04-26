@@ -161,7 +161,6 @@
     const ble = new Orphe(0);
     let isTesting = false;
     let isReconnecting = false;
-    let reconnectTimer = null;
     let reconnectStartedAt = null;
     let reconnectAttempts = 0;
     let disconnectCount = 0;
@@ -196,6 +195,14 @@
       return Math.max(1, Number(document.getElementById('maxAttemptsInput').value) || 120);
     }
 
+    function reconnectOptions() {
+      return {
+        autoReconnect: true,
+        reconnectIntervalMs: retryIntervalMs(),
+        reconnectMaxAttempts: maxAttempts(),
+      };
+    }
+
     function updateStatus() {
       const badge = document.getElementById('statusBadge');
       if (isReconnecting) {
@@ -226,7 +233,7 @@
     }
 
     async function beginWithCurrentDevice() {
-      const result = await ble.begin(selectedNotification());
+      const result = await ble.begin(selectedNotification(), reconnectOptions());
       log(`begin() result: ${result}`, 'ok');
       return result;
     }
@@ -279,46 +286,7 @@
     }
 
     function stopReconnectLoop() {
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
       isReconnecting = false;
-    }
-
-    function scheduleReconnect() {
-      if (!isTesting || isReconnecting) return;
-      isReconnecting = true;
-      reconnectStartedAt = reconnectStartedAt || Date.now();
-      log(`reconnect loop started. interval=${retryIntervalMs() / 1000}s max=${maxAttempts()}`, 'warn');
-      runReconnectAttempt();
-    }
-
-    async function runReconnectAttempt() {
-      if (!isTesting || !isReconnecting) return;
-      if (reconnectAttempts >= maxAttempts()) {
-        isReconnecting = false;
-        log('reconnect failed: max attempts reached', 'error');
-        updateStatus();
-        return;
-      }
-
-      reconnectAttempts++;
-      updateStatus();
-      try {
-        log(`reconnect attempt #${reconnectAttempts}`, 'warn');
-        await beginWithCurrentDevice();
-        const recoveredIn = reconnectStartedAt ? Math.round((Date.now() - reconnectStartedAt) / 1000) : 0;
-        document.getElementById('recoveryValue').textContent = `${recoveredIn}s / ${reconnectAttempts} tries`;
-        isReconnecting = false;
-        reconnectStartedAt = null;
-        log(`reconnect success: ${recoveredIn}s, attempts=${reconnectAttempts}`, 'ok');
-      } catch (error) {
-        log(`reconnect attempt failed: ${error}`, 'error');
-        reconnectTimer = setTimeout(runReconnectAttempt, retryIntervalMs());
-      } finally {
-        updateStatus();
-      }
     }
 
     function formatVector(data, keys) {
@@ -352,11 +320,35 @@
       disconnectCount++;
       log('disconnect detected', 'error');
       updateStatus();
-      scheduleReconnect();
     };
 
     ble.onError = function(error) {
       log(`error: ${error}`, 'error');
+      updateStatus();
+    };
+
+    ble.onReconnectAttempt = function(info) {
+      if (!isTesting) return;
+      isReconnecting = true;
+      reconnectStartedAt = reconnectStartedAt || Date.now();
+      reconnectAttempts = info.attempt;
+      log(`reconnect attempt #${info.attempt} / ${info.maxAttempts}`, 'warn');
+      updateStatus();
+    };
+
+    ble.onReconnectSuccess = function(info) {
+      isReconnecting = false;
+      const recoveredIn = Math.round(info.elapsedMs / 1000);
+      document.getElementById('recoveryValue').textContent = `${recoveredIn}s / ${info.attempt} tries`;
+      reconnectStartedAt = null;
+      log(`reconnect success: ${recoveredIn}s, attempts=${info.attempt}`, 'ok');
+      updateStatus();
+    };
+
+    ble.onReconnectFailed = function(info) {
+      isReconnecting = false;
+      reconnectStartedAt = null;
+      log(`reconnect failed: ${info.error}`, 'error');
       updateStatus();
     };
 

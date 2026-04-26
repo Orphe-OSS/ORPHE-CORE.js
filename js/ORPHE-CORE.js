@@ -139,6 +139,14 @@ class Orphe {
     this._lastBluetoothDeviceStorageKey = `orphe_last_bluetooth_device_${id}`;
     this._usingRememberedBluetoothDevice = false;
     this._rememberedBluetoothDeviceUnavailable = false;
+    this._autoReconnectEnabled = false;
+    this._autoReconnectInProgress = false;
+    this._autoReconnectNotificationType = 'STEP_ANALYSIS';
+    this._autoReconnectOptions = {};
+    this._autoReconnectDevice = null;
+    this._autoReconnectDisconnectHandler = (event) => this._handleAutoReconnectDisconnect(event);
+    this._suppressAutoReconnectErrors = false;
+    this._lastAutoReconnectError = null;
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
     /**
@@ -415,9 +423,15 @@ class Orphe {
 
 
     const {
-      range = { acc: -1, gyro: -1 }
+      range = { acc: -1, gyro: -1 },
+      autoReconnect = false
     } = options;
     this.notification_type = str_type;
+    if (autoReconnect) {
+      this._enableAutoReconnect(str_type, options);
+    } else if (!this._autoReconnectInProgress) {
+      this._disableAutoReconnect();
+    }
 
     if (this._bridge) {
       this._bridge.release();
@@ -479,11 +493,15 @@ class Orphe {
           });
         });
       }
-    })
+      })
       .then(async (result) => {
+        if (result && this.bluetoothDevice) {
+          this._rememberBluetoothDevice(this.bluetoothDevice);
+          this._attachAutoReconnectDisconnectHandler(this.bluetoothDevice);
+        }
+
         // BleSharedBridge: BLE接続成功後にこのタブを Primary として登録
         if (typeof BleSharedBridge !== 'undefined' && result) {
-          this._rememberBluetoothDevice(this.bluetoothDevice);
           this._bridge = new BleSharedBridge(this.id);
           this._isBridgeSecondary = false;
           this._bridge.claimPrimary();
@@ -502,10 +520,126 @@ class Orphe {
         return result;
       })
       .catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        this.onError(error);
+        this._reportError(error);
         return;
       });
 
+  }
+
+
+  _reportError(error) {
+    if (this._suppressAutoReconnectErrors) {
+      this._lastAutoReconnectError = error;
+      return;
+    }
+    this.onError(error);
+  }
+
+  _enableAutoReconnect(str_type, options = {}) {
+    this._autoReconnectEnabled = true;
+    this._autoReconnectNotificationType = str_type;
+    this._autoReconnectOptions = Object.assign({}, options, { autoReconnect: true });
+  }
+
+  _disableAutoReconnect() {
+    this._autoReconnectEnabled = false;
+    this._autoReconnectInProgress = false;
+    this._suppressAutoReconnectErrors = false;
+  }
+
+  _autoReconnectIntervalMs() {
+    const interval = Number(this._autoReconnectOptions.reconnectIntervalMs);
+    return Number.isFinite(interval) && interval >= 0 ? interval : 3000;
+  }
+
+  _autoReconnectMaxAttempts() {
+    const attempts = Number(this._autoReconnectOptions.reconnectMaxAttempts);
+    return Number.isFinite(attempts) && attempts > 0 ? attempts : 120;
+  }
+
+  _autoReconnectWait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  _attachAutoReconnectDisconnectHandler(device) {
+    if (!device?.addEventListener) return;
+    if (this._autoReconnectDevice === device) return;
+    if (this._autoReconnectDevice?.removeEventListener) {
+      try {
+        this._autoReconnectDevice.removeEventListener('gattserverdisconnected', this._autoReconnectDisconnectHandler);
+      } catch (_) {}
+    }
+    this._autoReconnectDevice = device;
+    device.addEventListener('gattserverdisconnected', this._autoReconnectDisconnectHandler);
+  }
+
+  async _restoreAutoReconnectDevice() {
+    if (this.bluetoothDevice) return true;
+    const rememberedDevice = await this._requestRememberedBluetoothDevice();
+    if (!rememberedDevice) return false;
+    this.bluetoothDevice = rememberedDevice;
+    this._usingRememberedBluetoothDevice = true;
+    this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+    this._attachAutoReconnectDisconnectHandler(this.bluetoothDevice);
+    this.onScan(this.bluetoothDevice.name);
+    return true;
+  }
+
+  _handleAutoReconnectDisconnect() {
+    if (!this._autoReconnectEnabled || this._autoReconnectInProgress) return;
+    if (this._bridge && this._bridge.isPrimary) {
+      this._bridge.broadcastDisconnect();
+      this._bridge = null;
+    }
+    this._startAutoReconnect();
+  }
+
+  async _startAutoReconnect() {
+    if (!this._autoReconnectEnabled || this._autoReconnectInProgress) return;
+
+    this._autoReconnectInProgress = true;
+    const startedAt = Date.now();
+    const maxAttempts = this._autoReconnectMaxAttempts();
+    const intervalMs = this._autoReconnectIntervalMs();
+    let lastError = null;
+
+    for (let attempt = 1; this._autoReconnectEnabled && attempt <= maxAttempts; attempt++) {
+      this.onReconnectAttempt({ attempt, maxAttempts, intervalMs });
+
+      try {
+        const hasDevice = await this._restoreAutoReconnectDevice();
+        if (!hasDevice) throw new Error('Last connected Bluetooth device not found. Please reconnect manually.');
+
+        this._lastAutoReconnectError = null;
+        this._suppressAutoReconnectErrors = true;
+        const result = await this.begin(this._autoReconnectNotificationType, this._autoReconnectOptions);
+        this._suppressAutoReconnectErrors = false;
+
+        if (result) {
+          this._autoReconnectInProgress = false;
+          this.onReconnectSuccess({
+            attempt,
+            maxAttempts,
+            elapsedMs: Date.now() - startedAt,
+            result,
+          });
+          return;
+        }
+
+        lastError = this._lastAutoReconnectError || new Error('Auto reconnect attempt failed.');
+      } catch (error) {
+        this._suppressAutoReconnectErrors = false;
+        lastError = error;
+      }
+
+      if (!this._autoReconnectEnabled || attempt >= maxAttempts) break;
+      await this._autoReconnectWait(intervalMs);
+    }
+
+    this._autoReconnectInProgress = false;
+    const error = lastError || new Error('Auto reconnect failed.');
+    this.onReconnectFailed({ maxAttempts, elapsedMs: Date.now() - startedAt, error });
+    this._reportError(error);
   }
 
 
@@ -603,7 +737,7 @@ class Orphe {
         this.onScan(this.bluetoothDevice.name);
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
         throw error;
       });
   }
@@ -645,6 +779,7 @@ class Orphe {
    * @param {string} uuid
    */
   selectBluetoothDevice(uuid = 'DEVICE_INFORMATION') {
+    this._disableAutoReconnect();
     this.forgetLastBluetoothDevice();
     if (this._bridge) {
       if (this._bridge.isPrimary) this._bridge.broadcastDisconnect();
@@ -731,7 +866,7 @@ class Orphe {
   connectGATT(uuid) {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      this.onError(error);
+      this._reportError(error);
       return Promise.reject(error);
     }
     if (this.bluetoothDevice.gatt.connected && this.dataCharacteristic) {
@@ -753,7 +888,7 @@ class Orphe {
         this.onConnect(uuid);
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
         if (this._usingRememberedBluetoothDevice) {
           this._rememberedBluetoothDeviceUnavailable = true;
           this._usingRememberedBluetoothDevice = false;
@@ -788,7 +923,7 @@ class Orphe {
         return this.dataCharacteristic.readValue();
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
         throw error;
       });
   }
@@ -811,7 +946,7 @@ class Orphe {
         this.onWrite(uuid);
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
         throw error;
       });
   }
@@ -831,7 +966,7 @@ class Orphe {
       })
       .catch(error => {
         console.error('startNotify: Error : ' + error);
-        this.onError(error);
+        this._reportError(error);
         throw error;
       });
   }
@@ -865,7 +1000,7 @@ class Orphe {
         this.onStopNotify(uuid);
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
         throw error;
       });
 
@@ -884,7 +1019,7 @@ class Orphe {
   disconnect() {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      this.onError(error);
+      this._reportError(error);
       return;
     }
 
@@ -892,7 +1027,7 @@ class Orphe {
       this.bluetoothDevice.gatt.disconnect();
     } else {
       var error = "Bluetooth Device is already disconnected";
-      this.onError(error);
+      this._reportError(error);
       return;
     }
   }
@@ -960,6 +1095,7 @@ class Orphe {
    * reset(disconnect & clear)
    */
   reset() {
+    this._disableAutoReconnect();
     const wasBridgeSecondary = this._isBridgeSecondary;
 
     // BleSharedBridge: 切断を他タブに通知してリソース解放
@@ -1058,17 +1194,17 @@ class Orphe {
           return;
         }
         if (lastDeviceInfo && devices.length > 0) {
-          this.onError('Last connected Bluetooth device not found. Please reconnect manually.');
+          this._reportError('Last connected Bluetooth device not found. Please reconnect manually.');
           return;
         }
         if (devices.length > 1) {
-          this.onError('Multiple paired devices found. Please reconnect manually.');
+          this._reportError('Multiple paired devices found. Please reconnect manually.');
           return;
         }
       } catch (_) {}
     }
 
-    this.onError('Primary tab closed. Please reconnect manually.');
+    this._reportError('Primary tab closed. Please reconnect manually.');
   }
 
 
@@ -1564,7 +1700,7 @@ class Orphe {
         resolve(this.date_time);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
         console.log('Error: ' + error);
-        this.onError(error);
+        this._reportError(error);
         reject(error);
       });
     });
@@ -1604,7 +1740,7 @@ class Orphe {
         resolve(this.device_information);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
         console.log('Error: ' + error);
-        this.onError(error);
+        this._reportError(error);
         reject(error);
       });
     });
@@ -1734,6 +1870,9 @@ class Orphe {
   onStartNotify(uuid) { console.log("onStartNotify", uuid); }
   onStopNotify(uuid) { console.log("onStopNotify", uuid); }
   onDisconnect() { console.log("onDisconnect"); }
+  onReconnectAttempt(info) { }
+  onReconnectSuccess(info) { }
+  onReconnectFailed(info) { }
 
   /**
    * notification frequencyの実測値を取得する

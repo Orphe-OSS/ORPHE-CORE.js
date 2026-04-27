@@ -24,6 +24,8 @@ var cores = bles;
 function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'STEP_ANALYSIS_AND_SENSOR_VALUES', options = {}) {
     // デフォルト値を設定
     options.range = options.range || { acc: -1, gyro: -1 };
+    if (typeof options.autoReconnect === 'undefined') options.autoReconnect = true;
+    bles[core_id]._coreToolkitOptions = options;
 
     // console.log(options)
     if (options.range && options.range.acc != -1 && options.range.gyro != -1) {
@@ -157,13 +159,21 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ST
   <div class="d-grid gap-2 col-10 mx-auto mt-4">
   <button class="btn btn-warning text-white" type="button" onclick="resetCoreModule(${core_id});">Reset
     Attitude & Gait Analysis</button>
-</div>`, 'modal-body', '', div_modal_content);
+  <button class="btn btn-outline-primary" type="button" id="button_switch_device${core_id}">Select another CORE</button>
+	</div>`, 'modal-body', '', div_modal_content);
 
     // div_modal_bodyにある notificationセレクタを設定値にあわせる
     let select_notify = div_modal_body.querySelector(`#select_notify${core_id}`);
     if (notification == 'STEP_ANALYSIS') select_notify.options[0].selected = true;
     else if (notification == 'SENSOR_VALUES') select_notify.options[1].selected = true;
     else if (notification == 'STEP_ANALYSIS_AND_SENSOR_VALURS') select_notify.options[2].selected = true;
+
+    const switchDeviceButton = div_modal_body.querySelector(`#button_switch_device${core_id}`);
+    if (switchDeviceButton) {
+        switchDeviceButton.addEventListener('click', function () {
+            switchCoreBluetoothDevice(core_id, options);
+        });
+    }
 }
 
 /**
@@ -173,7 +183,6 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ST
  * 
  */
 async function toggleCoreModule(dom, options = {}) {
-    // console.log("toggleCoreModule", options);
     let checked = dom.checked;
     let number = parseInt(dom.value);
     let ble = bles[number];
@@ -186,14 +195,60 @@ async function toggleCoreModule(dom, options = {}) {
         }
 
         document.querySelector(`#ui${number}`).style.visibility = 'visible';
-        ble.gotBLEFrequency = function (freq) {
-            document.querySelector(`#freq${this.id} `).innerHTML = `${Math.floor(freq)} Hz`;
-        };
+
+        // BleSharedBridge: Secondary モードの場合は「共有接続中」を表示
+        if (ble._isBridgeSecondary) {
+            const freqEl = document.querySelector(`#icon_bluetooth${number}`);
+            if (freqEl) {
+                freqEl.innerHTML = `<i class="bi bi-broadcast position-relative">
+                  <span class="position-absolute top-0 start-50 translate-middle badge text-muted" style="font-size:0.2em;" id="freq${number}">
+                    共有
+                  </span>
+                </i>`;
+                freqEl.title = '別タブのBLE接続を共有中';
+            }
+            // Primary が切れたら UI をリセット（ユーザ設定の onDisconnect は保持）
+            const userOnDisconnect = ble.onDisconnect;
+            ble.onDisconnect = function () {
+                if (typeof userOnDisconnect === 'function') userOnDisconnect.call(this);
+                const sw = document.querySelector(`#switch_ble${number}`);
+                if (sw) sw.checked = false;
+                const uiEl = document.querySelector(`#ui${number}`);
+                if (uiEl) uiEl.style.visibility = 'hidden';
+            };
+        } else {
+            ble.gotBLEFrequency = function (freq) {
+                document.querySelector(`#freq${this.id} `).innerHTML = `${Math.floor(freq)} Hz`;
+            };
+        }
     }
     else {
         ble.reset();
         document.querySelector(`#ui${number}`).style.visibility = 'hidden';
-        //setHeaderStatusOffline(ble.id);
+    }
+}
+
+/**
+ * CoreToolkitから別のBluetoothデバイスを手動選択して接続し直す。
+ * @param {number} no - core_id(0,1)
+ * @param {object} options
+ */
+async function switchCoreBluetoothDevice(no, options = {}) {
+    const ble = bles[no];
+    const sw = document.querySelector(`#switch_ble${no}`);
+    const uiEl = document.querySelector(`#ui${no}`);
+    const notification = sw?.getAttribute('notification') || 'STEP_ANALYSIS_AND_SENSOR_VALUES';
+
+    try {
+        if (uiEl) uiEl.style.visibility = 'hidden';
+        await ble.selectBluetoothDevice('DEVICE_INFORMATION');
+        const ret = await ble.begin(notification, options);
+        if (sw) sw.checked = !!ret;
+        if (ret && uiEl) uiEl.style.visibility = 'visible';
+    } catch (error) {
+        if (sw) sw.checked = false;
+        if (uiEl) uiEl.style.visibility = 'hidden';
+        ble.onError(error);
     }
 }
 
@@ -206,17 +261,18 @@ async function toggleCoreModule(dom, options = {}) {
  * @param {dom} dom  - notificationのセレクタ
  */
 function changeNotify(no, dom) {
+    const options = bles[no]._coreToolkitOptions || {};
     if (bles[no].notification_type == 'STEP_ANALYSIS') {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             setTimeout(function () {
-                bles[no].begin(dom.value);
+                bles[no].begin(dom.value, options);
             }, 500);
         });
     }
     else if (bles[no].notification_type == 'SENSOR_VALUES') {
         bles[no].stopNotify('SENSOR_VALUES').then(() => {
             setTimeout(function () {
-                bles[no].begin(dom.value);
+                bles[no].begin(dom.value, options);
             }, 500);
         });
     }
@@ -224,7 +280,7 @@ function changeNotify(no, dom) {
         bles[no].stopNotify('STEP_ANALYSIS').then(() => {
             bles[no].stopNotify('SENSOR_VALUES').then(() => {
                 setTimeout(function () {
-                    bles[no].begin(dom.value);
+                    bles[no].begin(dom.value, options);
                 }, 500);
             });
         });

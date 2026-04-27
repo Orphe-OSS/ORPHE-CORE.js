@@ -132,6 +132,21 @@ class Orphe {
     this.hashUUID = {}; // UUIDを保持するハッシュ
     this.hashUUID_lastConnected; // 最後に接続したUUIDを保持する
     this.id = id;
+
+    // BleSharedBridge: 複数タブ間接続共有
+    this._bridge = null;
+    this._isBridgeSecondary = false;
+    this._lastBluetoothDeviceStorageKey = `orphe_last_bluetooth_device_${id}`;
+    this._usingRememberedBluetoothDevice = false;
+    this._rememberedBluetoothDeviceUnavailable = false;
+    this._autoReconnectEnabled = false;
+    this._autoReconnectInProgress = false;
+    this._autoReconnectNotificationType = 'STEP_ANALYSIS';
+    this._autoReconnectOptions = {};
+    this._autoReconnectDevice = null;
+    this._autoReconnectDisconnectHandler = (event) => this._handleAutoReconnectDisconnect(event);
+    this._suppressAutoReconnectErrors = false;
+    this._lastAutoReconnectError = null;
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
     /**
@@ -408,9 +423,30 @@ class Orphe {
 
 
     const {
-      range = { acc: -1, gyro: -1 }
+      range = { acc: -1, gyro: -1 },
+      autoReconnect = false
     } = options;
     this.notification_type = str_type;
+    if (autoReconnect) {
+      this._enableAutoReconnect(str_type, options);
+    } else if (!this._autoReconnectInProgress) {
+      this._disableAutoReconnect();
+    }
+
+    if (this._bridge) {
+      this._bridge.release();
+      this._bridge = null;
+      this._isBridgeSecondary = false;
+    }
+
+    // ── BleSharedBridge: 別タブに Primary が存在するか確認 ──────────────
+    if (typeof BleSharedBridge !== 'undefined') {
+      const bridge = new BleSharedBridge(this.id);
+      if (bridge.isRemotePrimaryAvailable()) {
+        return this._beginAsSecondary(bridge, str_type);
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────
 
     let obj = await this.getDeviceInformation();
 
@@ -457,16 +493,153 @@ class Orphe {
           });
         });
       }
-    })
-      .then(async (result) => {  // この関数をasyncで宣言
-        // ここにresolveされたときに実行する共通のコードを書く
+      })
+      .then(async (result) => {
+        if (result && this.bluetoothDevice) {
+          this._rememberBluetoothDevice(this.bluetoothDevice);
+          this._attachAutoReconnectDisconnectHandler(this.bluetoothDevice);
+        }
+
+        // BleSharedBridge: BLE接続成功後にこのタブを Primary として登録
+        if (typeof BleSharedBridge !== 'undefined' && result) {
+          this._bridge = new BleSharedBridge(this.id);
+          this._isBridgeSecondary = false;
+          this._bridge.claimPrimary();
+
+          // Primary の BLE が予期せず切断された場合、他タブへ通知する
+          if (this.bluetoothDevice && !this._bridgeBleDisconnectHooked) {
+            this._bridgeBleDisconnectHooked = true;
+            this.bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+              if (this._bridge && this._bridge.isPrimary) {
+                this._bridge.broadcastDisconnect();
+                this._bridge = null;
+              }
+            });
+          }
+        }
         return result;
       })
       .catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        this.onError(error);
+        this._reportError(error);
         return;
       });
 
+  }
+
+
+  _reportError(error) {
+    if (this._suppressAutoReconnectErrors) {
+      this._lastAutoReconnectError = error;
+      return;
+    }
+    this.onError(error);
+  }
+
+  _enableAutoReconnect(str_type, options = {}) {
+    this._autoReconnectEnabled = true;
+    this._autoReconnectNotificationType = str_type;
+    this._autoReconnectOptions = Object.assign({}, options, { autoReconnect: true });
+  }
+
+  _disableAutoReconnect() {
+    this._autoReconnectEnabled = false;
+    this._autoReconnectInProgress = false;
+    this._suppressAutoReconnectErrors = false;
+  }
+
+  _autoReconnectIntervalMs() {
+    const interval = Number(this._autoReconnectOptions.reconnectIntervalMs);
+    return Number.isFinite(interval) && interval >= 0 ? interval : 3000;
+  }
+
+  _autoReconnectMaxAttempts() {
+    const attempts = Number(this._autoReconnectOptions.reconnectMaxAttempts);
+    return Number.isFinite(attempts) && attempts > 0 ? attempts : 120;
+  }
+
+  _autoReconnectWait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  _attachAutoReconnectDisconnectHandler(device) {
+    if (!device?.addEventListener) return;
+    if (this._autoReconnectDevice === device) return;
+    if (this._autoReconnectDevice?.removeEventListener) {
+      try {
+        this._autoReconnectDevice.removeEventListener('gattserverdisconnected', this._autoReconnectDisconnectHandler);
+      } catch (_) {}
+    }
+    this._autoReconnectDevice = device;
+    device.addEventListener('gattserverdisconnected', this._autoReconnectDisconnectHandler);
+  }
+
+  async _restoreAutoReconnectDevice() {
+    if (this.bluetoothDevice) return true;
+    const rememberedDevice = await this._requestRememberedBluetoothDevice();
+    if (!rememberedDevice) return false;
+    this.bluetoothDevice = rememberedDevice;
+    this._usingRememberedBluetoothDevice = true;
+    this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+    this._attachAutoReconnectDisconnectHandler(this.bluetoothDevice);
+    this.onScan(this.bluetoothDevice.name);
+    return true;
+  }
+
+  _handleAutoReconnectDisconnect() {
+    if (!this._autoReconnectEnabled || this._autoReconnectInProgress) return;
+    if (this._bridge && this._bridge.isPrimary) {
+      this._bridge.broadcastDisconnect();
+      this._bridge = null;
+    }
+    this._startAutoReconnect();
+  }
+
+  async _startAutoReconnect() {
+    if (!this._autoReconnectEnabled || this._autoReconnectInProgress) return;
+
+    this._autoReconnectInProgress = true;
+    const startedAt = Date.now();
+    const maxAttempts = this._autoReconnectMaxAttempts();
+    const intervalMs = this._autoReconnectIntervalMs();
+    let lastError = null;
+
+    for (let attempt = 1; this._autoReconnectEnabled && attempt <= maxAttempts; attempt++) {
+      this.onReconnectAttempt({ attempt, maxAttempts, intervalMs });
+
+      try {
+        const hasDevice = await this._restoreAutoReconnectDevice();
+        if (!hasDevice) throw new Error('Last connected Bluetooth device not found. Please reconnect manually.');
+
+        this._lastAutoReconnectError = null;
+        this._suppressAutoReconnectErrors = true;
+        const result = await this.begin(this._autoReconnectNotificationType, this._autoReconnectOptions);
+        this._suppressAutoReconnectErrors = false;
+
+        if (result) {
+          this._autoReconnectInProgress = false;
+          this.onReconnectSuccess({
+            attempt,
+            maxAttempts,
+            elapsedMs: Date.now() - startedAt,
+            result,
+          });
+          return;
+        }
+
+        lastError = this._lastAutoReconnectError || new Error('Auto reconnect attempt failed.');
+      } catch (error) {
+        this._suppressAutoReconnectErrors = false;
+        lastError = error;
+      }
+
+      if (!this._autoReconnectEnabled || attempt >= maxAttempts) break;
+      await this._autoReconnectWait(intervalMs);
+    }
+
+    this._autoReconnectInProgress = false;
+    const error = lastError || new Error('Auto reconnect failed.');
+    this.onReconnectFailed({ maxAttempts, elapsedMs: Date.now() - startedAt, error });
+    this._reportError(error);
   }
 
 
@@ -550,9 +723,22 @@ class Orphe {
     this.steps_number = 0;
   }
   scan(uuid, options = {}) {
-    return (this.bluetoothDevice ? Promise.resolve() : this.requestDevice(uuid))
+    if (this.bluetoothDevice) return Promise.resolve();
+
+    const useRememberedDevice = !options.forceDeviceSelection &&
+      !this._rememberedBluetoothDeviceUnavailable &&
+      this._getLastBluetoothDeviceInfo();
+    return (useRememberedDevice ? this._requestRememberedBluetoothDevice() : Promise.resolve(null))
+      .then(device => {
+        if (!device) return this.requestDevice(uuid);
+        this.bluetoothDevice = device;
+        this._usingRememberedBluetoothDevice = true;
+        this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+        this.onScan(this.bluetoothDevice.name);
+      })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
+        throw error;
       });
   }
   /**
@@ -580,10 +766,104 @@ class Orphe {
     return navigator.bluetooth.requestDevice(options)
       .then(device => {
         this.bluetoothDevice = device;
+        this._usingRememberedBluetoothDevice = false;
+        this._rememberedBluetoothDeviceUnavailable = false;
         this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
         this.onScan(this.bluetoothDevice.name);
       });
   }
+
+  /**
+   * 前回デバイスの記憶を使わず、必ずブラウザのBLE選択ダイアログを表示する。
+   * 接続済みCOREから別COREへ手動で切り替える場合に利用する。
+   * @param {string} uuid
+   */
+  selectBluetoothDevice(uuid = 'DEVICE_INFORMATION') {
+    this._disableAutoReconnect();
+    this.forgetLastBluetoothDevice();
+    if (this._bridge) {
+      if (this._bridge.isPrimary) this._bridge.broadcastDisconnect();
+      else this._bridge.release();
+      this._bridge = null;
+      this._isBridgeSecondary = false;
+    }
+    if (this.bluetoothDevice?.gatt?.connected) {
+      try { this.bluetoothDevice.gatt.disconnect(); } catch (_) {}
+    }
+    this.bluetoothDevice = null;
+    this.dataCharacteristic = null;
+    this._usingRememberedBluetoothDevice = false;
+    this._rememberedBluetoothDeviceUnavailable = false;
+    return this.requestDevice(uuid);
+  }
+
+  /**
+   * 最後に接続成功した Bluetooth デバイス情報を忘れる。
+   * 次回 begin() 時に手動選択ダイアログから別デバイスへ切り替えたい場合に利用する。
+   */
+  forgetLastBluetoothDevice() {
+    this._rememberedBluetoothDeviceUnavailable = false;
+    try { localStorage.removeItem(this._lastBluetoothDeviceStorageKey); } catch (_) {}
+  }
+
+  _rememberBluetoothDevice(device) {
+    if (!device) return;
+    this._rememberedBluetoothDeviceUnavailable = false;
+    try {
+      localStorage.setItem(this._lastBluetoothDeviceStorageKey, JSON.stringify({
+        deviceId: this.id,
+        bluetoothId: device.id || '',
+        bluetoothName: device.name || '',
+        lastConnectedAt: Date.now(),
+      }));
+    } catch (_) {}
+  }
+
+  _getLastBluetoothDeviceInfo() {
+    try {
+      const raw = localStorage.getItem(this._lastBluetoothDeviceStorageKey);
+      if (!raw) return null;
+      const info = JSON.parse(raw);
+      if (!info || (!info.bluetoothId && !info.bluetoothName)) return null;
+      return info;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _findLastBluetoothDevice(devices) {
+    const info = this._getLastBluetoothDeviceInfo();
+    return this._findBluetoothDevice(devices, info);
+  }
+
+  _findBluetoothDevice(devices, info) {
+    if (!info || !Array.isArray(devices)) return null;
+    const bluetoothId = info.bluetoothId || info.id || '';
+    const bluetoothName = info.bluetoothName || info.name || '';
+
+    if (bluetoothId) {
+      const matchedById = devices.find(device => device.id === bluetoothId);
+      if (matchedById) return matchedById;
+    }
+
+    if (bluetoothName) {
+      const matchedByName = devices.filter(device => device.name === bluetoothName);
+      if (matchedByName.length === 1) return matchedByName[0];
+    }
+
+    return null;
+  }
+
+  async _requestRememberedBluetoothDevice() {
+    if (!navigator.bluetooth?.getDevices) return null;
+    try {
+      const devices = await navigator.bluetooth.getDevices();
+      return this._findLastBluetoothDevice(devices);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /**
    * GATT通信を始めるための関数。read, write, startNotify, stopNotifyが呼び出されるとscanと一緒に呼び出されます。
    * @param {string} uuid 
@@ -592,8 +872,8 @@ class Orphe {
   connectGATT(uuid) {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      this.onError(error);
-      return;
+      this._reportError(error);
+      return Promise.reject(error);
     }
     if (this.bluetoothDevice.gatt.connected && this.dataCharacteristic) {
       if (this.hashUUID_lastConnected == uuid)
@@ -614,7 +894,14 @@ class Orphe {
         this.onConnect(uuid);
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
+        if (this._usingRememberedBluetoothDevice) {
+          this._rememberedBluetoothDeviceUnavailable = true;
+          this._usingRememberedBluetoothDevice = false;
+          this.bluetoothDevice = null;
+          this.dataCharacteristic = null;
+        }
+        throw error;
       });
   }
   /**
@@ -642,7 +929,8 @@ class Orphe {
         return this.dataCharacteristic.readValue();
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
+        throw error;
       });
   }
   /**
@@ -664,7 +952,8 @@ class Orphe {
         this.onWrite(uuid);
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
+        throw error;
       });
   }
   /**
@@ -683,7 +972,8 @@ class Orphe {
       })
       .catch(error => {
         console.error('startNotify: Error : ' + error);
-        this.onError(error);
+        this._reportError(error);
+        throw error;
       });
   }
   /**
@@ -716,7 +1006,8 @@ class Orphe {
         this.onStopNotify(uuid);
       })
       .catch(error => {
-        this.onError(error);
+        this._reportError(error);
+        throw error;
       });
 
   }
@@ -734,7 +1025,7 @@ class Orphe {
   disconnect() {
     if (!this.bluetoothDevice) {
       var error = "No Bluetooth Device";
-      this.onError(error);
+      this._reportError(error);
       return;
     }
 
@@ -742,7 +1033,7 @@ class Orphe {
       this.bluetoothDevice.gatt.disconnect();
     } else {
       var error = "Bluetooth Device is already disconnected";
-      this.onError(error);
+      this._reportError(error);
       return;
     }
   }
@@ -810,14 +1101,149 @@ class Orphe {
    * reset(disconnect & clear)
    */
   reset() {
-    this.disconnect(); //disconnect() is not Promise Object
+    this._disableAutoReconnect();
+    const wasBridgeSecondary = this._isBridgeSecondary;
+
+    // BleSharedBridge: 切断を他タブに通知してリソース解放
+    if (this._bridge) {
+      if (this._bridge.isPrimary) this._bridge.broadcastDisconnect();
+      else this._bridge.release();
+      this._bridge = null;
+      this._isBridgeSecondary = false;
+    }
+
+    if (!wasBridgeSecondary && this.bluetoothDevice?.gatt?.connected) {
+      this.disconnect(); //disconnect() is not Promise Object
+    }
     this.clear();
     this.onReset();
+  }
+
+  /**
+   * Secondary として begin する（BleSharedBridge 用内部メソッド）
+   * @param {BleSharedBridge} bridge
+   * @param {string} str_type
+   * @returns {Promise<string>}
+   */
+  _beginAsSecondary(bridge, str_type) {
+    if (this._bridge && this._bridge !== bridge) this._bridge.release();
+    this._bridge = bridge;
+    this._isBridgeSecondary = true;
+
+    // Primary から受信するコールバック名の一覧。
+    // onRead() 内で発火するものをすべて列挙する。
+    const BRIDGE_CALLBACK_NAMES = [
+      'gotAcc', 'gotGyro', 'gotQuat', 'gotEuler',
+      'gotConvertedAcc', 'gotConvertedGyro', 'gotDelta',
+      'gotGait', 'gotType', 'gotDirection', 'gotDistance', 'gotCalorie',
+      'gotStandingPhaseDuration', 'gotSwingPhaseDuration',
+      'gotStride', 'gotFootAngle',
+      'gotPronation', 'gotLandingImpact',
+      'gotStepsNumber', 'gotBLEFrequency',
+    ];
+    const callbacks = {};
+    for (const name of BRIDGE_CALLBACK_NAMES) {
+      callbacks[name] = (d) => this[name](d);
+    }
+    callbacks.onPrimaryLost = () => this._handlePrimaryLost(str_type);
+
+    bridge.subscribeAsSecondary(callbacks);
+    this.onConnect('BRIDGE_SECONDARY');
+    return Promise.resolve('done begin(); BRIDGE SECONDARY');
+  }
+
+  /**
+   * Primary 喪失時の処理。ランダム遅延を挟んでリーダー選出を行い、
+   * - 他タブが先に Primary になった → Secondary に戻る
+   * - 自分が先着 → Fast Reconnect で BLE 接続
+   * - Fast Reconnect 不可 → 手動接続を促す
+   * @param {string} str_type
+   */
+  async _handlePrimaryLost(str_type) {
+    // 多重発火ガード
+    if (!this._isBridgeSecondary) return;
+    this._isBridgeSecondary = false;
+
+    if (this._bridge) {
+      this._bridge.release();
+      this._bridge = null;
+    }
+    this.onDisconnect();
+
+    // 全 Secondary が同時に再接続するのを避けるためランダム遅延
+    const delay = Math.random() * BleSharedBridge.ELECTION_MAX_DELAY_MS;
+    await new Promise(r => setTimeout(r, delay));
+
+    // 遅延中に他タブが Primary を取っていれば Secondary として再購読
+    const probe = new BleSharedBridge(this.id);
+    if (probe.isRemotePrimaryAvailable()) {
+      await this._beginAsSecondary(probe, str_type);
+      return;
+    }
+
+    // Fast Reconnect: ペアリング済みデバイスならダイアログなしで接続
+    if (navigator.bluetooth?.getDevices) {
+      try {
+        const devices = await navigator.bluetooth.getDevices();
+        const lastDeviceInfo = this._getLastBluetoothDeviceInfo();
+        const selectedDevice = this._findBluetoothDevice(devices, this.bluetoothDevice);
+        if (selectedDevice) {
+          this.bluetoothDevice = selectedDevice;
+          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          await this.begin(str_type);
+          return;
+        }
+        const rememberedDevice = this._findLastBluetoothDevice(devices);
+        if (rememberedDevice) {
+          this.bluetoothDevice = rememberedDevice;
+          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          await this.begin(str_type);
+          return;
+        }
+        if (!lastDeviceInfo && devices.length === 1) {
+          this.bluetoothDevice = devices[0];
+          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          await this.begin(str_type);
+          return;
+        }
+        if (lastDeviceInfo && devices.length > 0) {
+          this._reportError('Last connected Bluetooth device not found. Please reconnect manually.');
+          return;
+        }
+        if (devices.length > 1) {
+          this._reportError('Multiple paired devices found. Please reconnect manually.');
+          return;
+        }
+      } catch (_) {}
+    }
+
+    this._reportError('Primary tab closed. Please reconnect manually.');
   }
 
 
 
 
+
+  /**
+   * BleSharedBridge 用: 単一コールバックのデータを配信
+   * @param {string} callbackName
+   * @param {Object} data
+   */
+  _notifyBridge(callbackName, data) {
+    if (this._bridge && this._bridge.isPrimary) {
+      this._bridge.broadcast(callbackName, data);
+    }
+  }
+
+  /**
+   * BleSharedBridge 用: 複数コールバックをまとめて配信（メッセージ数を削減）
+   * @param {Object<string, Object>} batch
+   */
+  _notifyBridgeBatch(batch) {
+    if (this._bridge && this._bridge.isPrimary) {
+      this._bridge.broadcastBatch(batch);
+    }
+  }
 
   // Readコールバック
   /**
@@ -929,6 +1355,7 @@ class Orphe {
       const steps_now = data.getUint16(2);
       if ((0 <= header && header <= 2) && steps_now > this.steps_number) {
         this.gotStepsNumber({ value: steps_now });
+        this._notifyBridge('gotStepsNumber', { value: steps_now });
         this.steps_number = steps_now;
       }
 
@@ -956,6 +1383,15 @@ class Orphe {
         this.gotCalorie({ value: this.gait.calorie });
         this.gotStandingPhaseDuration({ value: this.gait.standing_phase_duration });
         this.gotSwingPhaseDuration({ value: this.gait.swing_phase_duration });
+        this._notifyBridgeBatch({
+          gotGait: this.gait,
+          gotType: { value: this.gait.type },
+          gotDistance: { value: this.gait.distance },
+          gotDirection: { value: this.gait.direction },
+          gotCalorie: { value: this.gait.calorie },
+          gotStandingPhaseDuration: { value: this.gait.standing_phase_duration },
+          gotSwingPhaseDuration: { value: this.gait.swing_phase_duration },
+        });
       }
       // Stride
       else if (data.getUint8(1) == 1 && steps_now > this.stride.steps) {
@@ -971,6 +1407,10 @@ class Orphe {
           z: this.stride.z,
           steps_number: this.stride.steps
         });
+        this._notifyBridgeBatch({
+          gotFootAngle: { value: this.stride.foot_angle },
+          gotStride: { x: this.stride.x, y: this.stride.y, z: this.stride.z, steps_number: this.stride.steps },
+        });
       }
       // Pronation
       else if (data.getUint8(1) == 2 && steps_now > this.pronation.steps) {
@@ -984,7 +1424,11 @@ class Orphe {
           y: this.pronation.y,
           z: this.pronation.z
         });
-        this.gotLandingImpact({ value: this.pronation.landing_impact })
+        this.gotLandingImpact({ value: this.pronation.landing_impact });
+        this._notifyBridgeBatch({
+          gotPronation: { x: this.pronation.x, y: this.pronation.y, z: this.pronation.z },
+          gotLandingImpact: { value: this.pronation.landing_impact },
+        });
 
       }
       // Stride Attitude -- Not implemented
@@ -1011,6 +1455,11 @@ class Orphe {
         this.gotQuat(this.quat);
         this.gotDelta(this.delta);
         this.gotEuler(this.euler);
+        this._notifyBridgeBatch({
+          gotQuat: this.quat,
+          gotDelta: this.delta,
+          gotEuler: this.euler,
+        });
       }
       // Sensor test
       else if (data.getUint8(1) == 5) {
@@ -1154,6 +1603,14 @@ class Orphe {
           let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
           this.euler = q.toEuler();
           this.gotEuler(this.euler);
+          this._notifyBridgeBatch({
+            gotAcc: this.acc,
+            gotQuat: this.quat,
+            gotGyro: this.gyro,
+            gotConvertedAcc: this.converted_acc,
+            gotConvertedGyro: this.converted_gyro,
+            gotEuler: this.euler,
+          });
         }
 
       }
@@ -1209,6 +1666,14 @@ class Orphe {
         let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
         this.euler = q.toEuler();
         this.gotEuler(this.euler);
+        this._notifyBridgeBatch({
+          gotAcc: this.acc,
+          gotQuat: this.quat,
+          gotGyro: this.gyro,
+          gotConvertedAcc: this.converted_acc,
+          gotConvertedGyro: this.converted_gyro,
+          gotEuler: this.euler,
+        });
       }
     }
   }
@@ -1248,7 +1713,7 @@ class Orphe {
         resolve(this.date_time);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
         console.log('Error: ' + error);
-        this.onError(error);
+        this._reportError(error);
         reject(error);
       });
     });
@@ -1288,7 +1753,7 @@ class Orphe {
         resolve(this.device_information);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
         console.log('Error: ' + error);
-        this.onError(error);
+        this._reportError(error);
         reject(error);
       });
     });
@@ -1418,6 +1883,9 @@ class Orphe {
   onStartNotify(uuid) { console.log("onStartNotify", uuid); }
   onStopNotify(uuid) { console.log("onStopNotify", uuid); }
   onDisconnect() { console.log("onDisconnect"); }
+  onReconnectAttempt(info) { }
+  onReconnectSuccess(info) { }
+  onReconnectFailed(info) { }
 
   /**
    * notification frequencyの実測値を取得する

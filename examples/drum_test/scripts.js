@@ -57,7 +57,9 @@ function setup() {
     //ble.setup();
     ble.onConnect = function () {
         connectedDevices++;
-        if (connectedDevices === 4) {
+        // SENSOR_VALUES のみのため onConnect は 1 デバイスにつき 1 回発火。
+        // 2 デバイスで 2 回 (前: === 4 だと到達不能)。
+        if (connectedDevices === 2) {
             gamepar = 5;
         }
     }

@@ -120,8 +120,11 @@
         ble.onConnect = function () {
 
             connectedDevices++;
-            // 2デバイス接続時に開始 (前: connectedDevices===3 だと2台では永久に成立しない)
-            if (connectedDevices === 2) {
+            // STEP_ANALYSIS_AND_SENSOR_VALUES では onConnect が
+            // 1 デバイスにつき 2 回発火する (各 characteristic ごと)。
+            // 2 デバイス × 2 characteristic = 4 回で完全接続完了。
+            // 旧コードは === 3 で「片方が中途半端な状態」で start していたため修正。
+            if (connectedDevices === 4) {
             //接続されたときの処理
 
             mystart(bles[0]);

@@ -7,7 +7,7 @@ ORPHE COREは足装着型IoTセンサーモジュールです。このガイド�
 ```
 ORPHE-CORE.js/
 ├── js/                         # Core libraries (REQUIRED)
-│   ├── ORPHE-CORE.js          # Main SDK (v1.3.3, 1418 lines)
+│   ├── ORPHE-CORE.js          # Main SDK (v1.3.4, 1606 lines)
 │   ├── CoreToolkit.js         # Connection UI toolkit
 │   ├── quaternion.js          # Quaternion math (auto-loaded)
 │   └── float16.min.js         # Float16 support (auto-loaded)
@@ -575,7 +575,7 @@ ble.gotConvertedAcc = function(acc) {
 
 ## Version History
 
-- **v1.3.3** (2025/10/10): Current version
+- **v1.3.4** (2026/01/31): Current version
 - **v1.3**: DateTime characteristic support, time sync
 - **v1.2**: ES6 class-based refactoring
 - **v1.1**: Bug fixes, gotData() extension

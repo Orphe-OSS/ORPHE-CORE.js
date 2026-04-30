@@ -1,6 +1,6 @@
 <script>
   var last_modified = `
-  Last modified: 2025/10/13 15:24:50
+  Last modified: 2026/04/30 00:00:00
   `;
   // last_modifiedから改行を削除して、Last modified:の文字列を <i class="bi bi-arrow-clockwise"></i> に変換する
   last_modified = last_modified.replace(/\n/g, '').replace('Last modified:', '<i class="bi bi-arrow-clockwise"></i>');
@@ -68,33 +68,311 @@
   </div>
 
   <div class="container-sm mt-4">
-    <img class="img-fluid" src="./images/ORPHE_TRACK_scene_08.jpeg">
-    <h2 class="mt-4"> <i class="bi bi-card-text"></i> ORPHE-CORE.js</h2>
-    <p>
-      <span class="lang en">
-        This page contains information on how to hack the ORPHE CORE module with js, along with
-        basic information on BLE and sample code. ORPHE-CORE.js uses BLE, so please be sure to check its compatibility
-        with a CHROME browser. The environment that has been tested in this document is ,Chrome browser on macOS,
-        Windows, Linux and Android. In the case of iOS, you can connect CORE module via <a
-          href="https://apps.apple.com/jp/app/bluefy-web-ble-browser/id1492822055" target="_blank">Bluefy</a>
-        browser.</span>
-      <span class="lang ja active">
-        このページには、ORPHE
-        COREモジュールをjsでハックする方法、BLEに関する基本情報、サンプルコードが含まれています。ORPHE-CORE.jsではWEB Bluetooth
-        APIを利用してBLE通信を利用するため、ブラウザとの互換性に注意してください。ORPHE-CORE.jsはmacOS、Windows、Linux、Android上のChromeブラウザのみで動作します。SafariやFirefoxでは動作しません。対応ブラウザの詳細は
-        <a href="https://developer.mozilla.org/ja/docs/Web/API/Web_Bluetooth_API"
-          target="_blank">https://developer.mozilla.org/ja/docs/Web/API/Web_Bluetooth_API</a> を参照してください。なお、iOSの場合は
-        <a href="https://apps.apple.com/jp/app/bluefy-web-ble-browser/id1492822055" taget="_blank">Bluefy</a>
-        というブラウザからBLE通信が可能です。
-      </span>
-    </p>
+    <section class="dx-hero" aria-labelledby="landing-title">
+      <div class="dx-hero-content">
+        <p class="dx-eyebrow">ORPHE CORE.js</p>
+        <h1 id="landing-title">
+          <span class="lang en">Open-source JavaScript library for ORPHE CORE.</span>
+          <span class="lang ja active">ORPHE COREのJavaScriptオープンソースライブラリ</span>
+        </h1>
+        <p class="dx-hero-lead">
+          <span class="lang en">
+            This page contains information on how to hack ORPHE CORE 2.0 or ORPHE CORE 3.0 with JavaScript, along with
+            basic information on BLE and sample code.
+          </span>
+          <span class="lang ja active">
+            このページには、ORPHE CORE2.0またはORPHE CORE3.0をJavaScriptでハックする方法、BLEに関する基本情報、サンプルコードが含まれています。
+          </span>
+        </p>
+        <div class="dx-hero-actions">
+          <a class="btn btn-primary btn-lg" href="#start-in-3-minutes">
+            <i class="bi bi-play-fill"></i>
+            <span class="lang en">Start in 3 minutes</span>
+            <span class="lang ja active">3分で始める</span>
+          </a>
+          <a class="btn btn-outline-light btn-lg" href="#examples">
+            <i class="bi bi-grid-3x3-gap"></i>
+            <span class="lang en">View examples</span>
+            <span class="lang ja active">Examplesを見る</span>
+          </a>
+        </div>
+      </div>
+    </section>
 
-    <p class="lang en">Happy hacking with ORPHE CORE Module and javascript.</p>
-    <p class="lang ja active">javascriptでORPHEコアモジュールをハックしよう！</p>
+    <section class="dx-trust-links" aria-label="Important links">
+      <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js" target="_blank">
+        <i class="bi bi-github"></i> GitHub
+      </a>
+      <a href="./api_doc/" target="_blank">
+        <i class="bi bi-book"></i> API Reference
+      </a>
+      <a href="https://shop.orphe.io/products/orphe-core-3-0" target="_blank">
+        <i class="bi bi-box-arrow-up-right"></i> Buy ORPHE CORE 3.0
+      </a>
+      <a href="#workshop">
+        <i class="bi bi-youtube"></i> Video Workshop
+      </a>
+    </section>
 
+    <section id="what-is-orphe" class="dx-section">
+      <div class="dx-section-heading">
+        <p class="dx-kicker">
+          <span class="lang en">What is ORPHE CORE?</span>
+          <span class="lang ja active">ORPHE COREとは</span>
+        </p>
+        <h2>
+          <span class="lang en">ORPHE CORE is a sensor device that advances human motion measurement. It supports
+            real-time visualization of walking and running, and makes research-class motion measurement easier to
+            operate.</span>
+          <span class="lang ja active">ORPHE CORE〈オルフェコア〉は身体動作計測を新たなレベルに進歩させるセンサーデバイスです。
+            歩行、走行のリアルタイムの可視化や、研究クラスの動作計測を簡便に運用することができます。</span>
+        </h2>
+      </div>
+      <div class="dx-feature-grid">
+        <article class="dx-feature">
+          <i class="bi bi-bluetooth"></i>
+          <h3>Web Bluetooth</h3>
+          <p>
+            <span class="lang en">ORPHE-CORE.js uses the Web Bluetooth API to communicate with ORPHE CORE. It works on
+              Chromium-based browsers such as Chrome and Edge.</span>
+            <span class="lang ja active">ORPHE-CORE.jsではWeb Bluetooth APIを利用してBLE通信を行います。ChromeやEdgeなどのChromium系ブラウザで動作します。</span>
+          </p>
+        </article>
+        <article class="dx-feature">
+          <i class="bi bi-activity"></i>
+          <h3>
+            <span class="lang en">6-axis IMU motion sensor</span>
+            <span class="lang ja active">6軸IMUモーションセンサ</span>
+          </h3>
+          <p>
+            <span class="lang en">You can get raw motion sensor data and edge-analyzed gait data at the same time.</span>
+            <span class="lang ja active">モーションセンサ値の生データとエッジ解析された歩容データを同時に取得できます。</span>
+          </p>
+        </article>
+        <article class="dx-feature">
+          <i class="bi bi-lightbulb"></i>
+          <h3>
+            <span class="lang en">Start quickly</span>
+            <span class="lang ja active">すぐに始められます</span>
+          </h3>
+          <p>
+            <span class="lang en">Start with LED control, then move on to getting sensor values.</span>
+            <span class="lang ja active">まずはLED制御から始めて、センサ値の取得に進みましょう！</span>
+          </p>
+        </article>
+      </div>
+    </section>
 
+    <section id="core-specs" class="dx-section dx-specs">
+      <div class="dx-section-heading">
+        <p class="dx-kicker">
+          <span class="lang en">ORPHE CORE 3.0 product notes</span>
+          <span class="lang ja active">ORPHE CORE 3.0の製品情報</span>
+        </p>
+        <h2>
+          <span class="lang en">Hardware details useful for development.</span>
+          <span class="lang ja active">開発前に知っておきたいハードウェア情報です。</span>
+        </h2>
+      </div>
+      <div class="dx-spec-layout">
+        <figure class="dx-product-visual">
+          <img src="./images/product/orphe-core-3-front.jpg" alt="ORPHE CORE 3.0 front view">
+          <div class="dx-measure-x">29mm</div>
+          <div class="dx-measure-y">45mm</div>
+        </figure>
+        <div class="dx-spec-table-wrap">
+          <table class="dx-spec-table">
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Size</span>
+                  <span class="lang ja active">サイズ</span>
+                </th>
+                <td>45mm×29mm×14mm</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Weight</span>
+                  <span class="lang ja active">重量</span>
+                </th>
+                <td>
+                  <span class="lang en">About 20g</span>
+                  <span class="lang ja active">約20g</span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Sensors</span>
+                  <span class="lang ja active">センサー</span>
+                </th>
+                <td>
+                  <span class="lang en">Acceleration XYZ, angular velocity XYZ</span>
+                  <span class="lang ja active">加速度XYZ、角速度XYZ</span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Analysis performance</span>
+                  <span class="lang ja active">解析性能</span>
+                </th>
+                <td>200Hz</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Body</span>
+                  <span class="lang ja active">本体仕様</span>
+                </th>
+                <td>
+                  <span class="lang en">Bluetooth, full-color LED, micro USB, IPX7, about 8 hours of operation</span>
+                  <span class="lang ja active">Bluetooth、フルカラーLED、micro USB、IPX7、約8時間駆動</span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Compatible shoes</span>
+                  <span class="lang ja active">対応シューズ</span>
+                </th>
+                <td>EASYRUN SHIBUYA 3.0, RUNWALK ORPHE</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Dual-foot measurement</span>
+                  <span class="lang ja active">両足計測</span>
+                </th>
+                <td>
+                  <span class="lang en">Two ORPHE CORE 3.0 devices are required.</span>
+                  <span class="lang ja active">ORPHE CORE 3.0が2個必要です。</span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <span class="lang en">Package contents</span>
+                  <span class="lang ja active">同梱品</span>
+                </th>
+                <td>
+                  <span class="lang en">Sensor device, shoelace mount, USB charging cable</span>
+                  <span class="lang ja active">本体、シューレースマウント、充電用USBケーブル</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="dx-source-note">
+        <span class="lang en">
+          Product information is based on the ORPHE CORE 3.0 product page.
+        </span>
+        <span class="lang ja active">
+          製品情報はORPHE CORE 3.0の製品ページをもとにしています。
+        </span>
+      </p>
+    </section>
 
-    <h3 class="mt-4">
+    <section id="start-in-3-minutes" class="dx-section dx-quickstart">
+      <div class="dx-section-heading">
+        <p class="dx-kicker">
+          <span class="lang en">Quick start</span>
+          <span class="lang ja active">Quick start</span>
+        </p>
+        <h2>
+          <span class="lang en">Include ORPHE-CORE.js via CDN and try a simple connection.</span>
+          <span class="lang ja active">CDNでORPHE-CORE.jsを読み込み、まずは接続を試します。</span>
+        </h2>
+      </div>
+      <pre class="dx-code"><code class="language-html">&lt;button onclick=&quot;connectOrphe()&quot;&gt;Connect ORPHE&lt;/button&gt;
+&lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+  var core = new Orphe(0);
+
+  window.onload = function () {
+    core.setup();
+  };
+
+  async function connectOrphe() {
+    await core.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+    core.setLED(1, 0);
+  }
+&lt;/script&gt;</code></pre>
+      <div class="dx-inline-actions">
+        <a class="btn btn-sm btn-primary" href="#p5-quickstart">
+          <i class="bi bi-brush"></i>
+          <span class="lang en">Try p5.js starter</span>
+          <span class="lang ja active">p5.jsですぐ試す</span>
+        </a>
+        <a class="btn btn-sm btn-outline-light" href="#vscode-quickstart">
+          <i class="bi bi-code-square"></i>
+          <span class="lang en">Use VSCode</span>
+          <span class="lang ja active">VSCodeで始める</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="choose-path" class="dx-section">
+      <div class="dx-section-heading">
+        <p class="dx-kicker">
+          <span class="lang en">Choose your path</span>
+          <span class="lang ja active">目的から選ぶ</span>
+        </p>
+        <h2>
+          <span class="lang en">Use the sample closest to what you want to make.</span>
+          <span class="lang ja active">作りたいものに近いサンプルをお使いください。</span>
+        </h2>
+      </div>
+      <div class="dx-path-grid">
+        <a class="dx-path" href="#creative-examples">
+          <i class="bi bi-stars"></i>
+          <strong>Creative coding</strong>
+          <span>
+            <span class="lang en">Games, visuals, sound, and p5.js.</span>
+            <span class="lang ja active">ゲーム、ビジュアル、音、p5.js。</span>
+          </span>
+        </a>
+        <a class="dx-path" href="#coretoolkit-quickstart">
+          <i class="bi bi-window-sidebar"></i>
+          <strong>App prototyping</strong>
+          <span>
+            <span class="lang en">Advanced connection UI and settings with CoreToolkit.js.</span>
+            <span class="lang ja active">CoreToolkit.jsを使った高度な接続UIと設定。</span>
+          </span>
+        </a>
+        <a class="dx-path" href="#motion-intelligence">
+          <i class="bi bi-graph-up"></i>
+          <strong>Research / engineering</strong>
+          <span>
+            <span class="lang en">Gesture recognition, frequency analysis, and raw data recording.</span>
+            <span class="lang ja active">ジェスチャー認識、周波数解析、生データの記録。</span>
+          </span>
+        </a>
+        <a class="dx-path" href="#desktop-apps">
+          <i class="bi bi-display"></i>
+          <strong>Desktop apps</strong>
+          <span>
+            <span class="lang en">Desktop app development with Electron.</span>
+            <span class="lang ja active">Electronを使ったデスクトップアプリの開発。</span>
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <section class="dx-compatibility">
+      <div>
+        <i class="bi bi-exclamation-circle"></i>
+      </div>
+      <p>
+        <span class="lang en">
+          ORPHE-CORE.js uses the Web Bluetooth API, so please check browser compatibility. It works on Chrome-based
+          browsers such as Chrome and Edge. Safari and Firefox are not supported. On iOS, use a Web BLE browser such as
+          <a href="https://apps.apple.com/jp/app/bluefy-web-ble-browser/id1492822055" target="_blank">Bluefy</a>.
+        </span>
+        <span class="lang ja active">
+          ORPHE-CORE.jsではWeb Bluetooth APIを利用してBLE通信を行うため、ブラウザとの互換性に注意してください。ChromeやEdgeなどのChromium系ブラウザで動作します。SafariやFirefoxでは動作しません。iOSの場合は
+          <a href="https://apps.apple.com/jp/app/bluefy-web-ble-browser/id1492822055" target="_blank">Bluefy</a>
+          などのWeb BLE対応ブラウザを利用してください。
+        </span>
+      </p>
+    </section>
+
+    <h3 id="p5-quickstart" class="mt-4">
 
       <span class="lang en"><i class="bi bi-geo-alt-fill"></i>Quick Start with p5.js</span>
       <span class="lang ja active"><i class="bi bi-geo-alt-fill"></i>p5.jsではじめてみよう</span>
@@ -145,7 +423,7 @@
     </section>
 
 
-    <h3 class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with VSCode</h3>
+    <h3 id="vscode-quickstart" class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with VSCode</h3>
     <section class="ms-4 mb-4">
       <p class="lang en">
         Get started by including ORPHE-CORE.js Javascript via CDN without the need for any build steps.
@@ -172,7 +450,7 @@
               &lt;/head&gt;
               &lt;body&gt;
                 &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;
-                &lt;button onclick=&quot;ble.setLED(1,0);&quot;&gt;connect&lt;/button&gt;
+                &lt;button onclick=&quot;connectOrphe()&quot;&gt;connect&lt;/button&gt;
                 &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js&quot;
                 crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
                 &lt;script&gt;
@@ -180,6 +458,10 @@
                 window.onload = function () {
                   // ORPHE CORE Init
                   ble.setup();
+                }
+                async function connectOrphe() {
+                  await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                  ble.setLED(1, 0);
                 }
                 &lt;/script&gt;
               &lt;/body&gt;
@@ -218,18 +500,18 @@
     </section>
 
     <h3 class="mt-4">
-      <span class="lang en"><i class="bi bi-geo-alt-fill"></i> BLINKING LED</span>
-      <span class="lang ja active"><i class="bi bi-geo-alt-fill"></i> LED点滅</span>
+      <span class="lang en"><i class="bi bi-geo-alt-fill"></i> Control the LED</span>
+      <span class="lang ja active"><i class="bi bi-geo-alt-fill"></i> LEDを制御する</span>
     </h3>
     <section class="ms-4">
       <div class="row">
         <div class="col-sm-8">
           <p class="lang en">
-            If you make LEDs glow, you'll be tempted to make them blink.Don't you ever do that? Let's make
-            LED BLINKING happen with this code. Hello ORPHE-CORE World!!
+            When there is an LED, you may want to make it blink. This code shows how to blink the LED. Hello
+            ORPHE-CORE World!!
           </p>
           <p class="lang ja active">
-            LEDを点灯させると、点滅させたくなりますよね。そういうことありませんか？このコードでLED点滅を実現しましょう。Hello
+            LEDがあると、点滅させたくなりますよね！そんな時はこのコードでLED点滅を実現しましょう。Hello
             ORPHE-CORE World!!
           </p>
           <p class="lang en">
@@ -325,7 +607,7 @@
     </section>
 
 
-    <h3 class="mt-5">Quick Start with CoreToolkit.js</h3>
+    <h3 id="coretoolkit-quickstart" class="mt-5">Quick Start with CoreToolkit.js</h3>
     <section class="ms-4">
       <p class="lang en">
         ORPHE-CORE.js can be run with a few lines of code, but it can be somewhat cumbersome to configure detailed
@@ -373,7 +655,7 @@
   </pre>
     </section>
 
-    <h3 class="mt-4"><i class="bi bi-youtube"></i> ORPHE-CORE Workshop </h3>
+    <h3 id="workshop" class="mt-4"><i class="bi bi-youtube"></i> ORPHE-CORE Video Workshop </h3>
 
     <section class="ms-4">
       <p class="lang en">
@@ -407,15 +689,15 @@
     </section>
 
 
-    <h3 class="mt-4"><i class="bi bi-code"></i> Application Examples </h3>
+    <h3 id="examples" class="mt-4"><i class="bi bi-code"></i> Application Examples </h3>
     <section class="ms-4">
       <p class="lang en">
-        We have prepared several examples using ORPHE-CORE.js. All examples are located under the
+        We have prepared several Examples using ORPHE-CORE.js. All Examples are located under the
         /ORPHE-CORE.js/examples
         directory.
       </p>
       <p class="lang ja active">
-        ORPHE-CORE.jsを使ったいくつかの例を用意しました。すべての例は/ORPHE-CORE.js/examplesディレクトリにあります。
+        ORPHE-CORE.jsを使ったいくつかのExamplesを用意しました。すべてのExamplesは/ORPHE-CORE.js/examplesディレクトリにあります。
       </p>
       <!-- The following is a list of BLE Advertising by ORPHE CORE Module. Not all advertisements are listed in this page.
       <table class="table table-dark table-striped table-hover">
@@ -598,17 +880,16 @@
             </li>
             <li>
               <span class="lang en">
-                type "git clone https://orphe-oss.github.io/ORPHE-CORE.js.git" on the terminal.
+                type "git clone https://github.com/Orphe-OSS/ORPHE-CORE.js.git" on the terminal.
               </span>
               <span class="lang ja active">
-                ターミナルに"git clone https://orphe-oss.github.io/ORPHE-CORE.js.git"と入力します。
+                ターミナルに"git clone https://github.com/Orphe-OSS/ORPHE-CORE.js.git"と入力します。
               </span>
               <div class="mt-2 input-group mb-3">
                 <button class="btn btn-outline-primary" type="button" id="button_copy_clone"
                   onclick="copyInputValue(this, '#input_clone')"> <i class="bi bi-clipboard"></i></button>
                 <input type="text" class="form-control bg-secondary" id="input_clone"
-                  value='git clone https://orphe-oss.github.io/ORPHE-CORE.js.git' crossorigin="anonymous"
-                  type="text/javascript"></script>
+                  value='git clone https://github.com/Orphe-OSS/ORPHE-CORE.js.git' readonly>
               </div>
             </li>
             <li>
@@ -641,17 +922,16 @@
 
     </section>
 
-    <h3 class="mt-4"><i class="bi bi-star"></i> Starter Templates </h3>
+    <h3 id="starter-templates" class="mt-4"><i class="bi bi-star"></i> Starter Templates </h3>
     <section class="ms-4">
       <p class="lang en">
-        Although we have provided an ORPHE-like example in the Examples section, it would be better to have a simpler
-        example if users want to create their own applications using ORPHE-CORE. In this section, as Starter Templates,
-        we
-        provide a very simple working example without css. All starter templates are located under the
+        If you want to create your own application using ORPHE-CORE, it is useful to start from a simpler example. In
+        this section, as Starter Templates, we provide very simple working examples without css. All starter templates
+        are located under the
         /ORPHE-CORE.js/starter-templates/ directory.
       </p>
       <p class="lang ja active">
-        ExamplesセクションにORPHE風の例を提供していますが、ORPHE-COREを使って独自のアプリケーションを作成したい場合は、よりシンプルな例があると良いでしょう。このセクションでは、Starter
+        ORPHE-COREを使って独自のアプリケーションを作成したい場合は、よりシンプルな例があると良いでしょう。このセクションでは、Starter
         Templatesとして、非常にシンプルな動作する例を提供します。すべてのスターターテンプレートは/ORPHE-CORE.js/starter-templates/ディレクトリにあります。
       </p>
       <ul>
@@ -715,7 +995,7 @@
             target="_blank">Source</a> ]
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/X7O5PU87S" target="_blank">p5.js</a> ]
         </li>
-        <li><span class="bg-warning">ANALYSIS and RAW</span>: template of starting 'ANALYSIS' and 'RAW' notify.
+        <li><span class="bg-warning">STEP_ANALYSIS and SENSOR_VALUES</span>: template of starting 'STEP_ANALYSIS_AND_SENSOR_VALUES' notify.
           [ <a href="./starter-templates/ANALYSIS_AND_RAW.html" target="_blank">DEMO</a> ]
           [ <a href="https://editor.p5js.org/tetsuakibaba/sketches/1mNA7vd1g" target="_blank">p5.js</a> ]
         </li>
@@ -729,7 +1009,7 @@
         <li><span class="bg-warning">GAIT AND RECORD</span>: {value} record gait data and make json file
           [ <a href="https://editor.p5js.org/kikukawayuya/sketches/D-NbsGfcE" target="_blank">p5.js</a> ]
         </li>
-        <li><span class="bg-warning">ALL RAW AND GAIT DATA</span>: {value} realtime RAW and gait analysis
+        <li><span class="bg-warning">ALL SENSOR VALUES AND GAIT DATA</span>: {value} realtime sensor values and gait analysis
           [ <a href="https://editor.p5js.org/kikukawayuya/sketches/boqkxL47u" target="_blank">p5.js</a> ]
         </li>
 
@@ -737,7 +1017,7 @@
     </section>
 
 
-    <h3 class="mt-4"><i class="bi bi-stars"></i> Creative Examples</h3>
+    <h3 id="creative-examples" class="mt-4"><i class="bi bi-stars"></i> Creative Examples</h3>
     <section class="ms-4">
       <p class="lang en">
         Are you a creative coder? If so or not, why don't you try the creative examples. Graphics, Sounds makes your
@@ -747,6 +1027,64 @@
       <p class="lang ja active">
         クリエイティブコーダーですか？そうでない場合でも、遊び心のある例を試してみませんか。グラフィック、サウンドがあなたのORPHE-COREをカラフルで遊び心のあるものにします！
       </p>
+
+      <div class="dx-demo-games">
+        <h4>
+          <span class="lang en">Try example games</span>
+          <span class="lang ja active">お試しゲーム</span>
+        </h4>
+        <div class="dx-demo-game-grid">
+          <a class="dx-demo-game" href="./examples/GAME-HURDLE/" target="_blank">
+            <img src="./examples/_thumbnails/hurdle-110m.png" alt="110m hurdle game">
+            <span>
+              <span class="lang en">110m Hurdles</span>
+              <span class="lang ja active">110m ハードル走</span>
+            </span>
+          </a>
+          <a class="dx-demo-game" href="./examples/GAME-UDON/" target="_blank">
+            <img src="./examples/_thumbnails/udon.png" alt="Udon kneading game">
+            <span>
+              <span class="lang en">Udon kneading game</span>
+              <span class="lang ja active">うどんふみふみゲーム！</span>
+            </span>
+          </a>
+          <a class="dx-demo-game" href="./examples/MOVEYOURFEET/" target="_blank">
+            <img src="./examples/_thumbnails/move-your-feet.png" alt="Move your feet game">
+            <span>
+              <span class="lang en">Move your feet</span>
+              <span class="lang ja active">足パタパタゲーム☆</span>
+            </span>
+          </a>
+          <a class="dx-demo-game" href="./examples/GAME-PINGPONG/" target="_blank">
+            <img src="./examples/_thumbnails/pingpong.png" alt="Ping pong game">
+            <span>
+              <span class="lang en">Ping pong game</span>
+              <span class="lang ja active">ピンポンゲーム</span>
+            </span>
+          </a>
+          <a class="dx-demo-game" href="./examples/drum_test/" target="_blank">
+            <img src="./examples/_thumbnails/drum.png" alt="Drum game">
+            <span>
+              <span class="lang en">Drum game</span>
+              <span class="lang ja active">ドラムゲーム</span>
+            </span>
+          </a>
+          <a class="dx-demo-game" href="./examples/GAME-BOXING/" target="_blank">
+            <img src="./examples/_thumbnails/boxing.png" alt="Boxing game">
+            <span>
+              <span class="lang en">Boxing game</span>
+              <span class="lang ja active">ボクシングゲーム</span>
+            </span>
+          </a>
+          <a class="dx-demo-game" href="./examples/GAME-DDR/" target="_blank">
+            <img src="./examples/_thumbnails/ddr.png" alt="DDR game">
+            <span>
+              <span class="lang en">DDR game</span>
+              <span class="lang ja active">DDRゲーム</span>
+            </span>
+          </a>
+        </div>
+      </div>
 
       <ul>
         <li><span class="bg-warning">UDON</span>: うどんふみふみゲーム！Step on the ORPHE CORE and stretch the udon out thinly!
@@ -799,7 +1137,7 @@
     </section>
 
 
-    <h3 class="mt-4"><i class="bi bi-wrench-adjustable-circle"></i> Technical Examples</h3>
+    <h3 id="motion-intelligence" class="mt-4"><i class="bi bi-wrench-adjustable-circle"></i> Motion Intelligence Examples</h3>
     <section class="ms-4">
       <p class="lang en">
         Are you interested in gesture recognition, frequency analysis, or something more engineering and difficult? Then
@@ -844,7 +1182,7 @@
     </section>
 
 
-    <h2 class="mt-4"><img height="30em" src="images/electron_logo.svg"> Electron</h2>
+    <h2 id="desktop-apps" class="mt-4"><img height="30em" src="images/electron_logo.svg"> Desktop apps with Electron</h2>
     <section class="ms-4">
       <p class="lang en">
         Using the previous contents, you already have easy and speedy access to the ORPHE CORE module. Still not

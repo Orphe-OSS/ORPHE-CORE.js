@@ -10,8 +10,9 @@ let osc, envelope;
 let scaleArray = [60, 62, 64, 65, 67, 69, 71, 72];
 var foot_angles = [0, 0];
 
-//ORPHE CORE BLE
-var bles = [new Orphe(0), new Orphe(1)];
+// bles[0] / bles[1] は CoreToolkit.js が global として宣言済み。
+// 旧コードでここで再度 `var bles = [new Orphe(0), new Orphe(1)]` と書くと
+// CoreToolkit が保持している配列と別インスタンスを上書きする問題があったため削除。
 
 let ACCs = [
   {
@@ -195,8 +196,6 @@ window.onload = function () {
     ble.setup();
     ble.onConnect = function (uuid) {
       console.log('onConnect:', uuid);
-      document.querySelector(`#status${ble.id}`).innerText = 'ONLINE';
-      document.querySelector(`#status${ble.id}`).classList = 'bg-primary text-white'
 
       ////start sound////
       osc.start();
@@ -205,8 +204,7 @@ window.onload = function () {
 
     }
     ble.onDisconnect = function () {
-      document.querySelector(`#status${ble.id}`).innerText = 'OFFLINE';
-      document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
+      console.log('onDisconnect');
     }
 
     buildCoreToolkit(document.querySelector('#toolkit_placeholder'),  
@@ -215,10 +213,7 @@ window.onload = function () {
 
     ble.onConnectGATT = function (uuid) {
       console.log('> connected GATT!');
-      document.getElementById(`uuid_name${this.id + 1}`).innerHTML = uuid;
-      document.querySelector(`#startNotifications${this.id}`).classList = 'btn btn-danger';
-      document.querySelector(`#button_name${this.id}`).innerHTML = "disconnect";
-      document.querySelector(`#char${this.id}`).disabled = true;
+      document.getElementById(`uuid_name${this.id}`).innerHTML = uuid;
   }
 
   ble.onScan = function (deviceName) {
@@ -227,8 +222,8 @@ window.onload = function () {
   ble.gotFootAngle = function (foot_angle) {
     document.querySelector(`#stride${this.id}_w`).innerHTML = foot_angle.value.toFixed(3);
     //Register an event listener when a FootAngle is received.
-    foot_angles[this.id] = _foot_angle.value;
-    landCircles.push(new footAnglePoint(this.id, _foot_angle.value));
+    foot_angles[this.id] = foot_angle.value;
+    landCircles.push(new footAnglePoint(this.id, foot_angle.value));
     }
 
   ble.gotPronation = function (pronation) {

@@ -382,75 +382,87 @@
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <!--
+    Firebase ranking is OPTIONAL. To enable it, copy
+    firebase-config.example.js to firebase-config.local.js (gitignored)
+    and fill in your own Firebase project credentials, then uncomment
+    the `<script src="firebase-config.local.js"></script>` line below.
+
+    Without this, the game runs end-to-end; only the global ranking
+    save/display feature is disabled (the existing currentUser guards
+    short-circuit the ranking calls). Hardcoded credentials that used
+    to live here have been moved out — if any of those creds were ever
+    pushed publicly, treat them as compromised and rotate them in the
+    Firebase console (App Check / API key restrictions / Firestore
+    Security Rules).
+  -->
+  <!-- <script src="firebase-config.local.js"></script> -->
+
   <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-  import { getFirestore, collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDimrSblIDOusCS6fXwrTE_qLGN0qjYLRY",
-    authDomain: "orphecorejsgamehurdle.firebaseapp.com",
-    projectId: "orphecorejsgamehurdle",
-    storageBucket: "orphecorejsgamehurdle.firebasestorage.app",
-    messagingSenderId: "677931367183",
-    appId: "1:677931367183:web:09d0e6ce8c80c862badc7a"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  
-  // Export to global scope for access from other scripts
-  window.firebaseAuth = auth;
-  window.firebaseDb = db;
-  window.signInAnonymously = signInAnonymously;
-  window.onAuthStateChanged = onAuthStateChanged;
-  window.collection = collection;
-  window.query = query;
-  window.orderBy = orderBy;
-  window.limit = limit;
-  window.getDocs = getDocs;
-  window.addDoc = addDoc;
-  window.serverTimestamp = serverTimestamp;
-  
-  // Anonymous authentication state
+  // Anonymous authentication state — kept null when ranking is disabled
+  // so existing currentUser guards (e.g. saveScoreToRanking) become no-op.
   window.currentUser = null;
-  
-  // Automatically sign in anonymously when the page loads
-  signInAnonymously(auth)
-    .then(() => {
-      console.log("Anonymous authentication successful");
-    })
-    .catch((error) => {
-      console.error("Anonymous authentication failed:", error);
-      // Hide ranking button if auth fails
+
+  if (!window.HURDLE_FIREBASE_CONFIG) {
+    console.info('[HURDLE] Firebase ranking disabled. To enable, see firebase-config.example.js.');
+    // Hide the ranking button if it exists in the DOM
+    document.addEventListener('DOMContentLoaded', () => {
       const rankingBtn = document.getElementById('btn-ranking');
-      if (rankingBtn) {
-        rankingBtn.style.display = 'none';
+      if (rankingBtn) rankingBtn.style.display = 'none';
+    });
+  } else {
+    // Dynamic imports so the Firebase SDK is fetched only when enabled
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js");
+    const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js");
+    const { getFirestore, collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js");
+
+    const app = initializeApp(window.HURDLE_FIREBASE_CONFIG);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Export to global scope for access from other scripts
+    window.firebaseAuth = auth;
+    window.firebaseDb = db;
+    window.signInAnonymously = signInAnonymously;
+    window.onAuthStateChanged = onAuthStateChanged;
+    window.collection = collection;
+    window.query = query;
+    window.orderBy = orderBy;
+    window.limit = limit;
+    window.getDocs = getDocs;
+    window.addDoc = addDoc;
+    window.serverTimestamp = serverTimestamp;
+
+    // Automatically sign in anonymously when the page loads
+    signInAnonymously(auth)
+      .then(() => {
+        console.log("Anonymous authentication successful");
+      })
+      .catch((error) => {
+        console.error("Anonymous authentication failed:", error);
+        const rankingBtn = document.getElementById('btn-ranking');
+        if (rankingBtn) {
+          rankingBtn.style.display = 'none';
+        }
+      });
+
+    // Monitor auth state changes
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.currentUser = user;
+        const rankingBtn = document.getElementById('btn-ranking');
+        if (rankingBtn) {
+          rankingBtn.style.display = 'inline-block';
+        }
+      } else {
+        window.currentUser = null;
+        const rankingBtn = document.getElementById('btn-ranking');
+        if (rankingBtn) {
+          rankingBtn.style.display = 'none';
+        }
       }
     });
-    
-  // Monitor auth state changes
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      window.currentUser = user;
-      // Show ranking button if authenticated
-      const rankingBtn = document.getElementById('btn-ranking');
-      if (rankingBtn) {
-        rankingBtn.style.display = 'inline-block';
-      }
-    } else {
-      window.currentUser = null;
-      // Hide ranking button if not authenticated
-      const rankingBtn = document.getElementById('btn-ranking');
-      if (rankingBtn) {
-        rankingBtn.style.display = 'none';
-      }
-    }
-  });
+  }
   </script>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';

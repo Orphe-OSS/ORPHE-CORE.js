@@ -135,7 +135,9 @@ window.onload = function () {
             document.querySelector(`#svg${this.id}_z`).innerHTML = `${gyro.z.toFixed(3)}`;
         }
 
-        ble.gotAcc = function (acc) {
+        // gotConvertedAcc は実 G 値 (±range G) を返す。テーブル表示用に
+        // こちらを使うと正規化値より直感的に読める。
+        ble.gotConvertedAcc = function (acc) {
             document.querySelector(`#sva${this.id}_x`).innerHTML = `${acc.x.toFixed(3)}`;
             document.querySelector(`#sva${this.id}_y`).innerHTML = `${acc.y.toFixed(3)}`;
             document.querySelector(`#sva${this.id}_z`).innerHTML = `${acc.z.toFixed(3)}`;

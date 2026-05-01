@@ -30,7 +30,11 @@
         window.onload = function () {
             // ORPHE CORE Init
             ble.setup();
-            ble.gotAcc = function (acc) {
+            // gotConvertedAcc は実 G 値 (range 設定に応じて ±2/±4/±8/±16 G) を返す。
+            // 「ACCELEROMETER」というファイル名から学習者が期待する「加速度センサ
+            // の生データ」に近いのは正規化値ではなく実 G 値なのでこちらを使う。
+            // 正規化値 (-1〜1) が欲しい場合は ble.gotAcc を直接上書きする。
+            ble.gotConvertedAcc = function (acc) {
                 document.querySelector('#x').innerHTML = acc.x;
                 document.querySelector('#y').innerHTML = acc.y;
                 document.querySelector('#z').innerHTML = acc.z;

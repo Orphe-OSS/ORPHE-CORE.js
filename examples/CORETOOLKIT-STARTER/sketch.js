@@ -79,7 +79,9 @@ window.onload = function () {
             document.querySelector(`#svg${this.id}_z`).innerHTML = `${gyro.z.toFixed(3)}`;
         }
 
-        ble.gotAcc = function (acc) {
+        // gotConvertedAcc は実 G 値 (range 設定に応じて ±2/±4/±8/±16 G) を返す。
+        // テーブル表示用としては正規化値より直感的なのでこちらを使用。
+        ble.gotConvertedAcc = function (acc) {
             document.querySelector(`#sva${this.id}_x`).innerHTML = `${acc.x.toFixed(3)}`;
             document.querySelector(`#sva${this.id}_y`).innerHTML = `${acc.y.toFixed(3)}`;
             document.querySelector(`#sva${this.id}_z`).innerHTML = `${acc.z.toFixed(3)}`;

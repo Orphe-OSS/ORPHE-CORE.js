@@ -502,7 +502,9 @@ class BoxingGame {
     async connectDevice(side) {
         try {
             console.log(`${side} 接続処理開始`);
-            const core = new Orphe(); // 正しいクラス名
+            // left/right を id 0/1 で明示的に区別する。引数なしの new Orphe()
+            // だと id がデフォルトの 0 になり、両足同じ id で内部状態が衝突する。
+            const core = new Orphe(side === 'left' ? 0 : 1);
             
             const statusIndicator = document.getElementById(`${side}Indicator`);
             const connectBtn = document.getElementById(`connect${side.charAt(0).toUpperCase() + side.slice(1)}`);
@@ -511,8 +513,24 @@ class BoxingGame {
             statusIndicator.className = 'status-indicator';
             
             console.log(`${side} setup()実行`);
-            // setup()でDEVICE_INFORMATIONも含めて設定（begin()でgetDeviceInformation()が呼ばれるため）
-            core.setup(['DEVICE_INFORMATION', 'SENSOR_VALUES']);
+            // begin() の内部処理で getDeviceInformation() / syncCoreTime() /
+            // startNotify('SENSOR_VALUES') を順に呼ぶため、対応する 3 つの
+            // キャラクタリスティック (DEVICE_INFORMATION / DATE_TIME /
+            // SENSOR_VALUES) を全部 setUUID する必要がある。DATE_TIME を
+            // 落とすと syncCoreTime → connectGATT('DATE_TIME') →
+            // this.hashUUID['DATE_TIME'] が undefined で TypeError になる。
+            core.setup(['DEVICE_INFORMATION', 'DATE_TIME', 'SENSOR_VALUES']);
+
+            // SDK が前回ペアリングしたデバイスを localStorage から復活させ、
+            // 自動 gatt.connect() を試みる。BOXING は left / right で別の
+            // デバイスを明示的に選ばせたいので、毎回ペアリングダイアログを
+            // 出すようにこの「remembered device」を破棄する。
+            // (これをしないと left / right とも同じ最後のデバイス CR-* に
+            //  接続を試みて NetworkError: Bluetooth Device is no longer in
+            //  range を吐き続ける。)
+            if (typeof core.forgetLastBluetoothDevice === 'function') {
+              core.forgetLastBluetoothDevice();
+            }
             
             // 正しいコールバック設定
             const gameInstance = this;
@@ -578,7 +596,10 @@ class BoxingGame {
         try {
             const core = side === 'left' ? this.leftCore : this.rightCore;
             if (core) {
-                await core.disconnect();
+                // reset() は disconnect() + clear() + auto-reconnect 無効化を
+                // まとめて行うため、再接続時に古い rememberedDevice 状態が
+                // 残らない。SDK の JSDoc 推奨経路でもある。
+                core.reset();
             }
             
             if (side === 'left') {

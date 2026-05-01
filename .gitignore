@@ -4,6 +4,7 @@
 # IDEs
 .vscode/
 .obsidian/
+.claude/
 
 # Dependencies
 node_modules/

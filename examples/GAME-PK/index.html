@@ -447,8 +447,13 @@
     // ORPHE CORE Integration for Penalty Kick Game
     // =============================================================================
     
-    // DEBUG MODE - Set to true for detailed logging
-    const DEBUG_MODE = true;
+    // DEBUG MODE — opt-in via URL parameter.
+    // Append ?debug=1 (or just ?debug) to the URL to enable verbose
+    // console + on-screen debug logging. Off by default so the public
+    // sample stays light; the previous hard-coded `true` made the
+    // browser noticeably slow during gameplay because addDebugLog()
+    // appends DOM nodes on every BLE packet.
+    const DEBUG_MODE = new URLSearchParams(window.location.search).has('debug');
     
     // Debug console DOM logging
     function addDebugLog(category, message, data = null) {

@@ -15,9 +15,9 @@ var timer_num;
 
 
 bles[0].setup();
-buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'RAW');
+buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
 bles[1].setup();
-buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'RAW');
+buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'SENSOR_VALUES');
 for (let ble of bles) {
     ble.onConnect = function () {
         connectedDevices++;

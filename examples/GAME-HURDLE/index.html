@@ -733,7 +733,9 @@
     let vz = BASE_SPEED;
     let vy = 0;
     let isGround = true;
-    let jumpStartTime = 0;  // Track jump timing for status display
+    // jumpStartTime は updateSensorDisplay (通常 <script> ブロック側) からも
+    // 参照されるため、ESM スコープに閉じる let ではなく window 経由で公開する。
+    window.jumpStartTime = 0;  // Track jump timing for status display
     let slowRemain = 0;
     let hits = 0;
     // Pressed states – used for keyboard and ORPHE input
@@ -767,11 +769,11 @@
     // Jump routine
     function jump() {
       if (state !== 'running') return;
-      if (isGround) { 
-        vy = JUMP_V0; 
-        isGround = false; 
-        jumpStartTime = performance.now();
-        triggerJumpWhoosh(); 
+      if (isGround) {
+        vy = JUMP_V0;
+        isGround = false;
+        window.jumpStartTime = performance.now();
+        triggerJumpWhoosh();
       }
     }
     function startGame() {
@@ -1058,7 +1060,7 @@
       vz = BASE_SPEED;
       vy = 0;
       isGround = true;
-      jumpStartTime = 0;  // Reset jump timing
+      window.jumpStartTime = 0;  // Reset jump timing
       slowRemain = 0;
       hits = 0;
       stamina = STAMINA_MAX;
@@ -1177,7 +1179,7 @@
       vy -= GRAVITY * dt;
       if (camera.position.y <= PLAYER_EYE_H) {
         camera.position.y = PLAYER_EYE_H; vy = 0; isGround = true;
-        jumpStartTime = 0;  // Reset jump timing
+        window.jumpStartTime = 0;  // Reset jump timing
       }
       // Arm swing
       const swingAmp = 0.7 * (vz / MAX_SPEED);
@@ -1609,8 +1611,11 @@
       // Update action status
       const actionElem = document.getElementById('actionStatus');
       if (actionElem) {
-        // Check if currently jumping (within 700ms of jump start)
-        const isJumping = jumpStartTime > 0 && (performance.now() - jumpStartTime) < 700;
+        // Check if currently jumping (within 700ms of jump start).
+        // jumpStartTime lives in the THREE.js ESM block, so we read it
+        // via window.* from this regular <script> scope.
+        const jst = window.jumpStartTime || 0;
+        const isJumping = jst > 0 && (performance.now() - jst) < 700;
         
         if (isJumping) {
           actionElem.textContent = '🚀 ジャンプ中 / Jumping';

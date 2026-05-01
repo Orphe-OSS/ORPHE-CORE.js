@@ -10,5 +10,18 @@
     { "name": "Legend A", "time": 14.32, "hurdles": 0, "date": "2026-04-15T12:34:56.000Z" },
     { "name": "Legend B", "time": 15.10, "hurdles": 1, "date": "2026-04-20T08:12:00.000Z" }
   ],
-  "rankings": []
+  "rankings": [
+    { "name": "Shun K.",        "time": 11.34, "hurdles": 0, "date": "2026-04-12T15:42:00.000Z" },
+    { "name": "Aoi T.",         "time": 11.62, "hurdles": 0, "date": "2026-03-28T18:21:00.000Z" },
+    { "name": "Hurdle Hayato",  "time": 11.85, "hurdles": 1, "date": "2026-02-19T11:30:00.000Z" },
+    { "name": "Ren M.",         "time": 12.07, "hurdles": 0, "date": "2026-04-22T09:45:00.000Z" },
+    { "name": "Sora N.",        "time": 12.31, "hurdles": 1, "date": "2026-01-14T14:55:00.000Z" },
+    { "name": "Takumi O.",      "time": 12.58, "hurdles": 1, "date": "2026-03-08T16:42:00.000Z" },
+    { "name": "Step Master",    "time": 12.94, "hurdles": 2, "date": "2026-02-02T10:18:00.000Z" },
+    { "name": "Yuki K.",        "time": 13.27, "hurdles": 2, "date": "2025-12-22T13:33:00.000Z" },
+    { "name": "Daichi I.",      "time": 13.78, "hurdles": 2, "date": "2026-04-05T17:08:00.000Z" },
+    { "name": "Mizuki Y.",      "time": 14.15, "hurdles": 3, "date": "2025-11-30T19:50:00.000Z" },
+    { "name": "Hiro S.",        "time": 14.62, "hurdles": 3, "date": "2025-11-15T08:25:00.000Z" },
+    { "name": "Tomoki R.",      "time": 15.41, "hurdles": 4, "date": "2025-12-08T20:14:00.000Z" }
+  ]
 }

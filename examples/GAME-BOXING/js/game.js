@@ -515,6 +515,17 @@ class BoxingGame {
             console.log(`${side} setup()実行`);
             // setup()でDEVICE_INFORMATIONも含めて設定（begin()でgetDeviceInformation()が呼ばれるため）
             core.setup(['DEVICE_INFORMATION', 'SENSOR_VALUES']);
+
+            // SDK が前回ペアリングしたデバイスを localStorage から復活させ、
+            // 自動 gatt.connect() を試みる。BOXING は left / right で別の
+            // デバイスを明示的に選ばせたいので、毎回ペアリングダイアログを
+            // 出すようにこの「remembered device」を破棄する。
+            // (これをしないと left / right とも同じ最後のデバイス CR-* に
+            //  接続を試みて NetworkError: Bluetooth Device is no longer in
+            //  range を吐き続ける。)
+            if (typeof core.forgetLastBluetoothDevice === 'function') {
+              core.forgetLastBluetoothDevice();
+            }
             
             // 正しいコールバック設定
             const gameInstance = this;

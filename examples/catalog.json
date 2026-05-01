@@ -97,7 +97,7 @@
       "category": "getting-started",
       "difficulty": "beginner",
       "featured": true,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/coretoolkit-starter.svg",
       "sort_order": 30,
       "links": {
         "demo": "examples/CORETOOLKIT-STARTER/index.html",
@@ -150,7 +150,7 @@
       "category": "sensor-basics",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/visualize.svg",
       "sort_order": 50,
       "links": {
         "demo": "examples/VISUALIZE/index.html",
@@ -177,7 +177,7 @@
       "category": "gait-analysis",
       "difficulty": "intermediate",
       "featured": true,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/foot-angle.svg",
       "sort_order": 60,
       "links": {
         "demo": "examples/FOOT ANGLE/index.html",
@@ -203,7 +203,7 @@
       "category": "gait-analysis",
       "difficulty": "intermediate",
       "featured": true,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/pronation.svg",
       "sort_order": 70,
       "links": {
         "demo": "examples/PRONATION/index.html",
@@ -229,7 +229,7 @@
       "category": "gait-analysis",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/airwalker.svg",
       "sort_order": 80,
       "links": {
         "demo": "examples/AIRWALKER/index.html",
@@ -256,7 +256,7 @@
       "category": "creative-coding",
       "difficulty": "advanced",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/pose.svg",
       "sort_order": 90,
       "links": {
         "demo": "examples/POSE/index.html",
@@ -283,7 +283,7 @@
       "category": "research-integration",
       "difficulty": "advanced",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/oh1.svg",
       "sort_order": 100,
       "links": {
         "demo": "examples/OH1/index.html",
@@ -309,7 +309,7 @@
       "category": "recording-analysis",
       "difficulty": "intermediate",
       "featured": true,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/sensor-calibration.svg",
       "sort_order": 110,
       "links": {
         "demo": "examples/SENSOR-CALIBRATION/index.html",
@@ -335,7 +335,7 @@
       "category": "sensor-basics",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/gesture-demo.svg",
       "sort_order": 120,
       "links": {
         "demo": "examples/GESTURE-DEMO/index.html",
@@ -572,7 +572,7 @@
       "category": "recording-analysis",
       "difficulty": "advanced",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/dtw.svg",
       "sort_order": 300,
       "links": {
         "demo": "examples/DTW/index.html",
@@ -598,7 +598,7 @@
       "category": "playable-app",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/game-fireball-mario.svg",
       "sort_order": 310,
       "links": {
         "demo": "examples/GAME-FIREBALL-MARIO/index.html",
@@ -625,7 +625,7 @@
       "category": "playable-app",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/game-mario.svg",
       "sort_order": 320,
       "links": {
         "demo": "examples/GAME-MARIO/index.html",
@@ -651,7 +651,7 @@
       "category": "playable-app",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/game-pk.svg",
       "sort_order": 330,
       "links": {
         "demo": "examples/GAME-PK/index.html",
@@ -705,7 +705,7 @@
       "category": "playable-app",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/game-shooting.svg",
       "sort_order": 340,
       "links": {
         "demo": "examples/GAME-SHOOTING/index.html",
@@ -731,7 +731,7 @@
       "category": "playable-app",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/game-shooting2.svg",
       "sort_order": 350,
       "links": {
         "demo": "examples/GAME-SHOOTING2/index.html",
@@ -784,7 +784,7 @@
       "category": "workshop-archive",
       "difficulty": "advanced",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/workshop-07.svg",
       "sort_order": 400,
       "links": {
         "demo": "examples/WORKSHOP_07/index.html",
@@ -837,7 +837,7 @@
       "category": "sensor-basics",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-light.svg",
       "sort_order": 630,
       "links": {
         "demo": "starter-templates/LIGHT.html",
@@ -863,7 +863,7 @@
       "category": "sensor-basics",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-accelerometer.svg",
       "sort_order": 631,
       "links": {
         "demo": "starter-templates/ACCELEROMETER.html",
@@ -889,7 +889,7 @@
       "category": "sensor-basics",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-gyro.svg",
       "sort_order": 632,
       "links": {
         "demo": "starter-templates/GYRO.html",
@@ -915,7 +915,7 @@
       "category": "sensor-basics",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-quaternion.svg",
       "sort_order": 633,
       "links": {
         "demo": "starter-templates/QUATERNION.html",
@@ -941,7 +941,7 @@
       "category": "sensor-basics",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-euler.svg",
       "sort_order": 634,
       "links": {
         "demo": "starter-templates/EULER.html",
@@ -967,7 +967,7 @@
       "category": "gait-analysis",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-steps.svg",
       "sort_order": 635,
       "links": {
         "demo": "starter-templates/STEPS.html",
@@ -993,7 +993,7 @@
       "category": "gait-analysis",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-stride.svg",
       "sort_order": 636,
       "links": {
         "demo": "starter-templates/STRIDE.html",
@@ -1019,7 +1019,7 @@
       "category": "gait-analysis",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-pronation.svg",
       "sort_order": 637,
       "links": {
         "demo": "starter-templates/PRONATION.html",
@@ -1046,7 +1046,7 @@
       "category": "gait-analysis",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/starter-analysis-and-sensor-values.svg",
       "sort_order": 638,
       "links": {
         "demo": "starter-templates/ANALYSIS_AND_RAW.html",
@@ -1072,7 +1072,7 @@
       "category": "creative-coding",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/guide-p5.svg",
       "sort_order": 739,
       "links": {
         "demo": "docs/getting-started-p5.html",
@@ -1098,7 +1098,7 @@
       "category": "getting-started",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/guide-vscode.svg",
       "sort_order": 740,
       "links": {
         "demo": "docs/getting-started-vscode.html",
@@ -1124,7 +1124,7 @@
       "category": "getting-started",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/guide-led.svg",
       "sort_order": 741,
       "links": {
         "demo": "docs/getting-started-led.html",
@@ -1150,7 +1150,7 @@
       "category": "getting-started",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/guide-coretoolkit.svg",
       "sort_order": 742,
       "links": {
         "demo": "docs/getting-started-coretoolkit.html",
@@ -1176,7 +1176,7 @@
       "category": "developer-tool",
       "difficulty": "beginner",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/guide-electron.svg",
       "sort_order": 743,
       "links": {
         "demo": "docs/getting-started-electron.html",
@@ -1229,7 +1229,7 @@
       "category": "workshop-archive",
       "difficulty": "intermediate",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/ws-tmu2025.svg",
       "sort_order": 410,
       "links": {
         "demo": "ws/tmu2025/index.html",
@@ -1283,7 +1283,7 @@
       "category": "developer-tool",
       "difficulty": "advanced",
       "featured": false,
-      "thumbnail": null,
+      "thumbnail": "examples/_thumbnails/app-orphe-terminal.svg",
       "sort_order": 500,
       "links": {
         "demo": "apps/ORPHE-TERMINAL/index.html",

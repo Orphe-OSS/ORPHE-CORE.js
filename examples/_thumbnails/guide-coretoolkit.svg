@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">CoreToolkit.jsガイド</title>
+  <desc id="desc">接続UIを使う</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111318"/>
+      <stop offset="0.58" stop-color="#1f6feb" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#101010"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="74%" cy="28%" r="55%">
+      <stop offset="0" stop-color="#35d6df" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#35d6df" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <rect width="1200" height="675" fill="url(#glow)"/>
+  <g opacity="0.12" stroke="#fff" stroke-width="1">
+    <line x1="100" y1="0" x2="100" y2="675"/><line x1="200" y1="0" x2="200" y2="675"/><line x1="300" y1="0" x2="300" y2="675"/><line x1="400" y1="0" x2="400" y2="675"/><line x1="500" y1="0" x2="500" y2="675"/><line x1="600" y1="0" x2="600" y2="675"/><line x1="700" y1="0" x2="700" y2="675"/><line x1="800" y1="0" x2="800" y2="675"/><line x1="900" y1="0" x2="900" y2="675"/><line x1="1000" y1="0" x2="1000" y2="675"/><line x1="1100" y1="0" x2="1100" y2="675"/>
+    <line x1="0" y1="100" x2="1200" y2="100"/><line x1="0" y1="190" x2="1200" y2="190"/><line x1="0" y1="280" x2="1200" y2="280"/><line x1="0" y1="370" x2="1200" y2="370"/><line x1="0" y1="460" x2="1200" y2="460"/><line x1="0" y1="550" x2="1200" y2="550"/>
+  </g>
+  <g transform="translate(70, 80)">
+    <rect x="0" y="0" width="190" height="38" rx="19" fill="#0c0f14" stroke="#35d6df" stroke-width="2" opacity="0.9"/>
+    <text x="95" y="25" fill="#35d6df" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="700" letter-spacing="3">START</text>
+  </g>
+  <g transform="translate(0, 0)">
+      <rect x="180" y="265" width="190" height="110" rx="30" fill="#0f1115" stroke="#35d6df" stroke-width="7"/>
+      <rect x="590" y="265" width="190" height="110" rx="30" fill="#0f1115" stroke="#35d6df" stroke-width="7"/>
+      <path d="M370 320 C440 250 530 250 590 320" fill="none" stroke="#35d6df" stroke-width="12" stroke-linecap="round" opacity="0.75"/>
+      <circle cx="275" cy="320" r="34" fill="#35d6df" opacity="0.85"/><circle cx="685" cy="320" r="34" fill="#35d6df" opacity="0.85"/></g>
+  <g transform="translate(72, 505)">
+    <text x="0" y="0" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="54" font-weight="700" letter-spacing="0">CoreToolkit.jsガイド</text>
+    <text x="0" y="58" fill="#d7d7d7" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="28" font-weight="500" letter-spacing="0">接続UIを使う</text>
+  </g>
+  <text x="1128" y="610" fill="#35d6df" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="700">ORPHE CORE</text>
+</svg>

@@ -16,10 +16,7 @@ v1.0 2021/05/01
 */
 
 // 外部スクリプトを読み込む関数
-// HTML 側でも同じライブラリ (float16.min.js / quaternion.js) を <script>
-// で読み込んでいるケースが examples 群に存在する。素朴に append すると
-// `class float16 already declared` のような SyntaxError で全コードが死ぬ
-// ので、同じファイル名の <script> が既に DOM にあれば skip する。
+// 同じ src / 同じファイル名の <script> が既に DOM に挿入されていれば skip。
 function loadScript(src) {
   const fileName = src.split('/').pop();
   if (fileName) {
@@ -36,9 +33,23 @@ function loadScript(src) {
   document.head.appendChild(script);
 }
 
-// 外部スクリプトの読み込み
-loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js');
-loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js');
+// 外部スクリプトの読み込み (float16.min.js / quaternion.js)
+// 注意: ORPHE-CORE.js は HTML のトップで synchronous に評価される。その
+// 時点では HTML 後続の <script src=".../float16.min.js"> タグはまだ
+// パーサーに渡っておらず document.scripts にも現れない。素朴に loadScript
+// を即時呼ぶと、SDK 自身の自動補填と HTML の静的 <script> の両方が走り、
+// `class float16 already declared` で全コードが死ぬ。
+// → DOMContentLoaded を待つ。この時点では parser-blocking な静的 <script>
+//    は全て解析・実行済みなので、loadScript の dedup チェックが効く。
+function _orpheAutoLoadOptionalLibs() {
+  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js');
+  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js');
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _orpheAutoLoadOptionalLibs, { once: true });
+} else {
+  _orpheAutoLoadOptionalLibs();
+}
 
 
 /**

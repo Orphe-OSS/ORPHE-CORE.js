@@ -1,0 +1,14 @@
+{
+  "_comment": "Frozen / legendary ranking snapshot for the HURDLE game. The page reads this file at load time and merges its 'rankings' array with the player's localStorage scores in the in-game ranking screen. To populate this with the legacy Firestore data, open Firebase Console -> Firestore -> 'ranking' collection -> export each document, then paste the rows into the rankings array below following the field schema in '_format'. Once the data is filled in, this file becomes the immutable 'legend' the local player competes against.",
+  "_format": {
+    "name": "string (display name, max ~24 chars)",
+    "time": "number (course time in seconds, smaller is better)",
+    "hurdles": "number (count of hurdle hits, smaller is better)",
+    "date": "ISO 8601 timestamp string (e.g. 2026-04-15T12:34:56.000Z)"
+  },
+  "_example": [
+    { "name": "Legend A", "time": 14.32, "hurdles": 0, "date": "2026-04-15T12:34:56.000Z" },
+    { "name": "Legend B", "time": 15.10, "hurdles": 1, "date": "2026-04-20T08:12:00.000Z" }
+  ],
+  "rankings": []
+}

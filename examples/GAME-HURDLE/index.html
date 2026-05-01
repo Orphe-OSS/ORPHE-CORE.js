@@ -209,6 +209,27 @@
     .ranking-item:hover {
       background: rgba(255,255,255,0.1);
     }
+    /* Highlight rows that came from this browser's localStorage so
+       the player can spot their own results among the legend snapshot. */
+    .ranking-item.is-local {
+      background: rgba(255, 215, 0, 0.10);
+      box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.45);
+    }
+    .ranking-item.is-local:hover {
+      background: rgba(255, 215, 0, 0.18);
+    }
+    .ranking-tag-local {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      background: rgba(255, 215, 0, 0.85);
+      color: #1a1a1a;
+      vertical-align: middle;
+    }
     .ranking-rank {
       font-size: 1.5rem;
       font-weight: bold;
@@ -383,86 +404,33 @@
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
   <!--
-    Firebase ranking is OPTIONAL. To enable it, copy
-    firebase-config.example.js to firebase-config.local.js (gitignored)
-    and fill in your own Firebase project credentials, then uncomment
-    the `<script src="firebase-config.local.js"></script>` line below.
-
-    Without this, the game runs end-to-end; only the global ranking
-    save/display feature is disabled (the existing currentUser guards
-    short-circuit the ranking calls). Hardcoded credentials that used
-    to live here have been moved out — if any of those creds were ever
-    pushed publicly, treat them as compromised and rotate them in the
-    Firebase console (App Check / API key restrictions / Firestore
-    Security Rules).
+    Ranking is now driven by two sources:
+      1. ranking-frozen.json — an immutable snapshot of past scores
+         (legacy data). Edit that file to add/remove "legend" entries.
+      2. localStorage  ('hurdle.localRankings') — your own runs in
+         this browser, saved automatically when you finish a course.
+    No network credentials, no Firebase, no anonymous sign-in.
   -->
-  <!-- <script src="firebase-config.local.js"></script> -->
-
   <script type="module">
-  // Anonymous authentication state — kept null when ranking is disabled
-  // so existing currentUser guards (e.g. saveScoreToRanking) become no-op.
-  window.currentUser = null;
-
-  if (!window.HURDLE_FIREBASE_CONFIG) {
-    console.info('[HURDLE] Firebase ranking disabled. To enable, see firebase-config.example.js.');
-    // Hide the ranking button if it exists in the DOM
-    document.addEventListener('DOMContentLoaded', () => {
-      const rankingBtn = document.getElementById('btn-ranking');
-      if (rankingBtn) rankingBtn.style.display = 'none';
-    });
-  } else {
-    // Dynamic imports so the Firebase SDK is fetched only when enabled
-    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js");
-    const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js");
-    const { getFirestore, collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js");
-
-    const app = initializeApp(window.HURDLE_FIREBASE_CONFIG);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Export to global scope for access from other scripts
-    window.firebaseAuth = auth;
-    window.firebaseDb = db;
-    window.signInAnonymously = signInAnonymously;
-    window.onAuthStateChanged = onAuthStateChanged;
-    window.collection = collection;
-    window.query = query;
-    window.orderBy = orderBy;
-    window.limit = limit;
-    window.getDocs = getDocs;
-    window.addDoc = addDoc;
-    window.serverTimestamp = serverTimestamp;
-
-    // Automatically sign in anonymously when the page loads
-    signInAnonymously(auth)
-      .then(() => {
-        console.log("Anonymous authentication successful");
-      })
-      .catch((error) => {
-        console.error("Anonymous authentication failed:", error);
-        const rankingBtn = document.getElementById('btn-ranking');
-        if (rankingBtn) {
-          rankingBtn.style.display = 'none';
+    // Kick off the snapshot fetch on page load. loadRankingData()
+    // awaits this Promise so the ranking screen renders after the
+    // legacy entries are available (or fails open with []).
+    window.frozenRankingReady = (async () => {
+      try {
+        const res = await fetch('./ranking-frozen.json', { cache: 'no-store' });
+        if (!res.ok) {
+          console.warn('[HURDLE] ranking-frozen.json not found; legend ranking will be empty.');
+          return [];
         }
-      });
-
-    // Monitor auth state changes
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.currentUser = user;
-        const rankingBtn = document.getElementById('btn-ranking');
-        if (rankingBtn) {
-          rankingBtn.style.display = 'inline-block';
-        }
-      } else {
-        window.currentUser = null;
-        const rankingBtn = document.getElementById('btn-ranking');
-        if (rankingBtn) {
-          rankingBtn.style.display = 'none';
-        }
+        const data = await res.json();
+        const list = Array.isArray(data?.rankings) ? data.rankings : [];
+        console.log(`[HURDLE] Loaded ${list.length} frozen ranking entries.`);
+        return list;
+      } catch (error) {
+        console.warn('[HURDLE] Failed to load ranking-frozen.json:', error);
+        return [];
       }
-    });
-  }
+    })();
   </script>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
@@ -945,114 +913,138 @@
       }
     }
     
-    // Load and display ranking data from Firestore
+    // localStorage key for this browser's own scores. Bumping this
+    // string would effectively reset everyone's local ranking history.
+    const LOCAL_RANKING_KEY = 'hurdle.localRankings';
+    const RANKING_DISPLAY_LIMIT = 100;
+
+    // Read this browser's saved scores. Returns [] on parse failure.
+    function readLocalRanking() {
+      try {
+        const raw = localStorage.getItem(LOCAL_RANKING_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.warn('[HURDLE] Failed to read local rankings:', e);
+        return [];
+      }
+    }
+
+    function writeLocalRanking(list) {
+      try {
+        const trimmed = (Array.isArray(list) ? list : [])
+          .filter(r => r && typeof r.time === 'number' && Number.isFinite(r.time))
+          .sort((a, b) => a.time - b.time)
+          .slice(0, RANKING_DISPLAY_LIMIT);
+        localStorage.setItem(LOCAL_RANKING_KEY, JSON.stringify(trimmed));
+      } catch (e) {
+        console.error('[HURDLE] Failed to persist local rankings:', e);
+      }
+    }
+
+    // Load and display ranking data: snapshot (legend) + localStorage (you).
     async function loadRankingData() {
       const rankingList = document.getElementById('ranking-list');
       if (!rankingList) return;
-      
-      // Show loading message
+
+      // Show loading message while the snapshot fetch settles
       rankingList.innerHTML = '<div class="loading-message">読み込み中... / Loading...</div>';
-      
-      try {
-        // Check if user is authenticated
-        if (!window.currentUser) {
-          rankingList.innerHTML = '<div class="loading-message">認証エラー / Authentication Error</div>';
-          return;
-        }
-        
-        // Query Firestore for top 100 rankings (sorted by time ascending)
-        const rankingRef = window.collection(window.firebaseDb, 'ranking');
-        const q = window.query(rankingRef, window.orderBy('time', 'asc'), window.limit(100));
-        const querySnapshot = await window.getDocs(q);
-        
-        // Clear loading message
-        rankingList.innerHTML = '';
-        
-        if (querySnapshot.empty) {
-          rankingList.innerHTML = '<div class="loading-message">ランキングデータがありません / No ranking data</div>';
-          return;
-        }
-        
-        // Display ranking data
-        let rank = 1;
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          const rankingItem = createRankingItem(rank, data);
-          rankingList.appendChild(rankingItem);
-          rank++;
-        });
-      } catch (error) {
-        console.error('Error loading ranking data:', error);
-        rankingList.innerHTML = '<div class="loading-message">読み込みエラー / Loading Error</div>';
+
+      const frozenRaw = await (window.frozenRankingReady || Promise.resolve([]));
+      const frozen = (Array.isArray(frozenRaw) ? frozenRaw : []).map(r => ({ ...r, source: 'legend' }));
+      const local = readLocalRanking().map(r => ({ ...r, source: 'local' }));
+
+      const merged = [...frozen, ...local]
+        .filter(r => typeof r.time === 'number' && Number.isFinite(r.time))
+        .sort((a, b) => a.time - b.time)
+        .slice(0, RANKING_DISPLAY_LIMIT);
+
+      rankingList.innerHTML = '';
+      if (merged.length === 0) {
+        rankingList.innerHTML = '<div class="loading-message">ランキングデータがありません。<br>あなたが完走するとここに記録が追加されます。 / No data yet — finish a run to add the first entry.</div>';
+        return;
+      }
+
+      let rank = 1;
+      for (const data of merged) {
+        rankingList.appendChild(createRankingItem(rank, data));
+        rank++;
       }
     }
-    
-    // Create a ranking item element
+
+    // Create a ranking item element. Local rows are highlighted with a
+    // pill marker so the player can spot their own scores in the list.
     function createRankingItem(rank, data) {
       const item = document.createElement('div');
-      item.className = 'ranking-item';
-      
+      item.className = 'ranking-item' + (data.source === 'local' ? ' is-local' : '');
+
       const rankDiv = document.createElement('div');
       rankDiv.className = 'ranking-rank' + (rank <= 3 ? ' top3' : '');
       rankDiv.textContent = rank + '位';
-      
+
       const detailsDiv = document.createElement('div');
       detailsDiv.className = 'ranking-details';
-      
+
       const nameDiv = document.createElement('div');
       nameDiv.className = 'ranking-name';
       nameDiv.textContent = data.name || 'Unknown Player';
-      
+      if (data.source === 'local') {
+        const tag = document.createElement('span');
+        tag.className = 'ranking-tag-local';
+        tag.textContent = 'YOU';
+        nameDiv.appendChild(tag);
+      }
+
       const scoreDiv = document.createElement('div');
       scoreDiv.className = 'ranking-score';
-      const time = data.time || 0;
-      const hurdles = data.hurdles || 0;
+      const time = typeof data.time === 'number' ? data.time : 0;
+      const hurdles = typeof data.hurdles === 'number' ? data.hurdles : 0;
       scoreDiv.textContent = `${time.toFixed(2)}秒 / ${hurdles}回ヒット`;
-      
+
       const dateDiv = document.createElement('div');
       dateDiv.className = 'ranking-date';
-      if (data.date && data.date.toDate) {
-        const date = data.date.toDate();
-        dateDiv.textContent = date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-      } else {
-        dateDiv.textContent = '-';
+      // Accept ISO strings (frozen + new local saves), Firestore-style
+      // {toDate}, or numeric epoch ms — all yield Date safely.
+      let dateText = '-';
+      if (data.date) {
+        let parsed = null;
+        if (typeof data.date === 'string') parsed = new Date(data.date);
+        else if (typeof data.date === 'number') parsed = new Date(data.date);
+        else if (typeof data.date.toDate === 'function') parsed = data.date.toDate();
+        if (parsed && !isNaN(parsed.getTime())) {
+          dateText = parsed.toLocaleDateString('ja-JP') + ' ' + parsed.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        }
       }
-      
+      dateDiv.textContent = dateText;
+
       detailsDiv.appendChild(nameDiv);
       detailsDiv.appendChild(scoreDiv);
       detailsDiv.appendChild(dateDiv);
-      
+
       item.appendChild(rankDiv);
       item.appendChild(detailsDiv);
-      
+
       return item;
     }
-    
-    // Save score to Firestore
-    async function saveScoreToRanking(name, timeSeconds, hurdles) {
-      try {
-        if (!window.currentUser) {
-          console.error('User not authenticated');
-          return false;
-        }
-        
-        const rankingData = {
-          name: name || 'Anonymous',
-          time: timeSeconds,
-          hurdles: hurdles,
-          date: window.serverTimestamp(),
-          userId: window.currentUser.uid
-        };
-        
-        await window.addDoc(window.collection(window.firebaseDb, 'ranking'), rankingData);
-        console.log('Score saved successfully');
-        return true;
-      } catch (error) {
-        console.error('Error saving score:', error);
+
+    // Save the just-finished run to localStorage. Returns true on success.
+    function saveScoreToRanking(name, timeSeconds, hurdles) {
+      if (typeof timeSeconds !== 'number' || !Number.isFinite(timeSeconds)) {
+        console.warn('[HURDLE] saveScoreToRanking: ignoring non-numeric time', timeSeconds);
         return false;
       }
+      const list = readLocalRanking();
+      list.push({
+        name: (name || 'Anonymous').toString().slice(0, 24),
+        time: timeSeconds,
+        hurdles: typeof hurdles === 'number' ? hurdles : 0,
+        date: new Date().toISOString(),
+      });
+      writeLocalRanking(list);
+      console.log('[HURDLE] Local score saved.');
+      return true;
     }
-    
+
     // Export save function for use in game
     window.saveScoreToRanking = saveScoreToRanking;
     // Reset game function (preserves ORPHE CORE connection)
@@ -1247,13 +1239,12 @@
         
         playCheer();
         
-        // Prompt for name and save score
+        // Prompt for name and save score (local only — no network)
         setTimeout(() => {
-          if (window.currentUser && window.saveScoreToRanking) {
-            const playerName = prompt('ランキングに登録する名前を入力してください / Enter your name for ranking:', 'Player');
-            if (playerName) {
-              window.saveScoreToRanking(playerName, runTime, hits);
-            }
+          if (typeof window.saveScoreToRanking !== 'function') return;
+          const playerName = prompt('ランキングに登録する名前を入力してください / Enter your name for ranking:', 'Player');
+          if (playerName) {
+            window.saveScoreToRanking(playerName, runTime, hits);
           }
         }, 1000);
         // Stop all audio after 5 seconds
@@ -1334,7 +1325,7 @@
           <p>←キーで加速（スタミナ消費） / Press ← to Accelerate</p>
           <p>ORPHE COREで足の動きで操作 / Control with ORPHE CORE</p>
           <div class="btn" id="start-btn">スタート / START</div>
-          <div class="btn" id="btn-ranking" style="display: none; margin: 15px auto 0 auto; padding: 8px 16px; border-radius: 10px; font-size: 14px; width: 240px; background: linear-gradient(45deg, #11cce9, #0039d4); color: #fff; font-weight: 500; cursor: pointer; border: none; transition: transform 0.2s;">ランキング / RANKING</div>
+          <div class="btn" id="btn-ranking" style="margin: 15px auto 0 auto; padding: 8px 16px; border-radius: 10px; font-size: 14px; width: 240px; background: linear-gradient(45deg, #11cce9, #0039d4); color: #fff; font-weight: 500; cursor: pointer; border: none; transition: transform 0.2s;">ランキング / RANKING</div>
         </div>
       </div>
       <!-- Countdown overlay -->

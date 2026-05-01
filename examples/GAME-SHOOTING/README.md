@@ -28,7 +28,7 @@ Shooting game concept.
 
 ## 既知の課題
 
-- test.html has a broken local SDK path; fix is proposed in PR #40
+- test.html broken local SDK path was fixed in PR #40
 - Relationship with GAME-SHOOTING2 is still unclear
 
 ## 関連example

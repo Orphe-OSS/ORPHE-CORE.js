@@ -27,7 +27,7 @@ Exercise-style game using foot movement.
 ## 関連example
 
 - [`examples/drum_test/`](../drum_test/README.md) — Drum Game
-- [`examples/GAME-RHYTHM/`](../GAME-RHYTHM/README.md) — Rhythm Game
+- [`examples/GAME-DDR/`](../GAME-DDR/README.md) — DDR Game
 
 ## 元データ
 

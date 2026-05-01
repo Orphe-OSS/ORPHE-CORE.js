@@ -27,7 +27,7 @@ Simple competitive game concept using ORPHE input.
 
 ## 既知の課題
 
-- test.html has a broken local SDK path; fix is proposed in PR #40
+- test.html broken local SDK path was fixed in PR #40
 
 ## 関連example
 

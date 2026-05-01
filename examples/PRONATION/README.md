@@ -28,10 +28,10 @@ Visualize pronation and landing-related gait data.
 
 ## 関連example
 
-- [`examples/FOOT ANGLE/`](../FOOT ANGLE/README.md) — Foot Angle
-- [`starter-templates/STEPS.html`](../starter-templates/STEPS.htmlREADME.md) — Starter: Steps
-- [`starter-templates/STRIDE.html`](../starter-templates/STRIDE.htmlREADME.md) — Starter: Stride
-- [`starter-templates/PRONATION.html`](../starter-templates/PRONATION.htmlREADME.md) — Starter: Pronation
+- [`examples/FOOT ANGLE/`](<../FOOT ANGLE/README.md>) — Foot Angle
+- [`starter-templates/STEPS.html`](../../starter-templates/STEPS.html) — Starter: Steps
+- [`starter-templates/STRIDE.html`](../../starter-templates/STRIDE.html) — Starter: Stride
+- [`starter-templates/PRONATION.html`](../../starter-templates/PRONATION.html) — Starter: Pronation
 
 ## 元データ
 

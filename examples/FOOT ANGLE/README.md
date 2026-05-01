@@ -28,7 +28,7 @@ Visualize foot angle from ORPHE gait analysis.
 
 ## 既知の課題
 
-- Directory name contains a space
+- Directory name contains a space — Markdown links to this README must be wrapped in angle brackets (e.g. `[label](<../FOOT ANGLE/README.md>)`) or use `%20` to render correctly on GitHub
 
 ## 関連example
 

@@ -161,6 +161,7 @@ mark {
 }
 
 .dx-feature-grid,
+.dx-data-grid,
 .dx-path-grid {
     display: grid;
     gap: 1rem;
@@ -170,11 +171,16 @@ mark {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.dx-data-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .dx-path-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .dx-feature,
+.dx-data-card,
 .dx-path {
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
@@ -186,20 +192,28 @@ mark {
     padding: 1.25rem;
 }
 
+.dx-data-card {
+    min-height: 180px;
+    padding: 1.15rem;
+}
+
 .dx-feature i,
+.dx-data-card i,
 .dx-path i,
 .dx-compatibility i {
     color: #ff6040;
     font-size: 1.35rem;
 }
 
-.dx-feature h3 {
+.dx-feature h3,
+.dx-data-card h3 {
     margin: 0.8rem 0 0.55rem;
     font-size: 1.15rem;
     font-weight: 500;
 }
 
-.dx-feature p {
+.dx-feature p,
+.dx-data-card p {
     margin-bottom: 0;
     color: rgba(255, 255, 255, 0.78);
 }
@@ -362,6 +376,35 @@ mark {
     margin-bottom: 0.5rem;
 }
 
+.dx-led-preview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 280px);
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.dx-led-preview h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.dx-led-preview p {
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.dx-led-preview img {
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+}
+
 .dx-path {
     min-height: 190px;
     display: flex;
@@ -454,6 +497,7 @@ mark {
 
     .dx-trust-links,
     .dx-feature-grid,
+    .dx-data-grid,
     .dx-path-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -488,7 +532,12 @@ mark {
 
     .dx-trust-links,
     .dx-feature-grid,
+    .dx-data-grid,
     .dx-path-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dx-led-preview {
         grid-template-columns: 1fr;
     }
 

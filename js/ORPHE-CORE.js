@@ -16,7 +16,19 @@ v1.0 2021/05/01
 */
 
 // 外部スクリプトを読み込む関数
+// HTML 側でも同じライブラリ (float16.min.js / quaternion.js) を <script>
+// で読み込んでいるケースが examples 群に存在する。素朴に append すると
+// `class float16 already declared` のような SyntaxError で全コードが死ぬ
+// ので、同じファイル名の <script> が既に DOM にあれば skip する。
 function loadScript(src) {
+  const fileName = src.split('/').pop();
+  if (fileName) {
+    const already = Array.from(document.scripts).some(s => {
+      if (!s.src) return false;
+      return s.src === src || s.src.endsWith('/' + fileName);
+    });
+    if (already) return;
+  }
   const script = document.createElement('script');
   script.src = src;
   script.type = 'text/javascript';

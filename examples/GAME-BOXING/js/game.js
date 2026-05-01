@@ -502,7 +502,9 @@ class BoxingGame {
     async connectDevice(side) {
         try {
             console.log(`${side} 接続処理開始`);
-            const core = new Orphe(); // 正しいクラス名
+            // left/right を id 0/1 で明示的に区別する。引数なしの new Orphe()
+            // だと id がデフォルトの 0 になり、両足同じ id で内部状態が衝突する。
+            const core = new Orphe(side === 'left' ? 0 : 1);
             
             const statusIndicator = document.getElementById(`${side}Indicator`);
             const connectBtn = document.getElementById(`connect${side.charAt(0).toUpperCase() + side.slice(1)}`);
@@ -578,7 +580,10 @@ class BoxingGame {
         try {
             const core = side === 'left' ? this.leftCore : this.rightCore;
             if (core) {
-                await core.disconnect();
+                // reset() は disconnect() + clear() + auto-reconnect 無効化を
+                // まとめて行うため、再接続時に古い rememberedDevice 状態が
+                // 残らない。SDK の JSDoc 推奨経路でもある。
+                core.reset();
             }
             
             if (side === 'left') {

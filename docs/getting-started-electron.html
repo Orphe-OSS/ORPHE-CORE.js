@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started with Electron - ORPHE-CORE.js</title>
+  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link href="../css/orphe_custom.css" rel="stylesheet">
+  <style>
+    .lang {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .lang.active {
+      display: block;
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="bg-dark">
+  <div class="container-sm mt-2">
+    <nav class="navbar navbar-light bg-base position-relative navbar-expand-lg">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+          <a class="navbar-brand" href="../index.html">
+            <img src="../images/orphe.svg" alt="ORPHE" height="24" class="d-inline-block align-text-top">
+          </a>
+          <button class="btn btn-sm rounded-pill" onclick="toggleLanguage()"><i class="bi bi-translate"></i></button>
+        </span>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container-sm mt-4">
+    <p>
+      <a href="../index.html#desktop-apps">
+        <i class="bi bi-arrow-left"></i>
+        <span class="lang en">Back to ORPHE-CORE.js</span>
+        <span class="lang ja active">ORPHE-CORE.jsに戻る</span>
+      </a>
+    </p>
+
+    <h1><img height="30em" src="../images/electron_logo.svg" alt=""> Desktop apps with Electron</h1>
+
+    <section class="mt-4">
+      <p class="lang en">
+        Using the previous contents, you already have easy and speedy access to the ORPHE CORE module. Still not
+        enough?
+        In this section, we will use Electron to make the ORPHE CORE module even more fun.
+      </p>
+      <p class="lang ja active">
+        これまでの内容を使って、ORPHE COREモジュールに簡単かつ迅速にアクセスできるようになりました。それでも足りませんか？このセクションでは、Electronを使ってORPHE COREモジュールをさらに楽しくします。
+      </p>
+
+      <p class="lang en ms-4">
+        Electron is a framework for building desktop applications using JavaScript, HTML, and CSS. By embedding
+        Chromium
+        and Node.js into its binary, Electron allows you to maintain one JavaScript codebase and create cross-platform
+        apps that work on Windows, macOS, and Linux — no native development experience required.
+      </p>
+      <p class="lang ja active ms-4">
+        Electronは、JavaScript、HTML、およびCSSを使用してデスクトップアプリケーションを構築するためのフレームワークです。ChromiumとNode.jsをバイナリに埋め込むことで、Electronは1つのJavaScriptコードベースを維持し、Windows、macOS、Linuxで動作するクロスプラットフォームアプリケーションを作成できます。ネイティブ開発の経験は必要ありません。
+      </p>
+      <figcaption class="blockquote-footer text-end">
+        What is Electron? <cite title="Source Title">https://www.electronjs.org/docs/latest/</cite>
+      </figcaption>
+
+      <h2>
+        Examples
+      </h2>
+      <ul>
+        <li>
+          <span class="bg-warning">OSC HUB</span>: Transfers acquired sensor data with any OSC message. [<a
+            href="https://github.com/TetsuakiBaba/electron-orphe-osc" target="_blank">source</a>]
+        </li>
+      </ul>
+    </section>
+
+    <hr>
+    <footer class="text-center small">
+      &copy; 2022 Tetsuaki BABA
+    </footer>
+  </div>
+
+  <script src="../js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+  <script>
+    let lang = 'ja';
+    function toggleLanguage() {
+      if (lang == 'ja') {
+        lang = 'en';
+      } else {
+        lang = 'ja';
+      }
+      document.querySelectorAll('.lang').forEach(element => {
+        if (element.classList.contains(lang)) {
+          element.style.display = 'block';
+          setTimeout(() => {
+            element.classList.add('active');
+          }, 10);
+        } else {
+          element.classList.remove('active');
+          setTimeout(() => {
+            element.style.display = 'none';
+          }, 500);
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>

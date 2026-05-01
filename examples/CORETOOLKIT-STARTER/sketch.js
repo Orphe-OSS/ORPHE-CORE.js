@@ -28,27 +28,25 @@ function windowResized() {
 
 
 window.onload = function () {
-    // bles: defined in coreToolkit.js
+    // CoreToolkit を画面に描画。これを呼ばないと接続スイッチが出てこない。
+    // bles[0] / bles[1] は CoreToolkit.js が global として宣言済み。
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
+        '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
+        '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+
     for (let ble of bles) {
         ble.setup();
         ble.onConnect = function (uuid) {
             console.log('onConnect:', uuid);
-            document.querySelector(`#status${ble.id}`).innerText = 'ONLINE';
-            document.querySelector(`#status${ble.id}`).classList = 'bg-primary text-white'
         }
         ble.onDisconnect = function () {
-            document.querySelector(`#status${ble.id}`).innerText = 'OFFLINE';
-            document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
+            console.log('onDisconnect');
         }
-
-
 
         ble.onConnectGATT = function (uuid) {
             console.log('> connected GATT!');
-            document.getElementById(`uuid_name${this.id + 1}`).innerHTML = uuid;
-            document.querySelector(`#startNotifications${this.id}`).classList = 'btn btn-danger';
-            document.querySelector(`#button_name${this.id}`).innerHTML = "disconnect";
-            document.querySelector(`#char${this.id}`).disabled = true;
+            document.getElementById(`uuid_name${this.id}`).innerHTML = uuid;
         }
 
         ble.onScan = function (deviceName) {

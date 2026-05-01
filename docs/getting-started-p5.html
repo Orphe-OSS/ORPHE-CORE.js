@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started with p5.js - ORPHE-CORE.js</title>
+  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link href="../css/orphe_custom.css" rel="stylesheet">
+  <style>
+    .lang {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .lang.active {
+      display: block;
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="bg-dark">
+  <div class="container-sm mt-2">
+    <nav class="navbar navbar-light bg-base position-relative navbar-expand-lg">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+          <a class="navbar-brand" href="../index.html">
+            <img src="../images/orphe.svg" alt="ORPHE" height="24" class="d-inline-block align-text-top">
+          </a>
+          <button class="btn btn-sm rounded-pill" onclick="toggleLanguage()"><i class="bi bi-translate"></i></button>
+        </span>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container-sm mt-4">
+    <p>
+      <a href="../index.html#p5-quickstart">
+        <i class="bi bi-arrow-left"></i>
+        <span class="lang en">Back to ORPHE-CORE.js</span>
+        <span class="lang ja active">ORPHE-CORE.jsに戻る</span>
+      </a>
+    </p>
+
+    <h1>
+      <span class="lang en">Quick Start with p5.js</span>
+      <span class="lang ja active">p5.jsではじめてみよう</span>
+    </h1>
+
+    <section class="mt-4">
+      <div class="row">
+        <div class="col-md">
+          <figure class="text-start">
+            <p class="lang en">If you want to try ORPHE CORE JS very quickly, open the link below in your chrome
+              browser, if you are on iOS, please open it in bluefy browser, and use p5.js.
+              Please be sure to remember that you will need to allow pop-up windows when you run the program for the
+              first
+              time.</p>
+            <p class="lang ja active">ORPHE CORE
+              JSをすぐに試してみたい場合は、下記リンクをクリックしてChromeブラウザ（iOSの場合は
+              bluefy）でp5.jsを使ってください。プログラムを初めて実行する際には、ポップアップウィンドウを許可する必要があることを覚えておいてください。
+            </p>
+            <ul>
+              <li><a href="https://editor.p5js.org/tetsuakibaba/sketches/qQPilLD-i" target="_blank">P5.js Quick Start
+                  with
+                  ORPHE-CORE.js</a></li>
+            </ul>
+
+            <p class="lang en ms-4">p5.js is a JavaScript library for creative coding, with a focus on making coding
+              accessible
+              and
+              inclusive
+              for artists, designers, educators, beginners, and anyone else! p5.js is free and open-source because we
+              believe software, and the tools to learn it, should be accessible to everyone.</p>
+            <p class="lang ja active ms-4">
+              p5.jsは、アーティスト、デザイナー、教育者、初心者、その他のすべての人々にとって、コーディングをアクセス可能で包括的にすることに焦点を当てたクリエイティブコーディング用のJavaScriptライブラリです！
+              p5.jsは無料でオープンソースです。ソフトウェアとそれを学ぶためのツールは、誰にでもアクセス可能であるべきだと考えているからです。
+            </p>
+            <figcaption class="blockquote-footer text-end">
+              from top page <cite title="Source Title">https://p5js.org/</cite>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="col-md">
+          <div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
+              src="https://www.loom.com/embed/2b58363a0282477a901299290c5516a1" frameborder="0" webkitallowfullscreen
+              mozallowfullscreen allowfullscreen
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr>
+    <footer class="text-center small">
+      &copy; 2022 Tetsuaki BABA
+    </footer>
+  </div>
+
+  <script src="../js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+  <script>
+    let lang = 'ja';
+    function toggleLanguage() {
+      if (lang == 'ja') {
+        lang = 'en';
+      } else {
+        lang = 'ja';
+      }
+      document.querySelectorAll('.lang').forEach(element => {
+        if (element.classList.contains(lang)) {
+          element.style.display = 'block';
+          setTimeout(() => {
+            element.classList.add('active');
+          }, 10);
+        } else {
+          element.classList.remove('active');
+          setTimeout(() => {
+            element.style.display = 'none';
+          }, 500);
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>

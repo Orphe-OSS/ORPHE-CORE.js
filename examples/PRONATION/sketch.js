@@ -118,9 +118,9 @@ window.onload = function () {
       document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
     }
 
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder'),  
-    `0${ble.id + 1}`,  
-    ble.id, 'ANALYSIS_AND_RAW');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
+    `0${ble.id + 1}`,
+    ble.id, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
 
     ble.onConnectGATT = function (uuid) {
       console.log('> connected GATT!');

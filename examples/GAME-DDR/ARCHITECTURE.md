@@ -235,12 +235,12 @@ GAME INPUT HANDLER
         ├─> Setup device 1
         │      │
         │      ├─> bles[0].setup()
-        │      └─> buildCoreToolkit('#toolkit_placeholder1', '01', 0, 'ANALYSIS')
+        │      └─> buildCoreToolkit('#toolkit_placeholder1', '01', 0, 'STEP_ANALYSIS')
         │
         ├─> Setup device 2
         │      │
         │      ├─> bles[1].setup()
-        │      └─> buildCoreToolkit('#toolkit_placeholder2', '02', 1, 'ANALYSIS')
+        │      └─> buildCoreToolkit('#toolkit_placeholder2', '02', 1, 'STEP_ANALYSIS')
         │
         └─> Register callbacks
                │

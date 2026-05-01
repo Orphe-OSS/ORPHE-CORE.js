@@ -6,9 +6,9 @@ var gamepar =0;
 let canReset = true; // リセット可能かどうかを追跡するフラグ
 
 bles[0].setup();
-buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'RAW');
+buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
 bles[1].setup();
-buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'RAW');
+buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'SENSOR_VALUES');
 for (let ble of bles) {
     ble.onConnect = function () {
         connectedDevices++;

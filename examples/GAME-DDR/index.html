@@ -124,9 +124,9 @@
         // Initialize ORPHE devices
         var bles = [new Orphe(0), new Orphe(1)];
         bles[0].setup();
-        buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'ANALYSIS');
+        buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS');
         bles[1].setup();
-        buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'ANALYSIS');
+        buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS');
         var connectedDevices = 0;
         
         console.log('🎮 ORPHE devices initialized:', bles);

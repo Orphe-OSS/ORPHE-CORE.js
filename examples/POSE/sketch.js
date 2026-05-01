@@ -305,7 +305,7 @@ async function toggleCoreModule(dom) {
   let ble = bles[number];
 
   if (checked == true) {
-    let ret = await ble.begin('ANALYSIS');
+    let ret = await ble.begin('STEP_ANALYSIS');
     console.log(number);
     setTimeout(async function () {
       var obj = await ble.getDeviceInformation();

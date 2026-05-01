@@ -513,8 +513,13 @@ class BoxingGame {
             statusIndicator.className = 'status-indicator';
             
             console.log(`${side} setup()実行`);
-            // setup()でDEVICE_INFORMATIONも含めて設定（begin()でgetDeviceInformation()が呼ばれるため）
-            core.setup(['DEVICE_INFORMATION', 'SENSOR_VALUES']);
+            // begin() の内部処理で getDeviceInformation() / syncCoreTime() /
+            // startNotify('SENSOR_VALUES') を順に呼ぶため、対応する 3 つの
+            // キャラクタリスティック (DEVICE_INFORMATION / DATE_TIME /
+            // SENSOR_VALUES) を全部 setUUID する必要がある。DATE_TIME を
+            // 落とすと syncCoreTime → connectGATT('DATE_TIME') →
+            // this.hashUUID['DATE_TIME'] が undefined で TypeError になる。
+            core.setup(['DEVICE_INFORMATION', 'DATE_TIME', 'SENSOR_VALUES']);
 
             // SDK が前回ペアリングしたデバイスを localStorage から復活させ、
             // 自動 gatt.connect() を試みる。BOXING は left / right で別の

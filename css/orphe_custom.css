@@ -482,6 +482,12 @@ mark {
     color: inherit;
 }
 
+.dx-demo-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
 @media (max-width: 991.98px) {
     .dx-hero {
         min-height: 500px;

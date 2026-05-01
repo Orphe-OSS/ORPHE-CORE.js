@@ -25,7 +25,7 @@ python3 -m http.server 8765
 
 ### テスト手順
 
-1. **Tab A を開く**: http://localhost:8765/examples/TEST-BRIDGE/index.html
+1. **Tab A を開く**: http://localhost:8765/tests/bridge/index.html
 2. Tab A でスイッチをONにして ORPHE CORE に **BLE接続**
    - バッジが「🔵 BLE接続中（Primary）」になることを確認
    - センサーデータ（加速度、歩行方向、歩数）が表示される
@@ -65,8 +65,8 @@ python3 -m http.server 8765
 
 BLE実機がなくても以下の2つのテストが実行可能：
 
-- 単体テスト: http://localhost:8765/examples/TEST-BRIDGE/unit-test.html
-- 統合テスト: http://localhost:8765/examples/TEST-BRIDGE/integration-test.html
+- 単体テスト: http://localhost:8765/tests/bridge/unit-test.html
+- 統合テスト: http://localhost:8765/tests/bridge/integration-test.html
 
 各ページで「テスト実行」ボタンを押すと、タブ間通信・LeaderElection・バッチ配信などを自動検証します。
 

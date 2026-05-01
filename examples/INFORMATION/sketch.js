@@ -14,17 +14,17 @@ async function toggleConnect(dom) {
     // ble
     if (dom.checked) {
         // 初めてつなぐ時はbegin()。beginはawait対応にしといたので、接続後に次の行に移行する
-        await ble.begin();
+        await ble.begin('STEP_ANALYSIS');
 
         // Get Device Informationボタンをアクティブにする
-        document.querySelector('button').disabled = false;
+        document.getElementById('btn_get_info').disabled = false;
     }
     else {
         // 解除
         ble.reset();
 
         // Get Device Informationボタンを非アクティブにする
-        document.querySelector('button').disabled = true;
+        document.getElementById('btn_get_info').disabled = true;
     }
 }
 

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started with VSCode - ORPHE-CORE.js</title>
+  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css" />
+  <link href="../css/orphe_custom.css" rel="stylesheet">
+  <style>
+    .lang {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .lang.active {
+      display: block;
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="bg-dark">
+  <div class="container-sm mt-2">
+    <nav class="navbar navbar-light bg-base position-relative navbar-expand-lg">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+          <a class="navbar-brand" href="../index.html">
+            <img src="../images/orphe.svg" alt="ORPHE" height="24" class="d-inline-block align-text-top">
+          </a>
+          <button class="btn btn-sm rounded-pill" onclick="toggleLanguage()"><i class="bi bi-translate"></i></button>
+        </span>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container-sm mt-4">
+    <p>
+      <a href="../index.html#vscode-quickstart">
+        <i class="bi bi-arrow-left"></i>
+        <span class="lang en">Back to ORPHE-CORE.js</span>
+        <span class="lang ja active">ORPHE-CORE.jsに戻る</span>
+      </a>
+    </p>
+
+    <h1>Quick Start with VSCode</h1>
+
+    <section class="mt-4">
+      <p class="lang en">
+        Get started by including ORPHE-CORE.js Javascript via CDN without the need for any build steps.
+      </p>
+      <p class="lang ja active">
+        ビルドステップなしでCDN経由でORPHE-CORE.js Javascriptを含めることで、すぐに始めることができます。本格的な開発には、VSCodeを使って開発することをお勧めします。
+      </p>
+      <ol>
+        <li>
+          <span class="lang en">
+            Create a new index.html file in your project root.
+          </span>
+          <span class="lang ja active">
+            適当なディレクトリを作成して、その中に新しいindex.htmlファイルを作成します。index.htmlの中身は以下の通りです。
+          </span>
+        </li>
+        <pre style="white-space:pre-wrap" class="p-2 m-2">
+            <code class="language-html p-0 m-0" >
+            &lt;!doctype html&gt;
+            &lt;html lang=&quot;en&quot;&gt;
+              &lt;head&gt;
+                &lt;meta charset=&quot;utf-8&quot;&gt;
+                &lt;title&gt;ORPHE CORE JS DEMO&lt;/title&gt;
+              &lt;/head&gt;
+              &lt;body&gt;
+                &lt;h1&gt;Hello, ORPHE!&lt;/h1&gt;
+                &lt;button onclick=&quot;connectOrphe()&quot;&gt;connect&lt;/button&gt;
+                &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js&quot;
+                crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+                &lt;script&gt;
+                var ble = new Orphe(0);
+                window.onload = function () {
+                  // ORPHE CORE Init
+                  ble.setup();
+                }
+                async function connectOrphe() {
+                  await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                  ble.setLED(1, 0);
+                }
+                &lt;/script&gt;
+              &lt;/body&gt;
+            &lt;/html&gt;
+          </code>
+        </pre>
+        <li>
+          <span class="lang en">
+            Check the index.html on your browser via local live server, such as Live Server, php -S localhost:8000,
+            etc. Then click connect button and connect ORPHE CORE Module (CR-2). You will see light emitting on your
+            ORPHE
+            CORE Module like a below video.
+          </span>
+          <span class="lang ja active">
+            ローカルライブサーバー（Live Serverやphp -S localhost:8000など）を使って、ブラウザでindex.htmlを開いてください。その後、connectボタンをクリックしてORPHE
+            COREモジュール（CR-2/CR-3）を接続します。以下のビデオのように、ORPHE COREモジュールが点灯するのを確認できます。
+          </span>
+        </li>
+        <li>
+          <span class="lang en">
+            You can check running the test program on <a href="../quick_start_with_vscode.html"
+              target="_blank">quick_start_with_vscode.html
+              page</a>,
+            or VSCode like a below video
+          </span>
+          <span class="lang ja active">
+            <a href="../quick_start_with_vscode.html" target="_blank">quick_start_with_vscode.html
+              ページ</a>でテストプログラムを実行するか、VSCodeで以下のビデオのように実行できます。 </span>
+          <div class="mt-2" style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
+              src="https://www.loom.com/embed/3c7093d5c5414799bbc6db1a32776cbe" frameborder="0" webkitallowfullscreen
+              mozallowfullscreen allowfullscreen
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
+        </li>
+      </ol>
+    </section>
+
+    <section class="mt-5">
+      <h2>Play LIGHT example with VSCode</h2>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mt-2" style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe
+              src="https://www.loom.com/embed/a8e47e14c80045449bd6e0dd72dac2ba" frameborder="0" webkitallowfullscreen
+              mozallowfullscreen allowfullscreen
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <ol>
+            <li>
+              <span class="lang en">
+                Create a directory, test or something like that.
+              </span>
+              <span class="lang ja active">
+                例えば、testというディレクトリを作成します。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Open "test" directory with VSCode
+              </span>
+              <span class="lang ja active">
+                VSCodeで"test"ディレクトリを開きます。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Open Terminal on VSCode
+              </span>
+              <span class="lang ja active">
+                VSCodeでターミナルを開きます。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                type "git clone https://github.com/Orphe-OSS/ORPHE-CORE.js.git" on the terminal.
+              </span>
+              <span class="lang ja active">
+                ターミナルに"git clone https://github.com/Orphe-OSS/ORPHE-CORE.js.git"と入力します。
+              </span>
+              <pre style="white-space:pre-wrap" class="p-2 m-2"><code class="language-bash p-0 m-0">git clone https://github.com/Orphe-OSS/ORPHE-CORE.js.git</code></pre>
+            </li>
+            <li>
+              <span class="lang en">
+                Open ORPHE-CORE.js/examples/LIGHT/index.html via VSCode explorer.
+              </span>
+              <span class="lang ja active">
+                VSCodeのエクスプローラーからORPHE-CORE.js/examples/LIGHT/index.htmlを開きます。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Install "live server" extension
+              </span>
+              <span class="lang ja active">
+                "live server"拡張機能をインストールします。
+              </span>
+            </li>
+            <li>
+              <span class="lang en">
+                Click "Go Live" button at the bottom of VSCode window
+              </span>
+              <span class="lang ja active">
+                VSCodeウィンドウの下部にある"Go Live"ボタンをクリックします。
+              </span>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <hr>
+    <footer class="text-center small">
+      &copy; 2022 Tetsuaki BABA
+    </footer>
+  </div>
+
+  <script src="../js/bootstrap.bundle.min.js"
+    integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <script src="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.js"></script>
+  <script>
+    hljs.highlightAll();
+    hljs.addPlugin(new CopyButtonPlugin());
+  </script>
+  <script>
+    let lang = 'ja';
+    function toggleLanguage() {
+      if (lang == 'ja') {
+        lang = 'en';
+      } else {
+        lang = 'ja';
+      }
+      document.querySelectorAll('.lang').forEach(element => {
+        if (element.classList.contains(lang)) {
+          element.style.display = 'block';
+          setTimeout(() => {
+            element.classList.add('active');
+          }, 10);
+        } else {
+          element.classList.remove('active');
+          setTimeout(() => {
+            element.style.display = 'none';
+          }, 500);
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>

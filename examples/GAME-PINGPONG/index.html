@@ -91,9 +91,9 @@
   <script>
     var bles = [new Orphe(0), new Orphe(1)];
     bles[0].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'ANALYSIS');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
     bles[1].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'ANALYSIS');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
     var connectedDevices = 0;
     var gamestage = 0;
 
@@ -118,19 +118,23 @@
       */
       for (let ble of bles) {
         ble.onConnect = function () {
-           
+
             connectedDevices++;
-            if (connectedDevices === 3) {
+            // STEP_ANALYSIS_AND_SENSOR_VALUES では onConnect が
+            // 1 デバイスにつき 2 回発火する (各 characteristic ごと)。
+            // 2 デバイス × 2 characteristic = 4 回で完全接続完了。
+            // 旧コードは === 3 で「片方が中途半端な状態」で start していたため修正。
+            if (connectedDevices === 4) {
             //接続されたときの処理
 
             mystart(bles[0]);
             mystart(bles[1]);
-            
+
             gamestage = 1;
 
 
             }
-        
+
       }
     }
 
@@ -212,10 +216,7 @@
       ble_device.gotPronation = function (_pronation) {
         devices[this.id].pronations = _pronation;
       };
-      ble_device.gotDuration = function (_duration) {
-        devices[this.id].duration = _duration;
-        updateMetrics(this.id, _duration);
-      };
+      // gotDuration は SDK に存在しないコールバックのため削除
     }
     
     // スライダーの値変更イベントリスナー

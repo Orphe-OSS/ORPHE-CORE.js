@@ -63,3 +63,455 @@ mark {
     color: white;
     font-weight: 400;
 }
+
+.dx-hero {
+    position: relative;
+    min-height: 520px;
+    display: flex;
+    align-items: flex-end;
+    padding: 3rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background:
+        linear-gradient(90deg, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.72) 48%, rgba(10, 10, 10, 0.16) 100%),
+        url("../images/ORPHE_TRACK_scene_08.jpeg") center / cover no-repeat;
+}
+
+.dx-hero-content {
+    max-width: 760px;
+}
+
+.dx-eyebrow,
+.dx-kicker {
+    margin-bottom: 0.75rem;
+    color: #45e6e6;
+    font-size: 0.86rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dx-hero h1 {
+    margin-bottom: 1rem;
+    font-size: 3.45rem;
+    line-height: 1.05;
+    font-weight: 500;
+}
+
+.dx-hero-lead {
+    max-width: 680px;
+    margin-bottom: 1.5rem;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 1.12rem;
+}
+
+.dx-hero-actions,
+.dx-inline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.dx-hero-actions .lang.active,
+.dx-inline-actions .lang.active {
+    display: inline;
+}
+
+.dx-trust-links {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0 2rem;
+}
+
+.dx-trust-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    gap: 0.45rem;
+    text-decoration: none;
+}
+
+.dx-trust-links a:hover,
+.dx-path:hover {
+    border-color: rgba(69, 230, 230, 0.72);
+    color: #45e6e6;
+}
+
+.dx-section {
+    margin: 3rem 0;
+}
+
+.dx-section-heading {
+    max-width: 760px;
+    margin-bottom: 1.25rem;
+}
+
+.dx-section-heading h2 {
+    font-size: 2rem;
+    font-weight: 500;
+}
+
+.dx-feature-grid,
+.dx-path-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.dx-feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dx-path-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dx-feature,
+.dx-path {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: #232323;
+}
+
+.dx-feature {
+    min-height: 196px;
+    padding: 1.25rem;
+}
+
+.dx-feature i,
+.dx-path i,
+.dx-compatibility i {
+    color: #ff6040;
+    font-size: 1.35rem;
+}
+
+.dx-feature h3 {
+    margin: 0.8rem 0 0.55rem;
+    font-size: 1.15rem;
+    font-weight: 500;
+}
+
+.dx-feature p {
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.dx-spec-table-wrap {
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: #232323;
+}
+
+.dx-spec-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.82fr) minmax(0, 1.4fr);
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.dx-product-visual {
+    position: relative;
+    min-height: 100%;
+    margin: 0;
+    padding: 1.25rem 2.75rem 2.75rem 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: #232323;
+}
+
+.dx-product-visual img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: 420px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+.dx-measure-x,
+.dx-measure-y {
+    position: absolute;
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 0.86rem;
+    letter-spacing: 0.04em;
+}
+
+.dx-measure-x {
+    right: 3rem;
+    bottom: 1rem;
+    left: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+}
+
+.dx-measure-x::before,
+.dx-measure-x::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.dx-measure-y {
+    top: 1.75rem;
+    right: 0.85rem;
+    bottom: 2.75rem;
+    writing-mode: vertical-rl;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+}
+
+.dx-measure-y::before,
+.dx-measure-y::after {
+    content: "";
+    width: 1px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.dx-spec-table {
+    width: 100%;
+    min-width: 640px;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.dx-spec-table th,
+.dx-spec-table td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    vertical-align: top;
+}
+
+.dx-spec-table tr:last-child th,
+.dx-spec-table tr:last-child td {
+    border-bottom: 0;
+}
+
+.dx-spec-table th {
+    width: 220px;
+    color: #ffffff;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.dx-spec-table td,
+.dx-source-note {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.dx-source-note {
+    margin: 1rem 0 0;
+    font-size: 0.95rem;
+}
+
+.dx-quickstart {
+    padding: 1.5rem;
+    border: 1px solid rgba(69, 230, 230, 0.3);
+    border-radius: 8px;
+    background: #191f1f;
+}
+
+.dx-code {
+    margin: 0 0 1rem;
+    padding: 1.25rem;
+    border-radius: 8px;
+    background: #111111;
+    color: #f4f4f4;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.dx-code code {
+    color: inherit;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.92rem;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+.dx-cdn-links {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.dx-cdn-links h3 {
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.dx-cdn-links p {
+    margin-bottom: 0.5rem;
+}
+
+.dx-path {
+    min-height: 190px;
+    display: flex;
+    flex-direction: column;
+    padding: 1.1rem;
+    color: #ffffff;
+    text-decoration: none;
+    gap: 0.65rem;
+}
+
+.dx-path strong {
+    display: block;
+    color: inherit;
+    font-weight: 500;
+}
+
+.dx-path span {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.dx-compatibility {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.85rem;
+    margin: 2.5rem 0;
+    padding: 1rem;
+    border: 1px solid rgba(255, 96, 64, 0.45);
+    border-radius: 8px;
+    background: rgba(255, 96, 64, 0.08);
+}
+
+.dx-compatibility p {
+    margin-bottom: 0;
+}
+
+.dx-demo-games {
+    margin: 1.5rem 0 2rem;
+}
+
+.dx-demo-games h4 {
+    margin-bottom: 1rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.dx-demo-game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+}
+
+.dx-demo-game {
+    display: block;
+    color: #ffffff;
+    text-align: center;
+    text-decoration: none;
+}
+
+.dx-demo-game:hover {
+    color: #45e6e6;
+}
+
+.dx-demo-game img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    object-position: top center;
+    margin-bottom: 0.55rem;
+    border-radius: 8px;
+    background: #151515;
+}
+
+.dx-demo-game span {
+    color: inherit;
+}
+
+@media (max-width: 991.98px) {
+    .dx-hero {
+        min-height: 500px;
+        padding: 2rem;
+        background:
+            linear-gradient(180deg, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.78) 58%, rgba(10, 10, 10, 0.36) 100%),
+            url("../images/ORPHE_TRACK_scene_08.jpeg") center / cover no-repeat;
+    }
+
+    .dx-hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .dx-trust-links,
+    .dx-feature-grid,
+    .dx-path-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dx-spec-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .dx-product-visual img {
+        max-height: 360px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .dx-hero {
+        min-height: 560px;
+        padding: 1.25rem;
+    }
+
+    .dx-hero h1 {
+        font-size: 2.05rem;
+    }
+
+    .dx-hero-lead {
+        font-size: 1rem;
+    }
+
+    .dx-hero-actions .btn,
+    .dx-inline-actions .btn {
+        width: 100%;
+    }
+
+    .dx-trust-links,
+    .dx-feature-grid,
+    .dx-path-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dx-section-heading h2 {
+        font-size: 1.55rem;
+    }
+
+    .dx-spec-table {
+        min-width: 0;
+    }
+
+    .dx-spec-table th,
+    .dx-spec-table td {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 0.9rem;
+    }
+
+    .dx-spec-table th {
+        padding-bottom: 0.2rem;
+    }
+
+    .dx-spec-table td {
+        padding-top: 0;
+    }
+}

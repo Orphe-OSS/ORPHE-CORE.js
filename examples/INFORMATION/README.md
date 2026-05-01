@@ -1,6 +1,9 @@
-# LIGHT
+# INFORMATION
+
 ![teaser](./teaser.gif)
+
 ## Overview
+
 ORPHE CORE JS INFORMATION shows device information.
 
 ## DEMO

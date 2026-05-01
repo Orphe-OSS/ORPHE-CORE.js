@@ -10,6 +10,8 @@ Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/tutoria
 ## Version
 機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。
 
+* v1.3.4: Current development version.
+  * `js/ORPHE-CORE.js` のJSDoc `@version` に合わせた現行バージョンです。
 * v1.3: Date Timeキャラクタリスティック対応
   * COREモジュールの時刻を取得，設定する setDateTime(), getDateTime() を追加しました。この機能を利用して，begin()メソッドを利用した際に必ず最初にコアモジュールの時刻合わせが実行されます．PCの現在時刻にgetDateTime()にかかった時間の1/2を加算して，コアモジュールに時刻設定します．ただしgetDataTime()は3回取得し，その取得時間平均値/2としています．
 * [v1.2](https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/v1.2): ES6 class based version.

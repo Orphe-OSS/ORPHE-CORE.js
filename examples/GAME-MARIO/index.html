@@ -200,19 +200,23 @@
       */
       for (let ble of bles) {
         ble.onConnect = function () {
-           
+
             connectedDevices++;
-            if (connectedDevices === 3) {
+            // STEP_ANALYSIS_AND_SENSOR_VALUES では onConnect が
+            // 1 デバイスにつき 2 回発火する (各 characteristic ごと)。
+            // 2 デバイス × 2 characteristic = 4 回で完全接続完了。
+            // 旧コードは === 3 で「片方が中途半端な状態」で start していたため修正。
+            if (connectedDevices === 4) {
             //接続されたときの処理
 
             mystart(bles[0]);
             mystart(bles[1]);
-            
+
             gamestage = 1;
 
 
             }
-        
+
       }
     }
 
@@ -360,6 +364,16 @@
     
     // センサー値の表示更新
     function updateSensorDisplay() {
+      // 表示バーの色を切り替えるしきい値 — ゲームロジックの forward* /
+      // jump* 設定が見える場合はそちらに合わせ、無ければデフォルト値を使う。
+      // これらが未定義のままだと 60Hz の setInterval 内で
+      // ReferenceError: pitchThreshold is not defined が連射されていた。
+      const pitchThreshold = (typeof forwardPitchThreshold !== 'undefined')
+        ? Math.abs(forwardPitchThreshold) || 0.4
+        : 0.4;
+      const accelerationThreshold = (typeof forwardAccelThreshold !== 'undefined')
+        ? forwardAccelThreshold
+        : 0.5;
       for (let i = 0; i < 2; i++) {
         // Pitch値の表示（ラジアン）
         const pitch = devices[i].eulers ? devices[i].eulers.pitch : 0;

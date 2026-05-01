@@ -364,6 +364,16 @@
     
     // センサー値の表示更新
     function updateSensorDisplay() {
+      // 表示バーの色を切り替えるしきい値 — ゲームロジックの forward* /
+      // jump* 設定が見える場合はそちらに合わせ、無ければデフォルト値を使う。
+      // これらが未定義のままだと 60Hz の setInterval 内で
+      // ReferenceError: pitchThreshold is not defined が連射されていた。
+      const pitchThreshold = (typeof forwardPitchThreshold !== 'undefined')
+        ? Math.abs(forwardPitchThreshold) || 0.4
+        : 0.4;
+      const accelerationThreshold = (typeof forwardAccelThreshold !== 'undefined')
+        ? forwardAccelThreshold
+        : 0.5;
       for (let i = 0; i < 2; i++) {
         // Pitch値の表示（ラジアン）
         const pitch = devices[i].eulers ? devices[i].eulers.pitch : 0;

@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/vs2015.min.css">
   <link rel="stylesheet" href="https://unpkg.com/highlightjs-copy/dist/highlightjs-copy.min.css" />
   <link href="./css/orphe_custom.css" rel="stylesheet">
+  <script src="./js/site-analytics.js"></script>
   <style>
     .lang {
       display: none;
@@ -72,25 +73,26 @@
       <div class="dx-hero-content">
         <p class="dx-eyebrow">ORPHE CORE.js</p>
         <h1 id="landing-title">
-          <span class="lang en">Open-source JavaScript library for ORPHE CORE.</span>
-          <span class="lang ja active">ORPHE COREのJavaScriptオープンソースライブラリ</span>
+          <span class="lang en">Build motion-aware web apps with ORPHE CORE.</span>
+          <span class="lang ja active">ORPHE COREをブラウザから動かして、身体の動きを使ったWebアプリを作る</span>
         </h1>
         <p class="dx-hero-lead">
           <span class="lang en">
-            This page contains information on how to hack ORPHE CORE 2.0 or ORPHE CORE 3.0 with JavaScript, along with
-            basic information on BLE and sample code.
+            ORPHE-CORE.js connects ORPHE CORE 2.0 or ORPHE CORE 3.0 to JavaScript via Web Bluetooth. You can control
+            LEDs, read sensor and gait data, and prototype games, visuals, sounds, and research tools in the browser.
           </span>
           <span class="lang ja active">
-            このページには、ORPHE CORE2.0またはORPHE CORE3.0をJavaScriptでハックする方法、BLEに関する基本情報、サンプルコードが含まれています。
+            ORPHE-CORE.jsは、ORPHE CORE 2.0またはORPHE CORE 3.0をWeb Bluetooth経由でJavaScriptから扱うためのライブラリです。
+            LED制御、センサ値、歩容データを使って、ゲーム、ビジュアル、サウンド、研究用ツールなどをブラウザ上で試作できます。
           </span>
         </p>
         <div class="dx-hero-actions">
-          <a class="btn btn-primary btn-lg" href="#start-in-3-minutes">
+          <a class="btn btn-primary btn-lg" href="#start-in-3-minutes" data-goatcounter-click="click-hero-quickstart" data-goatcounter-title="Hero: Start in 3 minutes">
             <i class="bi bi-play-fill"></i>
             <span class="lang en">Start in 3 minutes</span>
             <span class="lang ja active">3分で始める</span>
           </a>
-          <a class="btn btn-outline-light btn-lg" href="#examples">
+          <a class="btn btn-outline-light btn-lg" href="#what-you-can-build" data-goatcounter-click="click-hero-examples" data-goatcounter-title="Hero: View examples">
             <i class="bi bi-grid-3x3-gap"></i>
             <span class="lang en">View examples</span>
             <span class="lang ja active">Examplesを見る</span>
@@ -100,16 +102,16 @@
     </section>
 
     <section class="dx-trust-links" aria-label="Important links">
-      <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js" target="_blank">
+      <a href="https://github.com/Orphe-OSS/ORPHE-CORE.js" target="_blank" data-goatcounter-click="click-link-github" data-goatcounter-title="Top link: GitHub">
         <i class="bi bi-github"></i> GitHub
       </a>
-      <a href="./api_doc/" target="_blank">
+      <a href="./api_doc/" target="_blank" data-goatcounter-click="click-link-api-reference" data-goatcounter-title="Top link: API Reference">
         <i class="bi bi-book"></i> API Reference
       </a>
-      <a href="https://shop.orphe.io/products/orphe-core-3-0" target="_blank">
+      <a href="https://shop.orphe.io/products/orphe-core-3-0" target="_blank" data-goatcounter-click="click-link-buy-core" data-goatcounter-title="Top link: Buy ORPHE CORE 3.0">
         <i class="bi bi-box-arrow-up-right"></i> Buy ORPHE CORE 3.0
       </a>
-      <a href="#workshop">
+      <a href="#workshop" data-goatcounter-click="click-link-workshop" data-goatcounter-title="Top link: Video Workshop">
         <i class="bi bi-youtube"></i> Video Workshop
       </a>
     </section>
@@ -270,6 +272,129 @@
       </p>
     </section>
 
+    <section id="data-you-can-get" class="dx-section">
+      <div class="dx-section-heading">
+        <p class="dx-kicker">
+          <span class="lang en">What data can I get?</span>
+          <span class="lang ja active">取得できるデータ</span>
+        </p>
+        <h2>
+          <span class="lang en">Use motion sensor values, gait analysis, and device controls from JavaScript.</span>
+          <span class="lang ja active">モーションセンサ値、歩容解析、デバイス制御をJavaScriptから扱えます。</span>
+        </h2>
+      </div>
+      <div class="dx-data-grid">
+        <article class="dx-data-card">
+          <i class="bi bi-bounding-box-circles"></i>
+          <h3>
+            <span class="lang en">Motion sensor values</span>
+            <span class="lang ja active">モーションセンサ値</span>
+          </h3>
+          <p>
+            <span class="lang en">Acceleration, angular velocity, quaternion, and Euler angles.</span>
+            <span class="lang ja active">加速度、角速度、クォータニオン、オイラー角を取得できます。</span>
+          </p>
+        </article>
+        <article class="dx-data-card">
+          <i class="bi bi-signpost-split"></i>
+          <h3>
+            <span class="lang en">Gait analysis</span>
+            <span class="lang ja active">歩容解析</span>
+          </h3>
+          <p>
+            <span class="lang en">Steps, gait type, direction, distance, and phase duration.</span>
+            <span class="lang ja active">歩数、歩容タイプ、方向、距離、立脚・遊脚時間を扱えます。</span>
+          </p>
+        </article>
+        <article class="dx-data-card">
+          <i class="bi bi-graph-up-arrow"></i>
+          <h3>
+            <span class="lang en">Foot mechanics</span>
+            <span class="lang ja active">足部の指標</span>
+          </h3>
+          <p>
+            <span class="lang en">Stride, pronation, landing impact, and foot angle.</span>
+            <span class="lang ja active">ストライド、プロネーション、着地衝撃、接地角を取得できます。</span>
+          </p>
+        </article>
+        <article class="dx-data-card">
+          <i class="bi bi-lightbulb"></i>
+          <h3>
+            <span class="lang en">Device control</span>
+            <span class="lang ja active">デバイス制御</span>
+          </h3>
+          <p>
+            <span class="lang en">LED control, mount position, sensor reset, and device information.</span>
+            <span class="lang ja active">LED、装着位置、センサリセット、デバイス情報を操作できます。</span>
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="what-you-can-build" class="dx-section dx-demo-games">
+      <div class="dx-section-heading">
+        <p class="dx-kicker">
+          <span class="lang en">What you can build</span>
+          <span class="lang ja active">ORPHE COREで作れるもの</span>
+        </p>
+        <h2>
+          <span class="lang en">Games, visuals, sounds, and motion interfaces built with ORPHE-CORE.js.</span>
+          <span class="lang ja active">ゲーム、ビジュアル、サウンド、身体の動きを使ったインターフェースを作ることができます。</span>
+        </h2>
+      </div>
+      <div class="dx-demo-game-grid">
+        <a class="dx-demo-game" href="./examples/GAME-HURDLE/" target="_blank" data-goatcounter-click="click-example-game-hurdle" data-goatcounter-title="Example: 110m Hurdles">
+          <img src="./examples/_thumbnails/hurdle-110m.png" alt="110m hurdle game">
+          <span>
+            <span class="lang en">110m Hurdles</span>
+            <span class="lang ja active">110m ハードル走</span>
+          </span>
+        </a>
+        <a class="dx-demo-game" href="./examples/GAME-UDON/" target="_blank" data-goatcounter-click="click-example-game-udon" data-goatcounter-title="Example: Udon kneading game">
+          <img src="./examples/_thumbnails/udon.png" alt="Udon kneading game">
+          <span>
+            <span class="lang en">Udon kneading game</span>
+            <span class="lang ja active">うどんふみふみゲーム！</span>
+          </span>
+        </a>
+        <a class="dx-demo-game" href="./examples/MOVEYOURFEET/" target="_blank" data-goatcounter-click="click-example-move-your-feet" data-goatcounter-title="Example: Move your feet">
+          <img src="./examples/_thumbnails/move-your-feet.png" alt="Move your feet game">
+          <span>
+            <span class="lang en">Move your feet</span>
+            <span class="lang ja active">足パタパタゲーム☆</span>
+          </span>
+        </a>
+        <a class="dx-demo-game" href="./examples/GAME-PINGPONG/" target="_blank" data-goatcounter-click="click-example-game-pingpong" data-goatcounter-title="Example: Ping pong game">
+          <img src="./examples/_thumbnails/pingpong.png" alt="Ping pong game">
+          <span>
+            <span class="lang en">Ping pong game</span>
+            <span class="lang ja active">ピンポンゲーム</span>
+          </span>
+        </a>
+        <a class="dx-demo-game" href="./examples/drum_test/" target="_blank" data-goatcounter-click="click-example-drum-test" data-goatcounter-title="Example: Drum game">
+          <img src="./examples/_thumbnails/drum.png" alt="Drum game">
+          <span>
+            <span class="lang en">Drum game</span>
+            <span class="lang ja active">ドラムゲーム</span>
+          </span>
+        </a>
+        <a class="dx-demo-game" href="./examples/GAME-BOXING/" target="_blank" data-goatcounter-click="click-example-game-boxing" data-goatcounter-title="Example: Boxing game">
+          <img src="./examples/_thumbnails/boxing.png" alt="Boxing game">
+          <span>
+            <span class="lang en">Boxing game</span>
+            <span class="lang ja active">ボクシングゲーム</span>
+          </span>
+        </a>
+        <a class="dx-demo-game" href="./examples/GAME-DDR/" target="_blank" data-goatcounter-click="click-example-game-ddr" data-goatcounter-title="Example: DDR game">
+          <img src="./examples/_thumbnails/ddr.png" alt="DDR game">
+          <span>
+            <span class="lang en">DDR game</span>
+            <span class="lang ja active">DDRゲーム</span>
+          </span>
+        </a>
+      </div>
+    </section>
+
     <section id="start-in-3-minutes" class="dx-section dx-quickstart">
       <div class="dx-section-heading">
         <p class="dx-kicker">
@@ -314,7 +439,7 @@
           CoreToolkit.js CDN file.
         </p>
         <p class="lang ja active">
-          CoreToolkit.jsのCDNファイルを以下に示します。CoreToolkit.jsについては下のQuick Start with CoreToolkit.jsを参照してください。
+          CoreToolkit.jsのCDNファイルを以下に示します。CoreToolkit.jsについてはStart buildingのCoreToolkit.js guideを参照してください。
         </p>
         <div class="input-group mb-3 mt-2">
           <button class="btn btn-outline-primary" type="button" id="button_copy_cdn_toolkit"
@@ -325,80 +450,34 @@
         </div>
       </div>
       <div class="dx-inline-actions">
-        <a class="btn btn-sm btn-primary" href="#p5-quickstart">
+        <a class="btn btn-sm btn-primary" href="./docs/getting-started-p5.html" data-goatcounter-click="click-guide-p5" data-goatcounter-title="Guide: p5.js starter">
           <i class="bi bi-brush"></i>
           <span class="lang en">Try p5.js starter</span>
           <span class="lang ja active">p5.jsですぐ試す</span>
         </a>
-        <a class="btn btn-sm btn-outline-light" href="#vscode-quickstart">
+        <a class="btn btn-sm btn-outline-light" href="./docs/getting-started-vscode.html" data-goatcounter-click="click-guide-vscode" data-goatcounter-title="Guide: VSCode">
           <i class="bi bi-code-square"></i>
           <span class="lang en">Use VSCode</span>
           <span class="lang ja active">VSCodeで始める</span>
         </a>
+        <a class="btn btn-sm btn-outline-light" href="./docs/getting-started-led.html" data-goatcounter-click="click-guide-led" data-goatcounter-title="Guide: LED control">
+          <i class="bi bi-lightbulb"></i>
+          <span class="lang en">Control the LED</span>
+          <span class="lang ja active">LED制御を試す</span>
+        </a>
       </div>
-    </section>
-
-    <section id="what-you-can-build" class="dx-section dx-demo-games">
-      <div class="dx-section-heading">
-        <p class="dx-kicker">
-          <span class="lang en">What you can build</span>
-          <span class="lang ja active">ORPHE COREで作れるもの</span>
-        </p>
-        <h2>
-          <span class="lang en">Games, visuals, sounds, and motion interfaces built with ORPHE-CORE.js.</span>
-          <span class="lang ja active">ゲーム、ビジュアル、サウンド、身体の動きを使ったインターフェースを作ることができます。</span>
-        </h2>
-      </div>
-      <div class="dx-demo-game-grid">
-        <a class="dx-demo-game" href="./examples/GAME-HURDLE/" target="_blank">
-          <img src="./examples/_thumbnails/hurdle-110m.png" alt="110m hurdle game">
-          <span>
-            <span class="lang en">110m Hurdles</span>
-            <span class="lang ja active">110m ハードル走</span>
-          </span>
-        </a>
-        <a class="dx-demo-game" href="./examples/GAME-UDON/" target="_blank">
-          <img src="./examples/_thumbnails/udon.png" alt="Udon kneading game">
-          <span>
-            <span class="lang en">Udon kneading game</span>
-            <span class="lang ja active">うどんふみふみゲーム！</span>
-          </span>
-        </a>
-        <a class="dx-demo-game" href="./examples/MOVEYOURFEET/" target="_blank">
-          <img src="./examples/_thumbnails/move-your-feet.png" alt="Move your feet game">
-          <span>
-            <span class="lang en">Move your feet</span>
-            <span class="lang ja active">足パタパタゲーム☆</span>
-          </span>
-        </a>
-        <a class="dx-demo-game" href="./examples/GAME-PINGPONG/" target="_blank">
-          <img src="./examples/_thumbnails/pingpong.png" alt="Ping pong game">
-          <span>
-            <span class="lang en">Ping pong game</span>
-            <span class="lang ja active">ピンポンゲーム</span>
-          </span>
-        </a>
-        <a class="dx-demo-game" href="./examples/drum_test/" target="_blank">
-          <img src="./examples/_thumbnails/drum.png" alt="Drum game">
-          <span>
-            <span class="lang en">Drum game</span>
-            <span class="lang ja active">ドラムゲーム</span>
-          </span>
-        </a>
-        <a class="dx-demo-game" href="./examples/GAME-BOXING/" target="_blank">
-          <img src="./examples/_thumbnails/boxing.png" alt="Boxing game">
-          <span>
-            <span class="lang en">Boxing game</span>
-            <span class="lang ja active">ボクシングゲーム</span>
-          </span>
-        </a>
-        <a class="dx-demo-game" href="./examples/GAME-DDR/" target="_blank">
-          <img src="./examples/_thumbnails/ddr.png" alt="DDR game">
-          <span>
-            <span class="lang en">DDR game</span>
-            <span class="lang ja active">DDRゲーム</span>
-          </span>
-        </a>
+      <div class="dx-led-preview">
+        <div>
+          <h3>
+            <span class="lang en">The first visible test is the LED.</span>
+            <span class="lang ja active">最初の確認にはLED制御が便利です。</span>
+          </h3>
+          <p>
+            <span class="lang en">Once the device connects, make the full-color LED blink and then move on to sensor data.</span>
+            <span class="lang ja active">接続できたらフルカラーLEDを点滅させて、そのままセンサ値の取得へ進めます。</span>
+          </p>
+        </div>
+        <img src="./images/led_blinking.gif" alt="ORPHE CORE LED blinking">
       </div>
     </section>
 
@@ -414,7 +493,7 @@
         </h2>
       </div>
       <div class="dx-path-grid">
-        <a class="dx-path" href="#p5-quickstart">
+        <a class="dx-path" href="./docs/getting-started-p5.html" data-goatcounter-click="click-path-p5" data-goatcounter-title="Start building: p5.js Web Editor">
           <i class="bi bi-brush"></i>
           <strong>p5.js Web Editor</strong>
           <span>
@@ -422,7 +501,7 @@
             <span class="lang ja active">ローカル環境を作らず、ブラウザ上ですぐに試します。</span>
           </span>
         </a>
-        <a class="dx-path" href="#vscode-quickstart">
+        <a class="dx-path" href="./docs/getting-started-vscode.html" data-goatcounter-click="click-path-vscode" data-goatcounter-title="Start building: VSCode">
           <i class="bi bi-code-square"></i>
           <strong>VSCode</strong>
           <span>
@@ -430,7 +509,7 @@
             <span class="lang ja active">ローカルでHTMLを書き、Live Serverで動かします。</span>
           </span>
         </a>
-        <a class="dx-path" href="#coretoolkit-quickstart">
+        <a class="dx-path" href="./docs/getting-started-coretoolkit.html" data-goatcounter-click="click-path-coretoolkit" data-goatcounter-title="Start building: CoreToolkit.js">
           <i class="bi bi-window-sidebar"></i>
           <strong>CoreToolkit.js</strong>
           <span>
@@ -438,7 +517,7 @@
             <span class="lang ja active">接続UI、デバイス操作、設定まわりをすばやく追加します。</span>
           </span>
         </a>
-        <a class="dx-path" href="#starter-templates">
+        <a class="dx-path" href="#starter-templates" data-goatcounter-click="click-path-starter-templates" data-goatcounter-title="Start building: Starter Templates">
           <i class="bi bi-star"></i>
           <strong>Starter Templates</strong>
           <span>
@@ -446,7 +525,7 @@
             <span class="lang ja active">センサー値、歩容データ、LEDなどの最小サンプルから始めます。</span>
           </span>
         </a>
-        <a class="dx-path" href="#motion-intelligence">
+        <a class="dx-path" href="#motion-intelligence" data-goatcounter-click="click-path-technical-examples" data-goatcounter-title="Start building: Technical Examples">
           <i class="bi bi-graph-up"></i>
           <strong>Technical Examples</strong>
           <span>
@@ -454,7 +533,7 @@
             <span class="lang ja active">ジェスチャー認識、周波数解析、生データの記録。</span>
           </span>
         </a>
-        <a class="dx-path" href="#desktop-apps">
+        <a class="dx-path" href="./docs/getting-started-electron.html" data-goatcounter-click="click-path-electron" data-goatcounter-title="Start building: Desktop apps with Electron">
           <i class="bi bi-display"></i>
           <strong>Desktop apps with Electron</strong>
           <span>
@@ -481,92 +560,6 @@
           などのWeb BLE対応ブラウザを利用してください。
         </span>
       </p>
-    </section>
-
-    <h3 id="p5-quickstart" class="mt-4">
-
-      <span class="lang en"><i class="bi bi-geo-alt-fill"></i>Quick Start with p5.js</span>
-      <span class="lang ja active"><i class="bi bi-geo-alt-fill"></i>p5.jsではじめてみよう</span>
-
-    </h3>
-    <section class="ms-4 mb-4 dx-guide-summary">
-      <p class="lang en">
-        Use p5.js Web Editor when you want to try ORPHE-CORE.js quickly in the browser, without preparing a local
-        development environment.
-      </p>
-      <p class="lang ja active">
-        ローカル環境を作らずにORPHE-CORE.jsをすぐ試したい場合は、p5.js Web Editorから始めるのがおすすめです。
-      </p>
-      <div class="dx-inline-actions">
-        <a class="btn btn-sm btn-outline-light" href="./docs/getting-started-p5.html">
-          <i class="bi bi-book"></i>
-          <span class="lang en">Read p5.js guide</span>
-          <span class="lang ja active">p5.jsの手順を見る</span>
-        </a>
-      </div>
-    </section>
-
-
-    <h3 id="vscode-quickstart" class="mt-4"><i class="bi bi-geo-alt-fill"></i> Quick Start with VSCode</h3>
-    <section class="ms-4 mb-4 dx-guide-summary">
-      <p class="lang en">
-        Use VSCode when you want to create a local HTML file, run it with Live Server, and continue building your own
-        application.
-      </p>
-      <p class="lang ja active">
-        ローカルでHTMLを書いて、自分のアプリケーションとして作り込んでいく場合は、VSCodeとLive Serverを使った始め方がおすすめです。
-      </p>
-      <div class="dx-inline-actions">
-        <a class="btn btn-sm btn-outline-light" href="./docs/getting-started-vscode.html">
-          <i class="bi bi-book"></i>
-          <span class="lang en">Read VSCode guide</span>
-          <span class="lang ja active">VSCodeの手順を見る</span>
-        </a>
-      </div>
-    </section>
-
-    <h3 id="led-control" class="mt-4">
-      <span class="lang en"><i class="bi bi-geo-alt-fill"></i> Control the LED</span>
-      <span class="lang ja active"><i class="bi bi-geo-alt-fill"></i> LEDを制御する</span>
-    </h3>
-    <section class="ms-4 dx-guide-summary">
-      <div class="row">
-        <div class="col-sm-8">
-          <p class="lang en">
-            When there is an LED, you may want to make it blink. Start here to try the simplest ORPHE-CORE World.
-          </p>
-          <p class="lang ja active">
-            LEDがあると、点滅させたくなりますよね！まずは一番シンプルなORPHE-CORE Worldとして試してみましょう。
-          </p>
-          <div class="dx-inline-actions">
-            <a class="btn btn-sm btn-outline-light" href="./docs/getting-started-led.html">
-              <i class="bi bi-book"></i>
-              <span class="lang en">Read LED guide</span>
-              <span class="lang ja active">LED制御の手順を見る</span>
-            </a>
-          </div>
-        </div>
-        <div class="col-sm-4">
-          <img src="./images/led_blinking.gif" class="img-fluid" alt="ORPHE CORE LED blinking">
-        </div>
-      </div>
-    </section>
-
-    <h3 id="coretoolkit-quickstart" class="mt-5">Quick Start with CoreToolkit.js</h3>
-    <section class="ms-4 dx-guide-summary">
-      <p class="lang en">
-        CoreToolkit.js adds a connection and settings UI for ORPHE CORE with a small amount of code.
-      </p>
-      <p class="lang ja active">
-        CoreToolkit.jsを使うと、ORPHE COREの接続や設定を行うUIを少ないコードで追加できます。
-      </p>
-      <div class="dx-inline-actions">
-        <a class="btn btn-sm btn-outline-light" href="./docs/getting-started-coretoolkit.html">
-          <i class="bi bi-book"></i>
-          <span class="lang en">Read CoreToolkit guide</span>
-          <span class="lang ja active">CoreToolkit.jsの手順を見る</span>
-        </a>
-      </div>
     </section>
 
     <h3 id="workshop" class="mt-4"><i class="bi bi-youtube"></i> ORPHE-CORE Video Workshop </h3>
@@ -955,23 +948,6 @@
     </section>
 
 
-    <h2 id="desktop-apps" class="mt-4"><img height="30em" src="images/electron_logo.svg"> Desktop apps with Electron</h2>
-    <section class="ms-4 dx-guide-summary">
-      <p class="lang en">
-        Use Electron when you want to turn ORPHE CORE sensor data into a desktop application for Windows, macOS, or
-        Linux.
-      </p>
-      <p class="lang ja active">
-        ORPHE COREのセンサーデータをWindows、macOS、Linux向けのデスクトップアプリとして扱いたい場合は、Electronを使えます。
-      </p>
-      <div class="dx-inline-actions">
-        <a class="btn btn-sm btn-outline-light" href="./docs/getting-started-electron.html">
-          <i class="bi bi-book"></i>
-          <span class="lang en">Read Electron guide</span>
-          <span class="lang ja active">Electronの手順を見る</span>
-        </a>
-      </div>
-    </section>
 
 
 

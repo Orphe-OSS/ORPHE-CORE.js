@@ -37,6 +37,23 @@ Each catalog entry uses these core fields:
 | `issues` | Known issues |
 | `next_actions` | Next work items |
 
+The catalog also carries display-oriented fields so the landing page, examples gallery, and validation scripts can consume the same data without guessing:
+
+| Field | Meaning |
+| --- | --- |
+| `category` | Primary gallery category: `getting-started`, `sensor-basics`, `gait-analysis`, `recording-analysis`, `playable-app`, `creative-coding`, `research-integration`, `workshop-archive`, `developer-tool`, or `internal-test`. |
+| `difficulty` | Beginner-facing level: `beginner`, `intermediate`, or `advanced`. This is about onboarding cost, not code quality. |
+| `featured` | Boolean shortcut for entries that should appear in the first public gallery row. |
+| `thumbnail` | Existing preview image path, or `null` when a thumbnail still needs to be prepared. |
+| `sort_order` | Stable display order for public navigation. Required for `featured` entries. |
+| `links` | Structured entry points such as `demo` and `source`. |
+| `requires_device` | Whether the entry needs ORPHE CORE or a compatible BLE device to be meaningful. |
+| `device_count` | Expected number of ORPHE CORE modules. This mirrors `devices` for display code. |
+| `needs_real_device_validation` | Whether physical ORPHE CORE verification is still needed. |
+| `public_navigation` | `featured`, `listed`, or `hidden`. This separates public value from first-screen priority. |
+
+Use `thumbnail: null` instead of omitting the field. Missing thumbnails are an explicit production task, not an accidental absence.
+
 ## Status Definitions
 
 | Status | Meaning |
@@ -47,6 +64,8 @@ Each catalog entry uses these core fields:
 | `needs-review` | Likely valuable, but purpose, audience, or device behavior needs review. |
 | `internal` | QA or maintenance tool. Not counted as a public example. |
 | `overlap` | Useful as part of a family, but confusing if presented as a separate top-level example. |
+
+`status` and `public_navigation` are intentionally separate. An entry can be `public-candidate` and still be `listed` when it is useful to show, while `needs-review` entries should normally stay `hidden` until a human confirms the purpose and device behavior.
 
 ## Current Broad Count
 

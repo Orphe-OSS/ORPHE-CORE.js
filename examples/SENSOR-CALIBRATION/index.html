@@ -348,6 +348,9 @@
       <h1><i class="bi bi-Activity"></i> ORPHE CORE Sensor Calibration Tool</h1>
       <div id="toolkit_placeholder"></div>
     </div>
+    <div id="ble-support-message" class="alert alert-warning mt-3 mb-0" style="display:none;">
+      Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+    </div>
   </div>
 
   <div class="main-container">
@@ -733,6 +736,10 @@
       'STEP_ANALYSIS_AND_SENSOR_VALUES',
       { range: { acc: 16, gyro: 2000 } }
     );
+    guardCoreToolkitBluetooth({
+      coreIds: [0],
+      messageElement: '#ble-support-message'
+    });
   </script>
 
   <script src="recorder.js"></script>

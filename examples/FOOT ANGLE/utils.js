@@ -15,7 +15,7 @@ function getParam(name, url) {
 }
 
 var s_time = Date.now();
-function millis() {
+function elapsedMillis() {
     let e_time = Date.now();;
     let diff = e_time - s_time;
     //console.log("経過時間(ミリ秒):", diff);

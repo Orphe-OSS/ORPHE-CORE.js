@@ -52,4 +52,5 @@ window.onload = function () {
       `CORE 0${ble.id + 1}`,
       ble.id);
   }
+  guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
 }

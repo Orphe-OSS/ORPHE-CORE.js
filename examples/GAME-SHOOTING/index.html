@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
+    <script src="../../js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -18,6 +18,9 @@
         敵を撃ち落とし、ハイスコアを目指そう！<br>
         ※キーボードの左右矢印や「m」キーでも操作できます。</p>
         <div id="toolkit_placeholder1" class="my-4"></div>
+      <div id="ble-support-message" class="alert alert-warning mx-4" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
     </div>
     <div id="p5Canvas" style="display:flex; justify-content:center;"></div>
     <script>
@@ -25,6 +28,7 @@
       var ble = new Orphe(0);
       ble.setup();
       buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+      guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
     </script>
     <script src="sketch.js"></script>
 </body>

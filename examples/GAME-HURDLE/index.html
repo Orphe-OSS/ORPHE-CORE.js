@@ -1295,6 +1295,9 @@
   <div class="my-4" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
     <div id="toolkit_placeholder1" style="max-width: 600px;"></div>
     <div id="toolkit_placeholder2" style="max-width: 600px;"></div>
+    <div id="ble-support-message" class="alert alert-warning my-3" style="display:none;">
+      Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+    </div>
   </div>
   
   <!-- Game description -->
@@ -1466,6 +1469,7 @@
     //SENSOR_VALUES
     bles[1].setup();
     buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
     
     var connectedDevices = 0;
     

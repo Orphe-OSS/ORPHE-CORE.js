@@ -76,6 +76,8 @@ window.onload = function () {
       ble.id
     );
   }
+  guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
+
   if (window.name != "ORPHE-CORE") {
     let new_win = window.open(document.URL, "ORPHE-CORE", "width=500px");
     document.querySelector("body").hidden = true;

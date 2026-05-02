@@ -38,6 +38,7 @@ window.addEventListener('DOMContentLoaded', function () {
         document.querySelector('#toolkit_placeholder'),
         'ORPHE CORE01', ble.id, 'STEP_ANALYSIS_AND_SENSOR_VALUES'
     );
+    guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
 })
 
 function setup() {

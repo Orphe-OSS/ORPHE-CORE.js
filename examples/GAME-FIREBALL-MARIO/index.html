@@ -178,6 +178,9 @@
   <div class="header">
     <div class="title">ORPHE Fireball Mario</div>
     <div id="toolkit_placeholder"></div>
+    <div id="ble-support-message" class="alert alert-warning my-3" style="display:none;">
+      Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+    </div>
   </div>
 
   <div class="game-container">
@@ -257,6 +260,7 @@
       'STEP_ANALYSIS_AND_SENSOR_VALUES',
       { range: { acc: 16, gyro: 2000 } }
     );
+    guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
   </script>
 </body>
 </html>

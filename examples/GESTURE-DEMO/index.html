@@ -263,6 +263,9 @@
     <!-- Connection -->
     <div class="panel">
       <div id="toolkit_placeholder"></div>
+      <div id="ble-support-message" class="alert alert-warning mx-4" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
     </div>
 
     <!-- Status Bar -->
@@ -344,6 +347,7 @@
       'STEP_ANALYSIS_AND_SENSOR_VALUES',
       { range: { acc: 16, gyro: 2000 } }
     );
+    guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
   </script>
 </body>
 </html>

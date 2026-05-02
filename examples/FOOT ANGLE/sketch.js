@@ -294,6 +294,6 @@ window.onload = function () {
       console.log('> Stop Notify!');
       //document.getElementById('uuid_name').innerHTML = uuid;
   }
+  }
+  guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
 }
-}
-

@@ -723,10 +723,10 @@
       "type": "web-app",
       "status": "public-candidate",
       "audience": ["game-player"],
-      "value": "3D shooting-style game candidate.",
+      "value": "3D shooting game controlled by ORPHE CORE tilt and motion.",
       "topics": ["game", "shooting", "3d"],
-      "data": ["unknown"],
-      "devices": 2,
+      "data": ["euler", "acceleration"],
+      "devices": 1,
       "validation": ["needs-browser-validation", "needs-device-verification"],
       "category": "playable-app",
       "difficulty": "intermediate",
@@ -738,7 +738,7 @@
         "source": "examples/GAME-SHOOTING2/"
       },
       "requires_device": true,
-      "device_count": 2,
+      "device_count": 1,
       "needs_real_device_validation": true,
       "public_navigation": "listed"
     },

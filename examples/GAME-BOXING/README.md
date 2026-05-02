@@ -7,9 +7,10 @@ ORPHE CORE モジュールを使ったリアルタイム・ボクシング音ゲ
 
 ## 🎮 デモ
 
-GitHub Pages でプレイ可能（予定）:
-```
-https://[your-username].github.io/orphe-fight-core/
+GitHub Pages でプレイできます:
+
+```text
+https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-BOXING/
 ```
 
 ## ✨ 特徴
@@ -47,7 +48,7 @@ npx http-server -p 8000
 php -S localhost:8000
 ```
 
-ブラウザで `http://localhost:8000` にアクセス。
+ブラウザで `http://localhost:8000/examples/GAME-BOXING/` にアクセス。
 
 > **注意**: Web Bluetooth API は Chrome/Edge のみ対応。Firefox/Safari は未対応です。
 

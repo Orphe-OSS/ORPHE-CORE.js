@@ -1,5 +1,4 @@
 // ORPHE CORE Shooting Game
-let ble;
 let euler = { pitch: 0, roll: 0, yaw: 0 };
 let player;
 let missiles = [];
@@ -9,8 +8,6 @@ let isGameOver = false;
 function setup() {
   createCanvas(400, 600);
   player = new Player();
-  ble = new Orphe(0);
-  ble.setup();
   ble.gotEuler = function (_euler) {
     euler = _euler;
     player.move(euler.roll * 5);

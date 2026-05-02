@@ -113,7 +113,7 @@
       value: '時系列データの類似度を扱う解析Exampleです。'
     },
     'game-fireball-mario': {
-      title: 'Fireball Mario',
+      title: 'Fireball Action',
       value: '足の動きで操作するゲームExampleです。'
     },
     'game-mario': {

@@ -34,19 +34,19 @@ the CoreToolkit UI, then play the game canvas.
 
 ## Data
 
-- Notify type in the page: `STEP_ANALYSIS_AND_SENSOR_VALUES`
+- Notify type in the page: `SENSOR_VALUES`
 - Main callbacks: Euler, acceleration
 
 ## Known implementation notes
 
-- `index.html` initializes CoreToolkit, while `sketch.js` also creates an
-  ORPHE instance. This should be reviewed before promoting the example to the
-  landing page.
+- `index.html` initializes CoreToolkit and exposes the shared `bles[0]`
+  instance as `window.ble`. `sketch.js` attaches game callbacks to that same
+  instance.
 - `scripts.js` appears to be legacy helper code and still contains old
   `ANALYSIS` wording. Confirm whether it is loaded before deleting or editing.
 - Relationship with `GAME-SHOOTING2` is still unclear.
 
 ## Validation status
 
-Static page/link checks only. BLE connection, CoreToolkit ownership, and game
-controls need real-device validation before promotion.
+Static page/link checks only. BLE connection and game controls need real-device
+validation before promotion.

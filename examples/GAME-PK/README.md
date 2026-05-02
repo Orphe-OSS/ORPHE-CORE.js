@@ -2,11 +2,13 @@
 
 > **Status**: `public-candidate` — see [`docs/examples-catalog.md`](../../docs/examples-catalog.md) for the full audit.
 
-Fun kick-accuracy game that can demonstrate acceleration and direction mapping.
+1台のORPHE COREを足に装着して、キック動作の強さと向きでシュートを操作するペナルティキックゲームです。マウス操作でも遊べるため、センサー接続前にゲーム内容を確認できます。
 
 ## このexampleで学べること
 
-- Fun kick-accuracy game that can demonstrate acceleration and direction mapping.
+- 加速度の大きさをキックの強さとして使う方法
+- オイラー角の変化をシュート方向に変換する方法
+- CoreToolkit UIから1台のORPHE COREに接続する構成
 
 ## 使うデータ
 
@@ -17,13 +19,21 @@ Fun kick-accuracy game that can demonstrate acceleration and direction mapping.
 
 - 1 台
 
-## 想定読者
+## 起動方法
 
-- ゲームプレイヤー
+1. ローカルサーバを起動します。
+2. ブラウザで `examples/GAME-PK/` を開きます。
+3. 画面上部のCoreToolkit UIからORPHE COREへ接続します。
+4. STARTを押し、カウントダウン後に足を振ってキックします。
+
+GitHub Pagesでも試せます。
+
+<https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-PK/>
 
 ## 実機確認
 
-- **未実機確認** — 静的検証 (パス・参照) のみ。BLE 接続後の挙動はオーナーレビュー待ち。
+- **未実機確認** — CoreToolkitの接続構造は整理済みですが、BLE接続後のキック判定はオーナーレビュー待ちです。
+- 1台接続、START、キック検出、スコア更新、RESTARTを確認してください。
 
 ## 関連example
 
@@ -32,4 +42,4 @@ Fun kick-accuracy game that can demonstrate acceleration and direction mapping.
 
 ## 元データ
 
-このREADMEは `examples/catalog.json` の `game-pk` エントリから自動生成された最小スケルトンです。手動で詳細・スクリーンショット・遊び方を加筆してください。
+このREADMEは公開候補としての確認観点を残しています。実機確認後に `examples/catalog.json` の status を更新してください。

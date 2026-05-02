@@ -245,9 +245,10 @@
   
   <!-- ORPHE CORE ライブラリと依存関係 -->
   <!--<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/float16.min.js" crossorigin="anonymous"></script>-->
-  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/quaternion.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
+  <script src="../../js/quaternion.js" crossorigin="anonymous"></script>
+  <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
@@ -257,6 +258,9 @@
   <!-- CoreToolkit connection UI -->
   <div class="my-4" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
     <div id="toolkit_placeholder" style="max-width: 600px;"></div>
+    <div id="ble-support-message" class="alert alert-warning my-3" style="display:none;">
+      Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+    </div>
   </div>
   
   <!-- Game description -->
@@ -508,9 +512,9 @@
       addDebugLog(category, message, data);
     }
     
-    // Initialize ORPHE CORE device (same as HURDLE)
-    debugLog('INIT', 'Creating Orphe instance...');
-    var ble = new Orphe(0);
+    // Initialize ORPHE CORE through the same instance used by CoreToolkit.
+    debugLog('INIT', 'Using CoreToolkit Orphe instance...');
+    var ble = bles[0];
     debugLog('INIT', 'Calling ble.setup()...');
     ble.setup();
     
@@ -523,7 +527,14 @@
     };
     
     debugLog('INIT', 'Building CoreToolkit UI...');
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(
+      document.querySelector('#toolkit_placeholder'),
+      '01',
+      0,
+      'STEP_ANALYSIS_AND_SENSOR_VALUES',
+      { forceDeviceSelection: true }
+    );
+    guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
     debugLog('INIT', 'Initialization complete');
     
     // Game state variables
@@ -669,12 +680,12 @@
       document.getElementById('connection-status').style.color = '#4caf50';
       document.getElementById('sensor-ready').style.display = 'block';
       
-      // Start data streaming
-      debugLog('BLE', 'Starting data stream: STEP_ANALYSIS_AND_SENSOR_VALUES');
-      this.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
-      debugLog('BLE', 'Setting up data callbacks...');
-      setupDataCallbacks(this);
-      debugLog('BLE', 'Setup complete, waiting for sensor data...');
+      if (!dataCallbacksReady) {
+        debugLog('BLE', 'Setting up data callbacks...');
+        setupDataCallbacks(this);
+        dataCallbacksReady = true;
+        debugLog('BLE', 'Setup complete, waiting for sensor data...');
+      }
     };
     
     // Disconnection handler
@@ -698,6 +709,7 @@
     let gyroDataCount = 0;
     let lastAccLogTime = 0;
     let lastGyroLogTime = 0;
+    let dataCallbacksReady = false;
     
     function setupDataCallbacks(ble_device) {
       debugLog('CALLBACK', 'Setting up gotConvertedAcc callback');

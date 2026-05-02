@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-    <script src="../../js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
+    <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -24,10 +25,18 @@
     </div>
     <div id="p5Canvas" style="display:flex; justify-content:center;"></div>
     <script>
-      // PINGPONGと同じように自動接続
-      var ble = new Orphe(0);
+      // CoreToolkit.js creates the shared bles array. Use the same instance in
+      // sketch.js so connected sensor callbacks reach the game input.
+      var ble = bles[0];
+      window.ble = ble;
       ble.setup();
-      buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+      buildCoreToolkit(
+        document.querySelector('#toolkit_placeholder1'),
+        '01',
+        0,
+        'SENSOR_VALUES',
+        { forceDeviceSelection: true }
+      );
       guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
     </script>
     <script src="sketch.js"></script>

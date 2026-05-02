@@ -36,7 +36,10 @@ window.addEventListener('DOMContentLoaded', function () {
     let ble = bles[0];
     buildCoreToolkit(
         document.querySelector('#toolkit_placeholder'),
-        'ORPHE CORE01', ble.id, 'STEP_ANALYSIS_AND_SENSOR_VALUES'
+        'ORPHE CORE01',
+        ble.id,
+        'STEP_ANALYSIS_AND_SENSOR_VALUES',
+        { forceDeviceSelection: true }
     );
     guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
 })

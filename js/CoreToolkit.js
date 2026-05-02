@@ -230,9 +230,23 @@ async function toggleCoreModule(dom, options = {}) {
     let ble = bles[number];
     let notification = dom.getAttribute('notification');
     if (checked == true) {
+        const canUseBridge = typeof BleSharedBridge !== 'undefined';
+        const hasRemotePrimary = canUseBridge &&
+            new BleSharedBridge(number).isRemotePrimaryAvailable();
+        const hasRememberedDevice = !!ble._getLastBluetoothDeviceInfo?.();
+        const shouldTryRememberedFirst = options.forceDeviceSelection &&
+            (hasRemotePrimary || hasRememberedDevice);
+        const firstBeginOptions = shouldTryRememberedFirst ?
+            Object.assign({}, options, { forceDeviceSelection: false }) :
+            options;
+
         let ret;
         try {
-            ret = await ble.begin(notification, options);
+            ret = await ble.begin(notification, firstBeginOptions);
+            if (!ret && options.forceDeviceSelection && hasRememberedDevice && !hasRemotePrimary) {
+                ble.forgetLastBluetoothDevice();
+                ret = await ble.begin(notification, options);
+            }
         } catch (error) {
             document.querySelector(`#switch_ble${number}`).checked = false;
             document.querySelector(`#ui${number}`).style.visibility = 'hidden';

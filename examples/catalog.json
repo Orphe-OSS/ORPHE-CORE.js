@@ -1279,7 +1279,7 @@
       "data": ["acc", "gyro", "quat", "euler", "gait", "stride", "pronation"],
       "devices": 1,
       "validation": ["existing-public-link", "needs-device-verification"],
-      "issues": ["README.md is just one line"],
+      "issues": ["advanced debugging tool; not a beginner-first example"],
       "category": "developer-tool",
       "difficulty": "advanced",
       "featured": false,

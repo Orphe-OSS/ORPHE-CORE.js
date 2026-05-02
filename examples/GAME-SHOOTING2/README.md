@@ -16,7 +16,7 @@ ORPHE COREの傾きで移動し、足の動きでショットを撃つ3Dシュ�
 - オイラー角
 - 加速度
 
-`index.html` では `STEP_ANALYSIS_AND_SENSOR_VALUES` で通知を開始します。
+`index.html` では `SENSOR_VALUES` で通知を開始します。
 
 ## 必要なORPHE CORE数
 
@@ -37,8 +37,10 @@ GitHub Pagesでも試せます。
 
 - ORPHE CORE: 傾きで移動、強い動きでショット
 - キーボード: 矢印キーで移動、スペースキーでショット
+- `C` キー: 現在のORPHE COREの角度をニュートラルとして再設定
 - `S` キーまたはSETTINGSボタン: 設定パネル表示
 - `B` キー: bot mode切り替え
+- `RESTART` ボタン: BLE接続を維持したままゲームを再開
 
 ## 実機確認
 

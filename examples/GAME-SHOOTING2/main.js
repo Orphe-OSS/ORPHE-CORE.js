@@ -42,6 +42,10 @@ var keys = {
 
 // ORPHE CORE State
 let coreEuler = { pitch: 0, roll: 0, yaw: 0 };
+let coreNeutralEuler = null;
+const orpheTiltLimit = 0.8;
+const orpheTiltGain = 0.85;
+const orpheShotThreshold = 1.5;
 
 // Shared Resources
 const resources = {};
@@ -171,6 +175,10 @@ function init() {
             botMode = !botMode;
             console.log("Bot Mode:", botMode);
         }
+        if (e.key === 'c' || e.key === 'C') {
+            coreNeutralEuler = null;
+            console.log("ORPHE CORE neutral angle will be recalibrated on the next sensor frame.");
+        }
         if (bgm.paused) bgm.play().catch(e => console.log("Audio play failed", e));
     });
 
@@ -186,11 +194,22 @@ function init() {
     // 8. ORPHE CORE Integration
     if (window.ble) {
         window.ble.gotEuler = function (_euler) {
-            coreEuler = _euler;
+            if (!coreNeutralEuler) {
+                coreNeutralEuler = {
+                    pitch: _euler.pitch,
+                    roll: _euler.roll,
+                    yaw: _euler.yaw
+                };
+            }
+            coreEuler = {
+                pitch: _euler.pitch - coreNeutralEuler.pitch,
+                roll: _euler.roll - coreNeutralEuler.roll,
+                yaw: _euler.yaw - coreNeutralEuler.yaw
+            };
         };
         window.ble.gotAcc = function (_acc) {
             let sum = Math.sqrt(_acc.x * _acc.x + _acc.y * _acc.y + _acc.z * _acc.z);
-            if (sum > 1.5) {
+            if (sum > orpheShotThreshold) {
                 shoot();
             }
         };
@@ -198,7 +217,7 @@ function init() {
 
     // Restart Button Logic
     document.getElementById('restart-btn').addEventListener('click', () => {
-        window.location.reload();
+        resetGame();
     });
 
     // Settings UI Logic
@@ -627,8 +646,10 @@ function updatePlayer() {
 
         // ORPHE CORE Control (Additive)
         if (coreEuler) {
-            moveX += coreEuler.roll * -1.5;
-            moveY += coreEuler.pitch * 1.5;
+            const rollInput = Math.max(-orpheTiltLimit, Math.min(orpheTiltLimit, coreEuler.roll));
+            const pitchInput = Math.max(-orpheTiltLimit, Math.min(orpheTiltLimit, coreEuler.pitch));
+            moveX += rollInput * -orpheTiltGain;
+            moveY += pitchInput * orpheTiltGain;
         }
 
         // Apply Movement (Reduced speed to 0.375)
@@ -804,8 +825,44 @@ function gameOver() {
 }
 
 function resetGame() {
-    // Reload page for full reset (simplest way to ensure randomization and clean state)
-    window.location.reload();
+    clearSceneObjects(bullets);
+    clearSceneObjects(enemyBullets);
+    clearSceneObjects(enemies);
+    clearSceneObjects(particles);
+    clearSceneObjects(scenery);
+
+    if (player) {
+        scene.remove(player);
+    }
+    if (ground) {
+        scene.remove(ground);
+    }
+
+    score = 0;
+    isGameOver = false;
+    lastShotTime = 0;
+    botTargetX = 0;
+    botTargetY = 0;
+    coreEuler = { pitch: 0, roll: 0, yaw: 0 };
+    coreNeutralEuler = null;
+
+    document.getElementById('score').innerText = 'SCORE: 0';
+    document.getElementById('final-score').innerText = 'SCORE: 0';
+    document.getElementById('game-over-screen').style.display = 'none';
+
+    camera.position.set(0, 3, 8);
+    createGround();
+    createPlayer();
+
+    bgm.currentTime = 0;
+    bgm.play().catch(() => { });
+}
+
+function clearSceneObjects(objects) {
+    for (const object of objects) {
+        scene.remove(object);
+    }
+    objects.length = 0;
 }
 
 function animate() {

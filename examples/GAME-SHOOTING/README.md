@@ -1,40 +1,52 @@
-# Shooting Game
+# ORPHE CORE Shooting Game
 
-> **Status**: `public-candidate` — see [`docs/examples-catalog.md`](../../docs/examples-catalog.md) for the full audit.
+`GAME-SHOOTING` is a simple p5.js shooting game controlled by ORPHE CORE
+motion. Tilt moves the player, and a strong motion fires missiles.
 
-Shooting game concept.
+## What this example shows
 
-## このexampleで学べること
+- Use ORPHE CORE as a game controller.
+- Move the player with roll / tilt.
+- Fire missiles from acceleration changes.
+- Keep keyboard fallback controls for development.
 
-- Shooting game concept.
+## Required devices
 
-## 使うデータ
+- 1 ORPHE CORE
 
-- オイラー角 (euler)
-- 加速度 (acc, 正規化)
-- 歩数 (stepsNumber)
+## How to run
 
-## 必要なORPHE CORE数
+Open the demo from a local server or GitHub Pages:
 
-- 2 台
+```text
+examples/GAME-SHOOTING/
+```
 
-## 想定読者
+Use a Web Bluetooth compatible browser such as Chrome. Connect ORPHE CORE from
+the CoreToolkit UI, then play the game canvas.
 
-- ゲームプレイヤー
+## Controls
 
-## 実機確認
+- ORPHE CORE roll: move left/right
+- Strong motion: fire missile
+- Keyboard fallback: left/right arrow keys and `m`
+- Space: restart after game over
 
-- **未実機確認** — 静的検証 (パス・参照) のみ。BLE 接続後の挙動はオーナーレビュー待ち。
+## Data
 
-## 既知の課題
+- Notify type in the page: `STEP_ANALYSIS_AND_SENSOR_VALUES`
+- Main callbacks: Euler, acceleration
 
-- test.html broken local SDK path was fixed in PR #40
-- Relationship with GAME-SHOOTING2 is still unclear
+## Known implementation notes
 
-## 関連example
+- `index.html` initializes CoreToolkit, while `sketch.js` also creates an
+  ORPHE instance. This should be reviewed before promoting the example to the
+  landing page.
+- `scripts.js` appears to be legacy helper code and still contains old
+  `ANALYSIS` wording. Confirm whether it is loaded before deleting or editing.
+- Relationship with `GAME-SHOOTING2` is still unclear.
 
-- [`examples/GAME-SHOOTING2/`](../GAME-SHOOTING2/README.md) — 3D Shooting Game
+## Validation status
 
-## 元データ
-
-このREADMEは `examples/catalog.json` の `game-shooting` エントリから自動生成された最小スケルトンです。手動で詳細・スクリーンショット・遊び方を加筆してください。
+Static page/link checks only. BLE connection, CoreToolkit ownership, and game
+controls need real-device validation before promotion.

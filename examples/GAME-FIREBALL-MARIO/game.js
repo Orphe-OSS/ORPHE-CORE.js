@@ -603,7 +603,7 @@
       this.setupKeyboard();
       this.loop();
 
-      console.log('[GAME] Fireball Mario initialized');
+      console.log('[GAME] Fireball Action initialized');
     }
 
     initClouds() {

@@ -1005,7 +1005,7 @@ function drawPlayer(p) {
     translate(-p.w, 0);
   }
   
-  // スモールマリオの場合、サイズ調整
+  // 小さい状態の場合、サイズ調整
   if (p.powerState === 'small') {
     scale(0.7, 0.7);
     translate(p.w * 0.15, p.h * 0.3);
@@ -1251,12 +1251,12 @@ function handlePlayerDamage() {
   player.vy = -300;
   
   if (player.powerState === 'big') {
-    // ビッグから小さいマリオへ
+    // 大きい状態から小さい状態へ
     player.powerState = 'small';
     player.h = 30; // 高さを小さく
     score = max(0, score - 50);
   } else {
-    // 小さいマリオからゲームオーバー
+    // 小さい状態からゲームオーバー
     gameOver();
   }
 }

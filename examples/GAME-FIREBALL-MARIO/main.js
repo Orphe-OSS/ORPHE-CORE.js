@@ -1,5 +1,5 @@
 /**
- * ORPHE CORE Integration for Fireball Mario Game
+ * ORPHE CORE Integration for Fireball Action Game
  *
  * Sensor Mapping:
  * - Walking (steps) → Character moves forward

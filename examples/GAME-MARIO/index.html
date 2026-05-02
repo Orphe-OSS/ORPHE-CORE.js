@@ -14,7 +14,6 @@
       <h1>ORPHE CORE 2D ACTION!</h1>
       
       <div id="toolkit_placeholder1" class="my-4"></div>
-      <div id="toolkit_placeholder2" class="my-4"></div>
 
   
   <div id="p5Canvas"  ></div> <!-- p5.jsのキャンバスがここに挿入されます -->
@@ -25,7 +24,7 @@
   
   
     <p id="setumei">ORPHE COREを足に装着し、前傾+振動で前進、後傾+振動でジャンプ、大きく後傾で後退！敵を倒してゴールを目指そう！</p>
-    <p id ="en"> Attach ORPHE CORE to your feet. Lean forward + shake to move forward, lean back + shake to jump, keep leaning back to move backward! Defeat enemies and reach the goal!</p> 
+    <p id ="en"> Attach one ORPHE CORE to your foot. Lean forward + shake to move forward, lean back + shake to jump, keep leaning back to move backward! Defeat enemies and reach the goal!</p>
   
   <!-- ゲーム設定用のコントロールパネル -->
   <div id="config-panel" style="margin: 20px auto; padding: 20px; background-color: #353434; border-radius: 10px; max-width: 800px;">
@@ -33,9 +32,9 @@
     <h3 style="text-align: center; margin-bottom: 20px;">📊 センサー値モニター / Sensor Monitor</h3>
     
     <div style="display: flex; gap: 20px; margin-bottom: 15px;">
-      <!-- 左足 -->
+      <!-- ORPHE CORE -->
       <div style="flex: 1; padding: 10px; background-color: #444; border-radius: 5px;">
-        <h5 style="color: #4CAF50; margin: 0 0 10px 0;">左足 / Left (Device 0)</h5>
+        <h5 style="color: #4CAF50; margin: 0 0 10px 0;">ORPHE CORE (Device 0)</h5>
         <div style="margin: 5px 0;">
           <span style="color: #aaa; display: inline-block; width: 80px;">Pitch:</span>
           <span id="pitch0" style="color: #fff; font-family: monospace;">--</span>
@@ -55,8 +54,8 @@
         </div>
       </div>
       
-      <!-- 右足 -->
-      <div style="flex: 1; padding: 10px; background-color: #444; border-radius: 5px;">
+      <!-- 2台対応に戻す場合の予備表示 -->
+      <div style="display: none; flex: 1; padding: 10px; background-color: #444; border-radius: 5px;">
         <h5 style="color: #4CAF50; margin: 0 0 10px 0;">右足 / Right (Device 1)</h5>
         <div style="margin: 5px 0;">
           <span style="color: #aaa; display: inline-block; width: 80px;">Pitch:</span>
@@ -79,15 +78,15 @@
     </div>
     
     <div style="padding: 10px; background-color: #444; border-radius: 5px; text-align: center;">
-      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">📈 平均値 / Average</p>
+      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">📈 入力値 / Input</p>
       <div style="display: flex; justify-content: center; gap: 30px;">
         <div>
-          <span style="color: #aaa;">Pitch Avg:</span>
+          <span style="color: #aaa;">Pitch:</span>
           <span id="pitchAvg" style="color: #4CAF50; font-family: monospace; font-weight: bold;">--</span>
           <span id="moveDirection" style="color: #fff; margin-left: 10px;"></span>
         </div>
         <div>
-          <span style="color: #aaa;">Accel Max:</span>
+          <span style="color: #aaa;">Accel:</span>
           <span id="accMax" style="color: #2196F3; font-family: monospace; font-weight: bold;">--</span>
           <span id="jumpStatus" style="color: #fff; margin-left: 10px;"></span>
         </div>
@@ -114,8 +113,8 @@
     <h4 style="margin-bottom: 15px;">⬆️ ジャンプ設定 / Jump Settings</h4>
     <div class="config-item" style="margin-bottom: 15px;">
       <label for="jumpPitchThreshold" style="display: inline-block; width: 300px;">ジャンプPITCH閾値 / Jump Pitch Threshold (rad):</label>
-      <input type="range" id="jumpPitchThreshold" min="-1.0" max="0.0" value="-0.4" step="0.05" style="width: 250px;">
-      <span id="jumpPitchThresholdValue" style="margin-left: 10px;">-0.40</span>
+      <input type="range" id="jumpPitchThreshold" min="-1.0" max="0.0" value="0.0" step="0.05" style="width: 250px;">
+      <span id="jumpPitchThresholdValue" style="margin-left: 10px;">0.00</span>
     </div>
     
     <div class="config-item" style="margin-bottom: 15px;">
@@ -170,13 +169,12 @@
   <!-- <script src="../../js/ORPHE-CORE.js"></script> -->
 
   <script>
-    var bles = [new Orphe(0), new Orphe(1)];
+    var bles = [new Orphe(0)];
     bles[0].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
-    bles[1].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
     var connectedDevices = 0;
     var gamestage = 0;
+    var isGameInputReady = false;
 
     /*
     ble1.onConnect = function () {
@@ -199,25 +197,26 @@
       */
       for (let ble of bles) {
         ble.onConnect = function () {
-
-            connectedDevices++;
-            // STEP_ANALYSIS_AND_SENSOR_VALUES では onConnect が
-            // 1 デバイスにつき 2 回発火する (各 characteristic ごと)。
-            // 2 デバイス × 2 characteristic = 4 回で完全接続完了。
-            // 旧コードは === 3 で「片方が中途半端な状態」で start していたため修正。
-            if (connectedDevices === 4) {
+            if (isGameInputReady) {
+              return;
+            }
             //接続されたときの処理
 
-            mystart(bles[0]);
-            mystart(bles[1]);
+            mystart(ble);
 
+            connectedDevices = 1;
             gamestage = 1;
-
-
+            isGameInputReady = true;
+        }
+        ble.onDisconnect = function () {
+            if (devices[ble.id]) {
+              devices[ble.id].active = false;
             }
-
+            connectedDevices = 0;
+            gamestage = 0;
+            isGameInputReady = false;
+        }
       }
-    }
 
 
     var devices = {
@@ -226,6 +225,7 @@
         eulers: { pitch: 0, roll: 0, yaw: 0 },
         acc: { x: 0, y: 0, z: 0 },  // 加速度データ
         gyro: { x: 0, y: 0, z: 0 }, // ジャイロデータ
+        active: false,
         gaits: {
           type: 0,
           direction: 0,
@@ -254,6 +254,7 @@
         eulers: { pitch: 0, roll: 0, yaw: 0 },
         acc: { x: 0, y: 0, z: 0 },  // 加速度データ
         gyro: { x: 0, y: 0, z: 0 }, // ジャイロデータ
+        active: false,
         gaits: {
           type: 0,
           direction: 0,
@@ -281,6 +282,7 @@
 
 
     function mystart(ble_device) {
+      devices[ble_device.id].active = true;
       ble_device.gotQuat = function (_quat) {
         devices[this.id].quats = _quat;
       };
@@ -373,7 +375,7 @@
       const accelerationThreshold = (typeof forwardAccelThreshold !== 'undefined')
         ? forwardAccelThreshold
         : 0.5;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < bles.length; i++) {
         // Pitch値の表示（ラジアン）
         const pitch = devices[i].eulers ? devices[i].eulers.pitch : 0;
         const pitchElem = document.getElementById(`pitch${i}`);
@@ -429,8 +431,8 @@
       let accMax = 0;
       let validDevices = 0;
       
-      for (let i = 0; i < 2; i++) {
-        if (devices[i].eulers) {
+      for (let i = 0; i < bles.length; i++) {
+        if (devices[i].active && devices[i].eulers) {
           pitchSum += devices[i].eulers.pitch;
           validDevices++;
           
@@ -479,13 +481,13 @@
     function updateThresholdVisuals() {
       // 現在の閾値を取得
       const fPitchThreshold = typeof forwardPitchThreshold !== 'undefined' ? forwardPitchThreshold : 0.0;
-      const jPitchThreshold = typeof jumpPitchThreshold !== 'undefined' ? jumpPitchThreshold : -0.4;
+      const jPitchThreshold = typeof jumpPitchThreshold !== 'undefined' ? jumpPitchThreshold : 0.0;
       const bPitchThreshold = typeof backwardPitchThreshold !== 'undefined' ? backwardPitchThreshold : -0.8;
       const fAccelThreshold = typeof forwardAccelThreshold !== 'undefined' ? forwardAccelThreshold : 0.2;
       const jAccelThreshold = typeof jumpAccelThreshold !== 'undefined' ? jumpAccelThreshold : 0.5;
       
       // Pitch閾値ラインの位置更新（-2から+2ラジアンの範囲）
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < bles.length; i++) {
         const leftLine = document.getElementById(`pitchThresholdLeft${i === 0 ? '' : '1'}`);
         const rightLine = document.getElementById(`pitchThresholdRight${i === 0 ? '' : '1'}`);
         if (leftLine && rightLine) {

@@ -14,6 +14,9 @@
       <h1>ORPHE CORE 2D ACTION!</h1>
       
       <div id="toolkit_placeholder1" class="my-4"></div>
+      <div id="ble-support-message" class="alert alert-warning mx-4" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
 
   
   <div id="p5Canvas"  ></div> <!-- p5.jsのキャンバスがここに挿入されます -->
@@ -161,8 +164,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
 
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"
-  type="text/javascript"></script>
+  <script src="../../js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
   integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
   crossorigin="anonymous"></script>
@@ -172,6 +174,10 @@
     var bles = [new Orphe(0)];
     bles[0].setup();
     buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
+    guardCoreToolkitBluetooth({
+      coreIds: [0],
+      messageElement: '#ble-support-message'
+    });
     var connectedDevices = 0;
     var gamestage = 0;
     var isGameInputReady = false;

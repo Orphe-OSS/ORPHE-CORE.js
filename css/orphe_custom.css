@@ -488,6 +488,112 @@ mark {
     margin-top: 1.5rem;
 }
 
+.dx-example-section {
+    margin-top: 1.5rem;
+}
+
+.dx-example-section>p {
+    max-width: 840px;
+    color: #d8d8d8;
+}
+
+.dx-example-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0 1.5rem;
+}
+
+.dx-example-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: #202020;
+}
+
+.dx-example-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    object-position: top center;
+    background: #151515;
+}
+
+.dx-example-card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.95rem;
+}
+
+.dx-example-card h4 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.dx-example-card p {
+    margin: 0;
+    color: #cfcfcf;
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.dx-example-tags,
+.dx-example-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.dx-example-tags span {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    padding: 0.25rem 0.55rem;
+    color: #bdbdbd;
+    font-size: 0.75rem;
+}
+
+.dx-example-links {
+    margin-top: auto;
+}
+
+.dx-example-links a,
+.dx-mini-link {
+    border: 1px solid rgba(69, 230, 230, 0.3);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    color: #45e6e6;
+    font-size: 0.82rem;
+    text-decoration: none;
+}
+
+.dx-example-links a:hover,
+.dx-mini-link:hover {
+    border-color: rgba(69, 230, 230, 0.72);
+    color: #ffffff;
+}
+
+.dx-mini-link-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin: 0.8rem 0 1.5rem;
+}
+
+.dx-example-subhead {
+    margin-top: 1.4rem;
+    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
 @media (max-width: 991.98px) {
     .dx-hero {
         min-height: 500px;

@@ -323,7 +323,6 @@
       ? `<img src="${escapeHtml(normalizeLink(entry.thumbnail))}" alt="">`
       : `<span>サムネイル準備中</span>`;
     const devices = entry.device_count || entry.devices || 1;
-    const verification = entry.needs_real_device_validation || (entry.validation || []).some((item) => item.includes('device'));
 
     return `
       <a class="card" href="${escapeHtml(demoLink(entry))}">
@@ -334,7 +333,6 @@
           <div class="meta">
             <span class="pill">${escapeHtml(difficultyLabel(entry))}</span>
             <span class="pill">${devices}台</span>
-            ${verification ? '<span class="pill">実機確認待ち</span>' : ''}
           </div>
         </div>
       </a>

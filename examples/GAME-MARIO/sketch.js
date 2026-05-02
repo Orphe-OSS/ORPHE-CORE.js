@@ -1,5 +1,5 @@
 /**
- * ORPHE CORE マリオ風プラットフォーマーゲーム
+ * ORPHE CORE 2Dアクションゲーム
  * - ORPHE CORE: pitch角度で左右移動、振動でジャンプ
  * - キーボード: 矢印キーで左右移動、上キーでジャンプ
  */
@@ -34,7 +34,7 @@ let hills = [];
 // ORPHE CORE関連
 let forwardPitchThreshold = 0.0;     // 前進用PITCH閾値
 let forwardAccelThreshold = 0.2;     // 前進用加速度閾値
-let jumpPitchThreshold = -0.4;       // ジャンプ用PITCH閾値
+let jumpPitchThreshold = 0.0;        // ジャンプ用PITCH閾値
 let jumpAccelThreshold = 0.5;        // ジャンプ用加速度閾値
 let backwardPitchThreshold = -0.8;   // 後退用PITCH閾値
 let backwardPitchDuration = 0;       // 後退PITCH持続時間
@@ -118,14 +118,12 @@ function setup() {
   updateSFXVolume(sfxVolume);
   
   // ハイスコア読み込み
-  hiScore = Number(localStorage.getItem("mario_hi") || 0);
+  hiScore = Number(localStorage.getItem("orphe_2d_action_hi") || 0);
   
   // リゲームボタン
-  button = createButton('ReGame');
+  button = createButton('REGAME');
   button.mousePressed(reGame);
   button.style('position', 'absolute');
-  button.style('left', '50%');
-  button.style('top', '70%');
   button.style('transform', 'translate(-50%, -50%)');
   button.style('background-color', '#4CAF50');
   button.style('color', 'white');
@@ -140,8 +138,6 @@ function setup() {
   startButton = createButton('START GAME');
   startButton.mousePressed(startGameWithoutDevice);
   startButton.style('position', 'absolute');
-  startButton.style('left', '50%');
-  startButton.style('top', '60%');
   startButton.style('transform', 'translate(-50%, -50%)');
   startButton.style('background-color', '#2196F3');
   startButton.style('color', 'white');
@@ -153,6 +149,14 @@ function setup() {
   startButton.style('display', 'none');
   
   resetGame(true);
+}
+
+function positionCanvasButton(domButton, offsetY) {
+  const canvas = document.querySelector('#p5Canvas canvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  domButton.style('left', `${window.scrollX + rect.left + rect.width / 2}px`);
+  domButton.style('top', `${window.scrollY + rect.top + rect.height / 2 + offsetY}px`);
 }
 
 function resetGame(full = false) {
@@ -312,6 +316,7 @@ function draw() {
   switch (gamestage) {
     case 0: // デバイス接続待ち
       drawLoadingScreen();
+      positionCanvasButton(startButton, 120);
       startButton.style('display', 'inline-block');
       break;
       
@@ -343,6 +348,7 @@ function draw() {
       drawGame();
       drawHUD();
       uiGameOver();
+      positionCanvasButton(button, 92);
       button.style('display', 'inline-block');
       break;
   }
@@ -772,7 +778,7 @@ function collectCoins() {
         score += 500;
         if (score > hiScore) {
           hiScore = score;
-          localStorage.setItem("mario_hi", hiScore);
+          localStorage.setItem("orphe_2d_action_hi", hiScore);
         }
       } else {
         coinSound.play();
@@ -1082,7 +1088,7 @@ function drawLoadingScreen() {
   textAlign(CENTER, CENTER);
   textSize(36);
   text('ORPHE CORE', W/2, H/2 - 100);
-  text('MARIO ADVENTURE', W/2, H/2 - 60);
+  text('2D ACTION', W/2, H/2 - 60);
   textSize(20);
   text('Connect your device', W/2, H/2);
   text('ORPHE CORE: Tilt & Shake', W/2, H/2 + 30);
@@ -1109,7 +1115,7 @@ function uiTitle() {
   textFont(myFont);
   textAlign(CENTER, CENTER);
   textSize(28);
-  text('MARIO ADVENTURE', W/2, H/2 - 40);
+  text('2D ACTION', W/2, H/2 - 40);
   textSize(18);
   text('Use Arrow Keys or ORPHE CORE', W/2, H/2 + 4);
   text('Starting in...', W/2, H/2 + 36);
@@ -1127,7 +1133,7 @@ function uiGameOver() {
   textSize(20);
   text(`FINAL SCORE: ${floor(score)}`, W/2, H/2);
   textSize(16);
-  text('Click ReGame to restart', W/2, H/2 + 40);
+  text('Click REGAME to restart', W/2, H/2 + 40);
   textAlign(LEFT, BASELINE);
 }
 
@@ -1163,7 +1169,7 @@ function uiClear() {
 function gameOver() {
   if (floor(score) > hiScore) {
     hiScore = floor(score);
-    localStorage.setItem("mario_hi", hiScore);
+    localStorage.setItem("orphe_2d_action_hi", hiScore);
   }
   bgmA.stop();
   damageSound.play();

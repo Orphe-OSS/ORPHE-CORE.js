@@ -113,8 +113,8 @@
     <h4 style="margin-bottom: 15px;">⬆️ ジャンプ設定 / Jump Settings</h4>
     <div class="config-item" style="margin-bottom: 15px;">
       <label for="jumpPitchThreshold" style="display: inline-block; width: 300px;">ジャンプPITCH閾値 / Jump Pitch Threshold (rad):</label>
-      <input type="range" id="jumpPitchThreshold" min="-1.0" max="0.0" value="-0.4" step="0.05" style="width: 250px;">
-      <span id="jumpPitchThresholdValue" style="margin-left: 10px;">-0.40</span>
+      <input type="range" id="jumpPitchThreshold" min="-1.0" max="0.0" value="0.0" step="0.05" style="width: 250px;">
+      <span id="jumpPitchThresholdValue" style="margin-left: 10px;">0.00</span>
     </div>
     
     <div class="config-item" style="margin-bottom: 15px;">
@@ -481,7 +481,7 @@
     function updateThresholdVisuals() {
       // 現在の閾値を取得
       const fPitchThreshold = typeof forwardPitchThreshold !== 'undefined' ? forwardPitchThreshold : 0.0;
-      const jPitchThreshold = typeof jumpPitchThreshold !== 'undefined' ? jumpPitchThreshold : -0.4;
+      const jPitchThreshold = typeof jumpPitchThreshold !== 'undefined' ? jumpPitchThreshold : 0.0;
       const bPitchThreshold = typeof backwardPitchThreshold !== 'undefined' ? backwardPitchThreshold : -0.8;
       const fAccelThreshold = typeof forwardAccelThreshold !== 'undefined' ? forwardAccelThreshold : 0.2;
       const jAccelThreshold = typeof jumpAccelThreshold !== 'undefined' ? jumpAccelThreshold : 0.5;

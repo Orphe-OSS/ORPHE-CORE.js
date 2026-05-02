@@ -1,6 +1,6 @@
 # In-flight Work
 
-Last updated: 2026-05-02 23:35 JST
+Last updated: 2026-05-03 00:05 JST
 
 This file is a lightweight coordination board for humans, Codex, and Claude. It is not a changelog. Keep it short and update it before starting or ending a multi-file task.
 
@@ -18,7 +18,7 @@ This file is a lightweight coordination board for humans, Codex, and Claude. It 
 
 | Agent | Branch | Purpose | Files / Areas | Status | Last Update | Notes |
 |---|---|---|---|---|---|---|
-| Codex | main | Create agent collaboration docs | `docs/agents.md`, `docs/in-flight.md`, `.github/*`, `docs/ai/*` | active | 2026-05-02 23:35 JST | Codex priority is core library quality and public-quality existing examples. |
+| Codex | codex/examples-static-quality-audit | Static quality audit and safe checks for existing examples | `scripts/check-examples-static-quality.js`, `docs/examples-static-quality-audit.md`, `docs/in-flight.md` | active | 2026-05-03 00:05 JST | No real-device claims. Focus on public/public-candidate example quality, links, thumbnails, titles, CoreToolkit bridge, and catalog consistency. |
 | Claude | claude/research-imu-competitors-yWYtf | IMU competitor research and lesson concept | `docs/ai/` research docs | reference | 2026-05-02 23:35 JST | Research should inform roadmap, not directly edit core SDK. |
 
 ## Planned Work

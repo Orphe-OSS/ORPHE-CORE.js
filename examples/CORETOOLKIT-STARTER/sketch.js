@@ -34,6 +34,7 @@ window.onload = function () {
         '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
     buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
         '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
 
     for (let ble of bles) {
         ble.setup();

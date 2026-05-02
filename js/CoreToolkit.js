@@ -230,7 +230,15 @@ async function toggleCoreModule(dom, options = {}) {
     let ble = bles[number];
     let notification = dom.getAttribute('notification');
     if (checked == true) {
-        let ret = await ble.begin(notification, options);
+        let ret;
+        try {
+            ret = await ble.begin(notification, options);
+        } catch (error) {
+            document.querySelector(`#switch_ble${number}`).checked = false;
+            document.querySelector(`#ui${number}`).style.visibility = 'hidden';
+            ble.onError(error);
+            return;
+        }
         if (!ret) {
             document.querySelector(`#switch_ble${number}`).checked = false;
             return;

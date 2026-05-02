@@ -292,4 +292,5 @@ window.onload = function () {
   loadHistory();
   loadParameters();
   buildCoreToolkit(document.querySelector('#CoreToolkit_placeholder'), '01', 0, 'SENSOR_VALUES');
+  guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
 }

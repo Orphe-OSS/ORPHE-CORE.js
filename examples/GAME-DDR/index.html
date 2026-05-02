@@ -22,6 +22,9 @@
         <div class="toolkit-container">
             <div id="toolkit_placeholder1" class="toolkit-box"></div>
             <div id="toolkit_placeholder2" class="toolkit-box"></div>
+      <div id="ble-support-message" class="alert alert-warning mx-4" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
         </div>
 
         <!-- Game Controls (moved here) -->
@@ -116,7 +119,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
+    <script src="../../js/CoreToolkit.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
     
     <!-- ORPHE Device Setup (must be after ORPHE-CORE.js loads) -->
@@ -127,6 +130,7 @@
         buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS');
         bles[1].setup();
         buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS');
+        guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
         var connectedDevices = 0;
         
         console.log('🎮 ORPHE devices initialized:', bles);

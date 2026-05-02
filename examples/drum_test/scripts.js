@@ -50,6 +50,7 @@ function setup() {
     buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
     bles[1].setup();
     buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'SENSOR_VALUES');
+    guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
     
    // ORPHE CORE Init
 

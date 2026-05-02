@@ -134,6 +134,9 @@
       <div class="player-toolkits">
         <h4>👤 Player 2</h4>
         <div id="toolkit_p2"></div>
+      <div id="ble-support-message" class="alert alert-warning mx-4" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
       </div>
     </div>
   </div>
@@ -175,7 +178,7 @@
 
   <!-- ORPHE CORE -->
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js" crossorigin="anonymous"></script>
+  <script src="../../js/CoreToolkit.js" crossorigin="anonymous"></script>
 
   <script>
     // Game constants
@@ -764,6 +767,7 @@
 
     buildCoreToolkit(document.querySelector('#toolkit_p1'), 'Player 1', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
     buildCoreToolkit(document.querySelector('#toolkit_p2'), 'Player 2', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
 
     var connectedDevices = 0;
     window.devices = {

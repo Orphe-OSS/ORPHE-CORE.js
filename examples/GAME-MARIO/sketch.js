@@ -418,8 +418,8 @@ function handleOrpheInput(dt) {
   let accelMagnitude = 0;
   let validDevices = 0;
   
-  for (let i = 0; i < 2; i++) {
-    if (devices && devices[i] && devices[i].eulers) {
+  for (let i = 0; i < bles.length; i++) {
+    if (devices && devices[i] && devices[i].active && devices[i].eulers) {
       pitchSum += devices[i].eulers.pitch;
       validDevices++;
       
@@ -1084,10 +1084,10 @@ function drawLoadingScreen() {
   text('ORPHE CORE', W/2, H/2 - 100);
   text('MARIO ADVENTURE', W/2, H/2 - 60);
   textSize(20);
-  text('Connect your devices', W/2, H/2);
+  text('Connect your device', W/2, H/2);
   text('ORPHE CORE: Tilt & Shake', W/2, H/2 + 30);
   
-  let statusText = `Connected: ${connectedDevices}/2`;
+  let statusText = `Connected: ${connectedDevices}/1`;
   text(statusText, W/2, H/2 + 60);
   
   textSize(18);

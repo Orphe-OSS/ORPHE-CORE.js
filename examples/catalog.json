@@ -616,10 +616,10 @@
       "type": "web-app",
       "status": "public-candidate",
       "audience": ["game-player"],
-      "value": "Playable 2D action game concept.",
+      "value": "Playable 2D action game controlled by one ORPHE CORE.",
       "topics": ["game", "action"],
-      "data": ["convertedAcc", "euler"],
-      "devices": 2,
+      "data": ["acc", "euler"],
+      "devices": 1,
       "validation": ["needs-device-verification"],
       "issues": ["test.html broken local SDK path was fixed in PR #40"],
       "category": "playable-app",
@@ -632,7 +632,7 @@
         "source": "examples/GAME-MARIO/"
       },
       "requires_device": true,
-      "device_count": 2,
+      "device_count": 1,
       "needs_real_device_validation": true,
       "public_navigation": "listed"
     },

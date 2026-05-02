@@ -177,6 +177,48 @@ function buildCoreToolkit(parent_element, title, core_id = 0, notification = 'ST
 }
 
 /**
+ * CoreToolkitのBLE接続UIを、Web Bluetoothを使えないブラウザでは無効化する。
+ * Codex/Electron系の埋め込みブラウザではBluetoothダイアログを開かず、
+ * 通常のChromeで開く案内だけを表示したい場合に利用する。
+ * @param {object} options
+ * @param {number[]} options.coreIds - 無効化対象のCore ID
+ * @param {Element|string} options.messageElement - 案内メッセージを表示する要素またはセレクタ
+ * @param {string} options.message - 表示する案内メッセージ
+ * @param {string} options.disabledTitle - 無効化したスイッチのtitle
+ * @returns {boolean} Web Bluetoothを利用できる場合はtrue
+ */
+function guardCoreToolkitBluetooth(options = {}) {
+    const coreIds = options.coreIds || [0, 1];
+    const message = options.message || 'Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.';
+    const disabledTitle = options.disabledTitle || 'Open this page in Chrome to connect ORPHE CORE.';
+    const isEmbeddedBrowser = /Electron|Codex/i.test(navigator.userAgent);
+    const canUseWebBluetooth = window.isSecureContext && !!navigator.bluetooth && !isEmbeddedBrowser;
+
+    if (canUseWebBluetooth) return true;
+
+    coreIds.forEach(function (coreId) {
+        const switchBle = document.querySelector(`#switch_ble${coreId}`);
+        if (!switchBle) return;
+        switchBle.checked = false;
+        switchBle.disabled = true;
+        switchBle.title = disabledTitle;
+    });
+
+    let messageElement = options.messageElement;
+    if (typeof messageElement === 'string') {
+        messageElement = document.querySelector(messageElement);
+    }
+    if (messageElement) {
+        if (!messageElement.textContent.trim()) {
+            messageElement.textContent = message;
+        }
+        messageElement.style.display = 'block';
+    }
+
+    return false;
+}
+
+/**
  * BLE接続のトグルボタンが切り替わったときに呼び出される関数
  * @param {Element} dom 
  * @param {object} options 

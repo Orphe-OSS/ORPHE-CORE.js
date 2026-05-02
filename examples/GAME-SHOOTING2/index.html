@@ -213,20 +213,10 @@
         window.ble = ble;
         ble.setup();
         buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
-        const isEmbeddedBrowser = /Electron|Codex/i.test(navigator.userAgent);
-        const canUseWebBluetooth = window.isSecureContext && navigator.bluetooth && !isEmbeddedBrowser;
-        if (!canUseWebBluetooth) {
-            const switchBle = document.querySelector('#switch_ble0');
-            if (switchBle) {
-                switchBle.checked = false;
-                switchBle.disabled = true;
-                switchBle.title = 'Open this page in Chrome to connect ORPHE CORE.';
-            }
-            const message = document.querySelector('#ble-support-message');
-            if (message) {
-                message.style.display = 'block';
-            }
-        }
+        guardCoreToolkitBluetooth({
+            coreIds: [0],
+            messageElement: '#ble-support-message'
+        });
     </script>
     <script src="../../js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="main.js"></script>

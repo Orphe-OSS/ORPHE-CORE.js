@@ -74,6 +74,26 @@ function maybeRead(relativePath) {
   return readText(relativePath);
 }
 
+function localScriptPaths(html, pagePath) {
+  const pageDir = path.posix.dirname(pagePath);
+  const scripts = [];
+  const scriptRe = /<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi;
+  let match;
+  while ((match = scriptRe.exec(html))) {
+    const src = match[1];
+    if (!src || /^https?:\/\//.test(src) || src.startsWith('//')) continue;
+    scripts.push(normalizeRelative(path.posix.normalize(path.posix.join(pageDir, src))));
+  }
+  return scripts;
+}
+
+function localScriptText(html, pagePath) {
+  return localScriptPaths(html, pagePath)
+    .map((scriptPath) => maybeRead(scriptPath))
+    .filter(Boolean)
+    .join('\n');
+}
+
 function httpHead(url) {
   return new Promise((resolve) => {
     const req = http.request(url, { method: 'HEAD', timeout: 2500 }, (res) => {
@@ -220,10 +240,12 @@ async function main() {
     }
 
     if (html.includes('CoreToolkit.js')) {
+      const scriptText = localScriptText(html, pagePath);
+      const combinedText = `${html}\n${scriptText}`;
       if (!html.includes('BleSharedBridge.js')) {
         addIssue(issues, 'error', id, `${pagePath} uses CoreToolkit.js but does not include BleSharedBridge.js`);
       }
-      if (!html.includes('guardCoreToolkitBluetooth(')) {
+      if (!combinedText.includes('guardCoreToolkitBluetooth(')) {
         addIssue(issues, 'warning', id, `${pagePath} uses CoreToolkit.js but does not call guardCoreToolkitBluetooth()`);
       }
     }

@@ -29,6 +29,24 @@ this sprint. Until those land, instructors can run the lesson against
 `examples/CORETOOLKIT-STARTER/` for steps 1–3 and `examples/SENSOR-CALIBRATION/`
 for step 4 — the lesson plans call this out explicitly.
 
+## Tier 2 Lessons
+
+The Tier 2 plans extend the Tier 1 ladder. They share the same 45-minute
+shape and the same "Status: draft" caveat. Each one names the example it
+pairs with and a fallback path that uses an existing example.
+
+| # | Lesson | Example | Notification | Devices |
+|---|---|---|---|---|
+| 7  | [Signal Processing Intro](./07-signal-processing.md) | any page exposing `gotConvertedAcc` (e.g. `CORETOOLKIT-STARTER`) | `SENSOR_VALUES` | 1 |
+| 8  | [Gait Variability](./08-gait-variability.md) | `examples/STEP-COUNT-DASHBOARD/` _(planned)_ or `CORETOOLKIT-STARTER` fallback | `STEP_ANALYSIS` | 1 |
+| 9  | [Foot Angle at Landing](./09-foot-angle-at-landing.md) | `examples/FOOT-ANGLE-DASHBOARD/` _(planned)_ or `CORETOOLKIT-STARTER` fallback | `STEP_ANALYSIS_AND_SENSOR_VALUES` | 1 |
+| 10 | [From Recording to Research](./10-from-recording-to-research.md) | planned `CSV-RECORDER` + `REPLAY-PLAYER`, or any prior recording | any | 0–1 |
+
+Tier 2 assumes Tier 1 vocabulary. Lessons 07 and 08 stand alone; Lesson 09
+pairs with the Tier 2 `FOOT-ANGLE-DASHBOARD` example introduced in this
+sprint; Lesson 10 is a workflow / meta-lesson that ties recording, replay,
+analysis, and sharing together.
+
 ## Educator framing
 
 All Tier 1 lessons assume:

@@ -43,6 +43,7 @@ Use `category` for primary grouping:
 | `sensor-basics` | Sensor basics | Acceleration, gyro, orientation, raw/converted sensor values |
 | `gait-analysis` | Gait Analysis | Steps, stride, pronation, foot angle, landing impact |
 | `recording-analysis` | Recording and analysis | Calibration, logs, DTW, replay, CSV workflows |
+| `virtual-sports` | Virtual Sports | Running, hurdle, sprint, and other sports games where body motion is the main input |
 | `playable-app` | Playable apps | Games and interactive body-motion experiences |
 | `creative-coding` | Creative coding | p5.js, pose, sound, visuals |
 | `research-integration` | Research and integrations | BLE integrations, external sensors, domain-specific prototypes |

@@ -1,39 +1,55 @@
-# 400m Hurdle VS
+# 400m Hurdles VS
 
 Two-player 400m hurdle race using ORPHE CORE motion input.
 
-## What this example shows
+## What It Does
 
-- Extend the virtual track concept to a longer hurdle race.
-- Use two ORPHE CORE modules as player inputs.
-- Compare pacing and endurance-style play against the 110m hurdle variants.
+- Extends the Virtual Sports concept to a longer 400m hurdle race.
+- Uses two ORPHE CORE modules, one for each player.
+- Adds pacing, stamina, and jump timing compared with the 100m sprint candidate.
 
-## Required devices
+## Required Devices
 
-- 2 ORPHE CORE modules for sensor play
-- Keyboard fallback may be useful for screen/layout checks, but promotion needs a two-device check.
+- 2 ORPHE CORE modules for sensor play.
+- Keyboard fallback can be used for layout checks, but public promotion requires a two-device ORPHE CORE check.
 
-## How to run
+## Controls
 
-Open the page from a local server or GitHub Pages:
-
-```text
-examples/GAME-HURDLE-400M-VS/
-```
-
-Use a Web Bluetooth compatible browser such as Chrome. Connect both ORPHE CORE modules from the CoreToolkit UI before starting a sensor-based play test.
+- Player 1 keyboard fallback: up arrow to jump, right arrow to accelerate.
+- Player 2 keyboard fallback: `W` to jump, `D` to accelerate.
+- Sensor play: connect both ORPHE CORE modules from the CoreToolkit UI, then start the race.
 
 ## Data
 
-- Expected notify type: `SENSOR_VALUES`
-- Main input: motion values converted into running / jumping controls
+- Notify type: `STEP_ANALYSIS_AND_SENSOR_VALUES`
+- Main input: motion values converted into running and jumping controls.
 
-## Validation status
+## Run
 
-Static page/link checks only. Before public promotion, confirm two-device connection, race distance feel, running, jumping, finish/retry flow, and disconnect/reconnect behavior on Chrome.
+Open the page from a local server or GitHub Pages in Chrome.
 
-## Related examples
+```text
+http://localhost:8767/examples/GAME-HURDLE-400M-VS/
+```
 
-- [`examples/GAME-HURDLE/`](../GAME-HURDLE/README.md) — current public flagship 110m hurdle game
-- [`examples/GAME-HURDLE-VS/`](../GAME-HURDLE-VS/) — 110m hurdle VS variant
-- [`examples/GAME-SPRINT-100M-VS/`](../GAME-SPRINT-100M-VS/) — sprint variant without hurdles
+## Publication Status
+
+`public-candidate` for the Virtual Sports category.
+
+Do not list this in public navigation until human real-device validation passes.
+
+## Human Validation Checklist
+
+- Page opens in Chrome.
+- Keyboard fallback starts, advances both players, jumps, and can finish a race.
+- Two ORPHE CORE modules connect from the CoreToolkit UI.
+- Both players receive independent sensor input.
+- Running and jump motions are usable during the race.
+- Finish / retry flow works.
+- Restart keeps or cleanly resets the BLE connection.
+
+## Related Examples
+
+- [`examples/GAME-HURDLE/`](../GAME-HURDLE/README.md) — current public flagship Virtual Sports example.
+- [`examples/GAME-SPRINT-100M-VS/`](../GAME-SPRINT-100M-VS/) — 100m sprint VS candidate.
+- [`examples/GAME-HURDLE-VS/`](../GAME-HURDLE-VS/) — 110m hurdle VS variant.

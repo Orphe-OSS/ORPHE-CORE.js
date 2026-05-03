@@ -353,12 +353,12 @@
       "type": "web-app",
       "status": "public",
       "audience": ["beginner", "game-player"],
-      "value": "Representative playable game using gait and motion input.",
-      "topics": ["game", "running", "gait"],
+      "value": "Flagship virtual sports example: a 110m hurdle race controlled by gait and motion input.",
+      "topics": ["game", "virtual sports", "running", "track", "hurdle", "gait"],
       "data": ["convertedAcc", "euler", "gait"],
       "devices": 2,
-      "validation": ["existing-public-link", "thumbnail-exists", "needs-device-verification"],
-      "category": "playable-app",
+      "validation": ["existing-public-link", "thumbnail-exists", "owner-real-device-check"],
+      "category": "virtual-sports",
       "difficulty": "beginner",
       "featured": true,
       "thumbnail": "examples/_thumbnails/hurdle-110m.png",
@@ -369,8 +369,60 @@
       },
       "requires_device": true,
       "device_count": 2,
-      "needs_real_device_validation": true,
+      "needs_real_device_validation": false,
       "public_navigation": "featured"
+    },
+    {
+      "id": "game-sprint-100m-vs",
+      "title": "100m Sprint VS",
+      "path": "examples/GAME-SPRINT-100M-VS/",
+      "type": "web-app",
+      "status": "public-candidate",
+      "audience": ["game-player", "educator"],
+      "value": "Two-player virtual sprint race candidate for the Virtual Sports category.",
+      "topics": ["game", "virtual sports", "running", "track", "sprint", "versus"],
+      "data": ["sensorValues", "convertedAcc"],
+      "devices": 2,
+      "validation": ["static-page-check", "thumbnail-exists", "needs-device-verification"],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/sprint-100m-vs.png",
+      "sort_order": null,
+      "links": {
+        "demo": "examples/GAME-SPRINT-100M-VS/index.html",
+        "source": "examples/GAME-SPRINT-100M-VS/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "hidden"
+    },
+    {
+      "id": "game-hurdle-400m-vs",
+      "title": "400m Hurdles VS",
+      "path": "examples/GAME-HURDLE-400M-VS/",
+      "type": "web-app",
+      "status": "public-candidate",
+      "audience": ["game-player", "educator"],
+      "value": "Two-player 400m hurdles candidate that expands Virtual Sports beyond the 110m race.",
+      "topics": ["game", "virtual sports", "running", "track", "hurdle", "versus"],
+      "data": ["sensorValues", "convertedAcc", "euler"],
+      "devices": 2,
+      "validation": ["static-page-check", "thumbnail-exists", "needs-device-verification"],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/hurdle-400m-vs.png",
+      "sort_order": null,
+      "links": {
+        "demo": "examples/GAME-HURDLE-400M-VS/index.html",
+        "source": "examples/GAME-HURDLE-400M-VS/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "hidden"
     },
     {
       "id": "game-udon",
@@ -1320,7 +1372,7 @@
   "audit_findings": {
     "static_audit_date": "2026-05-01",
     "missing_thumbnails_count": 29,
-    "thumbnails_aggregated_in": "examples/_thumbnails/ (7 images: boxing, ddr, drum, hurdle-110m, move-your-feet, pingpong, udon)",
+    "thumbnails_aggregated_in": "examples/_thumbnails/ (includes public game thumbnails and hidden Virtual Sports candidate thumbnails)",
     "weak_titles": [
       {
         "file": "examples/AIRWALKER/index.html",
@@ -1417,7 +1469,7 @@
     }
   ],
   "display_schema": {
-    "category": ["getting-started", "sensor-basics", "gait-analysis", "recording-analysis", "playable-app", "creative-coding", "research-integration", "workshop-archive", "developer-tool", "internal-test"],
+    "category": ["getting-started", "sensor-basics", "gait-analysis", "recording-analysis", "virtual-sports", "playable-app", "creative-coding", "research-integration", "workshop-archive", "developer-tool", "internal-test"],
     "difficulty": ["beginner", "intermediate", "advanced"],
     "public_navigation": ["featured", "listed", "hidden"],
     "thumbnail": "Path to an existing preview image, or null when one still needs to be prepared.",

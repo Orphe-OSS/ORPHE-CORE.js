@@ -20,7 +20,7 @@ changed or verified with real ORPHE CORE devices.
 | Application Examples | 12 | Connection UI is mixed: some use raw API, some use CoreToolkit, and some README files are still thin. |
 | Starter Templates | 9 | Good raw API teaching material; README coverage is intentionally minimal but should be documented at directory level. |
 | Creative Examples | 7 | Most are already CoreToolkit-based, but a few game READMEs still need human-facing play instructions. |
-| Technical Examples | 2 local + 4 p5.js links | Useful advanced material, but DTW/GESTURE overlap with other sections needs clearer framing. |
+| Technical Examples | 1 local + 3 p5.js links | Useful advanced material, but gesture-related examples should be framed separately from sensor basics. |
 
 ## Index-linked local examples
 
@@ -45,7 +45,6 @@ changed or verified with real ORPHE CORE devices.
 | `examples/GAME-HURDLE/` | 110m hurdle game | 2 | `STEP_ANALYSIS_AND_SENSOR_VALUES` | CoreToolkit | yes | Listed; real-device validation required for ranking/gesture flow. |
 | `examples/GAME-BOXING/` | Punch rhythm/action game | 2 | `SENSOR_VALUES` | custom raw API | yes | Needs design before CoreToolkit; README is detailed but still has project-template deployment wording. |
 | `examples/GAME-DDR/` | Foot rhythm game | 2 | `STEP_ANALYSIS` | CoreToolkit | yes | Listed; already has internal docs, avoid broad edits. |
-| `examples/DTW/` | Time-series gesture matching | 1 | `STEP_ANALYSIS_AND_SENSOR_VALUES` | CoreToolkit in `sketch.js` | yes | Good Technical example; keep, but clarify its relationship to p5.js DTW link. |
 
 ## Starter Templates
 
@@ -94,4 +93,3 @@ validation:
   metadata.
 - Static analysis can identify connection patterns, but cannot prove BLE
   behavior.
-

@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | `ws/tmu2022/index.html` | TMU 2022 ワークショップ landing (26 KB / `<title>orphe-core.tmu</title>`) | 中 (歴史的資料、`<title>` は要修正) |
 | `ws/tmu2022/demos/orphe-ping/` | 回転検知デモ。**`<title>uoo</title>`** だったのを PR #44 で修正済 | 中 |
-| `ws/tmu2022/demos/LJ/` | 走り幅跳びの DTW + FFT デモ。**`<title>` 欠落**を PR #44 で追加 | 高 (DTW/FFT のリアル例として `examples/DTW/` と並ぶ価値あり) |
+| `ws/tmu2022/demos/LJ/` | 走り幅跳びの DTW + FFT デモ。**`<title>` 欠落**を PR #44 で追加 | 高 (DTW/FFT のリアル例として recipe 化の価値あり) |
 | `ws/tmu2022/demos/YOU_ARE_theBIRD/` | `<title>YOU ARE the BIRD</title>`、p5.js + 鳥の画像。`p5.js` (4.3 MB) を同梱しているため重い | 低〜中 (動作するなら残す価値あり、ただしファイル肥大化) |
 | `ws/tmu2022/demos/otameshi/` | `<title>ORPHE SLIDE</title>` | 低 (内容未確認、`otameshi` の名前から実験的) |
 | `ws/tmu2022/demos/ripples.zip` | 配布前の zip ファイルが残存 | **要削除** (`.gitignore` に zip 追加検討) |

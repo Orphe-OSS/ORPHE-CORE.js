@@ -27,7 +27,6 @@ Do not convert every example to CoreToolkit.
 | `examples/PRONATION/` | `already-coretoolkit` | Gait visualization with visible connection UI. |
 | `examples/SENSOR-CALIBRATION/` | `already-coretoolkit` | Recording workflow needs connection/status UI. |
 | `examples/GESTURE-DEMO/` | `already-coretoolkit` | Practical gesture demo already uses CoreToolkit. |
-| `examples/DTW/` | `already-coretoolkit` | Advanced analysis demo uses CoreToolkit in `sketch.js`. |
 | `examples/GAME-UDON/` | `already-coretoolkit` | Two-device physical game; CoreToolkit is appropriate. |
 | `examples/MOVEYOURFEET/` | `already-coretoolkit` | Two-device physical game; CoreToolkit is appropriate. |
 | `examples/GAME-PINGPONG/` | `already-coretoolkit` | Two-device game; stale helper files should be cleaned separately. |
@@ -73,4 +72,3 @@ Every actual CoreToolkit conversion must verify:
 - Data callbacks still update the existing UI.
 - Disconnect/reconnect does not leave stale UI state.
 - For two-device examples, each side controls the intended panel/player.
-

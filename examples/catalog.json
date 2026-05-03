@@ -558,32 +558,6 @@
       "public_navigation": "hidden"
     },
     {
-      "id": "dtw",
-      "title": "DTW Example",
-      "path": "examples/DTW/",
-      "type": "web-app",
-      "status": "public-candidate",
-      "audience": ["research", "advanced"],
-      "value": "Teaches Dynamic Time Warping for motion time-series comparison.",
-      "topics": ["DTW", "gesture", "analysis"],
-      "data": ["acc"],
-      "devices": 1,
-      "validation": ["needs-browser-validation", "needs-device-verification"],
-      "category": "recording-analysis",
-      "difficulty": "advanced",
-      "featured": false,
-      "thumbnail": "examples/_thumbnails/dtw.png",
-      "sort_order": 300,
-      "links": {
-        "demo": "examples/DTW/index.html",
-        "source": "examples/DTW/"
-      },
-      "requires_device": true,
-      "device_count": 1,
-      "needs_real_device_validation": true,
-      "public_navigation": "listed"
-    },
-    {
       "id": "game-mario",
       "title": "2D Action Game",
       "path": "examples/GAME-MARIO/",
@@ -1301,12 +1275,6 @@
       "topics": ["recording", "analysis"]
     },
     {
-      "source": "examples/DTW/sketch.js",
-      "recipe": "Compare motion time series with DTW",
-      "status": "public-candidate",
-      "topics": ["DTW", "analysis"]
-    },
-    {
       "source": "examples/GAME-PK/game_3d.js",
       "recipe": "Map a kick gesture to a 3D shot",
       "status": "public-candidate",
@@ -1337,11 +1305,6 @@
       "issue": "References ../js/ORPHE-CORE.js from a nested example directory.",
       "suggested_fix": "Use ../../js/ORPHE-CORE.js or the CDN script.",
       "resolution": "proposed in PR #40 (chore/fix-broken-test-html-paths)"
-    },
-    {
-      "path": "examples/DTW/index.html",
-      "issue": "<title> element is empty; tab and bookmark display would be broken.",
-      "suggested_fix": "Set a meaningful title (e.g. 'DTW Time Series Match — ORPHE CORE')."
     },
     {
       "path": "examples/p5.ORPHE.FSR_visualise_0327_submit/index.html",

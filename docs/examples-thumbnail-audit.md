@@ -4,20 +4,22 @@
 
 将来のランディング / ギャラリー / カタログページで、各 example のサムネイル表示を 1 か所から拾えるようにすることが最終目的。**この PR は調査ドキュメントの追加のみ**で、画像の追加 / 移動 / 削除は行わない。
 
-## サマリ (`examples/` 配下の catalog エントリ 30 件)
+## サマリ (`examples/` 配下の catalog エントリ)
+
+> Note: this document is a historical thumbnail audit. Current status counts are maintained by `examples/catalog.json` and validated by `scripts/check-examples-catalog.js`.
 
 | カテゴリ | 件数 | 内訳 |
 | --- | ---: | --- |
 | `_thumbnails/` 集約に画像あり | 7 | すべて public のゲーム系 (boxing / ddr / drum / hurdle-110m / move-your-feet / pingpong / udon) |
 | ディレクトリ直下に teaser.gif あり | 2 | INFORMATION / LIGHT (どちらも public) |
-| **不在: public + public-candidate** | **17** | 本ドキュメントで列挙 |
+| **不在: public / historical public-candidate** | Historical | 本ドキュメントで列挙 |
 | 不在: needs-review / needs-fix | 4 | 別セクションで列挙 |
-| 計 | 30 | (内訳: public 19 + public-candidate 7 + needs-fix 1 + needs-review 3) |
+| 計 | 30 | Historical snapshot at audit time |
 
 ## catalog の `missing_thumbnails_count: 29` との関係
 
 - catalog の 29 は **集計範囲が `examples/` 以外も含む**: ws-tmu2025 / ws-tmu2022 / app-orphe-terminal / starter-templates 等の catalog エントリも対象に取った可能性あり (catalog 全 48 entry のうち、ロゴ・サムネ前提でない starter-templates と guides を除いて算出した古い値)
-- 本ドキュメントでは **`examples/` 配下のみ** に絞って再集計し、public+candidate に絞ると **17 件** が不在
+- 本ドキュメントは **`examples/` 配下のみ** に絞った当時の監査スナップショット。現在の public / public-candidate 件数とは一致しない。
 - `examples/` 配下の全 status (public 19 + candidate 7 + needs-fix 1 + needs-review 3 = 30) で再集計すると 30 - 9 (画像あり) = **21 件** が不在
 - 数字の正本化は catalog schema 拡張 PR (`thumbnail` フィールド追加) と一緒に実施するのが望ましい
 
@@ -42,7 +44,7 @@
 | `examples/INFORMATION/teaser.gif` | gif | 動作 gif。LP からのリンク先候補 |
 | `examples/LIGHT/teaser.gif` | gif | LED 動作 gif。getting-started-led.html と相互参照可 |
 
-## 不在: public + public-candidate (17 件)
+## 不在: public / historical public-candidate
 
 ### Sensor Viewer / Utility (7 件) — public
 
@@ -66,25 +68,24 @@
 | `examples/OH1/` | public | 心拍計 + UI |
 | `examples/POSE/` | public | MediaPipe Pose + ORPHE 連携 |
 
-### Game (4 件) — public-candidate
+### Game (4 件) — promoted or reviewed after this audit
 
 | Example | Status | 候補スナップショット |
 | --- | --- | --- |
-| `examples/GAME-MARIO/` | public-candidate | 2D アクション画面 |
-| `examples/GAME-PK/` | public-candidate | ペナルティキック画面 |
-| `examples/GAME-SHOOTING/` | public-candidate | 2D シューティング画面 |
-| `examples/GAME-SHOOTING2/` | public-candidate | 3D シューティング画面 |
+| `examples/GAME-MARIO/` | promoted after audit | 2D アクション画面 |
+| `examples/GAME-PK/` | promoted after audit | ペナルティキック画面 |
+| `examples/GAME-SHOOTING/` | promoted after audit | 2D シューティング画面 |
+| `examples/GAME-SHOOTING2/` | promoted after audit | 3D シューティング画面 |
 
-### Workshop / Advanced (2 件) — public-candidate
+### Workshop / Advanced (1 件) — public-candidate
 
 | Example | Status | 候補スナップショット |
 | --- | --- | --- |
-| `examples/DTW/` | public-candidate | DTW のグラフ + 時系列 |
 | `examples/WORKSHOP_07/` | public-candidate | DFT/FFT の 4 line plot |
 
 ### 小計
 
-7 + 3 + 5 + 2 = **17 件** (public 10 + public-candidate 7)。
+This document is a historical audit. Current public/public-candidate counts are maintained by `examples/catalog.json` and `scripts/check-examples-catalog.js`.
 
 ## 不在: needs-review / needs-fix (4 件)
 

@@ -10,7 +10,7 @@ validation" as a public badge in the examples gallery.
 ## Current Status
 
 - `public`: 37 entries
-- `public-candidate`: 5 entries
+- `public-candidate`: 4 entries
 
 `GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, and `GAME-SHOOTING` were promoted to `public` after owner
 real-device checks. The entries below remain candidates.
@@ -21,11 +21,10 @@ Open these URLs from a local server and use Chrome for BLE tests.
 
 | Order | Entry | URL | Device | Main check | Promotion blocker |
 |---|---|---|---:|---|---|
-| 1 | `dtw` | `http://localhost:8767/examples/DTW/` | 1 | Mouse demo plus sensor input path | Needs clarity check for technical users |
-| 2 | `core-time-sync` | `http://localhost:8767/examples/CORE_TIME_SYNC/` | 1 | DateTime read and `syncCoreTime()` result | Needs owner confirmation before public listing |
-| 3 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
-| 4 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
-| 5 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
+| 1 | `core-time-sync` | `http://localhost:8767/examples/CORE_TIME_SYNC/` | 1 | DateTime read and `syncCoreTime()` result | Needs owner confirmation before public listing |
+| 2 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
+| 3 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
+| 4 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
 
 ## Promotion Rules
 
@@ -46,34 +45,8 @@ They need a navigation decision first.
 
 
 
-### 1. `examples/DTW/`
 
-Purpose: technical example for time-series matching with Dynamic Time Warping.
-
-Current state:
-
-- `status`: `public-candidate`
-- Requires one ORPHE CORE for sensor input.
-- Also has a mouse/shape demo path that can be inspected without hardware.
-- README explains what the example teaches and how to run it.
-
-Can be checked without device:
-
-- Open the page and confirm mouse input still demonstrates DTW behavior.
-- Confirm triangle/circle/square matching is understandable.
-- Confirm the page has enough instruction for a technical reader.
-
-Human BLE checks:
-
-- Connect one ORPHE CORE.
-- Confirm sensor input updates the time-series path used for matching.
-
-Promotion condition:
-
-- If the technical behavior is clear, promote to `public`; otherwise keep as
-  `public-candidate` and add a short on-page instruction.
-
-### 2. `examples/CORE_TIME_SYNC/`
+### 1. `examples/CORE_TIME_SYNC/`
 
 Purpose: utility for checking ORPHE CORE device time and round-trip timing.
 
@@ -106,7 +79,7 @@ Promotion condition:
 - It should not be featured on the LP unless users are actively looking for
   timestamp or recording integrity utilities.
 
-### 3. `examples/WORKSHOP_07/`
+### 2. `examples/WORKSHOP_07/`
 
 Purpose: workshop material for Fourier / DFT.
 

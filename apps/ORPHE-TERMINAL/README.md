@@ -15,7 +15,11 @@ characteristic data in the browser.
 ## Intended Audience
 
 This is a developer/debugging tool. It is not a beginner tutorial and should be
-listed separately from playful examples or starter templates.
+kept out of public beginner navigation.
+
+Because this tool exposes raw `Send` controls for `DEVICE_INFORMATION` and
+`DATE_TIME`, it should be used only by maintainers or developers who understand
+the target characteristic behavior.
 
 ## Requirements
 
@@ -35,20 +39,20 @@ Then connect ORPHE CORE from the CoreToolkit switch.
 
 ## Validation
 
-Needs real-device validation before promotion from `public-candidate` to
-`public`.
+Owner real-device validation passed with one ORPHE CORE.
 
-Human checks:
+Checked:
 
 - Page opens.
 - ORPHE CORE connects in Chrome.
-- Device Information read/write works.
-- Date Time read/write works.
+- Device Information UI is visible.
+- Date Time UI is visible.
 - SENSOR_VALUES stream updates.
-- Download buttons create CSV files.
 
 ## Notes
 
 - This tool uses lower-level raw byte displays. It should remain in a
-  developer-tool category.
+  hidden developer-tool category.
 - Do not treat it as a recommended first example for new users.
+- Do not link this tool prominently from the landing page unless the raw write
+  controls are removed or gated.

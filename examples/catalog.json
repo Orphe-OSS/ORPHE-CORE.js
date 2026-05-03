@@ -584,32 +584,6 @@
       "public_navigation": "listed"
     },
     {
-      "id": "game-fireball-mario",
-      "title": "Fireball Action",
-      "path": "examples/GAME-FIREBALL-MARIO/",
-      "type": "web-app",
-      "status": "public-candidate",
-      "audience": ["game-player"],
-      "value": "Action game using stepping, kicking, and jumping gestures.",
-      "topics": ["game", "jump", "kick"],
-      "data": ["convertedAcc", "gait", "landingImpact"],
-      "devices": 1,
-      "validation": ["needs-browser-validation", "needs-device-verification"],
-      "category": "playable-app",
-      "difficulty": "intermediate",
-      "featured": false,
-      "thumbnail": "examples/_thumbnails/game-fireball-mario.png",
-      "sort_order": 310,
-      "links": {
-        "demo": "examples/GAME-FIREBALL-MARIO/index.html",
-        "source": "examples/GAME-FIREBALL-MARIO/"
-      },
-      "requires_device": true,
-      "device_count": 1,
-      "needs_real_device_validation": true,
-      "public_navigation": "listed"
-    },
-    {
       "id": "game-mario",
       "title": "2D Action Game",
       "path": "examples/GAME-MARIO/",

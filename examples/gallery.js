@@ -112,10 +112,6 @@
       title: 'DTW Example',
       value: '時系列データの類似度を扱う解析Exampleです。'
     },
-    'game-fireball-mario': {
-      title: 'Fireball Action',
-      value: '足の動きで操作するゲームExampleです。'
-    },
     'game-mario': {
       title: '2Dアクションゲーム',
       value: '足の動きでキャラクターを操作するアクションゲームです。'

@@ -132,7 +132,6 @@ These should not be hidden, but need explanation, thumbnail work, validation, or
 
 - `examples/CORE_TIME_SYNC/`
 - `examples/DTW/`
-- `examples/GAME-FIREBALL-MARIO/`
 - `examples/GAME-MARIO/`
 - `examples/GAME-PK/`
 - `examples/GAME-SHOOTING2/`
@@ -167,7 +166,7 @@ These should be grouped in the catalog instead of being presented as unrelated e
 | --- | --- | --- |
 | Running games | `GAME-HURDLE`, `GAME-HURDLE-VS`, `GAME-HURDLE-VS-advance`, `GAME-HURDLE-2D-VS`, `GAME-HURDLE-400M-VS`, `GAME-SPRINT-100M-VS` | Keep one LP representative, list the rest under a Running Games family. |
 | Shooting games | `GAME-SHOOTING`, `GAME-SHOOTING2` | Clarify 2D/3D or old/new relationship. |
-| Action games | `GAME-MARIO`, `GAME-FIREBALL-MARIO`, `GAME-PK` | Keep if input mappings are documented. |
+| Action games | `GAME-MARIO`, `GAME-PK` | Keep if input mappings are documented. |
 | Sensor viewers | `VIEW`, `VISUALIZE`, `CORE_TIME_SYNC`, starter templates | Separate beginner, debugging, and research uses. |
 | Workshop archives | `ws/tmu2022`, `ws/tmu2025`, `WORKSHOP_07` | Keep as workshop/archive material, not first-run examples. |
 

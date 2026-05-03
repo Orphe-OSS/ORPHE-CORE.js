@@ -9,14 +9,14 @@ validation" as a public badge in the examples gallery.
 
 ## Current Status
 
-- `public`: 40 entries
-- `public-candidate`: 2 entries
+- `public`: 42 entries
+- `public-candidate`: 0 entries
 
 `GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, and
 `CORE_TIME_SYNC` were promoted to `public` after owner real-device checks.
 `WORKSHOP_07` and `ws/tmu2025` were promoted as public workshop / educational
 reference entries after owner placement decisions. `GAME-SPRINT-100M-VS` and
-`GAME-HURDLE-400M-VS` are tracked as hidden Virtual Sports candidates.
+`GAME-HURDLE-400M-VS` were promoted after owner two-device real-device checks.
 
 ## Morning Check List
 
@@ -24,8 +24,8 @@ Open these URLs from a local server and use Chrome for BLE tests.
 
 | Order | Entry | URL | Device | Main check | Promotion blocker |
 |---|---|---|---:|---|---|
-| 1 | `game-sprint-100m-vs` | `http://localhost:8767/examples/GAME-SPRINT-100M-VS/` | 2 | Two-player sprint, independent sensor input, finish/retry | Needs two-device real-device validation |
-| 2 | `game-hurdle-400m-vs` | `http://localhost:8767/examples/GAME-HURDLE-400M-VS/` | 2 | Two-player 400m hurdles, running/jump input, finish/retry | Needs two-device real-device validation |
+| 1 | `game-sprint-100m-vs` | `http://localhost:8767/examples/GAME-SPRINT-100M-VS/` | 2 | Two-player sprint, independent sensor input, finish/retry | Owner verified |
+| 2 | `game-hurdle-400m-vs` | `http://localhost:8767/examples/GAME-HURDLE-400M-VS/` | 2 | Two-player 400m hurdles, running/jump input, finish/retry | Owner verified |
 
 ## Promotion Rules
 
@@ -49,10 +49,10 @@ Purpose: two-player 100m sprint candidate for the Virtual Sports category.
 
 Current state:
 
-- `status`: `public-candidate`
-- `public_navigation`: `hidden`
+- `status`: `public`
+- `public_navigation`: `listed`
 - README and thumbnail are prepared.
-- Needs two-device ORPHE CORE validation.
+- Owner confirmed two-device ORPHE CORE play.
 
 Promotion checks:
 
@@ -69,10 +69,10 @@ Purpose: two-player 400m hurdle candidate for the Virtual Sports category.
 
 Current state:
 
-- `status`: `public-candidate`
-- `public_navigation`: `hidden`
+- `status`: `public`
+- `public_navigation`: `listed`
 - README and thumbnail are prepared.
-- Needs two-device ORPHE CORE validation.
+- Owner confirmed two-device ORPHE CORE play.
 
 Promotion checks:
 

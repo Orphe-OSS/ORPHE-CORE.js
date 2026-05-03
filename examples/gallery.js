@@ -86,6 +86,14 @@
       title: '110m ハードル走',
       value: 'Gait Analysisと足の動きで走る、Virtual Sportsの代表Exampleです。'
     },
+    'game-sprint-100m-vs': {
+      title: '100m走 VS',
+      value: '2台のORPHE COREで対戦するバーチャル短距離走です。'
+    },
+    'game-hurdle-400m-vs': {
+      title: '400mハードル走 VS',
+      value: '2台のORPHE COREで走りとジャンプを競う対戦Exampleです。'
+    },
     'game-udon': {
       title: 'うどんふみふみゲーム',
       value: '足踏みでうどんをこねる、わかりやすい身体動作ゲームです。'

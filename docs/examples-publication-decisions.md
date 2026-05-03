@@ -12,7 +12,7 @@ positioning.
 
 | Group | Entries | Decision |
 |---|---|---|
-| Playable public-candidates | `GAME-PK`, `GAME-SHOOTING`, `GAME-FIREBALL-MARIO` | Keep as public-candidate until owner real-device checks pass. |
+| Playable public-candidates | `GAME-PK`, `GAME-SHOOTING` | Keep as public-candidate until owner real-device checks pass. |
 | Technical public-candidate | `DTW` | Keep as public-candidate until technical clarity and device-input path are confirmed. |
 | Utility public-candidate | `CORE_TIME_SYNC` | Keep hidden from public gallery until DateTime behavior is validated. |
 | Workshop entries | `WORKSHOP_07`, `ws/tmu2025` | Keep under `workshop-archive`; do not feature in the beginner Examples section. |
@@ -51,20 +51,6 @@ Promotion condition:
 - One-device Chrome test passes.
 - Decide title/copy as "2D Shooting" if `GAME-SHOOTING2` remains public as the 3D variant.
 
-### `examples/GAME-FIREBALL-MARIO/`
-
-Decision: keep as `public-candidate`.
-
-Why:
-
-- Strong action-game concept with step, kick, and jump gestures.
-- Public title has been changed to `Fireball Action`; directory name remains for compatibility.
-- Needs owner validation for gesture mapping and restart.
-
-Promotion condition:
-
-- One-device Chrome test passes.
-- No remaining public-facing protected-character naming appears in the UI.
 
 ### `examples/DTW/`
 

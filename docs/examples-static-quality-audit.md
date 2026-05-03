@@ -35,7 +35,7 @@ It is a static/public-surface check only. It does not claim real-device validati
 | creative-coding | 3 |
 | research-integration | 2 |
 | recording-analysis | 3 |
-| playable-app | 13 |
+| playable-app | 12 |
 | workshop-archive | 3 |
 | developer-tool | 2 |
 | internal-test | 1 |
@@ -46,7 +46,6 @@ It is a static/public-surface check only. It does not claim real-device validati
 | id | path | category | needs |
 | --- | --- | --- | --- |
 | dtw | examples/DTW/ | recording-analysis | real-device validation |
-| game-fireball-mario | examples/GAME-FIREBALL-MARIO/ | playable-app | real-device validation |
 | game-pk | examples/GAME-PK/ | playable-app | real-device validation |
 | game-shooting | examples/GAME-SHOOTING/ | playable-app | real-device validation |
 | workshop-07 | examples/WORKSHOP_07/ | workshop-archive | real-device validation |

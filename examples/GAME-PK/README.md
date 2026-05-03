@@ -37,7 +37,6 @@ GitHub Pagesでも試せます。
 
 ## 関連example
 
-- [`examples/GAME-FIREBALL-MARIO/`](../GAME-FIREBALL-MARIO/README.md) — Fireball Action
 - [`examples/GAME-SHOOTING2/`](../GAME-SHOOTING2/README.md) — 3D Shooting Game
 
 ## 元データ

@@ -66,11 +66,10 @@
 | `examples/OH1/` | public | 心拍計 + UI |
 | `examples/POSE/` | public | MediaPipe Pose + ORPHE 連携 |
 
-### Game (5 件) — public-candidate
+### Game (4 件) — public-candidate
 
 | Example | Status | 候補スナップショット |
 | --- | --- | --- |
-| `examples/GAME-FIREBALL-MARIO/` | public-candidate | キック・ジャンプ系 |
 | `examples/GAME-MARIO/` | public-candidate | 2D アクション画面 |
 | `examples/GAME-PK/` | public-candidate | ペナルティキック画面 |
 | `examples/GAME-SHOOTING/` | public-candidate | 2D シューティング画面 |

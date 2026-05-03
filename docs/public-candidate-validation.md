@@ -10,7 +10,7 @@ validation" as a public badge in the examples gallery.
 ## Current Status
 
 - `public`: 37 entries
-- `public-candidate`: 6 entries
+- `public-candidate`: 5 entries
 
 `GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, and `GAME-SHOOTING` were promoted to `public` after owner
 real-device checks. The entries below remain candidates.
@@ -21,12 +21,11 @@ Open these URLs from a local server and use Chrome for BLE tests.
 
 | Order | Entry | URL | Device | Main check | Promotion blocker |
 |---|---|---|---:|---|---|
-| 1 | `game-fireball-mario` | `http://localhost:8767/examples/GAME-FIREBALL-MARIO/` | 1 | Step, kick, jump, restart, naming | Confirm no public-facing Mario text remains |
-| 2 | `dtw` | `http://localhost:8767/examples/DTW/` | 1 | Mouse demo plus sensor input path | Needs clarity check for technical users |
-| 3 | `core-time-sync` | `http://localhost:8767/examples/CORE_TIME_SYNC/` | 1 | DateTime read and `syncCoreTime()` result | Needs owner confirmation before public listing |
-| 4 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
-| 5 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
-| 6 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
+| 1 | `dtw` | `http://localhost:8767/examples/DTW/` | 1 | Mouse demo plus sensor input path | Needs clarity check for technical users |
+| 2 | `core-time-sync` | `http://localhost:8767/examples/CORE_TIME_SYNC/` | 1 | DateTime read and `syncCoreTime()` result | Needs owner confirmation before public listing |
+| 3 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
+| 4 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
+| 5 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
 
 ## Promotion Rules
 
@@ -46,35 +45,8 @@ They need a navigation decision first.
 
 
 
-### 1. `examples/GAME-FIREBALL-MARIO/`
 
-Purpose: one-device action game with stepping, kicking, and jumping gestures.
-
-Current state:
-
-- `status`: `public-candidate`
-- Public-facing title changed to `Fireball Action`.
-- Directory name still contains `MARIO` for compatibility.
-- README explains startup, data, and validation points.
-
-Can be checked without device:
-
-- Page title and visible heading use `Fireball Action`.
-- No public-facing `Mario` label remains in the UI.
-- Page opens from the examples gallery.
-
-Human BLE checks:
-
-- Connect one ORPHE CORE.
-- Confirm step, kick, and jump gestures work.
-- Confirm restart/game-over flow.
-- Confirm shared BLE streaming still works when another page is primary.
-
-Promotion condition:
-
-- If the game works and naming is acceptable, promote to `public`.
-
-### 2. `examples/DTW/`
+### 1. `examples/DTW/`
 
 Purpose: technical example for time-series matching with Dynamic Time Warping.
 
@@ -101,7 +73,7 @@ Promotion condition:
 - If the technical behavior is clear, promote to `public`; otherwise keep as
   `public-candidate` and add a short on-page instruction.
 
-### 3. `examples/CORE_TIME_SYNC/`
+### 2. `examples/CORE_TIME_SYNC/`
 
 Purpose: utility for checking ORPHE CORE device time and round-trip timing.
 
@@ -134,7 +106,7 @@ Promotion condition:
 - It should not be featured on the LP unless users are actively looking for
   timestamp or recording integrity utilities.
 
-### 4. `examples/WORKSHOP_07/`
+### 3. `examples/WORKSHOP_07/`
 
 Purpose: workshop material for Fourier / DFT.
 

@@ -19,7 +19,6 @@ promotion queue without adding unvalidated work to the landing page.
 | Path | Classification | Public value | Main work before promotion |
 | --- | --- | --- | --- |
 | `examples/CORE_TIME_SYNC/` | `promote-after-fix` + `needs-real-device-validation` | Useful utility for timestamp/time-sync workflows. | Add README, title/heading, explain device time behavior, validate with one device. |
-| `examples/GAME-FIREBALL-MARIO/` | `promote-after-fix` + `needs-real-device-validation` | Playable game concept with CoreToolkit. | Verify assets, add concise play instructions, decide relation to `GAME-MARIO`. |
 | `examples/GAME-MARIO/` | `promote-after-fix` + `needs-real-device-validation` | Recognizable playable game using foot motion. | Resolve stale helper code references, playtest, improve README with controls. |
 | `examples/GAME-PK/` | `promote-after-fix` | Playable public candidate. | Move or prune internal debug docs before LP promotion. |
 | `examples/GAME-RHYTHM/` | `needs-rewrite` | Rhythm interaction idea is useful. | Uses bundled old SDK/assets; needs modernization before promotion. |

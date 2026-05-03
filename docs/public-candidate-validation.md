@@ -10,7 +10,7 @@ validation" as a public badge in the examples gallery.
 ## Current Status
 
 - `public`: 35 entries
-- `public-candidate`: 7 entries
+- `public-candidate`: 8 entries
 
 `GAME-MARIO` and `GAME-SHOOTING2` were promoted to `public` after owner
 real-device checks. The entries below remain candidates.
@@ -25,9 +25,10 @@ Open these URLs from a local server and use Chrome for BLE tests.
 | 2 | `game-shooting` | `http://localhost:8767/examples/GAME-SHOOTING/` | 1 | Tilt movement, fire input, restart | Decide whether it coexists with `GAME-SHOOTING2` |
 | 3 | `game-fireball-mario` | `http://localhost:8767/examples/GAME-FIREBALL-MARIO/` | 1 | Step, kick, jump, restart, naming | Confirm no public-facing Mario text remains |
 | 4 | `dtw` | `http://localhost:8767/examples/DTW/` | 1 | Mouse demo plus sensor input path | Needs clarity check for technical users |
-| 5 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Decide catalog vs workshop-only placement |
-| 6 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Decide whether to split strong works later |
-| 7 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Needs README and developer-tool positioning |
+| 5 | `core-time-sync` | `http://localhost:8767/examples/CORE_TIME_SYNC/` | 1 | DateTime read and `syncCoreTime()` result | Needs owner confirmation before public listing |
+| 6 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
+| 7 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
+| 8 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
 
 ## Promotion Rules
 
@@ -164,7 +165,40 @@ Promotion condition:
 - If the technical behavior is clear, promote to `public`; otherwise keep as
   `public-candidate` and add a short on-page instruction.
 
-### 5. `examples/WORKSHOP_07/`
+### 5. `examples/CORE_TIME_SYNC/`
+
+Purpose: utility for checking ORPHE CORE device time and round-trip timing.
+
+Current state:
+
+- `status`: `public-candidate`
+- Requires one ORPHE CORE.
+- Uses `SENSOR_VALUES` only as a connection sanity check.
+- Uses `getDateTime()` and `syncCoreTime()`.
+- Kept out of public navigation until DateTime behavior is owner-verified.
+
+Can be checked without device:
+
+- Page opens.
+- README explains what it checks and which APIs it uses.
+- Catalog has a thumbnail and a demo/source link.
+
+Human BLE checks:
+
+- Connect one ORPHE CORE.
+- Click `通知を有効化` and confirm converted acceleration appears.
+- Click `時刻を取得する` and confirm raw DateTime bytes appear.
+- Click `時刻補正実行` and confirm round-trip timing and adjusted time are shown.
+- Confirm repeated clicks do not leave the page in a confusing state.
+
+Promotion condition:
+
+- If DateTime read/sync behavior is clear, keep it as `public-candidate` or
+  promote to `public` under `recording-analysis`.
+- It should not be featured on the LP unless users are actively looking for
+  timestamp or recording integrity utilities.
+
+### 6. `examples/WORKSHOP_07/`
 
 Purpose: workshop material for Fourier / DFT.
 
@@ -180,17 +214,13 @@ Can be checked without device:
 - The workshop purpose is understandable.
 - Links and embedded references work.
 
-Decision needed:
+Placement decision:
 
-- Keep listed under the Examples catalog as workshop material, or move to a
-  workshop/docs-only navigation path.
+- Keep in the catalog under `workshop-archive`.
+- Do not feature it on the LP's main Examples section.
+- Use this as the workshop slot for Fourier / DFT material.
 
-Suggested default:
-
-- Keep in the catalog, but do not feature it on the LP.
-- Add a README before promotion.
-
-### 6. `ws/tmu2025/`
+### 7. `ws/tmu2025/`
 
 Purpose: workshop gallery.
 
@@ -206,17 +236,14 @@ Can be checked without device:
 - Project links and thumbnails are intact.
 - The page does not imply every project is a maintained official example.
 
-Decision needed:
-
-- Treat as a gallery of projects, not as a single example app.
-
-Suggested default:
+Placement decision:
 
 - Keep in the catalog under `workshop-archive`.
+- Treat as a workshop/gallery entry, not as one maintained example app.
 - Later split strong individual works into separate catalog entries if they are
   maintained.
 
-### 7. `apps/ORPHE-TERMINAL/`
+### 8. `apps/ORPHE-TERMINAL/`
 
 Purpose: developer utility.
 
@@ -224,7 +251,7 @@ Current state:
 
 - `status`: `public-candidate`
 - Developer tool rather than beginner example.
-- Needs a fuller README before promotion.
+- Has a fuller README and should be positioned as a developer utility.
 
 Can be checked without device:
 
@@ -239,11 +266,8 @@ Human BLE checks:
 - Confirm SENSOR_VALUES stream area updates.
 - Confirm download buttons still create data files.
 
-Decision needed:
-
-- Keep as a developer tool, separate from beginner examples.
-
-Suggested default:
+Placement decision:
 
 - Keep in the catalog under `developer-tool`.
-- Improve README before promoting from `public-candidate` to `public`.
+- Do not place it with beginner Examples.
+- Link it from a future "Tools" or "Developer utilities" section.

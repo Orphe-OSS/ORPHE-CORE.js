@@ -14,7 +14,7 @@ positioning.
 |---|---|---|
 | Playable public examples | `GAME-PK`, `GAME-SHOOTING` | Promoted to public after owner real-device checks. |
 | Utility public example | `CORE_TIME_SYNC` | Keep hidden from the beginner gallery; use as a developer / recording utility. |
-| Workshop entries | `WORKSHOP_07`, `ws/tmu2025` | Keep under `workshop-archive`; do not feature in the beginner Examples section. |
+| Workshop entries | `WORKSHOP_07`, `ws/tmu2025` | Public workshop / educational references. Link from the LP workshop section, not the beginner Examples section. |
 | Hidden developer tool | `apps/ORPHE-TERMINAL` | Keep hidden because it exposes raw write controls. |
 
 ## Candidate Decisions
@@ -66,30 +66,33 @@ Placement condition:
 
 ### `examples/WORKSHOP_07/`
 
-Decision: keep as workshop material.
+Decision: publish as ORPHE CORE WS YouTube lesson material.
 
 Why:
 
+- It is part of the ORPHE CORE WS teaching material.
 - It has educational value, but it is a workshop asset rather than a first-run app.
 - It should live under `workshop-archive`, not the beginner Examples section.
+- It should be directly reachable from the LP workshop section.
 
-Promotion condition:
+Maintenance condition:
 
 - Page opens and links are intact.
 - Workshop purpose is clear.
-- Optional: add a workshop index page later.
+- Optional: ORPHE CORE connection can be checked when the workshop is used live.
 
 ### `ws/tmu2025/`
 
-Decision: keep as workshop gallery.
+Decision: publish as Tokyo Metropolitan University class / workshop outcome gallery.
 
 Why:
 
-- The page is meaningful as a collection of student works.
+- The page is meaningful as a collection of class / workshop works.
 - It should not imply every linked work is a maintained official example.
 - Strong individual works can later become separate catalog entries.
+- It should be directly reachable from the LP workshop section as educational reference material.
 
-Promotion condition:
+Maintenance condition:
 
 - Gallery and links are intact.
 - A future curation pass selects individual works for maintained examples.

@@ -1,12 +1,14 @@
-# TMU 2025 Workshop Gallery
+# TMU 2025 Class Workshop Gallery
 
-This directory is a gallery of student / workshop projects made with ORPHE CORE.
+This directory is a gallery of Tokyo Metropolitan University class / workshop
+outcomes made with ORPHE CORE.
 
 ## What It Does
 
-- Shows multiple workshop works in one gallery page.
+- Shows multiple class and workshop works in one gallery page.
 - Links to individual project pages under `ws/tmu2025/apps/`.
-- Provides a reference for what people can build with ORPHE CORE in a workshop.
+- Provides a reference for what people can build with ORPHE CORE in an
+  educational setting.
 
 ## Requirements
 
@@ -26,7 +28,7 @@ http://localhost:8767/ws/tmu2025/
 
 ## Validation
 
-Needs human review before promotion from `public-candidate` to `public`.
+Published as an educational workshop outcome gallery.
 
 Checks that do not require ORPHE CORE:
 
@@ -44,3 +46,5 @@ Checks that may require ORPHE CORE:
 - Treat this as `workshop-archive`.
 - Strong individual works can later be split into standalone catalog entries if
   they are maintained and documented.
+- This page is linked from the landing page as educational reference material,
+  not as a single maintained beginner example.

@@ -132,14 +132,13 @@ These entries are validated and public in the catalog, but should stay outside
 the beginner-facing gallery:
 
 - `examples/CORE_TIME_SYNC/`: developer / recording utility for DateTime and time-sync checks.
+- `examples/WORKSHOP_07/`: ORPHE CORE WS YouTube material for Fourier / DFT / FFT.
+- `ws/tmu2025/`: Tokyo Metropolitan University class / workshop outcome gallery.
 
 ## Public Candidates
 
-These should not be hidden, but need explanation, thumbnail work, validation, or positioning before being promoted:
-
-- `examples/WORKSHOP_07/`
-- `ws/tmu2025/`
-- `apps/ORPHE-TERMINAL/`
+No active public candidates. Workshop materials and class outcome pages are
+published under `workshop-archive`, while internal tools remain hidden.
 
 ## Needs Review
 
@@ -150,7 +149,7 @@ These may be valuable, but need human or device review before promotion:
 - `examples/p5.ORPHE.FSR_visualise_0327_submit/`: may be ORPHE INSOLE/FSR-specific rather than general ORPHE CORE.js.
 - `tutorial/`: old tutorial structure needs review.
 - `ws/`: workshop archives are useful but should be presented separately from main examples.
-- `apps/ORPHE-TERMINAL/`: likely valuable as an app example, but not a beginner example.
+- `apps/ORPHE-TERMINAL/`: useful internal/developer tool, but keep hidden while raw write controls are visible.
 
 ## Needs Fix
 
@@ -172,7 +171,7 @@ These should be grouped in the catalog instead of being presented as unrelated e
 | Shooting games | `GAME-SHOOTING`, `GAME-SHOOTING2` | Clarify 2D/3D or old/new relationship. |
 | Action games | `GAME-MARIO`, `GAME-PK` | Keep if input mappings are documented. |
 | Sensor viewers | `VIEW`, `VISUALIZE`, `CORE_TIME_SYNC`, starter templates | Separate beginner, debugging, and research uses. |
-| Workshop archives | `ws/tmu2022`, `ws/tmu2025`, `WORKSHOP_07` | Keep as workshop/archive material, not first-run examples. |
+| Workshop archives | `ws/tmu2022`, `ws/tmu2025`, `WORKSHOP_07` | Keep as workshop/archive material, not first-run examples. `WORKSHOP_07` and `ws/tmu2025` are linked from the LP workshop section. |
 
 ## Internal
 

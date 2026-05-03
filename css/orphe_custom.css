@@ -504,6 +504,11 @@ mark {
     margin: 1rem 0 1.5rem;
 }
 
+.dx-workshop-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    max-width: 920px;
+}
+
 .dx-example-card {
     display: flex;
     flex-direction: column;

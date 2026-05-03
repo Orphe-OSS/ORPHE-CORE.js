@@ -1220,27 +1220,27 @@
       "title": "ORPHE TERMINAL",
       "path": "apps/ORPHE-TERMINAL/",
       "type": "tool",
-      "status": "public-candidate",
+      "status": "internal",
       "audience": ["maintainer", "research", "app-developer"],
       "value": "Stand-alone web terminal for connecting to ORPHE CORE and sending commands. Useful for field debugging and analysis.",
       "topics": ["terminal", "tool", "debug"],
       "data": ["acc", "gyro", "quat", "euler", "gait", "stride", "pronation"],
       "devices": 1,
-      "validation": ["existing-public-link", "needs-device-verification"],
-      "issues": ["README.md is just one line"],
+      "validation": ["owner-real-device-validation", "developer-tool-hidden"],
+      "issues": ["Has raw write UI for DEVICE_INFORMATION and DATE_TIME; keep hidden from public navigation."],
       "category": "developer-tool",
       "difficulty": "advanced",
       "featured": false,
       "thumbnail": "examples/_thumbnails/app-orphe-terminal.png",
-      "sort_order": 500,
+      "sort_order": null,
       "links": {
         "demo": "apps/ORPHE-TERMINAL/index.html",
         "source": "apps/ORPHE-TERMINAL/"
       },
       "requires_device": true,
       "device_count": 1,
-      "needs_real_device_validation": true,
-      "public_navigation": "listed"
+      "needs_real_device_validation": false,
+      "public_navigation": "hidden"
     }
   ],
   "recipe_candidates": [

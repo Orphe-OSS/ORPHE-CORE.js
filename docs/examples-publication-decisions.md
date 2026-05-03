@@ -15,7 +15,7 @@ positioning.
 | Playable public examples | `GAME-PK`, `GAME-SHOOTING` | Promoted to public after owner real-device checks. |
 | Utility public example | `CORE_TIME_SYNC` | Keep hidden from the beginner gallery; use as a developer / recording utility. |
 | Workshop entries | `WORKSHOP_07`, `ws/tmu2025` | Keep under `workshop-archive`; do not feature in the beginner Examples section. |
-| Developer tool | `apps/ORPHE-TERMINAL` | Keep under `developer-tool`; link from future Tools / Developer Utilities navigation. |
+| Hidden developer tool | `apps/ORPHE-TERMINAL` | Keep hidden because it exposes raw write controls. |
 
 ## Candidate Decisions
 
@@ -96,17 +96,18 @@ Promotion condition:
 
 ### `apps/ORPHE-TERMINAL/`
 
-Decision: keep as developer tool.
+Decision: keep hidden as an internal/developer tool.
 
 Why:
 
 - It is useful, but it is not a learning example for beginners.
-- It belongs under `developer-tool` and future Tools / Developer Utilities navigation.
+- It exposes raw `Send` controls for `DEVICE_INFORMATION` and `DATE_TIME`.
+- Owner validation passed for opening the page, Chrome BLE connection, and main terminal UI.
 
-Promotion condition:
+Visibility condition:
 
-- One-device Chrome test confirms connection and basic data read/write.
-- Tool copy explains the intended developer workflow.
+- Do not link it prominently from the landing page while raw write controls are visible.
+- Reconsider public navigation only if risky write controls are removed, gated, or split into a maintainer-only mode.
 
 ## Needs-Review Decisions
 

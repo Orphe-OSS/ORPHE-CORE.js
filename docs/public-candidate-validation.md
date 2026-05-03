@@ -9,10 +9,10 @@ validation" as a public badge in the examples gallery.
 
 ## Current Status
 
-- `public`: 38 entries
-- `public-candidate`: 3 entries
+- `public`: 39 entries
+- `public-candidate`: 2 entries
 
-`GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, and `CORE_TIME_SYNC` were promoted to `public` after owner
+`GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, `CORE_TIME_SYNC`, and `ORPHE TERMINAL` were promoted to `public` after owner
 real-device checks. The entries below remain candidates.
 
 ## Morning Check List
@@ -23,7 +23,6 @@ Open these URLs from a local server and use Chrome for BLE tests.
 |---|---|---|---:|---|---|
 | 1 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
 | 2 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
-| 3 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
 
 ## Promotion Rules
 
@@ -89,32 +88,3 @@ Placement decision:
 - Treat as a workshop/gallery entry, not as one maintained example app.
 - Later split strong individual works into separate catalog entries if they are
   maintained.
-
-### 3. `apps/ORPHE-TERMINAL/`
-
-Purpose: developer utility.
-
-Current state:
-
-- `status`: `public-candidate`
-- Developer tool rather than beginner example.
-- Has a fuller README and should be positioned as a developer utility.
-
-Can be checked without device:
-
-- Page opens.
-- Tool sections and controls are visible.
-- The purpose is clear enough for a developer.
-
-Human BLE checks:
-
-- Connect one ORPHE CORE.
-- Confirm Device Information read/write area works.
-- Confirm SENSOR_VALUES stream area updates.
-- Confirm download buttons still create data files.
-
-Placement decision:
-
-- Keep in the catalog under `developer-tool`.
-- Do not place it with beginner Examples.
-- Link it from a future "Tools" or "Developer utilities" section.

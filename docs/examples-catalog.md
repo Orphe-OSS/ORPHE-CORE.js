@@ -132,6 +132,7 @@ These entries are validated and public in the catalog, but should stay outside
 the beginner-facing gallery:
 
 - `examples/CORE_TIME_SYNC/`: developer / recording utility for DateTime and time-sync checks.
+- `apps/ORPHE-TERMINAL/`: developer terminal for Device Information, Date Time, and raw streaming data.
 
 ## Public Candidates
 
@@ -139,7 +140,6 @@ These should not be hidden, but need explanation, thumbnail work, validation, or
 
 - `examples/WORKSHOP_07/`
 - `ws/tmu2025/`
-- `apps/ORPHE-TERMINAL/`
 
 ## Needs Review
 

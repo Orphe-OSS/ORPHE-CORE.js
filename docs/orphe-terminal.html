@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORPHE TERMINAL Manual - ORPHE-CORE.js</title>
+  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link href="../css/orphe_custom.css" rel="stylesheet">
+  <style>
+    .lang {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .lang.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .terminal-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .terminal-guide-card {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .terminal-guide-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .terminal-guide-card ul,
+    .terminal-guide-card ol {
+      padding-left: 1.2rem;
+      margin-bottom: 0;
+    }
+
+    .terminal-guide-card li {
+      margin-bottom: 0.45rem;
+    }
+  </style>
+</head>
+
+<body class="bg-dark">
+  <div class="container-sm mt-2">
+    <nav class="navbar navbar-light bg-base position-relative navbar-expand-lg">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+          <a class="navbar-brand" href="../index.html">
+            <img src="../images/orphe.svg" alt="ORPHE" height="24" class="d-inline-block align-text-top">
+          </a>
+          <button class="btn btn-sm rounded-pill" onclick="toggleLanguage()"><i class="bi bi-translate"></i></button>
+        </span>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container-sm mt-4">
+    <p>
+      <a href="../index.html">
+        <i class="bi bi-arrow-left"></i>
+        <span class="lang en">Back to ORPHE-CORE.js</span>
+        <span class="lang ja active">ORPHE-CORE.jsに戻る</span>
+      </a>
+    </p>
+
+    <p class="dx-kicker">Developer Tool</p>
+    <h1>ORPHE TERMINAL</h1>
+    <p class="lead lang en">
+      ORPHE TERMINAL is a browser-based developer tool for checking ORPHE CORE connection, Device Information, Date Time,
+      and raw streaming data.
+    </p>
+    <p class="lead lang ja active">
+      ORPHE TERMINALは、ORPHE COREの接続、Device Information、Date Time、ストリーミングデータをブラウザ上で確認するための開発用ツールです。
+    </p>
+
+    <div class="d-flex flex-wrap gap-2 mt-4 mb-4">
+      <a class="btn btn-primary" href="../apps/ORPHE-TERMINAL/" data-goatcounter-click="click-terminal-open-tool"
+        data-goatcounter-title="ORPHE TERMINAL manual: open tool">
+        <i class="bi bi-terminal"></i>
+        <span class="lang en">Open ORPHE TERMINAL</span>
+        <span class="lang ja active">ORPHE TERMINALを開く</span>
+      </a>
+      <a class="btn btn-outline-light" href="../apps/ORPHE-TERMINAL/README.md">
+        <i class="bi bi-file-earmark-text"></i> README
+      </a>
+    </div>
+
+    <section class="mt-4">
+      <h2>
+        <span class="lang en">When to use it</span>
+        <span class="lang ja active">どんな時に使うか</span>
+      </h2>
+      <div class="terminal-guide-grid">
+        <article class="terminal-guide-card">
+          <h3>
+            <span class="lang en">Connection check</span>
+            <span class="lang ja active">接続確認</span>
+          </h3>
+          <p class="lang en">Use CoreToolkit to connect one ORPHE CORE and confirm that notifications are arriving.</p>
+          <p class="lang ja active">CoreToolkitでORPHE COREを1台接続し、通知データが届いているか確認します。</p>
+        </article>
+        <article class="terminal-guide-card">
+          <h3>Device Information</h3>
+          <p class="lang en">Read or send Device Information bytes when checking settings and low-level behavior.</p>
+          <p class="lang ja active">設定や低レイヤーの挙動を確認したい時に、Device Informationの読み書きを試します。</p>
+        </article>
+        <article class="terminal-guide-card">
+          <h3>Date Time</h3>
+          <p class="lang en">Read or send Date Time bytes when checking recording and timestamp behavior.</p>
+          <p class="lang ja active">記録やタイムスタンプまわりを確認したい時に、Date Timeの読み書きを試します。</p>
+        </article>
+        <article class="terminal-guide-card">
+          <h3>
+            <span class="lang en">CSV export</span>
+            <span class="lang ja active">CSV保存</span>
+          </h3>
+          <p class="lang en">Export received buffers as CSV for quick inspection or later analysis.</p>
+          <p class="lang ja active">受信したバッファをCSVとして保存し、あとで確認・解析できます。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mt-5">
+      <h2>
+        <span class="lang en">Basic workflow</span>
+        <span class="lang ja active">基本的な使い方</span>
+      </h2>
+      <ol>
+        <li>
+          <span class="lang en">Open ORPHE TERMINAL in Chrome or another Web Bluetooth compatible browser.</span>
+          <span class="lang ja active">ChromeなどWeb Bluetoothに対応したブラウザでORPHE TERMINALを開きます。</span>
+        </li>
+        <li>
+          <span class="lang en">Turn on one ORPHE CORE and connect from the CoreToolkit switch at the top of the page.</span>
+          <span class="lang ja active">ORPHE COREを1台起動し、ページ上部のCoreToolkitスイッチから接続します。</span>
+        </li>
+        <li>
+          <span class="lang en">Use <strong>Read</strong> in Device Information or Date Time to inspect the current bytes.</span>
+          <span class="lang ja active">Device InformationまたはDate Timeの<strong>Read</strong>で現在のバイト列を確認します。</span>
+        </li>
+        <li>
+          <span class="lang en">Use the SENSOR_VALUES area to monitor incoming stream data and lost-data logs.</span>
+          <span class="lang ja active">SENSOR_VALUES欄でストリーミングデータやlost dataのログを確認します。</span>
+        </li>
+        <li>
+          <span class="lang en">Use <strong>clear</strong>, <strong>pause</strong>, and <strong>download csv</strong> while debugging.</span>
+          <span class="lang ja active">デバッグ中は<strong>clear</strong>、<strong>pause</strong>、<strong>download csv</strong>を使ってログを整理します。</span>
+        </li>
+      </ol>
+    </section>
+
+    <section class="mt-5">
+      <h2>
+        <span class="lang en">Notes</span>
+        <span class="lang ja active">注意点</span>
+      </h2>
+      <ul>
+        <li>
+          <span class="lang en">This is a developer utility, not a beginner tutorial.</span>
+          <span class="lang ja active">これは初学者向けチュートリアルではなく、開発者向けの確認ツールです。</span>
+        </li>
+        <li>
+          <span class="lang en">Send fields expect comma-separated hexadecimal bytes such as <code>01,02,03</code>.</span>
+          <span class="lang ja active">Send欄には <code>01,02,03</code> のようなカンマ区切りの16進バイト列を入力します。</span>
+        </li>
+        <li>
+          <span class="lang en">Avoid sending arbitrary bytes unless you know the target characteristic behavior.</span>
+          <span class="lang ja active">対象Characteristicの挙動を理解していない場合、任意のバイト列を送信しないでください。</span>
+        </li>
+        <li>
+          <span class="lang en">For first-time development, start with the LED guide or CoreToolkit.js guide first.</span>
+          <span class="lang ja active">初めて開発する場合は、まずLED制御ガイドやCoreToolkit.jsガイドから始めるのがおすすめです。</span>
+        </li>
+      </ul>
+    </section>
+
+    <hr>
+    <footer class="text-center small">
+      &copy; 2026 ORPHE Inc.
+    </footer>
+  </div>
+
+  <script src="../js/bootstrap.bundle.min.js"></script>
+  <script>
+    let lang = 'ja';
+    function toggleLanguage() {
+      lang = lang == 'ja' ? 'en' : 'ja';
+      document.querySelectorAll('.lang').forEach(element => {
+        if (element.classList.contains(lang)) {
+          element.style.display = 'block';
+          setTimeout(() => {
+            element.classList.add('active');
+          }, 10);
+        } else {
+          element.classList.remove('active');
+          setTimeout(() => {
+            element.style.display = 'none';
+          }, 500);
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -15,7 +15,7 @@ positioning.
 | Playable public examples | `GAME-PK`, `GAME-SHOOTING` | Promoted to public after owner real-device checks. |
 | Utility public example | `CORE_TIME_SYNC` | Keep hidden from the beginner gallery; use as a developer / recording utility. |
 | Workshop entries | `WORKSHOP_07`, `ws/tmu2025` | Keep under `workshop-archive`; do not feature in the beginner Examples section. |
-| Developer tool | `apps/ORPHE-TERMINAL` | Keep under `developer-tool`; link from future Tools / Developer Utilities navigation. |
+| Developer tool | `apps/ORPHE-TERMINAL` | Promoted to public developer tool; link from LP and Tools / Developer Utilities navigation. |
 
 ## Candidate Decisions
 
@@ -96,17 +96,18 @@ Promotion condition:
 
 ### `apps/ORPHE-TERMINAL/`
 
-Decision: keep as developer tool.
+Decision: promoted to `public` developer tool.
 
 Why:
 
 - It is useful, but it is not a learning example for beginners.
-- It belongs under `developer-tool` and future Tools / Developer Utilities navigation.
+- Owner validation passed for Chrome connection and core terminal UI.
+- It belongs under `developer-tool` and should be reachable from the LP.
 
-Promotion condition:
+Placement condition:
 
-- One-device Chrome test confirms connection and basic data read/write.
-- Tool copy explains the intended developer workflow.
+- Keep it separate from beginner examples.
+- Maintain a manual page that explains when and how to use it.
 
 ## Needs-Review Decisions
 

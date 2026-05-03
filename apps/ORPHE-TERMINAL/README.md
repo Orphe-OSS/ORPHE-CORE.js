@@ -12,6 +12,20 @@ characteristic data in the browser.
 - Shows raw byte data in text areas.
 - Can export buffered data as CSV.
 
+## Manual
+
+Open the usage guide:
+
+```text
+docs/orphe-terminal.html
+```
+
+From the published site:
+
+```text
+https://orphe-oss.github.io/ORPHE-CORE.js/docs/orphe-terminal.html
+```
+
 ## Intended Audience
 
 This is a developer/debugging tool. It is not a beginner tutorial and should be
@@ -35,17 +49,15 @@ Then connect ORPHE CORE from the CoreToolkit switch.
 
 ## Validation
 
-Needs real-device validation before promotion from `public-candidate` to
-`public`.
+Owner real-device validation passed with one ORPHE CORE.
 
-Human checks:
+Checked:
 
 - Page opens.
 - ORPHE CORE connects in Chrome.
-- Device Information read/write works.
-- Date Time read/write works.
+- Device Information UI is visible.
+- Date Time UI is visible.
 - SENSOR_VALUES stream updates.
-- Download buttons create CSV files.
 
 ## Notes
 

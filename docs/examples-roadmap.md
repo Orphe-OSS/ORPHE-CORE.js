@@ -235,7 +235,6 @@ Before writing new examples, extract small recipes from:
 - `examples/VIEW/sketch.js`
 - `examples/GESTURE-DEMO/gesture-detector.js`
 - `examples/SENSOR-CALIBRATION/recorder.js`
-- `examples/DTW/sketch.js`
 - `examples/GAME-PK/game_3d.js`
 - `examples/GAME-DDR/game/player.js`
 

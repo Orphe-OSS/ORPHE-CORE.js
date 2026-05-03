@@ -18,9 +18,8 @@ It is a static/public-surface check only. It does not claim real-device validati
 
 | status | count |
 | --- | --- |
-| public | 35 |
-| needs-fix | 1 |
-| public-candidate | 7 |
+| public | 37 |
+| public-candidate | 4 |
 | needs-review | 4 |
 | internal | 1 |
 
@@ -45,9 +44,6 @@ It is a static/public-surface check only. It does not claim real-device validati
 
 | id | path | category | needs |
 | --- | --- | --- | --- |
-| dtw | examples/DTW/ | recording-analysis | real-device validation |
-| game-pk | examples/GAME-PK/ | playable-app | real-device validation |
-| game-shooting | examples/GAME-SHOOTING/ | playable-app | real-device validation |
 | workshop-07 | examples/WORKSHOP_07/ | workshop-archive | real-device validation |
 | ws-tmu2025 | ws/tmu2025/ | workshop-archive | real-device validation |
 | app-orphe-terminal | apps/ORPHE-TERMINAL/ | developer-tool | real-device validation |
@@ -69,7 +65,6 @@ It is a static/public-surface check only. It does not claim real-device validati
 | warning | game-pingpong | examples/GAME-PINGPONG/index.html loads ORPHE-CORE.js from @main CDN instead of local source |
 | warning | drum-test | examples/drum_test/index.html uses CoreToolkit.js but does not call guardCoreToolkitBluetooth() |
 | warning | game-ddr | examples/GAME-DDR/index.html loads ORPHE-CORE.js from @main CDN instead of local source |
-| warning | dtw | examples/DTW/index.html uses CoreToolkit.js but does not call guardCoreToolkitBluetooth() |
 | warning | game-mario | examples/GAME-MARIO/index.html loads ORPHE-CORE.js from @main CDN instead of local source |
 | warning | workshop-07 | missing README.md in examples/WORKSHOP_07/ |
 | warning | starter-light | starter-templates/LIGHT.html loads ORPHE-CORE.js from @main CDN instead of local source |

@@ -69,6 +69,8 @@ Use `thumbnail: null` instead of omitting the field. Missing thumbnails are an e
 
 ## Current Broad Count
 
+> Note: the broad count below is a planning snapshot. The current machine-readable status counts are maintained in `examples/catalog.json`.
+
 As of 2026-05-01 after the example cleanup PRs:
 
 | Bucket | Count | Public count? |
@@ -131,11 +133,9 @@ These already have public value and should stay in the catalog:
 These should not be hidden, but need explanation, thumbnail work, validation, or positioning before being promoted:
 
 - `examples/CORE_TIME_SYNC/`
-- `examples/DTW/`
-- `examples/GAME-MARIO/`
-- `examples/GAME-PK/`
-- `examples/GAME-SHOOTING2/`
 - `examples/WORKSHOP_07/`
+- `ws/tmu2025/`
+- `apps/ORPHE-TERMINAL/`
 
 ## Needs Review
 

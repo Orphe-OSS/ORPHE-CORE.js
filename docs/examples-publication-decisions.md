@@ -12,8 +12,7 @@ positioning.
 
 | Group | Entries | Decision |
 |---|---|---|
-| Playable public-candidates | `GAME-PK`, `GAME-SHOOTING` | Keep as public-candidate until owner real-device checks pass. |
-| Technical public-candidate | `DTW` | Keep as public-candidate until technical clarity and device-input path are confirmed. |
+| Playable public examples | `GAME-PK`, `GAME-SHOOTING` | Promoted to public after owner real-device checks. |
 | Utility public-candidate | `CORE_TIME_SYNC` | Keep hidden from public gallery until DateTime behavior is validated. |
 | Workshop entries | `WORKSHOP_07`, `ws/tmu2025` | Keep under `workshop-archive`; do not feature in the beginner Examples section. |
 | Developer tool | `apps/ORPHE-TERMINAL` | Keep under `developer-tool`; link from future Tools / Developer Utilities navigation. |
@@ -22,51 +21,33 @@ positioning.
 
 ### `examples/GAME-PK/`
 
-Decision: keep as `public-candidate`.
+Decision: promoted to `public`.
 
 Why:
 
 - Clear gameplay value: kick motion maps to a penalty kick.
 - Already uses CoreToolkit and one ORPHE CORE.
-- Needs owner validation for kick detection, restart flow, and BLE chooser behavior.
+- Owner validation passed for one-device connection, kick detection, scoring, and restart behavior.
 
-Promotion condition:
+Maintenance condition:
 
-- One-device Chrome test passes.
 - Restart does not break connection or scoring.
 - README remains accurate after validation.
 
 ### `examples/GAME-SHOOTING/`
 
-Decision: keep as `public-candidate`.
+Decision: promoted to `public`.
 
 Why:
 
 - Good simple 2D shooting example using tilt/acceleration.
 - It can coexist with `GAME-SHOOTING2` if positioned as the simpler 2D version.
-- Needs owner validation for movement, fire input, and restart.
+- Owner validation passed for tilt movement, firing, keyboard controls, Game Over restart, and restart without BLE disconnect.
 
-Promotion condition:
+Maintenance condition:
 
-- One-device Chrome test passes.
 - Decide title/copy as "2D Shooting" if `GAME-SHOOTING2` remains public as the 3D variant.
 
-
-### `examples/DTW/`
-
-Decision: keep as `public-candidate`.
-
-Why:
-
-- Valuable technical example for time-series matching.
-- Has a no-device mouse/demo path, so it can teach the algorithm even before BLE validation.
-- Needs a short clarity pass after a technical user opens it.
-
-Promotion condition:
-
-- Mouse demo is understandable.
-- One-device sensor input path is confirmed.
-- The page copy clearly says what DTW is useful for.
 
 ### `examples/CORE_TIME_SYNC/`
 

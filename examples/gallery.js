@@ -108,10 +108,6 @@
       title: 'DDRゲーム',
       value: '音楽と足の動きを組み合わせたリズムゲームです。'
     },
-    dtw: {
-      title: 'DTW Example',
-      value: '時系列データの類似度を扱う解析Exampleです。'
-    },
     'game-mario': {
       title: '2Dアクションゲーム',
       value: '足の動きでキャラクターを操作するアクションゲームです。'

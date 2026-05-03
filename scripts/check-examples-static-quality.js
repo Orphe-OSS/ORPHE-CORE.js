@@ -270,7 +270,9 @@ async function main() {
   });
 
   const displayIds = JSON.stringify(maybeRead('examples/gallery.js'));
-  publicEntries.forEach((entry) => {
+  publicEntries
+    .filter((entry) => entry.public_navigation !== 'hidden')
+    .forEach((entry) => {
     if (!displayIds.includes(entry.id)) {
       addIssue(issues, 'info', entry.id, 'gallery.js has no Japanese override for this entry');
     }

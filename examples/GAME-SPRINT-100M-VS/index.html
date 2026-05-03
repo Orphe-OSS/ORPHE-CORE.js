@@ -1074,6 +1074,10 @@
       2人対戦には2台のORPHE COREが必要です（各プレイヤー1台）<br>
       Two players need 2 ORPHE CORE devices (1 device per player)
     </p>
+    <p style="text-align: center; font-size: 11px; color: #ffcc66; margin: -5px 0 15px 0;">
+      Player 1とPlayer 2では別々のORPHE COREを選択してください。<br>
+      Select a different ORPHE CORE for Player 1 and Player 2.
+    </p>
 
     <div class="toolkit-container">
       <div class="player-toolkits">
@@ -1398,12 +1402,15 @@
 
     // Setup each device
     for (let i = 0; i < bles.length; i++) {
+      // Two-player races must not reuse a remembered single device for both players.
+      bles[i].forgetLastBluetoothDevice();
       bles[i].setup();
     }
 
-    // Build CoreToolkit for each device
-    buildCoreToolkit(document.querySelector('#toolkit_p1'), 'Player 1', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
-    buildCoreToolkit(document.querySelector('#toolkit_p2'), 'Player 2', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    // Build CoreToolkit for each device.
+    // Force the chooser so two-player games select one device per player.
+    buildCoreToolkit(document.querySelector('#toolkit_p1'), 'Player 1', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
+    buildCoreToolkit(document.querySelector('#toolkit_p2'), 'Player 2', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
     guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
 
     // Setup threshold sliders
@@ -1461,7 +1468,7 @@
       }
     });
 
-    var connectedDevices = 0;
+    const streamingDeviceIds = new Set();
 
     window.devices = {
       0: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 } },
@@ -1470,25 +1477,33 @@
 
     // Not used in 100m sprint version
 
-    // Connection handlers - same as original HURDLE
-    for (let ble of bles) {
-      ble.onConnect = function() {
-        connectedDevices++;
-        console.log('🟢 ORPHE CORE Device ' + this.id + ' connected (Total: ' + connectedDevices + '/2)');
+    function markDeviceStreaming(id, uuid) {
+      if (id !== 0 && id !== 1) return;
+      const previousSize = streamingDeviceIds.size;
+      streamingDeviceIds.add(id);
+      if (streamingDeviceIds.size !== previousSize) {
+        console.log('🟢 ORPHE CORE Device ' + id + ' streaming ' + uuid + ' (' + streamingDeviceIds.size + '/2)');
+      }
+      if (streamingDeviceIds.size === 2 && previousSize !== 2) {
+        console.log('📡 Both ORPHE CORE devices are streaming');
+      }
+    }
 
-        if (connectedDevices === 2) {
-          // Both devices connected, start data streaming
-          for (let device of bles) {
-            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
-            setupDataCallbacks(device);
-          }
-          console.log('📡 Started data streaming for both devices');
-        }
+    // CoreToolkit owns begin(). The page only listens for connection/notification state.
+    for (let ble of bles) {
+      setupDataCallbacks(ble);
+
+      ble.onConnect = function(uuid) {
+        console.log('🟢 ORPHE CORE Device ' + this.id + ' connected: ' + uuid);
+      };
+
+      ble.onStartNotify = function(uuid) {
+        markDeviceStreaming(this.id, uuid);
       };
 
       ble.onDisconnect = function() {
-        connectedDevices--;
-        console.log('🔴 ORPHE CORE Device ' + this.id + ' disconnected (Total: ' + connectedDevices + '/2)');
+        streamingDeviceIds.delete(this.id);
+        console.log('🔴 ORPHE CORE Device ' + this.id + ' disconnected (Total: ' + streamingDeviceIds.size + '/2)');
       };
     }
 

@@ -1,7 +1,7 @@
-# Virtual Track Games Audit
+# Virtual Sports Examples Audit
 
 ORPHE-CORE.js has enough running / hurdle material to support a distinct
-"Virtual Track" category. The repository should treat these as a meaningful
+"Virtual Sports" category. The repository should treat these as a meaningful
 sports-game family rather than one-off duplicates.
 
 This audit is static. It checks files, titles, dependencies, and the apparent
@@ -11,12 +11,12 @@ game concept. It does not claim real-device validation.
 
 | Path | Proposed public name | Concept | Devices | Current publication decision |
 |---|---|---|---:|---|
-| `examples/GAME-HURDLE/` | 110m Hurdles | Single-player 3D 110m hurdle race. | 2 | Already public; should be the flagship virtual track example. |
+| `examples/GAME-HURDLE/` | 110m Hurdles | Single-player 3D 110m hurdle race. | 2 | Already public; flagship Virtual Sports example. |
 | `examples/GAME-HURDLE-VS/` | 110m Hurdles VS | Two-player 3D 110m hurdle race. | 2 | Prepare as public-candidate after README, thumbnail, and real-device check. |
 | `examples/GAME-HURDLE-2D-VS/` | 2D 110m Hurdles VS | Two-player 2D 110m hurdle race. | 2 | Prepare only after naming/copy cleanup; current "Hyper Olympic" wording should be removed before public listing. |
-| `examples/GAME-HURDLE-400M-VS/` | 400m Hurdles VS | Two-player 3D 400m hurdle race. | 2 | Prepare as public-candidate; distinct course length makes it meaningful. |
+| `examples/GAME-HURDLE-400M-VS/` | 400m Hurdles VS | Two-player 3D 400m hurdle race. | 2 | Hidden public-candidate; README and thumbnail prepared, needs two-device validation. |
 | `examples/GAME-HURDLE-VS-advance/` | 110m Hurdles VS Advanced | Two-player 3D 110m hurdle race with richer effects/audio. | 2 | Keep as advanced variant; publish only if it is meaningfully better than `GAME-HURDLE-VS`. |
-| `examples/GAME-SPRINT-100M-VS/` | 100m Sprint VS | Two-player 100m sprint without hurdles. | 2 | Prepare as public-candidate; distinct from hurdles and useful for sports category breadth. |
+| `examples/GAME-SPRINT-100M-VS/` | 100m Sprint VS | Two-player 100m sprint without hurdles. | 2 | Hidden public-candidate; README and thumbnail prepared, needs two-device validation. |
 
 ## Static Findings
 
@@ -32,7 +32,8 @@ Current differences:
 
 - `GAME-HURDLE/` already uses local `../../js/ORPHE-CORE.js`.
 - The five VS / sprint variants still load `ORPHE-CORE.js` from the public CDN.
-- The five VS / sprint variants have no README.
+- `GAME-SPRINT-100M-VS` and `GAME-HURDLE-400M-VS` have candidate READMEs and thumbnails.
+- The remaining VS variants need README and thumbnail preparation before catalog promotion.
 - Each variant has an empty `claud` file that should not be treated as public documentation.
 
 ## Recommended Preparation PRs
@@ -66,9 +67,9 @@ Each README should state:
 Do not add all variants to the LP immediately. Instead:
 
 - Keep `GAME-HURDLE/` as the flagship public card.
-- Add a "Virtual Track" category or family page later.
-- Promote `GAME-SPRINT-100M-VS` and `GAME-HURDLE-400M-VS` first because they
-  clearly add new race formats.
+- Use the `virtual-sports` category for validated sports examples.
+- Promote `GAME-SPRINT-100M-VS` and `GAME-HURDLE-400M-VS` first after
+  two-device validation because they clearly add new race formats.
 - Promote either `GAME-HURDLE-VS` or `GAME-HURDLE-VS-advance`, not both, unless
   real-device playtesting shows a clear reason to keep both.
 - Keep `GAME-HURDLE-2D-VS` as a candidate only after naming cleanup.
@@ -87,9 +88,9 @@ For each candidate:
 
 ## Publication Position
 
-Virtual track should be a visible strength of ORPHE-CORE.js, but it should be
+Virtual sports should be a visible strength of ORPHE-CORE.js, but it should be
 presented as a family:
 
 - Main LP: one or two best examples, not every variant.
-- Examples gallery: searchable `playable-app` entries.
+- Examples gallery: searchable `virtual-sports` entries.
 - Future category page: all track variants with differences clearly explained.

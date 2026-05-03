@@ -4,6 +4,7 @@
     'sensor-basics': 'センサー基礎',
     'gait-analysis': 'Gait Analysis',
     'recording-analysis': '記録・解析',
+    'virtual-sports': 'Virtual Sports',
     'playable-app': '遊べるアプリ',
     'creative-coding': 'Creative Coding',
     'research-integration': '研究・連携',
@@ -17,6 +18,7 @@
     'sensor-basics',
     'gait-analysis',
     'recording-analysis',
+    'virtual-sports',
     'playable-app',
     'creative-coding',
     'research-integration',
@@ -82,7 +84,7 @@
     },
     'game-hurdle': {
       title: '110m ハードル走',
-      value: '足の動きとGait Analysisを使った代表的なゲームExampleです。'
+      value: 'Gait Analysisと足の動きで走る、Virtual Sportsの代表Exampleです。'
     },
     'game-udon': {
       title: 'うどんふみふみゲーム',
@@ -288,6 +290,23 @@
     )).join(''));
   }
 
+  function applyInitialFilters() {
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category');
+    const difficulty = params.get('difficulty');
+    const query = params.get('q');
+
+    if (category && [...categoryFilter.options].some((option) => option.value === category)) {
+      categoryFilter.value = category;
+    }
+    if (difficulty && [...difficultyFilter.options].some((option) => option.value === difficulty)) {
+      difficultyFilter.value = difficulty;
+    }
+    if (query) {
+      searchFilter.value = query;
+    }
+  }
+
   function entryMatches(entry) {
     const category = categoryFilter.value;
     const difficulty = difficultyFilter.value;
@@ -377,6 +396,7 @@
         .map((entry, index) => ({ ...entry, _index: index }))
         .sort((a, b) => sortValue(a, a._index) - sortValue(b, b._index) || displayTitle(a).localeCompare(displayTitle(b)));
       populateFilters(allEntries);
+      applyInitialFilters();
       render();
     })
     .catch(setError);

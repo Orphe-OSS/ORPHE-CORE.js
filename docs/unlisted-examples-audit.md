@@ -24,11 +24,11 @@ promotion queue without adding unvalidated work to the landing page.
 | `examples/GAME-RHYTHM/` | `needs-rewrite` | Rhythm interaction idea is useful. | Uses bundled old SDK/assets; needs modernization before promotion. |
 | `examples/GAME-SHOOTING/` | `promote-after-fix` + `needs-real-device-validation` | Simple shooting game, good creative example candidate. | Playtest, README/play instructions, confirm CoreToolkit flow. |
 | `examples/GAME-SHOOTING2/` | `duplicate` or `promote-after-fix` | Similar to `GAME-SHOOTING`. | Decide whether it is a meaningful variant before promotion. |
-| `examples/GAME-HURDLE-VS/` | `duplicate` + `needs-real-device-validation` | Multiplayer/variant of listed hurdle game. | Consolidate HURDLE family or expose from examples catalog, not LP. |
+| `examples/GAME-HURDLE-VS/` | `duplicate` + `needs-real-device-validation` | Multiplayer/variant of listed hurdle game. | Consolidate under the Virtual Sports family before catalog promotion. |
 | `examples/GAME-HURDLE-2D-VS/` | `duplicate` | Variant of hurdle family. | Keep unlisted until family naming and README strategy is decided. |
-| `examples/GAME-HURDLE-400M-VS/` | `duplicate` | Variant of hurdle family. | Keep unlisted until family naming and README strategy is decided. |
-| `examples/GAME-HURDLE-VS-advance/` | `duplicate` | Advanced hurdle variant. | Keep unlisted; advanced variant may belong in catalog filters. |
-| `examples/GAME-SPRINT-100M-VS/` | `promote-after-fix` + `needs-real-device-validation` | Sprint game variant may broaden sports examples. | README, playtest, decide relation to HURDLE family. |
+| `examples/GAME-HURDLE-400M-VS/` | `public-candidate` + `needs-real-device-validation` | 400m hurdle variant broadens the Virtual Sports category. | README and thumbnail prepared; needs two-device playtest before public navigation. |
+| `examples/GAME-HURDLE-VS-advance/` | `duplicate` | Advanced hurdle variant. | Keep unlisted; publish only if it is clearly better than the base VS version. |
+| `examples/GAME-SPRINT-100M-VS/` | `public-candidate` + `needs-real-device-validation` | Sprint game variant may broaden sports examples. | README and thumbnail prepared; needs two-device playtest before public navigation. |
 | `examples/ICC2022Sep/` | `keep-unlisted` | Historical installation/conference artifact. | Keep as archive unless rewritten as a modern creative example. |
 | `examples/WORKSHOP_07/` | `keep-unlisted` | Workshop tutorial value. | Link from docs/workshop area, not LP example cards. |
 | `examples/p5.ORPHE.FSR_visualise_0327_submit/` | `needs-rewrite` | Research/visualization idea may be useful. | Rename strategy, README, determine if FSR dependency/context is still relevant. |
@@ -42,7 +42,7 @@ promotion queue without adding unvalidated work to the landing page.
 2. `GAME-SHOOTING`: README/play instructions only.
 3. `GAME-MARIO`: README/play instructions + stale helper audit, no logic change.
 4. `apps/ORPHE-TERMINAL`: README expansion.
-5. HURDLE family: documentation-only map of variants before any rename.
+5. Virtual Sports family: documentation-only map of HURDLE / SPRINT variants before any rename.
 
 ## Do not promote yet
 
@@ -54,8 +54,7 @@ promotion queue without adding unvalidated work to the landing page.
 ## Human review needed
 
 - Which game variants should count toward the future "100 examples" goal?
-- Whether HURDLE variants should be separate examples or a family under one
-  example card.
+- Which HURDLE / SPRINT variants should become separate Virtual Sports examples
+  versus staying grouped under one catalog entry.
 - Whether workshop archives should be searchable in `examples/index.html` or
   stay in docs only.
-

@@ -1,35 +1,45 @@
 # 110m Hurdle Game
 
-> **Status**: `public` — see [`docs/examples-catalog.md`](../../docs/examples-catalog.md) for the full audit.
+ORPHE COREを足に装着して走る動きで進み、ハードルを越えてゴールを目指すVirtual Sports Exampleです。
 
-Representative playable game using gait and motion input.
+## What It Does
 
-## このexampleで学べること
+- Uses ORPHE CORE motion and gait data as the game input.
+- Shows a 110m hurdle race as a browser game.
+- Provides the flagship example for the Virtual Sports category.
 
-- Representative playable game using gait and motion input.
+## このExampleで学べること
+
+- ORPHE COREの歩行・走行データをゲーム入力に使う方法
+- 2台のORPHE COREを使った足の動きの扱い
+- 身体動作をそのまま競技型インターフェースにする考え方
 
 ## 使うデータ
 
-- 加速度 (gotConvertedAcc, 実Gスケール)
-- オイラー角 (euler)
-- 歩行 (gait)
+- `gotConvertedAcc`
+- `gotEuler`
+- Gait Analysis data
 
 ## 必要なORPHE CORE数
 
-- 2 台
+- 2台
 
-## 想定読者
+## Run
 
-- 初学者・ゲームプレイヤー
+ローカルサーバを起動して、Chromeで開きます。
 
-## 実機確認
+```text
+http://localhost:8767/examples/GAME-HURDLE/
+```
 
-- **未実機確認** — 静的検証 (パス・参照) のみ。BLE 接続後の挙動はオーナーレビュー待ち。
+## Public Position
 
-## 関連example
+This is the current public representative for the Virtual Sports category.
+Other sprint / hurdle variants should be promoted only after README cleanup,
+thumbnail capture, and real-device validation.
 
-- (関連 example なし — `docs/examples-catalog.md` の Overlap Families を参照)
+## Related Examples
 
-## 元データ
-
-このREADMEは `examples/catalog.json` の `game-hurdle` エントリから自動生成された最小スケルトンです。手動で詳細・スクリーンショット・遊び方を加筆してください。
+- `examples/GAME-HURDLE-VS/`
+- `examples/GAME-HURDLE-400M-VS/`
+- `examples/GAME-SPRINT-100M-VS/`

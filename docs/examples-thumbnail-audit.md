@@ -10,7 +10,7 @@
 
 | カテゴリ | 件数 | 内訳 |
 | --- | ---: | --- |
-| `_thumbnails/` 集約に画像あり | 7 | すべて public のゲーム系 (boxing / ddr / drum / hurdle-110m / move-your-feet / pingpong / udon) |
+| `_thumbnails/` 集約に画像あり | 9+ | public のゲーム系に加えて、Virtual Sports候補の `sprint-100m-vs` / `hurdle-400m-vs` を追加 |
 | ディレクトリ直下に teaser.gif あり | 2 | INFORMATION / LIGHT (どちらも public) |
 | **不在: public / historical public-candidate** | Historical | 本ドキュメントで列挙 |
 | 不在: needs-review / needs-fix | 4 | 別セクションで列挙 |
@@ -31,6 +31,8 @@
 | `ddr.png` | 159 KB | `examples/GAME-DDR/` (public) |
 | `drum.png` | 67 KB | `examples/drum_test/` (public) |
 | `hurdle-110m.png` | 208 KB | `examples/GAME-HURDLE/` (public) |
+| `sprint-100m-vs.png` | candidate | `examples/GAME-SPRINT-100M-VS/` (hidden public-candidate) |
+| `hurdle-400m-vs.png` | candidate | `examples/GAME-HURDLE-400M-VS/` (hidden public-candidate) |
 | `move-your-feet.png` | 66 KB | `examples/MOVEYOURFEET/` (public) |
 | `pingpong.png` | 59 KB | `examples/GAME-PINGPONG/` (public) |
 | `udon.png` | 84 KB | `examples/GAME-UDON/` (public) |
@@ -104,7 +106,7 @@ This document is a historical audit. Current public/public-candidate counts are 
 
 - `GAME-HURDLE-VS/` / `GAME-HURDLE-VS-advance/` / `GAME-HURDLE-2D-VS/` / `GAME-HURDLE-400M-VS/` / `GAME-SPRINT-100M-VS/`
 
-これらは catalog 上 `game-hurdle` 1 entry に集約されており、family thumbnail は `hurdle-110m.png` を共用する想定。家族別カットを撮るかは catalog schema 拡張で `family` フィールドを導入するか議論次第。
+`GAME-SPRINT-100M-VS` と `GAME-HURDLE-400M-VS` は hidden public-candidate として個別サムネイルを追加済み。残りのVS系は、公開候補に上げる時点で個別サムネイルを撮る。
 
 ## 推奨運用
 

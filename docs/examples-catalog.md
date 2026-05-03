@@ -41,7 +41,7 @@ The catalog also carries display-oriented fields so the landing page, examples g
 
 | Field | Meaning |
 | --- | --- |
-| `category` | Primary gallery category: `getting-started`, `sensor-basics`, `gait-analysis`, `recording-analysis`, `playable-app`, `creative-coding`, `research-integration`, `workshop-archive`, `developer-tool`, or `internal-test`. |
+| `category` | Primary gallery category: `getting-started`, `sensor-basics`, `gait-analysis`, `recording-analysis`, `virtual-sports`, `playable-app`, `creative-coding`, `research-integration`, `workshop-archive`, `developer-tool`, or `internal-test`. |
 | `difficulty` | Beginner-facing level: `beginner`, `intermediate`, or `advanced`. This is about onboarding cost, not code quality. |
 | `featured` | Boolean shortcut for entries that should appear in the first public gallery row. |
 | `thumbnail` | Existing preview image path, or `null` when a thumbnail still needs to be prepared. |
@@ -137,8 +137,14 @@ the beginner-facing gallery:
 
 ## Public Candidates
 
-No active public candidates. Workshop materials and class outcome pages are
-published under `workshop-archive`, while internal tools remain hidden.
+These should not be shown in public navigation yet, but they are prepared as
+promotion candidates:
+
+- `examples/GAME-SPRINT-100M-VS/`: hidden Virtual Sports candidate for a two-player 100m sprint race.
+- `examples/GAME-HURDLE-400M-VS/`: hidden Virtual Sports candidate for a two-player 400m hurdle race.
+
+Workshop materials and class outcome pages are published under
+`workshop-archive`, while internal tools remain hidden.
 
 ## Needs Review
 
@@ -167,7 +173,7 @@ These should be grouped in the catalog instead of being presented as unrelated e
 
 | Family | Members | Recommendation |
 | --- | --- | --- |
-| Running games | `GAME-HURDLE`, `GAME-HURDLE-VS`, `GAME-HURDLE-VS-advance`, `GAME-HURDLE-2D-VS`, `GAME-HURDLE-400M-VS`, `GAME-SPRINT-100M-VS` | Keep one LP representative, list the rest under a Running Games family. |
+| Virtual sports | `GAME-HURDLE`, `GAME-HURDLE-VS`, `GAME-HURDLE-VS-advance`, `GAME-HURDLE-2D-VS`, `GAME-HURDLE-400M-VS`, `GAME-SPRINT-100M-VS` | Keep `GAME-HURDLE` as the public representative, then promote distinct sprint / hurdle variants after validation. |
 | Shooting games | `GAME-SHOOTING`, `GAME-SHOOTING2` | Clarify 2D/3D or old/new relationship. |
 | Action games | `GAME-MARIO`, `GAME-PK` | Keep if input mappings are documented. |
 | Sensor viewers | `VIEW`, `VISUALIZE`, `CORE_TIME_SYNC`, starter templates | Separate beginner, debugging, and research uses. |

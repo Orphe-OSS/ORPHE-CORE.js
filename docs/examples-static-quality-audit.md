@@ -18,8 +18,8 @@ It is a static/public-surface check only. It does not claim real-device validati
 
 | status | count |
 | --- | --- |
-| public | 37 |
-| public-candidate | 4 |
+| public | 38 |
+| public-candidate | 3 |
 | needs-review | 4 |
 | internal | 1 |
 

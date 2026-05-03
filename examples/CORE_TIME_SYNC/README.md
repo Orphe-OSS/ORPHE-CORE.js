@@ -31,6 +31,11 @@ Use a Web Bluetooth compatible browser such as Chrome.
 
 ## Validation status
 
-Static page/link checks only. DateTime read/write behavior must be validated
-with a real ORPHE CORE before this is promoted to the landing page.
+Owner real-device validation passed with one ORPHE CORE:
 
+- `SENSOR_VALUES` notification showed converted acceleration values.
+- `getDateTime()` returned DateTime bytes.
+- `syncCoreTime()` returned round-trip timing and adjusted time values.
+
+This should stay positioned as a developer / recording utility rather than a
+beginner-facing gallery example.

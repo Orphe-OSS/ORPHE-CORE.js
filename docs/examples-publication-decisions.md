@@ -13,7 +13,7 @@ positioning.
 | Group | Entries | Decision |
 |---|---|---|
 | Playable public examples | `GAME-PK`, `GAME-SHOOTING` | Promoted to public after owner real-device checks. |
-| Utility public-candidate | `CORE_TIME_SYNC` | Keep hidden from public gallery until DateTime behavior is validated. |
+| Utility public example | `CORE_TIME_SYNC` | Keep hidden from the beginner gallery; use as a developer / recording utility. |
 | Workshop entries | `WORKSHOP_07`, `ws/tmu2025` | Keep under `workshop-archive`; do not feature in the beginner Examples section. |
 | Developer tool | `apps/ORPHE-TERMINAL` | Keep under `developer-tool`; link from future Tools / Developer Utilities navigation. |
 
@@ -51,18 +51,18 @@ Maintenance condition:
 
 ### `examples/CORE_TIME_SYNC/`
 
-Decision: move to hidden `public-candidate`.
+Decision: promoted to hidden `public`.
 
 Why:
 
 - Useful for recording integrity and timestamp debugging.
 - Not a beginner example and should not be featured in the main gallery yet.
-- Needs owner validation for `getDateTime()` and `syncCoreTime()`.
+- Owner validation passed for `SENSOR_VALUES`, `getDateTime()`, and `syncCoreTime()`.
 
-Promotion condition:
+Placement condition:
 
-- DateTime read/sync behavior is confirmed with one ORPHE CORE.
-- Decide whether it should be visible in the public gallery or only linked from recording/debugging docs.
+- Keep it under developer / recording utilities.
+- Do not feature it in the beginner Examples gallery.
 
 ### `examples/WORKSHOP_07/`
 

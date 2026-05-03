@@ -76,6 +76,8 @@
           &lt;div id=&quot;toolkit_placeholder&quot;&gt;&lt;/div&gt;
           &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js&quot;
               crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
+          &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/BleSharedBridge.js&quot;
+              crossorigin=&quot;anonymous&quot;&gt;&lt;/script&gt;
           &lt;script src=&quot;https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js&quot; crossorigin=&quot;anonymous&quot;
               type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
           &lt;script src=&quot;https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js&quot;
@@ -85,6 +87,7 @@
               window.onload = function () {
                   cores[0].setup();
                   buildCoreToolkit(document.querySelector(&#039;#toolkit_placeholder&#039;), &#039;01&#039;, 0, &#039;SENSOR_VALUES&#039;);
+                  guardCoreToolkitBluetooth({ coreIds: [0] });
 
                   cores[0].gotAcc = function (acc) {
                   }

@@ -279,21 +279,6 @@
   <div id="sensor-status">
     <p>センサー状態 / Sensor Status: <span id="connection-status" style="color: #ff9800;">未接続 / Disconnected</span></p>
     <p id="sensor-ready" style="display: none; color: #4caf50;">✓ シュート準備完了！/ Ready to Shoot!</p>
-    <p style="font-size: 12px; color: #aaa; margin-top: 10px;">
-      受信データ / Data Received: 
-      <span id="data-count" style="color: #00bcd4; font-family: monospace;">Acc: 0 | Gyro: 0</span>
-    </p>
-  </div>
-  
-  <!-- Debug Console -->
-  <div id="debug-console" style="margin: 20px auto; max-width: 900px; background: #1a1a2e; border-radius: 10px; padding: 20px; border: 1px solid #00bcd4; display: none;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-      <h4 style="color: #00bcd4; margin: 0;">🔍 Debug Console</h4>
-      <button id="clear-console" style="padding: 5px 15px; background: #ff5722; border: none; border-radius: 5px; color: white; cursor: pointer;">Clear</button>
-    </div>
-    <div id="debug-log" style="background: #0a0a0a; border-radius: 5px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #0f0;">
-      <div style="color: #00bcd4;">Debug console initialized. Waiting for events...</div>
-    </div>
   </div>
   
   <!-- Game canvas container -->
@@ -436,11 +421,6 @@
       <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Swing foot strongly after GO (Accel > 3.0G)</p>
       <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Direction of swing determines shot direction</p>
       
-      <div style="margin-top: 15px; text-align: center;">
-        <button id="toggle-debug" style="padding: 10px 20px; background: linear-gradient(45deg, #ff9800, #ff5722); border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 14px;">
-          🔍 Show Debug Console
-        </button>
-      </div>
     </div>
   </div>
   
@@ -1002,20 +982,26 @@
       const debugConsole = document.getElementById('debug-console');
       let debugVisible = false;
       
-      toggleDebugBtn.addEventListener('click', function() {
-        debugVisible = !debugVisible;
-        debugConsole.style.display = debugVisible ? 'block' : 'none';
-        toggleDebugBtn.textContent = debugVisible ? '🔍 Hide Debug Console' : '🔍 Show Debug Console';
-        debugLog('UI', debugVisible ? 'Debug console opened' : 'Debug console closed');
-      });
+      if (toggleDebugBtn && debugConsole) {
+        toggleDebugBtn.addEventListener('click', function() {
+          debugVisible = !debugVisible;
+          debugConsole.style.display = debugVisible ? 'block' : 'none';
+          toggleDebugBtn.textContent = debugVisible ? '🔍 Hide Debug Console' : '🔍 Show Debug Console';
+          debugLog('UI', debugVisible ? 'Debug console opened' : 'Debug console closed');
+        });
+      }
       
-      // Clear console button
-      document.getElementById('clear-console').addEventListener('click', function() {
-        const debugLogElem = document.getElementById('debug-log');
-        debugLogElem.innerHTML = '<div style="color: #00bcd4;">Console cleared.</div>';
-        console.clear();
-        debugLog('UI', 'Debug console cleared');
-      });
+      const clearConsoleBtn = document.getElementById('clear-console');
+      if (clearConsoleBtn) {
+        clearConsoleBtn.addEventListener('click', function() {
+          const debugLogElem = document.getElementById('debug-log');
+          if (debugLogElem) {
+            debugLogElem.innerHTML = '<div style="color: #00bcd4;">Console cleared.</div>';
+          }
+          console.clear();
+          debugLog('UI', 'Debug console cleared');
+        });
+      }
       
       debugLog('INIT', '✅ DOM initialization complete');
       

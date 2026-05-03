@@ -6,7 +6,11 @@ let enemies = [];
 let isGameOver = false;
 
 function setup() {
-  createCanvas(400, 600);
+  const canvas = createCanvas(400, 600);
+  canvas.parent('p5Canvas');
+  canvas.elt.setAttribute('tabindex', '0');
+  canvas.elt.addEventListener('keydown', handleRestartKey);
+  document.addEventListener('keydown', handleRestartKey, true);
   player = new Player();
   ble.gotEuler = function (_euler) {
     euler = _euler;
@@ -66,7 +70,18 @@ function draw() {
 function keyPressed() {
   if (key === ' ' && isGameOver) {
     restartGame();
+    return false;
   }
+}
+
+function handleRestartKey(event) {
+  if (!isGameOver || event.code !== 'Space') return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
+  restartGame();
 }
 
 function gameOver() {
@@ -85,7 +100,10 @@ function showGameOver() {
   textAlign(CENTER, CENTER);
   fill(255);
   textSize(32);
-  text("Game Over", width / 2, height / 2);
+  text("Game Over", width / 2, height / 2 - 20);
+  textSize(16);
+  fill(200);
+  text("Press Space to restart", width / 2, height / 2 + 25);
 }
 
 class Player {

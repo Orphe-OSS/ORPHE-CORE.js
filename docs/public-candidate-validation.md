@@ -9,10 +9,10 @@ validation" as a public badge in the examples gallery.
 
 ## Current Status
 
-- `public`: 37 entries
-- `public-candidate`: 4 entries
+- `public`: 38 entries
+- `public-candidate`: 3 entries
 
-`GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, and `GAME-SHOOTING` were promoted to `public` after owner
+`GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, and `CORE_TIME_SYNC` were promoted to `public` after owner
 real-device checks. The entries below remain candidates.
 
 ## Morning Check List
@@ -21,10 +21,9 @@ Open these URLs from a local server and use Chrome for BLE tests.
 
 | Order | Entry | URL | Device | Main check | Promotion blocker |
 |---|---|---|---:|---|---|
-| 1 | `core-time-sync` | `http://localhost:8767/examples/CORE_TIME_SYNC/` | 1 | DateTime read and `syncCoreTime()` result | Needs owner confirmation before public listing |
-| 2 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
-| 3 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
-| 4 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
+| 1 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
+| 2 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
+| 3 | `app-orphe-terminal` | `http://localhost:8767/apps/ORPHE-TERMINAL/` | 1 | Developer tool opens and can connect | Keep under developer tools, not beginner examples |
 
 ## Promotion Rules
 
@@ -46,40 +45,7 @@ They need a navigation decision first.
 
 
 
-### 1. `examples/CORE_TIME_SYNC/`
-
-Purpose: utility for checking ORPHE CORE device time and round-trip timing.
-
-Current state:
-
-- `status`: `public-candidate`
-- Requires one ORPHE CORE.
-- Uses `SENSOR_VALUES` only as a connection sanity check.
-- Uses `getDateTime()` and `syncCoreTime()`.
-- Kept out of public navigation until DateTime behavior is owner-verified.
-
-Can be checked without device:
-
-- Page opens.
-- README explains what it checks and which APIs it uses.
-- Catalog has a thumbnail and a demo/source link.
-
-Human BLE checks:
-
-- Connect one ORPHE CORE.
-- Click `通知を有効化` and confirm converted acceleration appears.
-- Click `時刻を取得する` and confirm raw DateTime bytes appear.
-- Click `時刻補正実行` and confirm round-trip timing and adjusted time are shown.
-- Confirm repeated clicks do not leave the page in a confusing state.
-
-Promotion condition:
-
-- If DateTime read/sync behavior is clear, keep it as `public-candidate` or
-  promote to `public` under `recording-analysis`.
-- It should not be featured on the LP unless users are actively looking for
-  timestamp or recording integrity utilities.
-
-### 2. `examples/WORKSHOP_07/`
+### 1. `examples/WORKSHOP_07/`
 
 Purpose: workshop material for Fourier / DFT.
 
@@ -101,7 +67,7 @@ Placement decision:
 - Do not feature it on the LP's main Examples section.
 - Use this as the workshop slot for Fourier / DFT material.
 
-### 7. `ws/tmu2025/`
+### 2. `ws/tmu2025/`
 
 Purpose: workshop gallery.
 
@@ -124,7 +90,7 @@ Placement decision:
 - Later split strong individual works into separate catalog entries if they are
   maintained.
 
-### 8. `apps/ORPHE-TERMINAL/`
+### 3. `apps/ORPHE-TERMINAL/`
 
 Purpose: developer utility.
 

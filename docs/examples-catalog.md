@@ -128,11 +128,15 @@ These already have public value and should stay in the catalog:
 - all `starter-templates/*.html`
 - all `docs/getting-started-*.html`
 
+These entries are validated and public in the catalog, but should stay outside
+the beginner-facing gallery:
+
+- `examples/CORE_TIME_SYNC/`: developer / recording utility for DateTime and time-sync checks.
+
 ## Public Candidates
 
 These should not be hidden, but need explanation, thumbnail work, validation, or positioning before being promoted:
 
-- `examples/CORE_TIME_SYNC/`
 - `examples/WORKSHOP_07/`
 - `ws/tmu2025/`
 - `apps/ORPHE-TERMINAL/`

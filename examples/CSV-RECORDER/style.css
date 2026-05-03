@@ -1,0 +1,6 @@
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.card { border-radius: 0.75rem; }
+dl dt { color: #cfd8dc; font-weight: 500; }
+dl dd { color: #fff; margin-bottom: 0.25rem; }
+table.table-dark code { color: #80deea; }
+details summary { cursor: pointer; }

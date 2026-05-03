@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CSV Recorder — ORPHE CORE.js (PoC, draft)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="./style.css">
+
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="../../js/CoreRecorder.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"></script>
+  <script src="../../js/site-analytics.js"></script>
+</head>
+<body class="bg-dark text-light">
+  <div class="container py-4">
+    <header class="mb-4">
+      <h1 class="h3">CSV Recorder <span class="badge bg-warning text-dark">PoC · draft</span></h1>
+      <p class="text-secondary mb-1">
+        Record ORPHE CORE callback payloads to a flat CSV (and to JSON for replay) using the draft
+        <code>CoreRecorder.js</code> helper. One device, one session at a time.
+      </p>
+      <p class="text-secondary small mb-0">
+        Status: <code>public-candidate (planned)</code>. Not yet listed in <code>examples/catalog.json</code>.
+        Proposed catalog metadata is in <a href="./README.md">README.md</a>.
+      </p>
+    </header>
+
+    <section class="mb-4">
+      <div id="toolkit_placeholder"></div>
+      <div id="ble-support-message" class="alert alert-warning my-3" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome on macOS or Windows to connect ORPHE CORE.
+      </div>
+    </section>
+
+    <section class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5">Recording controls</h2>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button id="btn-start" class="btn btn-success" disabled>Start</button>
+              <button id="btn-stop"  class="btn btn-warning" disabled>Stop</button>
+              <button id="btn-reset" class="btn btn-outline-light" disabled>Reset</button>
+            </div>
+            <label for="session-label" class="form-label small">Session label</label>
+            <input id="session-label" class="form-control form-control-sm mb-3" type="text" value="lesson-04" />
+            <label for="meta-device" class="form-label small">Device note (saved into JSON <code>meta</code>)</label>
+            <input id="meta-device" class="form-control form-control-sm" type="text" value="left-instep" />
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5">Recording state</h2>
+            <dl class="row mb-3 small">
+              <dt class="col-5">Status</dt>           <dd class="col-7" id="state-status">idle</dd>
+              <dt class="col-5">Samples buffered</dt> <dd class="col-7" id="state-count">0</dd>
+              <dt class="col-5">Duration</dt>         <dd class="col-7" id="state-duration">0.0 s</dd>
+              <dt class="col-5">Last kind</dt>        <dd class="col-7" id="state-last">—</dd>
+            </dl>
+            <div class="d-flex flex-wrap gap-2">
+              <button id="btn-download-csv"  class="btn btn-primary"     disabled>Download CSV</button>
+              <button id="btn-download-json" class="btn btn-outline-info" disabled>Download JSON</button>
+            </div>
+            <p class="small text-secondary mt-3 mb-0">
+              CSV columns and JSON schema follow <code>CoreRecorder.SCHEMA_VERSION</code> = <code id="schema-version">…</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <div class="card bg-secondary bg-opacity-25 border-0">
+        <div class="card-body">
+          <h2 class="h5">Sample-kind counters</h2>
+          <p class="small text-secondary">
+            One row per sample kind. Useful while you walk the trial table from
+            <a href="../../docs/lessons/04-csv-recorder.md">Lesson 04</a>.
+          </p>
+          <table class="table table-dark table-sm align-middle mb-0">
+            <thead>
+              <tr><th scope="col">kind</th><th scope="col" class="text-end">count</th></tr>
+            </thead>
+            <tbody id="counters-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <details>
+        <summary class="text-secondary">How this page is wired (draft)</summary>
+        <ol class="small text-secondary mt-2">
+          <li><code>CoreToolkit</code> creates <code>bles[0]</code> for one ORPHE CORE.</li>
+          <li><code>guardCoreToolkitBluetooth({ coreIds: [0] })</code> disables the BLE switch on browsers without Web Bluetooth.</li>
+          <li>The page replaces <code>bles[0].gotConvertedAcc</code>, <code>gotConvertedGyro</code>, <code>gotEuler</code>, <code>gotQuat</code>, <code>gotGait</code>, <code>gotStride</code>, <code>gotPronation</code>, <code>gotLandingImpact</code>, <code>gotFootAngle</code>, and <code>gotStepsNumber</code> with handlers that call <code>CoreRecorder</code>'s <code>feed*</code> methods. No other example shares this page, so the callback ownership is unambiguous.</li>
+          <li>Start / Stop manage one <code>CoreRecorder</code> instance. Reset clears its buffer.</li>
+        </ol>
+      </details>
+    </section>
+  </div>
+
+  <script src="./sketch.js"></script>
+</body>
+</html>

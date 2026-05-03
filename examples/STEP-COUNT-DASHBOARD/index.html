@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Step Count Dashboard — ORPHE CORE.js (PoC, draft)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="./style.css">
+
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="../../js/CoreAnalytics.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"></script>
+  <script src="../../js/site-analytics.js"></script>
+</head>
+<body class="bg-dark text-light">
+  <div class="container py-4">
+    <header class="mb-4">
+      <h1 class="h3">Step Count Dashboard <span class="badge bg-warning text-dark">PoC · draft</span></h1>
+      <p class="text-secondary mb-1">
+        Live steps, rolling cadence, stride statistics, and a baseline-vs-current panel powered by the draft
+        <code>CoreAnalytics.js</code> helper. One device.
+      </p>
+      <p class="text-secondary small mb-0">
+        Status: <code>public-candidate (planned)</code>. Not yet listed in <code>examples/catalog.json</code>.
+        Proposed catalog metadata is in <a href="./README.md">README.md</a>.
+      </p>
+    </header>
+
+    <section class="mb-4">
+      <div id="toolkit_placeholder"></div>
+      <div id="ble-support-message" class="alert alert-warning my-3" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome on macOS or Windows to connect ORPHE CORE.
+      </div>
+    </section>
+
+    <section class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+          <div class="card-body">
+            <h2 class="h6 text-uppercase text-secondary">Steps</h2>
+            <p class="display-4 mb-0" id="metric-steps">0</p>
+            <p class="small text-secondary mb-0">Cumulative steps in the active session.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+          <div class="card-body">
+            <h2 class="h6 text-uppercase text-secondary">Cadence</h2>
+            <p class="display-4 mb-0"><span id="metric-cadence">0</span><span class="h5 text-secondary"> steps/min</span></p>
+            <p class="small text-secondary mb-0">Rolling 10 s window.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+          <div class="card-body">
+            <h2 class="h6 text-uppercase text-secondary">Stride</h2>
+            <p class="display-4 mb-0"><span id="metric-stride">0.00</span><span class="h5 text-secondary"> m</span></p>
+            <p class="small text-secondary mb-0">Mean of the last 20 stride events.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5">Session</h2>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button id="btn-start" class="btn btn-success" disabled>Start</button>
+              <button id="btn-end"   class="btn btn-warning" disabled>End</button>
+              <button id="btn-reset" class="btn btn-outline-light" disabled>Reset</button>
+            </div>
+            <label for="session-label" class="form-label small">Label</label>
+            <input id="session-label" class="form-control form-control-sm mb-2" type="text" value="warm-up" />
+            <p class="small text-secondary mb-0">Duration: <span id="session-duration">0.0 s</span></p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card bg-secondary bg-opacity-25 border-0 h-100">
+          <div class="card-body">
+            <h2 class="h5">Baseline</h2>
+            <p class="small text-secondary">
+              Capture the current session as a baseline, then compare future sessions against it.
+            </p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button id="btn-capture-baseline" class="btn btn-info" disabled>Capture as baseline</button>
+              <button id="btn-clear-baseline"   class="btn btn-outline-light" disabled>Clear baseline</button>
+            </div>
+            <p class="small text-secondary mb-0">Baseline: <span id="baseline-label">—</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <div class="card bg-secondary bg-opacity-25 border-0">
+        <div class="card-body">
+          <h2 class="h5">Baseline comparison</h2>
+          <table class="table table-dark table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Metric</th>
+                <th scope="col" class="text-end">Baseline</th>
+                <th scope="col" class="text-end">Current</th>
+                <th scope="col" class="text-end">Δ</th>
+              </tr>
+            </thead>
+            <tbody id="baseline-compare-body">
+              <tr><td colspan="4" class="text-secondary text-center">No baseline captured yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <div class="card bg-secondary bg-opacity-25 border-0">
+        <div class="card-body">
+          <h2 class="h5">CMJ (countermovement jump)</h2>
+          <p class="small text-secondary mb-3">
+            Vertical jump events from <code>feedAcc</code>. Acceleration is in G, so wire <code>gotConvertedAcc</code>.
+            See <a href="../../docs/lessons/06-vertical-jump-cmj.md">Lesson 06</a> for the protocol.
+          </p>
+          <dl class="row mb-0 small">
+            <dt class="col-4">Last flight time</dt>
+            <dd class="col-8" id="cmj-flight">—</dd>
+            <dt class="col-4">Estimated height</dt>
+            <dd class="col-8" id="cmj-height">—</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <details>
+        <summary class="text-secondary">How this page is wired (draft)</summary>
+        <ol class="small text-secondary mt-2">
+          <li><code>CoreToolkit</code> creates <code>bles[0]</code> for one ORPHE CORE.</li>
+          <li><code>guardCoreToolkitBluetooth({ coreIds: [0] })</code> disables the BLE switch on browsers without Web Bluetooth.</li>
+          <li>The page replaces <code>bles[0].gotConvertedAcc</code>, <code>gotGait</code>, <code>gotStride</code>, <code>gotPronation</code>, and <code>gotStepsNumber</code> with handlers that call <code>CoreAnalytics</code>'s opt-in <code>feed*</code> methods.</li>
+          <li>A 250 ms timer reads <code>analytics.getSessionSummary()</code>, <code>getRollingCadence()</code>, <code>getStrideStats()</code>, <code>getLastCMJ()</code>, and <code>compareToBaseline()</code> to refresh the panels.</li>
+        </ol>
+      </details>
+    </section>
+  </div>
+
+  <script src="./sketch.js"></script>
+</body>
+</html>

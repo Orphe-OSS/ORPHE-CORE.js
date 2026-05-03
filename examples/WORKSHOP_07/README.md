@@ -3,6 +3,9 @@
 This workshop example shows how to use ORPHE CORE sensor data as a signal for
 Fourier transform / DFT exercises.
 
+It is linked from the ORPHE CORE WS YouTube lesson materials. The page content
+is kept as workshop material rather than rewritten as a beginner example.
+
 ## What It Does
 
 - Connects one ORPHE CORE with CoreToolkit.js.
@@ -33,18 +36,18 @@ Then connect ORPHE CORE from the CoreToolkit switch.
 
 ## Validation
 
-Needs real-device validation before promotion from `public-candidate` to
-`public`.
+Published as workshop / YouTube lesson material.
 
 Human checks:
 
 - Page opens.
-- ORPHE CORE connects in Chrome.
-- Acceleration data changes the plotted waveform.
+- Links are intact.
 - The DFT / frequency display is understandable for workshop use.
+- Optional: ORPHE CORE connects in Chrome and acceleration data changes the
+  plotted waveform.
 
 ## Notes
 
 - This page consolidates the old Workshop #7 and Workshop #8 samples.
-- It should probably stay under a workshop/archive category rather than the
-  beginner Examples path.
+- It stays under the workshop/archive category rather than the beginner
+  Examples path.

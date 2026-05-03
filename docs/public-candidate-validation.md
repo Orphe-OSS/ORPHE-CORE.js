@@ -9,20 +9,17 @@ validation" as a public badge in the examples gallery.
 
 ## Current Status
 
-- `public`: 38 entries
-- `public-candidate`: 3 entries
+- `public`: 40 entries
+- `public-candidate`: 0 entries
 
-`GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, and `CORE_TIME_SYNC` were promoted to `public` after owner
-real-device checks. The entries below remain candidates.
+`GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, and
+`CORE_TIME_SYNC` were promoted to `public` after owner real-device checks.
+`WORKSHOP_07` and `ws/tmu2025` were promoted as public workshop / educational
+reference entries after owner placement decisions.
 
 ## Morning Check List
 
-Open these URLs from a local server and use Chrome for BLE tests.
-
-| Order | Entry | URL | Device | Main check | Promotion blocker |
-|---|---|---|---:|---|---|
-| 1 | `workshop-07` | `http://localhost:8767/examples/WORKSHOP_07/` | 1 | Page opens and workshop value is clear | Keep in workshop category; do not feature on LP yet |
-| 2 | `ws-tmu2025` | `http://localhost:8767/ws/tmu2025/` | varies | Gallery opens and links work | Keep as workshop gallery; split strong works later |
+No public-candidate entries are currently waiting for promotion.
 
 ## Promotion Rules
 
@@ -33,26 +30,26 @@ Promote a candidate to `public` only when all relevant items are true:
 - Restart/reconnect flow does not obviously break the session.
 - README or page copy explains what it does, required device count, startup, and known limitations.
 - `examples/catalog.json` has `needs_real_device_validation: false`.
-- `validation` includes a real-device validation note.
+- `validation` includes a real-device validation note or an owner placement decision for workshop / educational archives.
 
 Do not promote workshop galleries or developer tools just because they open.
 They need a navigation decision first.
 
 ## Candidate Details
 
+No active candidates.
 
+## Published Workshop References
 
+### `examples/WORKSHOP_07/`
 
-
-### 1. `examples/WORKSHOP_07/`
-
-Purpose: workshop material for Fourier / DFT.
+Purpose: YouTube ORPHE CORE WS material for Fourier / DFT / FFT.
 
 Current state:
 
-- `status`: `public-candidate`
+- `status`: `public`
 - This is workshop material, not a beginner app.
-- Missing a dedicated README.
+- Linked from the LP workshop section.
 
 Can be checked without device:
 
@@ -66,15 +63,15 @@ Placement decision:
 - Do not feature it on the LP's main Examples section.
 - Use this as the workshop slot for Fourier / DFT material.
 
-### 2. `ws/tmu2025/`
+### `ws/tmu2025/`
 
-Purpose: workshop gallery.
+Purpose: Tokyo Metropolitan University class / workshop outcome gallery.
 
 Current state:
 
-- `status`: `public-candidate`
-- This is a gallery of workshop works, not a single maintained example.
-- Missing a dedicated README.
+- `status`: `public`
+- This is a gallery of class / workshop outcomes, not a single maintained example.
+- Linked from the LP workshop section.
 
 Can be checked without device:
 

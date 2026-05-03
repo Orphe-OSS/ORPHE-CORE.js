@@ -126,7 +126,7 @@
     },
     'workshop-07': {
       title: 'Fourier / DFT Workshop',
-      value: 'ワークショップで使ったフーリエ解析・DFTのExampleです。'
+      value: 'YouTubeのORPHE CORE WSで扱ったDFT/FFT教材です。'
     },
     'starter-light': {
       title: 'LED Starter',
@@ -185,8 +185,8 @@
       value: 'Electronでデスクトップアプリ化する入口です。'
     },
     'ws-tmu2025': {
-      title: 'TMU 2025 Workshop Gallery',
-      value: 'ワークショップ参加者による制作例をまとめたページです。'
+      title: 'TMU 2025 授業成果ギャラリー',
+      value: '東京都立大学での授業・ワークショップ成果を参照できます。'
     },
     'app-orphe-terminal': {
       title: 'ORPHE TERMINAL',

@@ -1,11 +1,11 @@
-# Lunar Hurdle 110m
+# 110m Hurdle Game
 
-ORPHE COREを足に装着して走る動きで進み、月面の低重力をテーマにしたハードルを越えてゴールを目指すVirtual Sports Exampleです。
+ORPHE COREを足に装着して走る動きで進み、ハードルを越えてゴールを目指すVirtual Sports Exampleです。
 
 ## What It Does
 
 - Uses ORPHE CORE motion and gait data as the game input.
-- Shows a lunar low-gravity 110m hurdle race as a browser game.
+- Shows a 110m hurdle race as a browser game.
 - Provides the flagship example for the Virtual Sports category.
 
 ## このExampleで学べること

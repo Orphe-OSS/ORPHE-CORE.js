@@ -252,7 +252,7 @@
       "data": ["stepsNumber", "quat"],
       "devices": 1,
       "validation": ["existing-public-link", "needs-browser-validation"],
-      "issues": ["Large vendored dependencies"],
+      "issues": ["Loads MediaPipe runtime/model assets from jsDelivr"],
       "category": "creative-coding",
       "difficulty": "advanced",
       "featured": false,
@@ -741,33 +741,6 @@
       "device_count": 1,
       "needs_real_device_validation": false,
       "public_navigation": "listed"
-    },
-    {
-      "id": "icc2022sep",
-      "title": "ICC2022Sep",
-      "path": "examples/ICC2022Sep/",
-      "type": "web-app",
-      "status": "needs-review",
-      "audience": ["creative-coder", "research"],
-      "value": "Pose and ORPHE integration from an event/demo context.",
-      "topics": ["pose", "MediaPipe", "creative-coding"],
-      "data": ["stepsNumber", "landingImpact", "pronation", "stride", "quat"],
-      "devices": 1,
-      "validation": ["needs-browser-validation", "needs-device-verification"],
-      "issues": ["Large vendored dependencies", "Possible duplicate p5 bundle"],
-      "category": "creative-coding",
-      "difficulty": "advanced",
-      "featured": false,
-      "thumbnail": null,
-      "sort_order": null,
-      "links": {
-        "demo": "examples/ICC2022Sep/index.html",
-        "source": "examples/ICC2022Sep/"
-      },
-      "requires_device": true,
-      "device_count": 1,
-      "needs_real_device_validation": true,
-      "public_navigation": "hidden"
     },
     {
       "id": "workshop-07",
@@ -1362,11 +1335,6 @@
       "path": "examples/p5.ORPHE.FSR_visualise_0327_submit/index.html",
       "issue": "<title> element is empty.",
       "suggested_fix": "Set a meaningful title; also reconsider directory naming (`_0327_submit` looks like a one-off submission)."
-    },
-    {
-      "path": "examples/ICC2022Sep/README.md",
-      "issue": "README is a verbatim copy of POSE/README.md (title 'POSE' is wrong for this directory).",
-      "suggested_fix": "Rewrite the README for this example specifically."
     }
   ],
   "audit_findings": {
@@ -1397,10 +1365,6 @@
       {
         "file": "examples/GAME-RHYTHM/index.html",
         "title": "ORPHE CORE JS DEMO"
-      },
-      {
-        "file": "examples/ICC2022Sep/index.html",
-        "title": "ORPHE CORE JS"
       },
       {
         "file": "examples/INFORMATION/index.html",

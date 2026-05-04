@@ -33,11 +33,9 @@ function onResults(results) {
   grid.updateLandmarks(results.poseWorldLandmarks);
 }
 
+const MEDIAPIPE_POSE_ASSET_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/';
 const pose = new Pose({
-  locateFile: (file) => {
-    console.log(file);
-    return `./models/${file}`;
-  }
+  locateFile: (file) => `${MEDIAPIPE_POSE_ASSET_BASE}${file}`
 });
 pose.setOptions({
   modelComplexity: 1,

@@ -3,7 +3,7 @@
 
   const uiText = {
     ja: {
-      documentTitle: 'Examples一覧 - ORPHE-CORE.js',
+      documentTitle: 'ORPHE-CORE.js Examples | IMUセンサー・歩容解析・Virtual Sports',
       toggle: 'English',
       title: 'ORPHE COREで作れるものを探す。',
       lead: '接続やLED制御から、センサー値の取得、Gait Analysis、記録・解析、ゲーム、クリエイティブ表現まで、目的に合わせてExampleを選べます。',
@@ -20,7 +20,7 @@
       deviceUnit: (count) => `${count}台`
     },
     en: {
-      documentTitle: 'Examples - ORPHE-CORE.js',
+      documentTitle: 'ORPHE-CORE.js Examples | IMU Sensor, Gait Analysis, Virtual Sports',
       toggle: '日本語',
       title: 'Find examples by what you want to build.',
       lead: 'Choose an example for your goal, from connection and LED control to sensor values, Gait Analysis, recording, games, and creative coding.',

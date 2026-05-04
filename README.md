@@ -7,6 +7,56 @@ Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/) for d
 Please go to [the github page](https://orphe-oss.github.io/ORPHE-CORE.js/tutorial/) for tutorial.
 チュートリアルは[githubページ](https://orphe-oss.github.io/ORPHE-CORE.js/tutorial/)をご覧ください。
 
+## Use ORPHE-CORE.js in your app
+
+You do not need to clone this whole repository just to use ORPHE-CORE.js.
+For most web prototypes, start from the CDN snippet below.
+
+ORPHE-CORE.jsを使うだけなら、このリポジトリ全体をcloneする必要はありません。
+多くのWebプロトタイプでは、まず以下のCDN読み込みから始めるのが簡単です。
+
+### Use via CDN
+
+This is the shortest path for trying ORPHE CORE from a browser.
+
+ブラウザからORPHE COREを試す最短の導入方法です。
+
+```html
+<button onclick="connectOrphe()">Connect ORPHE</button>
+
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js"></script>
+<script>
+  const core = new Orphe(0);
+
+  window.onload = function () {
+    core.setup();
+  };
+
+  async function connectOrphe() {
+    await core.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+    core.setLED(1, 0);
+  }
+</script>
+```
+
+### Download minimal files
+
+If you want to keep the library files inside your own project, copy only the files you need from `js/`.
+
+自分のプロジェクト内にライブラリファイルを置きたい場合は、`js/` から必要なファイルだけをコピーしてください。
+
+| Use case | Files |
+| --- | --- |
+| Basic ORPHE CORE connection | `js/ORPHE-CORE.js` |
+| Use CoreToolkit connection UI | `js/ORPHE-CORE.js`, `js/CoreToolkit.js`, `js/BleSharedBridge.js` |
+| Fully offline use | Add `js/float16.min.js` and `js/quaternion.js` as well |
+
+`ORPHE-CORE.js` can load `float16.min.js` and `quaternion.js` from the CDN when they are not already present.
+If your app must work without internet access, include those two dependency files locally too.
+
+`ORPHE-CORE.js` は、`float16.min.js` と `quaternion.js` が未読み込みの場合にCDNから自動で読み込みます。
+インターネット接続なしで動かしたい場合は、この2つの依存ファイルもローカルに置いてください。
+
 ## Version
 機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。
 

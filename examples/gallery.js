@@ -1,16 +1,70 @@
 (function () {
+  const LANGUAGE_STORAGE_KEY = 'orphe-core-js-language';
+
+  const uiText = {
+    ja: {
+      documentTitle: 'Examples一覧 - ORPHE-CORE.js',
+      toggle: 'English',
+      title: 'ORPHE COREで作れるものを探す。',
+      lead: '接続やLED制御から、センサー値の取得、Gait Analysis、記録・解析、ゲーム、クリエイティブ表現まで、目的に合わせてExampleを選べます。',
+      category: 'カテゴリー',
+      allCategories: 'すべてのカテゴリー',
+      difficulty: '難易度',
+      allLevels: 'すべてのレベル',
+      search: '検索',
+      searchPlaceholder: 'タイトル・トピック・データで検索',
+      stats: (total, filtered) => `${total}件中 ${filtered}件を表示`,
+      empty: '条件に合うExampleがありません。',
+      loadError: (message) => `examples/catalog.json を読み込めませんでした: ${message}`,
+      thumbnailFallback: 'サムネイル準備中',
+      deviceUnit: (count) => `${count}台`
+    },
+    en: {
+      documentTitle: 'Examples - ORPHE-CORE.js',
+      toggle: '日本語',
+      title: 'Find examples by what you want to build.',
+      lead: 'Choose an example for your goal, from connection and LED control to sensor values, Gait Analysis, recording, games, and creative coding.',
+      category: 'Category',
+      allCategories: 'All categories',
+      difficulty: 'Difficulty',
+      allLevels: 'All levels',
+      search: 'Search',
+      searchPlaceholder: 'Search title, topic, or data',
+      stats: (total, filtered) => `${filtered} of ${total} examples shown`,
+      empty: 'No examples match these filters.',
+      loadError: (message) => `Could not load examples/catalog.json: ${message}`,
+      thumbnailFallback: 'Thumbnail coming soon',
+      deviceUnit: (count) => `${count} ${count === 1 ? 'CORE' : 'COREs'}`
+    }
+  };
+
   const categoryLabels = {
-    'getting-started': 'はじめる',
-    'sensor-basics': 'センサー基礎',
-    'gait-analysis': 'Gait Analysis',
-    'recording-analysis': '記録・解析',
-    'virtual-sports': 'Virtual Sports',
-    'playable-app': '遊べるアプリ',
-    'creative-coding': 'Creative Coding',
-    'research-integration': '研究・連携',
-    'workshop-archive': 'ワークショップ',
-    'developer-tool': '開発ツール',
-    'internal-test': '内部テスト'
+    ja: {
+      'getting-started': 'はじめる',
+      'sensor-basics': 'センサー基礎',
+      'gait-analysis': 'Gait Analysis',
+      'recording-analysis': '記録・解析',
+      'virtual-sports': 'Virtual Sports',
+      'playable-app': '遊べるアプリ',
+      'creative-coding': 'Creative Coding',
+      'research-integration': '研究・連携',
+      'workshop-archive': 'ワークショップ',
+      'developer-tool': '開発ツール',
+      'internal-test': '内部テスト'
+    },
+    en: {
+      'getting-started': 'Getting Started',
+      'sensor-basics': 'Sensor Basics',
+      'gait-analysis': 'Gait Analysis',
+      'recording-analysis': 'Recording and Analysis',
+      'virtual-sports': 'Virtual Sports',
+      'playable-app': 'Playable Apps',
+      'creative-coding': 'Creative Coding',
+      'research-integration': 'Research and Integrations',
+      'workshop-archive': 'Workshops',
+      'developer-tool': 'Developer Tools',
+      'internal-test': 'Internal Tests'
+    }
   };
 
   const categoryOrder = [
@@ -28,9 +82,16 @@
   ];
 
   const difficultyLabels = {
-    beginner: '初級',
-    intermediate: '中級',
-    advanced: '上級'
+    ja: {
+      beginner: '初級',
+      intermediate: '中級',
+      advanced: '上級'
+    },
+    en: {
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced'
+    }
   };
 
   const entryTextJa = {
@@ -217,8 +278,33 @@
   const categoryFilter = document.querySelector('#categoryFilter');
   const difficultyFilter = document.querySelector('#difficultyFilter');
   const searchFilter = document.querySelector('#searchFilter');
+  const languageToggle = document.querySelector('#languageToggle');
+  const pageTitle = document.querySelector('#pageTitle');
+  const pageLead = document.querySelector('#pageLead');
+  const categoryLabel = document.querySelector('#categoryLabel');
+  const categoryAllOption = document.querySelector('#categoryAllOption');
+  const difficultyLabelElement = document.querySelector('#difficultyLabel');
+  const difficultyAllOption = document.querySelector('#difficultyAllOption');
+  const searchLabel = document.querySelector('#searchLabel');
 
   let allEntries = [];
+  let lang = document.documentElement.dataset.lang || 'ja';
+
+  function normalizeLanguage(value) {
+    return value === 'ja' ? 'ja' : 'en';
+  }
+
+  function getInitialLanguage() {
+    let storedLanguage = '';
+    try {
+      storedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) || '';
+    } catch (error) {
+      storedLanguage = '';
+    }
+    if (storedLanguage === 'ja' || storedLanguage === 'en') return storedLanguage;
+    const browserLanguage = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+    return /^ja\b/i.test(browserLanguage) ? 'ja' : 'en';
+  }
 
   function escapeHtml(value) {
     return String(value)
@@ -255,15 +341,17 @@
 
   function difficultyLabel(entry) {
     const difficulty = difficultyFor(entry);
-    return difficultyLabels[difficulty] || difficulty;
+    return difficultyLabels[lang][difficulty] || difficulty;
   }
 
   function displayTitle(entry) {
-    return entryTextJa[entry.id]?.title || entry.title || entry.id;
+    if (lang === 'ja') return entryTextJa[entry.id]?.title || entry.title || entry.id;
+    return entry.title || entryTextJa[entry.id]?.title || entry.id;
   }
 
   function displayValue(entry) {
-    return entryTextJa[entry.id]?.value || entry.value || '';
+    if (lang === 'ja') return entryTextJa[entry.id]?.value || entry.value || '';
+    return entry.value || entryTextJa[entry.id]?.value || '';
   }
 
   function sortValue(entry, index) {
@@ -289,13 +377,52 @@
       .sort((a, b) => orderIndex(difficultyOrder, a) - orderIndex(difficultyOrder, b) || a.localeCompare(b));
 
     categoryFilter.insertAdjacentHTML('beforeend', categories.map((category) => {
-      const label = categoryLabels[category] || category;
+      const label = categoryLabels[lang][category] || category;
       return `<option value="${escapeHtml(category)}">${escapeHtml(label)}</option>`;
     }).join(''));
 
     difficultyFilter.insertAdjacentHTML('beforeend', difficulties.map((difficulty) => (
-      `<option value="${escapeHtml(difficulty)}">${escapeHtml(difficultyLabels[difficulty] || difficulty)}</option>`
+      `<option value="${escapeHtml(difficulty)}">${escapeHtml(difficultyLabels[lang][difficulty] || difficulty)}</option>`
     )).join(''));
+  }
+
+  function localizeFilterOptions() {
+    [...categoryFilter.options].forEach((option) => {
+      option.textContent = option.value ? (categoryLabels[lang][option.value] || option.value) : uiText[lang].allCategories;
+    });
+    [...difficultyFilter.options].forEach((option) => {
+      option.textContent = option.value ? (difficultyLabels[lang][option.value] || option.value) : uiText[lang].allLevels;
+    });
+  }
+
+  function updateStaticText() {
+    const text = uiText[lang];
+    document.documentElement.lang = lang;
+    document.documentElement.dataset.lang = lang;
+    document.title = text.documentTitle;
+    languageToggle.textContent = text.toggle;
+    pageTitle.textContent = text.title;
+    pageLead.textContent = text.lead;
+    categoryLabel.textContent = text.category;
+    categoryAllOption.textContent = text.allCategories;
+    difficultyLabelElement.textContent = text.difficulty;
+    difficultyAllOption.textContent = text.allLevels;
+    searchLabel.textContent = text.search;
+    searchFilter.placeholder = text.searchPlaceholder;
+  }
+
+  function applyLanguage(nextLanguage, options = {}) {
+    lang = normalizeLanguage(nextLanguage);
+    updateStaticText();
+    localizeFilterOptions();
+    render();
+    if (options.persist) {
+      try {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+      } catch (error) {
+        // Ignore storage failures in private or restricted browser contexts.
+      }
+    }
   }
 
   function applyInitialFilters() {
@@ -340,7 +467,7 @@
   function card(entry) {
     const thumbnail = entry.thumbnail
       ? `<img src="${escapeHtml(normalizeLink(entry.thumbnail))}" alt="">`
-      : `<span>サムネイル準備中</span>`;
+      : `<span>${escapeHtml(uiText[lang].thumbnailFallback)}</span>`;
     const devices = entry.device_count || entry.devices || 1;
 
     return `
@@ -351,7 +478,7 @@
           <p>${escapeHtml(displayValue(entry))}</p>
           <div class="meta">
             <span class="pill">${escapeHtml(difficultyLabel(entry))}</span>
-            <span class="pill">${devices}台</span>
+            <span class="pill">${escapeHtml(uiText[lang].deviceUnit(devices))}</span>
           </div>
         </div>
       </a>
@@ -368,10 +495,10 @@
       groups.get(category).push(entry);
     });
 
-    stats.textContent = `${allEntries.length}件中 ${filtered.length}件を表示`;
+    stats.textContent = uiText[lang].stats(allEntries.length, filtered.length);
 
     if (!filtered.length) {
-      gallery.innerHTML = '<div class="empty">条件に合うExampleがありません。</div>';
+      gallery.innerHTML = `<div class="empty">${escapeHtml(uiText[lang].empty)}</div>`;
       return;
     }
 
@@ -382,7 +509,7 @@
         .join('');
       return `
         <section class="category">
-          <h2>${escapeHtml(categoryLabels[category] || category)}</h2>
+          <h2>${escapeHtml(categoryLabels[lang][category] || category)}</h2>
           <div class="grid">${cards}</div>
         </section>
       `;
@@ -390,8 +517,10 @@
   }
 
   function setError(error) {
-    gallery.innerHTML = `<div class="error">examples/catalog.json を読み込めませんでした: ${escapeHtml(error.message)}</div>`;
+    gallery.innerHTML = `<div class="error">${escapeHtml(uiText[lang].loadError(error.message))}</div>`;
   }
+
+  updateStaticText();
 
   fetch('catalog.json')
     .then((response) => {
@@ -405,11 +534,16 @@
         .sort((a, b) => sortValue(a, a._index) - sortValue(b, b._index) || displayTitle(a).localeCompare(displayTitle(b)));
       populateFilters(allEntries);
       applyInitialFilters();
+      applyLanguage(getInitialLanguage());
       render();
     })
     .catch(setError);
 
   [categoryFilter, difficultyFilter, searchFilter].forEach((control) => {
     control.addEventListener('input', render);
+  });
+
+  languageToggle.addEventListener('click', () => {
+    applyLanguage(lang === 'ja' ? 'en' : 'ja', { persist: true });
   });
 }());

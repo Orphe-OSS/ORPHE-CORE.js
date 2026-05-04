@@ -89,7 +89,7 @@
 
 This document is a historical audit. Current public/public-candidate counts are maintained by `examples/catalog.json` and `scripts/check-examples-catalog.js`.
 
-## 不在: needs-review / needs-fix (4 件)
+## 不在: needs-review / needs-fix (3 件)
 
 実機接続が必要 or 内容判断が必要なため、thumbnail 撮影は status を `public` / `public-candidate` に昇格させる時に同時実施するのが安全。
 
@@ -97,7 +97,6 @@ This document is a historical audit. Current public/public-candidate counts are 
 | --- | --- | --- |
 | `examples/CORE_TIME_SYNC/` | needs-fix | 静的画面なのでスクショで十分 |
 | `examples/GAME-RHYTHM/` | needs-review | 実機確認後に撮影判断 |
-| `examples/ICC2022Sep/` | needs-review | 実機接続必要 |
 | `examples/p5.ORPHE.FSR_visualise_0327_submit/` | needs-review | INSOLE 接続後の FSR 円グラデーション (撮影は ORPHE INSOLE 必要) |
 
 ## 補足: catalog 未登録の HURDLE family ディレクトリ

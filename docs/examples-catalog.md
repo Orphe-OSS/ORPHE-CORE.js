@@ -151,7 +151,6 @@ Workshop materials and class outcome pages are published under
 These may be valuable, but need human or device review before promotion:
 
 - `examples/GAME-RHYTHM/`: contains an old local ORPHE-CORE.js copy.
-- `examples/ICC2022Sep/`: useful pose integration, but dependency size and purpose need clarification.
 - `examples/p5.ORPHE.FSR_visualise_0327_submit/`: may be ORPHE INSOLE/FSR-specific rather than general ORPHE CORE.js.
 - `tutorial/`: old tutorial structure needs review.
 - `ws/`: workshop archives are useful but should be presented separately from main examples.

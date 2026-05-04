@@ -38,7 +38,6 @@ Do not convert every example to CoreToolkit.
 | `examples/POSE/` | `needs-design` | MediaPipe/camera UI and BLE flow need an integrated design before CoreToolkit. |
 | `examples/GAME-BOXING/` | `needs-design` | Custom calibration/game flow and two-device semantics are tightly coupled. |
 | `examples/OH1/` | `do-not-change` | External BLE heart-rate integration makes this special. |
-| `examples/ICC2022Sep/` | `do-not-change` | Legacy/conference asset; audit before promotion. |
 | `ws/tmu2022/` | `do-not-change` | Workshop archive with bundled old dependencies. |
 | `ws/tmu2025/` | `needs-design` | Many standalone student apps; should be curated, not bulk-converted. |
 

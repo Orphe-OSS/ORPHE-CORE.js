@@ -29,7 +29,6 @@ promotion queue without adding unvalidated work to the landing page.
 | `examples/GAME-HURDLE-400M-VS/` | `public-candidate` + `needs-real-device-validation` | 400m hurdle variant broadens the Virtual Sports category. | README and thumbnail prepared; needs two-device playtest before public navigation. |
 | `examples/GAME-HURDLE-VS-advance/` | `duplicate` | Advanced hurdle variant. | Keep unlisted; publish only if it is clearly better than the base VS version. |
 | `examples/GAME-SPRINT-100M-VS/` | `public-candidate` + `needs-real-device-validation` | Sprint game variant may broaden sports examples. | README and thumbnail prepared; needs two-device playtest before public navigation. |
-| `examples/ICC2022Sep/` | `keep-unlisted` | Historical installation/conference artifact. | Keep as archive unless rewritten as a modern creative example. |
 | `examples/WORKSHOP_07/` | `keep-unlisted` | Workshop tutorial value. | Link from docs/workshop area, not LP example cards. |
 | `examples/p5.ORPHE.FSR_visualise_0327_submit/` | `needs-rewrite` | Research/visualization idea may be useful. | Rename strategy, README, determine if FSR dependency/context is still relevant. |
 | `ws/tmu2025/` | `keep-unlisted` + `needs-real-device-validation` | Many student/tutorial apps could become future examples. | Curate individual apps into catalog entries before promotion. |

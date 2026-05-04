@@ -117,7 +117,6 @@ Visibility condition:
 | Entry | Decision | Reason | Next action |
 |---|---|---|---|
 | `examples/GAME-RHYTHM/` | rewrite | Potentially valuable rhythm game, but it carries an old local SDK copy and needs modernization. | Keep unlisted; rewrite as a maintained rhythm example later. |
-| `examples/ICC2022Sep/` | archive | Historical event/demo artifact with large vendored dependencies. | Keep as archive unless a modern creative example is extracted. |
 | `examples/p5.ORPHE.FSR_visualise_0327_submit/` | domain review | May be FSR / ORPHE INSOLE specific rather than general ORPHE CORE.js. | Keep unlisted until product scope is decided. |
 | `ws/tmu2022/` | archive | Old workshop archive with zip content and older demo conventions. | Keep unlisted; clean archive metadata only if needed. |
 

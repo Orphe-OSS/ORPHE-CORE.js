@@ -83,8 +83,8 @@
       value: 'ORPHE COREのデータからジェスチャー検出を試す起点です。'
     },
     'game-hurdle': {
-      title: '110m ハードル走',
-      value: 'Gait Analysisと足の動きで走る、Virtual Sportsの代表Exampleです。'
+      title: '月面ハードル走 110m',
+      value: '月面の低重力をテーマに、Gait Analysisと足の動きで走るVirtual Sports Exampleです。'
     },
     'game-sprint-100m-vs': {
       title: '100m走 VS',

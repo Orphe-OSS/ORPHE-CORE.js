@@ -16,6 +16,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ORPHE-CORE.js Document</title>
+  <script>
+    (function () {
+      const storageKey = 'orphe-core-js-language';
+      const normalizeLanguage = (value) => /^ja\b/i.test(value || '') ? 'ja' : 'en';
+      let preferredLanguage = '';
+      try {
+        preferredLanguage = localStorage.getItem(storageKey) || '';
+      } catch (error) {
+        preferredLanguage = '';
+      }
+      if (preferredLanguage !== 'ja' && preferredLanguage !== 'en') {
+        preferredLanguage = normalizeLanguage((navigator.languages && navigator.languages[0]) || navigator.language || 'en');
+      }
+      document.documentElement.lang = preferredLanguage;
+      document.documentElement.dataset.lang = preferredLanguage;
+    })();
+  </script>
 
   <link href="./css/custom.css" rel="stylesheet">
 
@@ -34,6 +51,18 @@
     .lang.active {
       display: block;
       opacity: 1;
+    }
+
+    html[data-lang="en"] .lang.ja,
+    html[data-lang="ja"] .lang.en {
+      display: none !important;
+      opacity: 0 !important;
+    }
+
+    html[data-lang="en"] .lang.en,
+    html[data-lang="ja"] .lang.ja {
+      display: block !important;
+      opacity: 1 !important;
     }
   </style>
 </head>
@@ -828,7 +857,7 @@
       <p class="lang en">Sports examples that turn gait and foot motion into track, sprint, hurdle, and competition-style experiences.</p>
       <p class="lang ja active">歩行・走行・足の動きを使って、陸上競技や対戦型スポーツ体験を作るExampleです。</p>
       <div class="dx-example-card-grid">
-        <article class="dx-example-card"><img src="./examples/_thumbnails/hurdle-110m.png" alt="110m hurdles"><div class="dx-example-card-body"><h4>110m Hurdles</h4><p>Gait Analysisと足の動きを使った、Virtual Sportsの代表Exampleです。</p><div class="dx-example-tags"><span>Virtual Sports</span><span>2 COREs</span></div><div class="dx-example-links"><a href="./examples/GAME-HURDLE/" target="_blank">DEMO</a><a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/GAME-HURDLE" target="_blank">Source</a></div></div></article>
+        <article class="dx-example-card"><img src="./examples/_thumbnails/hurdle-110m.png" alt="Lunar Hurdle 110m"><div class="dx-example-card-body"><h4 class="lang en">Lunar Hurdle 110m</h4><h4 class="lang ja active">月面ハードル走 110m</h4><p class="lang en">A lunar low-gravity Virtual Sports example powered by Gait Analysis and foot motion.</p><p class="lang ja active">月面の低重力をテーマに、Gait Analysisと足の動きで走るVirtual Sports Exampleです。</p><div class="dx-example-tags"><span>Virtual Sports</span><span>2 COREs</span></div><div class="dx-example-links"><a href="./examples/GAME-HURDLE/" target="_blank">DEMO</a><a href="https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/main/examples/GAME-HURDLE" target="_blank">Source</a></div></div></article>
       </div>
       <div class="dx-mini-link-grid">
         <a class="dx-mini-link" href="./examples/?category=virtual-sports" target="_blank">Virtual Sports category</a>
@@ -944,27 +973,48 @@
     hljs.addPlugin(new CopyButtonPlugin());
   </script>
   <script>
-    let lang = 'ja';
-    function toggleLanguage() {
-      if (lang == 'ja') {
-        lang = 'en';
-      } else {
-        lang = 'ja';
-      }
-      document.querySelectorAll('.lang').forEach(element => {
-        if (element.classList.contains(lang)) {
-          element.style.display = 'block';
-          setTimeout(() => {
-            element.classList.add('active');
-          }, 10); // 少し遅らせてからクラスを追加
-        } else {
-          element.classList.remove('active');
-          setTimeout(() => {
-            element.style.display = 'none';
-          }, 500); // フェードアウトの後に非表示
-        }
-      });
+    const LANGUAGE_STORAGE_KEY = 'orphe-core-js-language';
+    let lang = document.documentElement.dataset.lang || 'en';
+
+    function normalizeLanguage(value) {
+      return value === 'ja' ? 'ja' : 'en';
     }
+
+    function getInitialLanguage() {
+      let storedLanguage = '';
+      try {
+        storedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) || '';
+      } catch (error) {
+        storedLanguage = '';
+      }
+      if (storedLanguage === 'ja' || storedLanguage === 'en') return storedLanguage;
+      const browserLanguage = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+      return /^ja\b/i.test(browserLanguage) ? 'ja' : 'en';
+    }
+
+    function applyLanguage(nextLanguage, options = {}) {
+      lang = normalizeLanguage(nextLanguage);
+      document.documentElement.lang = lang;
+      document.documentElement.dataset.lang = lang;
+      document.querySelectorAll('.lang').forEach(element => {
+        const isActive = element.classList.contains(lang);
+        element.classList.toggle('active', isActive);
+        element.style.display = isActive ? 'block' : 'none';
+      });
+      if (options.persist) {
+        try {
+          localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+        } catch (error) {
+          // Ignore storage failures in private or restricted browser contexts.
+        }
+      }
+    }
+
+    function toggleLanguage() {
+      applyLanguage(lang === 'ja' ? 'en' : 'ja', { persist: true });
+    }
+
+    applyLanguage(getInitialLanguage());
   </script>
 
 </body>

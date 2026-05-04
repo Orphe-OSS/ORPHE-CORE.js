@@ -61,7 +61,7 @@ If your app must work without internet access, include those two dependency file
 
 ORPHE-CORE.js is developed as a JavaScript library for people using ORPHE CORE.
 
-For versions published after this notice, ORPHE-CORE.js is free to use, modify, and study for:
+For ORPHE-CORE.js v1.4.0 and later, the library is free to use, modify, and study for:
 
 * education and workshops
 * academic and non-commercial research
@@ -71,13 +71,13 @@ For versions published after this notice, ORPHE-CORE.js is free to use, modify, 
 
 If you use ORPHE-CORE.js to build a paid app, paid service, commercial SDK integration, commissioned product, or business service, please contact ORPHE for a separate commercial agreement.
 
-This policy applies to versions published after this notice. Previously released versions remain available under the terms that applied at the time of their release.
+This usage policy applies to ORPHE-CORE.js v1.4.0 and later. Previously released versions up to v1.3.x remain available under the terms that applied at the time of their release.
 
 ## 利用方針と商用利用について
 
 ORPHE-CORE.js は、ORPHE COREを使う人のためのJavaScriptライブラリです。
 
-この告知以降に公開されるバージョンでは、以下の用途について、改変を含めて無償で利用できます。
+ORPHE-CORE.js v1.4.0以降では、以下の用途について、改変を含めて無償で利用できます。
 
 * 教育・ワークショップ
 * 大学・研究機関などでの非商用研究
@@ -87,7 +87,7 @@ ORPHE-CORE.js は、ORPHE COREを使う人のためのJavaScriptライブラリ�
 
 ORPHE-CORE.jsを使って、有料アプリ、有料サービス、商用SDK連携、受託開発、事業として提供するサービスを作る場合は、別途ORPHEとの商用契約が必要です。
 
-この方針は、この告知以降に公開されるバージョンに適用されます。すでに公開済みのバージョンは、その公開時点で適用されていた条件に従って利用できます。
+この利用方針は、ORPHE-CORE.js v1.4.0以降に適用されます。v1.3.xまでの既存公開済みバージョンは、その公開時点で適用されていた条件に従って利用できます。
 
 ## Version
 機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。
@@ -130,4 +130,4 @@ npm run generate-docs
 
 ## Copyright and licensing
  * Copyright (C) 2022-2024, Tetsuaki BABA and ORPHE.inc.
- * See the usage policy above for versions published after this notice. Previously released versions remain available under the terms that applied at the time of their release.
+ * See the usage policy above for ORPHE-CORE.js v1.4.0 and later. Previously released versions up to v1.3.x remain available under the terms that applied at the time of their release.

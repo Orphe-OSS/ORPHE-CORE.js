@@ -4,6 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Examples一覧 - ORPHE-CORE.js</title>
+  <script>
+    (function () {
+      const storageKey = 'orphe-core-js-language';
+      const normalizeLanguage = (value) => /^ja\b/i.test(value || '') ? 'ja' : 'en';
+      let preferredLanguage = '';
+      try {
+        preferredLanguage = localStorage.getItem(storageKey) || '';
+      } catch (error) {
+        preferredLanguage = '';
+      }
+      if (preferredLanguage !== 'ja' && preferredLanguage !== 'en') {
+        preferredLanguage = normalizeLanguage((navigator.languages && navigator.languages[0]) || navigator.language || 'en');
+      }
+      document.documentElement.lang = preferredLanguage;
+      document.documentElement.dataset.lang = preferredLanguage;
+    })();
+  </script>
   <link rel="stylesheet" href="../css/custom.css">
   <style>
     :root {
@@ -38,6 +55,30 @@
       display: grid;
       gap: 16px;
       margin-bottom: 32px;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .language-toggle {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      padding: 0 14px;
+      cursor: pointer;
+    }
+
+    .language-toggle:hover,
+    .language-toggle:focus-visible {
+      border-color: var(--accent);
+      outline: none;
     }
 
     .eyebrow {
@@ -191,27 +232,30 @@
 </head>
 <body>
   <main>
+    <div class="top-actions">
+      <button id="languageToggle" class="language-toggle" type="button">English</button>
+    </div>
     <header class="page-header">
       <div class="eyebrow">ORPHE-CORE.js Examples</div>
-      <h1>ORPHE COREで作れるものを探す。</h1>
-      <p class="lead">接続やLED制御から、センサー値の取得、Gait Analysis、記録・解析、ゲーム、クリエイティブ表現まで、目的に合わせてExampleを選べます。</p>
+      <h1 id="pageTitle">ORPHE COREで作れるものを探す。</h1>
+      <p id="pageLead" class="lead">接続やLED制御から、センサー値の取得、Gait Analysis、記録・解析、ゲーム、クリエイティブ表現まで、目的に合わせてExampleを選べます。</p>
     </header>
 
     <section class="toolbar" aria-label="Example filters">
       <label>
-        カテゴリー
+        <span id="categoryLabel">カテゴリー</span>
         <select id="categoryFilter">
-          <option value="">すべてのカテゴリー</option>
+          <option id="categoryAllOption" value="">すべてのカテゴリー</option>
         </select>
       </label>
       <label>
-        難易度
+        <span id="difficultyLabel">難易度</span>
         <select id="difficultyFilter">
-          <option value="">すべてのレベル</option>
+          <option id="difficultyAllOption" value="">すべてのレベル</option>
         </select>
       </label>
       <label>
-        検索
+        <span id="searchLabel">検索</span>
         <input id="searchFilter" type="search" placeholder="タイトル・トピック・データで検索">
       </label>
     </section>

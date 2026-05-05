@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://orphe-oss.github.io/ORPHE-CORE.js/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://orphe-oss.github.io/ORPHE-CORE.js/en/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://orphe-oss.github.io/ORPHE-CORE.js/ja/" />
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/en/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://orphe-oss.github.io/ORPHE-CORE.js/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://orphe-oss.github.io/ORPHE-CORE.js/en/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://orphe-oss.github.io/ORPHE-CORE.js/ja/" />
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/ja/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://orphe-oss.github.io/ORPHE-CORE.js/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://orphe-oss.github.io/ORPHE-CORE.js/en/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://orphe-oss.github.io/ORPHE-CORE.js/ja/" />
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/examples/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/docs/getting-started-p5.html</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/docs/getting-started-vscode.html</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/docs/getting-started-coretoolkit.html</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-HURDLE/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-SPRINT-100M-VS/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-HURDLE-400M-VS/</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>

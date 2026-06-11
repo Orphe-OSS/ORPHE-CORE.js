@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sensor Visualize — ORPHE INSOLE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link href="../assets/css/orphe_insole.css" rel="stylesheet">
+</head>
+
+<body class="bg-dark text-light">
+
+  <div class="container mt-3">
+    <nav class="navbar navbar-dark position-relative">
+      <span class="navbar-brand mb-0 h1">ORPHE INSOLE — VISUALIZE</span>
+      <span class="position-absolute top-25 end-0 badge bg-secondary p-1" style="font-size:0.7em;">Version 1.0</span>
+    </nav>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div id="toolkit0" class="mb-2"></div>
+        <canvas id="chart0_press"></canvas>
+        <canvas id="chart0_acc"></canvas>
+        <canvas id="chart0_gyro"></canvas>
+        <canvas id="chart0_quat"></canvas>
+        <canvas id="chart0_euler"></canvas>
+      </div>
+
+      <div class="col-md-6">
+        <div id="toolkit1" class="mb-2"></div>
+        <canvas id="chart1_press"></canvas>
+        <canvas id="chart1_acc"></canvas>
+        <canvas id="chart1_gyro"></canvas>
+        <canvas id="chart1_quat"></canvas>
+        <canvas id="chart1_euler"></canvas>
+      </div>
+    </div>
+
+    <hr>
+    <footer class="text-center small">
+      &copy; 2026 ORPHE Inc.
+    </footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.0/chart.min.js"
+    integrity="sha512-R60W3LgKdvvfwbGbqKusRu/434Snuvr9/Flhtoq9cj1LQ9P4HFKParULqOCAisHk/J4zyaEWWjiWIMuP13vXEg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- ORPHE Libraries (REQUIRED ORDER) -->
+  <script src="../../src/ORPHE-INSOLE.js"></script>
+  <script src="../../src/InsoleToolkit.js"></script>
+
+  <script src="./sketch.js"></script>
+
+</body>
+
+</html>

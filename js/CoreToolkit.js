@@ -229,29 +229,44 @@ async function toggleCoreModule(dom, options = {}) {
     let number = parseInt(dom.value);
     let ble = bles[number];
     let notification = dom.getAttribute('notification');
+    if (ble._coreToolkitConnecting) {
+        dom.checked = !!ble.isConnected?.();
+        return;
+    }
     if (checked == true) {
-        const canUseBridge = typeof BleSharedBridge !== 'undefined';
+        const canUseBridge = typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false;
         const hasRemotePrimary = canUseBridge &&
             new BleSharedBridge(number).isRemotePrimaryAvailable();
         const hasRememberedDevice = !!ble._getLastBluetoothDeviceInfo?.();
+        const disallowBluetoothDeviceIds = (options.rejectDuplicateDevices === false) ? [] :
+            bles
+                .filter((otherBle, index) => index !== number && otherBle?.bluetoothDevice?.id)
+                .map(otherBle => otherBle.bluetoothDevice.id);
+        const connectOptions = Object.assign({}, options, { disallowBluetoothDeviceIds });
         const shouldTryRememberedFirst = options.forceDeviceSelection &&
+            options.tryRememberedBeforePicker === true &&
             (hasRemotePrimary || hasRememberedDevice);
         const firstBeginOptions = shouldTryRememberedFirst ?
-            Object.assign({}, options, { forceDeviceSelection: false }) :
-            options;
+            Object.assign({}, connectOptions, { forceDeviceSelection: false }) :
+            connectOptions;
 
         let ret;
+        ble._coreToolkitConnecting = true;
+        dom.disabled = true;
         try {
             ret = await ble.begin(notification, firstBeginOptions);
             if (!ret && options.forceDeviceSelection && hasRememberedDevice && !hasRemotePrimary) {
                 ble.forgetLastBluetoothDevice();
-                ret = await ble.begin(notification, options);
+                ret = await ble.begin(notification, connectOptions);
             }
         } catch (error) {
             document.querySelector(`#switch_ble${number}`).checked = false;
             document.querySelector(`#ui${number}`).style.visibility = 'hidden';
             ble.onError(error);
             return;
+        } finally {
+            ble._coreToolkitConnecting = false;
+            dom.disabled = false;
         }
         if (!ret) {
             document.querySelector(`#switch_ble${number}`).checked = false;
@@ -302,11 +317,16 @@ async function switchCoreBluetoothDevice(no, options = {}) {
     const sw = document.querySelector(`#switch_ble${no}`);
     const uiEl = document.querySelector(`#ui${no}`);
     const notification = sw?.getAttribute('notification') || 'STEP_ANALYSIS_AND_SENSOR_VALUES';
+    const disallowBluetoothDeviceIds = (options.rejectDuplicateDevices === false) ? [] :
+        bles
+            .filter((otherBle, index) => index !== no && otherBle?.bluetoothDevice?.id)
+            .map(otherBle => otherBle.bluetoothDevice.id);
+    const connectOptions = Object.assign({}, options, { disallowBluetoothDeviceIds });
 
     try {
         if (uiEl) uiEl.style.visibility = 'hidden';
-        await ble.selectBluetoothDevice('DEVICE_INFORMATION');
-        const ret = await ble.begin(notification, options);
+        await ble.selectBluetoothDevice('DEVICE_INFORMATION', connectOptions);
+        const ret = await ble.begin(notification, connectOptions);
         if (sw) sw.checked = !!ret;
         if (ret && uiEl) uiEl.style.visibility = 'visible';
     } catch (error) {

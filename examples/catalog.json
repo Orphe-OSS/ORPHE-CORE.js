@@ -3,7 +3,7 @@
   "updated": "2026-05-02",
   "purpose": "Draft catalog for organizing existing ORPHE-CORE.js learning units before adding new examples.",
   "summary": {
-    "examples_web_apps": 35,
+    "examples_web_apps": 36,
     "starter_templates": 9,
     "getting_started_guides": 5,
     "tutorial_pages": 2,
@@ -14,7 +14,7 @@
     "modifiable_sketches_or_modules": 38,
     "internal_bridge_test_pages": 6,
     "ai_sensor_recipe_docs": 5,
-    "broad_learning_units": 128
+    "broad_learning_units": 129
   },
   "status_definitions": {
     "public": "Worth keeping in public navigation. Device verification can still be tracked separately.",
@@ -529,6 +529,33 @@
       "device_count": 2,
       "needs_real_device_validation": true,
       "public_navigation": "featured"
+    },
+    {
+      "id": "orphe-piano",
+      "title": "Orphe Piano",
+      "path": "examples/ORPHE-PIANO/",
+      "type": "web-app",
+      "status": "public-candidate",
+      "audience": ["creative-coder", "game-player", "musician"],
+      "value": "Browser port of the original Orphe Piano iOS/libpd work using ORPHE CORE motion, StepSUM scenes, and the copied piano sample bank.",
+      "topics": ["sound", "music", "creative-coding", "gesture"],
+      "data": ["euler", "gyro", "convertedAcc", "stepsNumber", "gait", "landingImpact"],
+      "devices": 2,
+      "validation": ["source-project-analyzed", "pd-scene-tables-ported", "sample-bank-copied", "browser-static-validation", "needs-device-verification"],
+      "issues": ["KICK is reconstructed from ORPHE-CORE.js motion callbacks instead of the original Swift gesture enum", "Needs two-device threshold tuning in Chrome"],
+      "category": "playable-app",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/orphe-piano.svg",
+      "sort_order": 245,
+      "links": {
+        "demo": "examples/ORPHE-PIANO/index.html",
+        "source": "examples/ORPHE-PIANO/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "listed"
     },
     {
       "id": "game-boxing",

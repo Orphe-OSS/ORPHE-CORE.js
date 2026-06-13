@@ -10,7 +10,7 @@ validation" as a public badge in the examples gallery.
 ## Current Status
 
 - `public`: 42 entries
-- `public-candidate`: 0 entries
+- `public-candidate`: 1 entry
 
 `GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, and
 `CORE_TIME_SYNC` were promoted to `public` after owner real-device checks.
@@ -26,6 +26,7 @@ Open these URLs from a local server and use Chrome for BLE tests.
 |---|---|---|---:|---|---|
 | 1 | `game-sprint-100m-vs` | `http://localhost:8767/examples/GAME-SPRINT-100M-VS/` | 2 | Two-player sprint, independent sensor input, finish/retry | Owner verified |
 | 2 | `game-hurdle-400m-vs` | `http://localhost:8767/examples/GAME-HURDLE-400M-VS/` | 2 | Two-player 400m hurdles, running/jump input, finish/retry | Owner verified |
+| 3 | `orphe-piano` | `http://localhost:8767/examples/ORPHE-PIANO/` | 2 | Sample loading, walking progress meter, Scene 1-10 changes, motion/step/kick piano input, LED patterns, reconnect | Needs owner Chrome + real-device tuning |
 
 ## Promotion Rules
 
@@ -82,6 +83,32 @@ Promotion checks:
 - Running and jump motions are usable during the race.
 - Finish / retry flow works.
 - Restart keeps or cleanly resets BLE connection.
+
+### `examples/ORPHE-PIANO/`
+
+Purpose: browser port of the original Orphe Piano iOS app for the Playable Apps / sound category.
+
+Current state:
+
+- `status`: `public-candidate`
+- `public_navigation`: `listed`
+- README and thumbnail are prepared.
+- Static browser preview opens, original `allpiano` sample files are served, but Web Audio and Web Bluetooth need Chrome validation.
+
+Promotion checks:
+
+- Two ORPHE CORE modules connect from CoreToolkit with `STEP_ANALYSIS_AND_SENSOR_VALUES`.
+- Sound can be enabled after a user gesture in Chrome and all reachable `allpiano/piano*.wav` files decode.
+- Walking, motion STEP, or airborne KICK fills the progress meter from either CORE and advances Scene 1-10 every 8 inputs.
+- No-step idle time gradually drains the meter and returns scenes one by one.
+- Scene 1-10 use Euler-selected 8-input arpeggio profiles; early scenes stay narrow and later scenes spread wider.
+- TOE/FLAT/HEEL labels roughly match the foot posture at gait event time.
+- Scene 8 accompaniment, all-scene jump samples, and Scene 10 Scene 9-style piano plus `piano7` granular behavior are audible.
+- Euler X/roll changes the selected notes predictably.
+- ORPHE-CORE.js derived airborne KICK behavior responds to strong movement when recent gait analysis events are quiet.
+- LED pattern calls do not interrupt the session.
+- Reconnect keeps or cleanly resets the instrument state.
+- Motion thresholds feel usable after owner real-device tuning.
 
 ## Published Workshop References
 

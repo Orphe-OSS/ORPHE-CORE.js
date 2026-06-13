@@ -170,6 +170,7 @@ class Orphe {
     this._autoReconnectDisconnectHandler = (event) => this._handleAutoReconnectDisconnect(event);
     this._suppressAutoReconnectErrors = false;
     this._lastAutoReconnectError = null;
+    this._gattOperationQueue = Promise.resolve();
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
     /**
@@ -463,7 +464,7 @@ class Orphe {
     }
 
     // ── BleSharedBridge: 別タブに Primary が存在するか確認 ──────────────
-    if (typeof BleSharedBridge !== 'undefined') {
+    if (typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false) {
       const bridge = new BleSharedBridge(this.id);
       if (bridge.isRemotePrimaryAvailable()) {
         return this._beginAsSecondary(bridge, str_type);
@@ -471,6 +472,7 @@ class Orphe {
     }
     // ────────────────────────────────────────────────────────────────────
 
+    await this.scan('DEVICE_INFORMATION', options);
     let obj = await this.getDeviceInformation();
 
     if (range.acc == 16) obj.range.acc = 3;
@@ -524,7 +526,7 @@ class Orphe {
         }
 
         // BleSharedBridge: BLE接続成功後にこのタブを Primary として登録
-        if (typeof BleSharedBridge !== 'undefined' && result) {
+        if (typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false && result) {
           this._bridge = new BleSharedBridge(this.id);
           this._isBridgeSecondary = false;
           this._bridge.claimPrimary();
@@ -709,14 +711,14 @@ class Orphe {
    */
   resetMotionSensorAttitude() {
     const data = new Uint8Array([0x03]);
-    this.write('DEVICE_INFORMATION', data);
+    return this.write('DEVICE_INFORMATION', data);
   }
   /**
    * Reset Analysis logs in the core module.
    */
   resetAnalysisLogs() {
     const data = new Uint8Array([4]);
-    this.write('DEVICE_INFORMATION', [4]);
+    const writePromise = this.write('DEVICE_INFORMATION', [4]);
     this.gait = {
       type: 0,
       direction: 0,
@@ -744,16 +746,34 @@ class Orphe {
     };
 
     this.steps_number = 0;
+    return writePromise;
   }
   scan(uuid, options = {}) {
-    if (this.bluetoothDevice) return Promise.resolve();
+    if (this.bluetoothDevice) {
+      if (options.forceDeviceSelection || this._isBluetoothDeviceDisallowed(this.bluetoothDevice, options)) {
+        if (this.bluetoothDevice?.gatt?.connected) {
+          try { this.bluetoothDevice.gatt.disconnect(); } catch (_) {}
+        }
+        this.bluetoothDevice = null;
+        this.dataCharacteristic = null;
+        this._usingRememberedBluetoothDevice = false;
+      } else {
+        return Promise.resolve();
+      }
+    }
 
     const useRememberedDevice = !options.forceDeviceSelection &&
       !this._rememberedBluetoothDeviceUnavailable &&
       this._getLastBluetoothDeviceInfo();
     return (useRememberedDevice ? this._requestRememberedBluetoothDevice() : Promise.resolve(null))
       .then(device => {
-        if (!device) return this.requestDevice(uuid);
+        if (!device) return this.requestDevice(uuid, options);
+        if (this._isBluetoothDeviceDisallowed(device, options)) {
+          this.forgetLastBluetoothDevice();
+          const error = new Error('This ORPHE CORE is already assigned to another slot.');
+          error.name = 'DuplicateBluetoothDeviceError';
+          throw error;
+        }
         this.bluetoothDevice = device;
         this._usingRememberedBluetoothDevice = true;
         this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
@@ -769,8 +789,8 @@ class Orphe {
    * @param {string} uuid 
    * 
    */
-  requestDevice(uuid) {
-    let options = {
+  requestDevice(uuid, connectionOptions = {}) {
+    let requestOptions = {
       /*
       ORPHE core module name: CR-2, CR-3
       service UUIDを ORPHE_OTHER_SERVICE に指定することで，ORPHE core moduleのみを検出することができます．さらに，namePrefixを指定することで，CR-2, CR-3のみを検出することができます．
@@ -786,8 +806,13 @@ class Orphe {
       ]
     }
 
-    return navigator.bluetooth.requestDevice(options)
+    return navigator.bluetooth.requestDevice(requestOptions)
       .then(device => {
+        if (this._isBluetoothDeviceDisallowed(device, connectionOptions)) {
+          const error = new Error('This ORPHE CORE is already assigned to another slot.');
+          error.name = 'DuplicateBluetoothDeviceError';
+          throw error;
+        }
         this.bluetoothDevice = device;
         this._usingRememberedBluetoothDevice = false;
         this._rememberedBluetoothDeviceUnavailable = false;
@@ -796,12 +821,18 @@ class Orphe {
       });
   }
 
+  _isBluetoothDeviceDisallowed(device, options = {}) {
+    if (!device) return false;
+    const disallowedIds = options.disallowBluetoothDeviceIds || [];
+    return !!device.id && Array.isArray(disallowedIds) && disallowedIds.includes(device.id);
+  }
+
   /**
    * 前回デバイスの記憶を使わず、必ずブラウザのBLE選択ダイアログを表示する。
    * 接続済みCOREから別COREへ手動で切り替える場合に利用する。
    * @param {string} uuid
    */
-  selectBluetoothDevice(uuid = 'DEVICE_INFORMATION') {
+  selectBluetoothDevice(uuid = 'DEVICE_INFORMATION', options = {}) {
     this._disableAutoReconnect();
     this.forgetLastBluetoothDevice();
     if (this._bridge) {
@@ -817,7 +848,7 @@ class Orphe {
     this.dataCharacteristic = null;
     this._usingRememberedBluetoothDevice = false;
     this._rememberedBluetoothDeviceUnavailable = false;
-    return this.requestDevice(uuid);
+    return this.requestDevice(uuid, options);
   }
 
   /**
@@ -938,13 +969,20 @@ class Orphe {
       self.onRead(event.target.value, uuid);
     }
   }
+
+  _queueGattOperation(operation) {
+    const run = this._gattOperationQueue.catch(() => {}).then(operation);
+    this._gattOperationQueue = run.catch(() => {});
+    return run;
+  }
+
   /**
    * サーバからデータを読み込む。notificationからはonReadで呼び出されるので、この関数を利用するのは DEVICE_INFORMATION characteristicのみです。
    * @param {string} uuid DEVICE_INFORMATION
    * 
    */
   read(uuid) {
-    return (this.scan(uuid))
+    return this._queueGattOperation(() => (this.scan(uuid))
       .then(() => {
         return this.connectGATT(uuid);
       })
@@ -954,7 +992,7 @@ class Orphe {
       .catch(error => {
         this._reportError(error);
         throw error;
-      });
+      }));
   }
   /**
    * write data to the BLE device。実際にwriteを利用するのは DEVICE_INFORMATION characteristicのみです。
@@ -963,7 +1001,7 @@ class Orphe {
    * 
    */
   write(uuid, array_value) {
-    return (this.scan(uuid))
+    return this._queueGattOperation(() => (this.scan(uuid))
       .then(() => {
         return this.connectGATT(uuid);
       })
@@ -977,7 +1015,7 @@ class Orphe {
       .catch(error => {
         this._reportError(error);
         throw error;
-      });
+      }));
   }
   /**
    * Start Notification
@@ -985,7 +1023,7 @@ class Orphe {
    * 
    */
   startNotify(uuid) {
-    return this.scan(uuid)
+    return this._queueGattOperation(() => this.scan(uuid)
       .then(() => this.connectGATT(uuid))
       .then(() => this.dataCharacteristic.startNotifications())
       .then(() => {
@@ -997,7 +1035,7 @@ class Orphe {
         console.error('startNotify: Error : ' + error);
         this._reportError(error);
         throw error;
-      });
+      }));
   }
   /**
    * Stop Notification
@@ -1005,7 +1043,7 @@ class Orphe {
    * 
    */
   stopNotify(uuid) {
-    return this.scan(uuid) // BLEデバイスのスキャンを開始します。
+    return this._queueGattOperation(() => this.scan(uuid) // BLEデバイスのスキャンを開始します。
       .then(() => {
         return this.connectGATT(uuid); // GATTサーバーに接続します。
       })
@@ -1031,7 +1069,7 @@ class Orphe {
       .catch(error => {
         this._reportError(error);
         throw error;
-      });
+      }));
 
   }
   isConnected() {
@@ -1066,7 +1104,7 @@ class Orphe {
    */
   setDeviceInformation(obj) {
     const senddata = new Uint8Array([0x01, obj.lr, obj.led_brightness, 0, obj.rec_auto_run, obj.time01, obj.time02, obj.range.acc, obj.range.gyro]);
-    this.write('DEVICE_INFORMATION', senddata);
+    return this.write('DEVICE_INFORMATION', senddata);
   }
 
   /**

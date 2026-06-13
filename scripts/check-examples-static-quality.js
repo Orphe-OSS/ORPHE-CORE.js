@@ -82,7 +82,8 @@ function localScriptPaths(html, pagePath) {
   while ((match = scriptRe.exec(html))) {
     const src = match[1];
     if (!src || /^https?:\/\//.test(src) || src.startsWith('//')) continue;
-    scripts.push(normalizeRelative(path.posix.normalize(path.posix.join(pageDir, src))));
+    const localSrc = src.replace(/[?#].*$/, '');
+    scripts.push(normalizeRelative(path.posix.normalize(path.posix.join(pageDir, localSrc))));
   }
   return scripts;
 }

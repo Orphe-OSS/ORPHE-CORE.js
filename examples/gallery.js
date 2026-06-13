@@ -171,6 +171,10 @@
       title: 'ドラムゲーム',
       value: '身体の動きで音を鳴らすサウンドExampleです。'
     },
+    'orphe-piano': {
+      title: 'Orphe Piano',
+      value: 'ORPHE COREの動き、StepSUM、PD由来の音階テーブルで元作品のピアノサンプルを鳴らすWeb版移植です。'
+    },
     'game-boxing': {
       title: 'ボクシングゲーム',
       value: 'パンチ動作を使うアクションゲームです。'

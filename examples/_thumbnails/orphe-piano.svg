@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Orphe Piano thumbnail">
+  <rect width="1280" height="720" fill="#111214"/>
+  <path d="M0 0h1280v720H0z" fill="url(#bg)"/>
+  <g opacity=".28" stroke="#f7f7f4" stroke-width="2">
+    <path d="M110 178h1060"/>
+    <path d="M110 250h1060"/>
+    <path d="M110 322h1060"/>
+    <path d="M110 394h1060"/>
+    <path d="M110 466h1060"/>
+  </g>
+  <g fill="none">
+    <circle cx="470" cy="345" r="154" stroke="#31d7d0" stroke-width="34" opacity=".88"/>
+    <circle cx="470" cy="345" r="230" stroke="#31d7d0" stroke-width="10" opacity=".28"/>
+    <circle cx="810" cy="345" r="154" stroke="#ff5e7a" stroke-width="34" opacity=".88"/>
+    <circle cx="810" cy="345" r="230" stroke="#ff5e7a" stroke-width="10" opacity=".28"/>
+  </g>
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" text-anchor="middle">
+    <text x="470" y="366" fill="#f7f7f4" font-size="78" font-weight="800">L</text>
+    <text x="810" y="366" fill="#f7f7f4" font-size="78" font-weight="800">R</text>
+    <text x="640" y="110" fill="#f7f7f4" font-size="68" font-weight="800">Orphe Piano</text>
+    <text x="640" y="622" fill="#a9afb5" font-size="34" font-weight="700">ORPHE CORE motion instrument</text>
+  </g>
+  <g transform="translate(316 505)">
+    <rect x="0" y="0" width="648" height="86" rx="8" fill="#f7f7f4"/>
+    <g fill="#101214">
+      <rect x="0" y="0" width="72" height="86"/>
+      <rect x="144" y="0" width="72" height="86"/>
+      <rect x="288" y="0" width="72" height="86"/>
+      <rect x="432" y="0" width="72" height="86"/>
+      <rect x="576" y="0" width="72" height="86"/>
+    </g>
+    <g fill="#111214">
+      <rect x="46" y="0" width="42" height="54" rx="3"/>
+      <rect x="118" y="0" width="42" height="54" rx="3"/>
+      <rect x="262" y="0" width="42" height="54" rx="3"/>
+      <rect x="334" y="0" width="42" height="54" rx="3"/>
+      <rect x="406" y="0" width="42" height="54" rx="3"/>
+      <rect x="550" y="0" width="42" height="54" rx="3"/>
+    </g>
+  </g>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#31d7d0" stop-opacity=".16"/>
+      <stop offset=".52" stop-color="#151718" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#f2bd3d" stop-opacity=".16"/>
+    </linearGradient>
+  </defs>
+</svg>

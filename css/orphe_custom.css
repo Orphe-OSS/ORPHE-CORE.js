@@ -402,7 +402,15 @@ mark {
     background: #ffffff;
 }
 
-.dx-mount-figure:first-child img {
+.dx-mount-figure--wide {
+    grid-column: 1 / -1;
+}
+
+.dx-mount-figure--wide img {
+    aspect-ratio: auto;
+}
+
+.dx-mount-figure--contain img {
     object-fit: contain;
 }
 

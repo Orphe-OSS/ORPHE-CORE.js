@@ -333,6 +333,52 @@ mark {
     font-size: 0.95rem;
 }
 
+.dx-mount-steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: mount-step;
+}
+
+.dx-mount-steps li {
+    position: relative;
+    min-height: 190px;
+    padding: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: #232323;
+    counter-increment: mount-step;
+}
+
+.dx-mount-steps li::before {
+    content: counter(mount-step, decimal-leading-zero);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    margin-bottom: 0.85rem;
+    border: 1px solid rgba(69, 230, 230, 0.45);
+    border-radius: 50%;
+    color: #45e6e6;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.dx-mount-steps h3 {
+    margin: 0 0 0.55rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.dx-mount-steps p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.78);
+}
+
 .dx-quickstart {
     padding: 1.5rem;
     border: 1px solid rgba(69, 230, 230, 0.3);
@@ -615,6 +661,7 @@ mark {
     .dx-trust-links,
     .dx-feature-grid,
     .dx-data-grid,
+    .dx-mount-steps,
     .dx-path-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -650,6 +697,7 @@ mark {
     .dx-trust-links,
     .dx-feature-grid,
     .dx-data-grid,
+    .dx-mount-steps,
     .dx-path-grid {
         grid-template-columns: 1fr;
     }

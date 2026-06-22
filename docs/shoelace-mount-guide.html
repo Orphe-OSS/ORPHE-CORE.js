@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORPHE CORE Shoelace Mount Guide | ORPHE-CORE.js</title>
+  <meta name="description"
+    content="How to attach ORPHE CORE 2.0 or 3.0 to shoes with laces using the ORPHE shoelace mount. Check direction, mounting position, and left/right settings before measurement.">
+  <link rel="canonical" href="https://orphe-oss.github.io/ORPHE-CORE.js/docs/shoelace-mount-guide.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="ORPHE-CORE.js">
+  <meta property="og:title" content="ORPHE CORE Shoelace Mount Guide">
+  <meta property="og:description"
+    content="Attach ORPHE CORE to shoes with laces using the shoelace mount before gait and motion measurement.">
+  <meta property="og:url" content="https://orphe-oss.github.io/ORPHE-CORE.js/docs/shoelace-mount-guide.html">
+  <meta property="og:image"
+    content="https://orphe-oss.github.io/ORPHE-CORE.js/images/shoelace-mount-on-shoe.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ORPHE CORE Shoelace Mount Guide">
+  <meta name="twitter:description"
+    content="How to attach ORPHE CORE to shoes with laces using the shoelace mount.">
+  <meta name="twitter:image"
+    content="https://orphe-oss.github.io/ORPHE-CORE.js/images/shoelace-mount-on-shoe.webp">
+  <link href="../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <link href="../css/orphe_custom.css" rel="stylesheet">
+  <script src="../js/site-analytics.js"></script>
+  <style>
+    .lang {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .lang.active {
+      display: inline;
+      opacity: 1;
+    }
+
+    .guide-lead {
+      max-width: 780px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 1.05rem;
+      line-height: 1.8;
+    }
+
+    .guide-note {
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.045);
+      color: rgba(255, 255, 255, 0.78);
+    }
+  </style>
+  <script>
+    (function () {
+      const storageKey = 'orphe-core-js-language';
+      const normalizeLanguage = (value) => /^ja\b/i.test(value || '') ? 'ja' : 'en';
+      let preferredLanguage = '';
+      try {
+        preferredLanguage = localStorage.getItem(storageKey) || '';
+      } catch (error) {
+        preferredLanguage = '';
+      }
+      if (preferredLanguage !== 'ja' && preferredLanguage !== 'en') {
+        preferredLanguage = normalizeLanguage((navigator.languages && navigator.languages[0]) || navigator.language || 'en');
+      }
+      document.documentElement.lang = preferredLanguage;
+      document.documentElement.dataset.lang = preferredLanguage;
+    })();
+  </script>
+</head>
+
+<body class="bg-dark">
+  <div class="container-sm mt-2">
+    <nav class="navbar navbar-light bg-base position-relative navbar-expand-lg">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">
+          <a class="navbar-brand" href="../index.html">
+            <img src="../images/orphe.svg" alt="ORPHE" height="24" class="d-inline-block align-text-top">
+          </a>
+          <button class="btn btn-sm rounded-pill" onclick="toggleLanguage()"><i class="bi bi-translate"></i></button>
+        </span>
+      </div>
+    </nav>
+  </div>
+
+  <main class="container-sm mt-4">
+    <p>
+      <a href="../index.html#shoelace-mount">
+        <i class="bi bi-arrow-left"></i>
+        <span class="lang en">Back to ORPHE-CORE.js</span>
+        <span class="lang ja active">ORPHE-CORE.jsに戻る</span>
+      </a>
+    </p>
+
+    <p class="dx-kicker">
+      <span class="lang en">Shoelace mount setup</span>
+      <span class="lang ja active">シューレースマウントの使い方</span>
+    </p>
+    <h1>
+      <span class="lang en">Attach ORPHE CORE to your own shoes with laces</span>
+      <span class="lang ja active">靴ひものある手持ちのシューズにORPHE COREを取り付ける</span>
+    </h1>
+    <p class="guide-lead mt-3">
+      <span class="lang en">This guide explains how to attach ORPHE CORE 2.0 or 3.0 to your own shoes with laces using the shoelace mount available from the ORPHE Official Store.</span>
+      <span class="lang ja active">ORPHE Official Storeで購入できるシューレースマウントを使って、ORPHE CORE 2.0 / 3.0を靴ひものある手持ちのシューズに取り付ける手順です。</span>
+    </p>
+
+    <section class="dx-section">
+      <div class="dx-mount-media-grid">
+        <figure class="dx-mount-figure dx-mount-figure--contain">
+          <img src="../images/shoelace-mount-guide.webp" alt="ORPHE CORE 3.0 shoelace mount orientation guide"
+            loading="lazy">
+          <figcaption>
+            <span class="lang en">Check the triangle mark and snap ORPHE CORE into the mount in the correct direction.</span>
+            <span class="lang ja active">三角マークの向きと、シューレースマウントへの固定方法を確認します。</span>
+          </figcaption>
+        </figure>
+        <figure class="dx-mount-figure">
+          <img src="../images/shoelace-mount-on-shoe.webp"
+            alt="ORPHE CORE shoelace mount attached to a shoe with laces" loading="lazy">
+          <figcaption>
+            <span class="lang en">Thread the laces through the mount so ORPHE CORE stays stable on the instep.</span>
+            <span class="lang ja active">靴ひもに通して、ORPHE COREが足の甲の上で安定するように固定します。</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="dx-section">
+      <div class="dx-section-heading">
+        <h2>
+          <span class="lang en">Mounting steps</span>
+          <span class="lang ja active">取り付け手順</span>
+        </h2>
+      </div>
+      <ol class="dx-mount-steps">
+        <li>
+          <h3>
+            <span class="lang en">Check the sensor direction</span>
+            <span class="lang ja active">センサーの前後を確認</span>
+          </h3>
+          <p>
+            <span class="lang en">Set ORPHE CORE so the triangle mark on the flat surface points toward the toe.</span>
+            <span class="lang ja active">ORPHE COREの平らな面に印字されている三角マークが、つま先側を向くようにします。</span>
+          </p>
+        </li>
+        <li>
+          <h3>
+            <span class="lang en">Snap it into the mount</span>
+            <span class="lang ja active">マウントにセット</span>
+          </h3>
+          <p>
+            <span class="lang en">Press ORPHE CORE firmly into the groove until it clicks into place.</span>
+            <span class="lang ja active">シューレースマウントの溝に、カチッと音がするまでしっかり押し込みます。</span>
+          </p>
+        </li>
+        <li>
+          <h3>
+            <span class="lang en">Thread it through the laces</span>
+            <span class="lang ja active">靴ひもに通す</span>
+          </h3>
+          <p>
+            <span class="lang en">Pass the left and right laces through the holes on the back of the mount near the instep, then adjust it so it does not rotate sideways.</span>
+            <span class="lang ja active">足の甲に近い部分で左右の靴ひもをマウント裏側の穴に通し、足の甲の上で横向きにならないように位置を調整します。</span>
+          </p>
+        </li>
+        <li>
+          <h3>
+            <span class="lang en">Confirm left and right</span>
+            <span class="lang ja active">左右の向きを確認</span>
+          </h3>
+          <p>
+            <span class="lang en">Make sure the app setting and the actual sensor side match. Reversed left/right settings can affect measurement accuracy.</span>
+            <span class="lang ja active">アプリの設定と実際のセンサーが右足用・左足用で合っているか確認してください。左右が逆になると正確に計測できません。</span>
+          </p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="dx-section">
+      <div class="guide-note">
+        <p class="mb-2">
+          <span class="lang en">For charging, app connection, and the full running measurement flow, see the official guide video and ORPHE Support page.</span>
+          <span class="lang ja active">充電、アプリ連携、ランニング計測の流れまで確認したい場合は、公式ガイド動画とORPHE Supportページも参照してください。</span>
+        </p>
+        <div class="dx-inline-actions">
+          <a class="btn btn-outline-light" href="https://www.youtube.com/watch?v=5j0w-CXdwdo" target="_blank"
+            data-goatcounter-click="click-shoelace-guide-video"
+            data-goatcounter-title="Shoelace mount: Official guide video">
+            <i class="bi bi-play-circle"></i>
+            <span class="lang en">Official guide video</span>
+            <span class="lang ja active">公式ガイド動画</span>
+          </a>
+          <a class="btn btn-outline-light" href="https://orphe.notion.site/b2c0a2d925804cad85c98f2a8d637e44"
+            target="_blank" data-goatcounter-click="click-shoelace-notion-guide"
+            data-goatcounter-title="Shoelace mount: Notion support guide">
+            <i class="bi bi-file-text"></i>
+            <span class="lang en">ORPHE Support guide</span>
+            <span class="lang ja active">ORPHE Supportのガイド</span>
+          </a>
+          <a class="btn btn-primary"
+            href="https://shop.orphe.io/products/orphe-core-shoelace-mount?variant=41745003511987" target="_blank"
+            data-goatcounter-click="click-shoelace-mount-store"
+            data-goatcounter-title="Shoelace mount: Official store">
+            <i class="bi bi-cart"></i>
+            <span class="lang en">Buy shoelace mount</span>
+            <span class="lang ja active">シューレースマウントを購入</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <hr>
+    <footer class="text-center small">
+      &copy; 2022 Tetsuaki BABA
+    </footer>
+  </main>
+
+  <script src="../js/bootstrap.bundle.min.js"></script>
+  <script>
+    function setLanguage(nextLang) {
+      const normalized = nextLang === 'ja' ? 'ja' : 'en';
+      document.documentElement.lang = normalized;
+      document.documentElement.dataset.lang = normalized;
+      document.querySelectorAll('.lang').forEach((element) => {
+        if (element.classList.contains(normalized)) {
+          element.style.display = 'inline';
+          setTimeout(() => element.classList.add('active'), 10);
+        } else {
+          element.classList.remove('active');
+          setTimeout(() => {
+            element.style.display = 'none';
+          }, 250);
+        }
+      });
+      try {
+        localStorage.setItem('orphe-core-js-language', normalized);
+      } catch (error) {
+        // Ignore storage errors.
+      }
+    }
+
+    function toggleLanguage() {
+      setLanguage(document.documentElement.dataset.lang === 'ja' ? 'en' : 'ja');
+    }
+
+    setLanguage(document.documentElement.dataset.lang === 'ja' ? 'ja' : 'en');
+  </script>
+</body>
+
+</html>

@@ -53,6 +53,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/docs/shoelace-mount-guide.html</loc>
+    <lastmod>2026-06-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://orphe-oss.github.io/ORPHE-CORE.js/api_doc/</loc>
     <lastmod>2026-05-04</lastmod>
     <changefreq>monthly</changefreq>

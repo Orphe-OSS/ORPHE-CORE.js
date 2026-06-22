@@ -379,6 +379,39 @@ mark {
     color: rgba(255, 255, 255, 0.78);
 }
 
+.dx-mount-media-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.dx-mount-figure {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: #232323;
+}
+
+.dx-mount-figure img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    background: #ffffff;
+}
+
+.dx-mount-figure:first-child img {
+    object-fit: contain;
+}
+
+.dx-mount-figure figcaption {
+    padding: 0.75rem 1rem;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.92rem;
+}
+
 .dx-quickstart {
     padding: 1.5rem;
     border: 1px solid rgba(69, 230, 230, 0.3);
@@ -667,6 +700,10 @@ mark {
     }
 
     .dx-spec-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .dx-mount-media-grid {
         grid-template-columns: 1fr;
     }
 

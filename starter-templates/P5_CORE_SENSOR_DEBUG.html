@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ORPHE CORE Sensor Debug</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    >
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.0/chart.min.js"
+      integrity="sha512-R60W3LgKdvvfwbGbqKusRu/434Snuvr9/Flhtoq9cj1LQ9P4HFKParULqOCAisHk/J4zyaEWWjiWIMuP13vXEg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <style>
+      body {
+        background: #10131a;
+        color: #eef3ff;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 1080px;
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .panel,
+      .toolkit-box {
+        background: #171d29;
+        border: 1px solid #2d3648;
+        padding: 12px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        line-height: 1.9;
+      }
+
+      .metric span:first-child {
+        color: #9ca9bf;
+      }
+
+      .chart-box {
+        background: #ffffff;
+        border: 1px solid #d8dee8;
+        color: #18202f;
+        padding: 12px;
+      }
+
+      .chart-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      pre {
+        background: #090b10;
+        border: 1px solid #2d3648;
+        color: #c7d2e4;
+        font-size: 12px;
+        overflow: auto;
+        padding: 12px;
+        white-space: pre-wrap;
+      }
+
+      #ble-support-message {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ORPHE CORE Sensor Debug</h1>
+      <div class="toolkit-box mb-3">
+        <div id="toolkit0"></div>
+      </div>
+      <div id="ble-support-message" class="alert alert-warning">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
+
+      <section class="grid mb-3">
+        <div class="panel">
+          <div class="metric"><span>status</span><strong id="status">waiting</strong></div>
+          <div class="metric"><span>header</span><strong id="header">-</strong></div>
+          <div class="metric"><span>byteLength</span><strong id="byteLength">-</strong></div>
+          <div class="metric"><span>callback Hz</span><strong id="hz">-</strong></div>
+          <div class="metric"><span>lost packets</span><strong id="lost">0</strong></div>
+        </div>
+        <div class="panel">
+          <div class="metric"><span>q norm parsed</span><strong id="qNorm">-</strong></div>
+          <div class="metric"><span>q norm raw BE</span><strong id="qNormBE">-</strong></div>
+          <div class="metric"><span>q norm raw LE</span><strong id="qNormLE">-</strong></div>
+          <div class="metric"><span>q norm BE / 16384</span><strong id="qNormBE16384">-</strong></div>
+          <div class="metric"><span>pitch delta</span><strong id="pitchDelta">-</strong></div>
+          <div class="metric"><span>latest pitch</span><strong id="pitch">-</strong></div>
+        </div>
+      </section>
+
+      <section class="grid mb-3">
+        <div class="chart-box">
+          <div class="chart-title">Euler Angle from ORPHE-CORE.js</div>
+          <canvas id="chartEuler"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Quaternion from ORPHE-CORE.js</div>
+          <canvas id="chartQuat"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Acceleration</div>
+          <canvas id="chartAcc"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Gyro</div>
+          <canvas id="chartGyro"></canvas>
+        </div>
+      </section>
+
+      <div class="panel">
+        <div class="chart-title text-light">latest raw SENSOR_VALUES bytes</div>
+        <pre id="rawBytes">Connect CORE and wait for SENSOR_VALUES.</pre>
+      </div>
+    </main>
+
+    <script src="../js/ORPHE-CORE.js"></script>
+    <script src="../js/BleSharedBridge.js"></script>
+    <script src="../js/CoreToolkit.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      const debug = {
+        lostPackets: 0,
+        lastPitch: null,
+        sample: 0,
+      };
+
+      const charts = {
+        euler: null,
+        quat: null,
+        acc: null,
+        gyro: null,
+      };
+
+      setupDebugPage();
+
+      function setupDebugPage() {
+        const ble = bles[0];
+        ble.setup();
+        patchRawCapture(ble);
+
+        buildCoreToolkit(
+          document.querySelector("#toolkit0"),
+          "CORE 01",
+          0,
+          "STEP_ANALYSIS_AND_SENSOR_VALUES",
+          { autoReconnect: true }
+        );
+
+        const modalTitle = document.querySelector("#settings_modal0 .modal-title");
+        if (modalTitle) modalTitle.textContent = "CORE 01 Settings";
+
+        guardCoreToolkitBluetooth({
+          coreIds: [0],
+          messageElement: "#ble-support-message",
+        });
+
+        charts.euler = makeChart("chartEuler", ["pitch", "roll", "yaw"], -3.2, 3.2);
+        charts.quat = makeChart("chartQuat", ["w", "x", "y"], -1.2, 1.2);
+        charts.acc = makeChart("chartAcc", ["acc.x", "acc.y", "acc.z"], -4, 4);
+        charts.gyro = makeChart("chartGyro", ["gyro.x", "gyro.y", "gyro.z"], -500, 500);
+
+        ble.onConnect = function () {
+          setText("status", "connected");
+        };
+        ble.onDisconnect = function () {
+          setText("status", "disconnected");
+        };
+        ble.lostData = function (serialNumber, serialNumberPrev) {
+          debug.lostPackets++;
+          setText("lost", debug.lostPackets);
+          console.warn("lostData", serialNumberPrev, serialNumber);
+        };
+        ble.gotBLEFrequency = function (frequency) {
+          setText("hz", fixed(frequency, 1));
+        };
+        ble.gotEuler = function (euler) {
+          const pitchDelta = debug.lastPitch === null ? 0 : euler.pitch - debug.lastPitch;
+          debug.lastPitch = euler.pitch;
+          setText("pitch", fixed(euler.pitch, 3));
+          setText("pitchDelta", fixed(pitchDelta, 3));
+          push(charts.euler, [euler.pitch, euler.roll, euler.yaw]);
+        };
+        ble.gotQuat = function (quat) {
+          setText("qNorm", fixed(qNorm(quat.w, quat.x, quat.y, quat.z), 4));
+          push(charts.quat, [quat.w, quat.x, quat.y]);
+        };
+        ble.gotConvertedAcc = function (acc) {
+          push(charts.acc, [acc.x, acc.y, acc.z]);
+        };
+        ble.gotConvertedGyro = function (gyro) {
+          push(charts.gyro, [gyro.x, gyro.y, gyro.z]);
+        };
+      }
+
+      function patchRawCapture(ble) {
+        const originalOnRead = ble.onRead;
+        ble.onRead = function (data, uuid) {
+          if (uuid === "SENSOR_VALUES") captureRawSensorValues(data);
+          return originalOnRead.call(this, data, uuid);
+        };
+      }
+
+      function captureRawSensorValues(data) {
+        const bytes = [];
+        for (let i = 0; i < data.byteLength; i++) bytes.push(data.getUint8(i));
+
+        const header = bytes[0];
+        setText("header", header);
+        setText("byteLength", data.byteLength);
+        setText("rawBytes", bytesToRows(bytes));
+
+        if (header === 40 && data.byteLength >= 9) {
+          const qBE = {
+            w: data.getInt16(1, false) / 32768,
+            x: data.getInt16(3, false) / 32768,
+            y: data.getInt16(5, false) / 32768,
+            z: data.getInt16(7, false) / 32768,
+          };
+          const qLE = {
+            w: data.getInt16(1, true) / 32768,
+            x: data.getInt16(3, true) / 32768,
+            y: data.getInt16(5, true) / 32768,
+            z: data.getInt16(7, true) / 32768,
+          };
+          const qBE16384 = {
+            w: data.getInt16(1, false) / 16384,
+            x: data.getInt16(3, false) / 16384,
+            y: data.getInt16(5, false) / 16384,
+            z: data.getInt16(7, false) / 16384,
+          };
+          setText("qNormBE", fixed(qNorm(qBE.w, qBE.x, qBE.y, qBE.z), 4));
+          setText("qNormLE", fixed(qNorm(qLE.w, qLE.x, qLE.y, qLE.z), 4));
+          setText("qNormBE16384", fixed(qNorm(qBE16384.w, qBE16384.x, qBE16384.y, qBE16384.z), 4));
+        } else {
+          setText("qNormBE", "-");
+          setText("qNormLE", "-");
+          setText("qNormBE16384", "-");
+        }
+      }
+
+      function makeChart(canvasId, labels, suggestedMin, suggestedMax) {
+        return new Chart(document.getElementById(canvasId), {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              { label: labels[0], data: [], borderColor: "#d8585c", pointRadius: 0, borderWidth: 1 },
+              { label: labels[1], data: [], borderColor: "#2f9e44", pointRadius: 0, borderWidth: 1 },
+              { label: labels[2], data: [], borderColor: "#2f6fd6", pointRadius: 0, borderWidth: 1 },
+            ],
+          },
+          options: {
+            animation: false,
+            responsive: true,
+            scales: {
+              x: { display: false },
+              y: { suggestedMin, suggestedMax },
+            },
+          },
+        });
+      }
+
+      function push(chart, values) {
+        debug.sample++;
+        chart.data.labels.push(debug.sample);
+        values.forEach(function (value, index) {
+          chart.data.datasets[index].data.push(value);
+        });
+        while (chart.data.labels.length > 120) {
+          chart.data.labels.shift();
+          chart.data.datasets.forEach(function (dataset) {
+            dataset.data.shift();
+          });
+        }
+        chart.update("none");
+      }
+
+      function qNorm(w, x, y, z) {
+        return Math.sqrt(w * w + x * x + y * y + z * z);
+      }
+
+      function bytesToRows(bytes) {
+        const rows = [];
+        for (let i = 0; i < bytes.length; i += 16) {
+          const chunk = bytes.slice(i, i + 16);
+          const hex = chunk.map(function (value) {
+            return value.toString(16).padStart(2, "0");
+          });
+          rows.push(String(i).padStart(3, "0") + ": " + hex.join(" "));
+        }
+        return rows.join("\n");
+      }
+
+      function setText(id, value) {
+        const element = document.querySelector("#" + id);
+        if (element) element.textContent = value;
+      }
+
+      function fixed(value, digits) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return "-";
+        return number.toFixed(digits);
+      }
+    </script>
+  </body>
+</html>

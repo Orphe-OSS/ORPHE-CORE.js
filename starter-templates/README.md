@@ -17,6 +17,10 @@ mode at a time.
 | File | Notify type | Purpose |
 | --- | --- | --- |
 | `LIGHT.html` | `STEP_ANALYSIS` | Connect and control the LED. |
+| `P5_QUICK_START.html` | `STEP_ANALYSIS` | Single-file p5.js starter for the p5.js Web Editor. |
+| `P5_CORETOOLKIT_STEP_ANALYSIS.html` | `STEP_ANALYSIS` | Single-file CoreToolkit + p5.js example that displays gait analysis values. |
+| `P5_CORETOOLKIT_MOTION_PINGPONG.html` | `STEP_ANALYSIS_AND_SENSOR_VALUES` | Single-file motion game starter with CoreToolkit and Chart.js raw data graphs. |
+| `P5_CORE_SENSOR_DEBUG.html` | `STEP_ANALYSIS_AND_SENSOR_VALUES` | Single-file diagnostic page for raw bytes, quaternion norm, Euler angle, acc, and gyro. |
 | `ACCELEROMETER.html` | `SENSOR_VALUES` | Read accelerometer values. |
 | `GYRO.html` | `SENSOR_VALUES` | Read gyro values. |
 | `QUATERNION.html` | `SENSOR_VALUES` | Read orientation as quaternion. |
@@ -31,4 +35,3 @@ mode at a time.
 Do not convert these files to CoreToolkit by default. Their role is to teach the
 minimal API. Use `examples/CORETOOLKIT-STARTER/` when you want a connection UI
 and sensor monitor.
-

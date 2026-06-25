@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ORPHE CORE Motion Ping Pong Starter</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    >
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css"
+    >
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.0/chart.min.js"
+      integrity="sha512-R60W3LgKdvvfwbGbqKusRu/434Snuvr9/Flhtoq9cj1LQ9P4HFKParULqOCAisHk/J4zyaEWWjiWIMuP13vXEg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #10131a;
+        color: #eef3ff;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 1080px;
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin: 0 0 12px;
+      }
+
+      .toolkit-row {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        margin-bottom: 12px;
+      }
+
+      .toolkit-box,
+      .panel {
+        background: #171d29;
+        border: 1px solid #2d3648;
+        padding: 12px;
+      }
+
+      .toolkit-box {
+        min-height: 58px;
+      }
+
+      #ble-support-message {
+        display: none;
+      }
+
+      #gameCanvas {
+        margin: 12px 0;
+      }
+
+      canvas {
+        display: block;
+        max-width: 100%;
+      }
+
+      .status-grid,
+      .chart-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .chart-column {
+        display: grid;
+        gap: 12px;
+      }
+
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        line-height: 1.9;
+      }
+
+      .metric span:first-child {
+        color: #9ca9bf;
+      }
+
+      .chart-box {
+        background: #ffffff;
+        border: 1px solid #d8dee8;
+        color: #18202f;
+        padding: 12px;
+      }
+
+      .chart-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ORPHE CORE Motion Ping Pong Starter</h1>
+
+      <div class="toolkit-row">
+        <div class="toolkit-box">
+          <div id="toolkit0"></div>
+        </div>
+        <div class="toolkit-box">
+          <div id="toolkit1"></div>
+        </div>
+      </div>
+
+      <div id="ble-support-message" class="alert alert-warning">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
+
+      <div id="gameCanvas"></div>
+
+      <section class="status-grid">
+        <div class="panel">
+          <div class="metric"><span>CORE 01</span><strong id="status0">waiting</strong></div>
+          <div class="metric"><span>control</span><strong id="control0">pitch</strong></div>
+          <div class="metric"><span>steps</span><strong id="steps0">0</strong></div>
+          <div class="metric"><span>acc x/y/z</span><strong id="acc0">0 / 0 / 0</strong></div>
+        </div>
+        <div class="panel">
+          <div class="metric"><span>CORE 02</span><strong id="status1">optional</strong></div>
+          <div class="metric"><span>control</span><strong id="control1">pitch or AI</strong></div>
+          <div class="metric"><span>steps</span><strong id="steps1">0</strong></div>
+          <div class="metric"><span>acc x/y/z</span><strong id="acc1">0 / 0 / 0</strong></div>
+        </div>
+      </section>
+
+      <section class="chart-grid mt-3">
+        <div class="chart-column">
+          <div class="chart-box">
+            <div class="chart-title">CORE 01 Acceleration</div>
+            <canvas id="chartAcc0"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">CORE 01 Gyro</div>
+            <canvas id="chartGyro0"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">CORE 01 Euler Angle (normalized)</div>
+            <canvas id="chartEuler0"></canvas>
+          </div>
+        </div>
+        <div class="chart-column">
+          <div class="chart-box">
+            <div class="chart-title">CORE 02 Acceleration</div>
+            <canvas id="chartAcc1"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">CORE 02 Gyro</div>
+            <canvas id="chartGyro1"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-title">CORE 02 Euler Angle (normalized)</div>
+            <canvas id="chartEuler1"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/BleSharedBridge.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/CoreToolkit.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      /*
+        ORPHE CORE Motion Game Starter
+        ------------------------------------------------------------
+        p5.js Web Editorでは、このファイル全体を index.html に貼ります。
+
+        Copilotに頼むときの例:
+        - 「COPILOT EDIT AREAだけを編集して、足踏みでジャンプするゲームに変えて」
+        - 「SAFE FOUNDATION AREAは残して、ボールを避けるゲームにして」
+        - 「sensorToPaddleY()だけ変更して、pitchではなくstepsで操作して」
+      */
+
+      // ============================================================
+      // COPILOT EDIT AREA 1: ゲーム設定
+      // 初学者やCopilotが最初に触るなら、まずここだけ変える。
+      // ============================================================
+      const GAME = {
+        title: "MOTION PING PONG",
+        winningScore: 3,
+        ballSize: 18,
+        ballSpeed: 5,
+        paddleWidth: 14,
+        paddleHeight: 84,
+        paddleMargin: 24,
+        paddleSensitivity: 1.2,
+        useSecondCore: true,
+        useAiWhenSecondCoreIsMissing: true,
+        aiSpeed: 4.2,
+        backgroundLeft: [249, 112, 82],
+        backgroundRight: [72, 138, 236],
+      };
+
+      // ============================================================
+      // SAFE FOUNDATION AREA: センサー値の保存場所
+      // ここは基本的に消さない。ゲームで使いたい値は sensors[0], sensors[1] から読む。
+      // ============================================================
+      const sensors = [
+        makeSensorState("CORE 01", "waiting"),
+        makeSensorState("CORE 02", "optional"),
+      ];
+
+      function makeSensorState(name, status) {
+        return {
+          name,
+          status,
+          connected: false,
+          steps: 0,
+          euler: { pitch: 0, roll: 0, yaw: 0 },
+          acc: { x: 0, y: 0, z: 0 },
+          gyro: { x: 0, y: 0, z: 0 },
+          gait: { type: 0, distance: 0 },
+          stride: { x: 0, y: 0, z: 0 },
+          footAngle: 0,
+          pronation: { x: 0, y: 0, z: 0 },
+          landingImpact: 0,
+        };
+      }
+
+      // ============================================================
+      // COPILOT EDIT AREA 2: センサーからゲーム操作への変換
+      // ここを変えると、同じゲームでも操作方法を変えられる。
+      // ============================================================
+      function sensorToPaddleY(coreId, paddleHeight) {
+        const sensor = sensors[coreId];
+
+        // pitchはORPHE COREの傾き。環境により -1.5 から 1.5 くらいで動く。
+        const pitch = sensor.euler.pitch * GAME.paddleSensitivity;
+
+        // p5.jsの map() で、センサー値を画面上のY座標に変換する。
+        return constrain(
+          map(pitch, -1.2, 1.2, height - paddleHeight, 0),
+          0,
+          height - paddleHeight
+        );
+      }
+
+      function aiPaddleY(currentY, targetY, paddleHeight) {
+        const desiredY = targetY - paddleHeight / 2;
+        return constrain(
+          lerp(currentY, desiredY, 0.04 * GAME.aiSpeed),
+          0,
+          height - paddleHeight
+        );
+      }
+
+      // ============================================================
+      // COPILOT EDIT AREA 3: ゲーム本体
+      // 新しい運動ゲームに変えるなら、この下のクラスや drawGame() を編集する。
+      // ============================================================
+      let ball;
+      let leftPaddle;
+      let rightPaddle;
+      let scoreLeft = 0;
+      let scoreRight = 0;
+      let gameState = "ready";
+      let messageText = "Connect CORE 01, then move it to play.";
+
+      class Paddle {
+        constructor(side) {
+          this.side = side;
+          this.w = GAME.paddleWidth;
+          this.h = GAME.paddleHeight;
+          this.x = side === "left" ? GAME.paddleMargin : width - GAME.paddleMargin - this.w;
+          this.y = height / 2 - this.h / 2;
+        }
+
+        update() {
+          this.h = GAME.paddleHeight;
+          this.x = this.side === "left" ? GAME.paddleMargin : width - GAME.paddleMargin - this.w;
+
+          if (this.side === "left") {
+            this.y = sensorToPaddleY(0, this.h);
+            return;
+          }
+
+          if (GAME.useSecondCore && sensors[1].connected) {
+            this.y = sensorToPaddleY(1, this.h);
+          } else if (GAME.useAiWhenSecondCoreIsMissing) {
+            this.y = aiPaddleY(this.y, ball.y, this.h);
+          }
+        }
+
+        draw() {
+          noStroke();
+          fill(this.side === "left" ? color(255, 238, 180) : color(190, 225, 255));
+          rect(this.x, this.y, this.w, this.h, 4);
+        }
+      }
+
+      class Ball {
+        constructor() {
+          this.reset(random([-1, 1]));
+        }
+
+        reset(direction) {
+          this.size = GAME.ballSize;
+          this.x = width / 2;
+          this.y = height / 2;
+          this.vx = GAME.ballSpeed * direction;
+          this.vy = random(-GAME.ballSpeed, GAME.ballSpeed);
+          if (abs(this.vy) < 1.5) this.vy = 2;
+        }
+
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+
+          if (this.y < this.size / 2 || this.y > height - this.size / 2) {
+            this.vy *= -1;
+          }
+
+          this.checkPaddle(leftPaddle);
+          this.checkPaddle(rightPaddle);
+
+          if (this.x < -this.size) {
+            scoreRight++;
+            this.afterScore(1);
+          }
+
+          if (this.x > width + this.size) {
+            scoreLeft++;
+            this.afterScore(-1);
+          }
+        }
+
+        checkPaddle(paddle) {
+          const hitX = this.x > paddle.x && this.x < paddle.x + paddle.w;
+          const hitY = this.y > paddle.y && this.y < paddle.y + paddle.h;
+          if (!hitX || !hitY) return;
+
+          const offset = (this.y - (paddle.y + paddle.h / 2)) / (paddle.h / 2);
+          this.vx *= -1.06;
+          this.vy = offset * GAME.ballSpeed * 1.4;
+          this.x = paddle.side === "left" ? paddle.x + paddle.w + this.size : paddle.x - this.size;
+        }
+
+        afterScore(direction) {
+          if (scoreLeft >= GAME.winningScore || scoreRight >= GAME.winningScore) {
+            gameState = "finished";
+            messageText = scoreLeft > scoreRight ? "LEFT PLAYER WINS" : "RIGHT PLAYER WINS";
+            return;
+          }
+
+          messageText = "Move to continue";
+          this.reset(direction);
+        }
+
+        draw() {
+          noStroke();
+          fill(255);
+          circle(this.x, this.y, this.size);
+        }
+      }
+
+      function drawGame() {
+        drawBackground();
+        drawCenterLine();
+        drawScore();
+
+        leftPaddle.update();
+        rightPaddle.update();
+
+        if (gameState !== "finished") {
+          ball.update();
+        }
+
+        leftPaddle.draw();
+        rightPaddle.draw();
+        ball.draw();
+        drawMessage();
+      }
+
+      function drawBackground() {
+        for (let x = 0; x < width; x += 2) {
+          const amount = x / width;
+          const r = lerp(GAME.backgroundLeft[0], GAME.backgroundRight[0], amount);
+          const g = lerp(GAME.backgroundLeft[1], GAME.backgroundRight[1], amount);
+          const b = lerp(GAME.backgroundLeft[2], GAME.backgroundRight[2], amount);
+          stroke(r, g, b);
+          line(x, 0, x, height);
+        }
+
+        noStroke();
+        fill(255, 255, 255, 28);
+        textAlign(CENTER, CENTER);
+        textSize(height * 0.8);
+        text("A", width * 0.25, height * 0.5);
+        text("B", width * 0.75, height * 0.5);
+      }
+
+      function drawCenterLine() {
+        stroke(255, 255, 255, 160);
+        strokeWeight(2);
+        drawingContext.setLineDash([10, 12]);
+        line(width / 2, 0, width / 2, height);
+        drawingContext.setLineDash([]);
+      }
+
+      function drawScore() {
+        noStroke();
+        fill(255);
+        textAlign(CENTER, TOP);
+        textSize(38);
+        text(scoreLeft + " - " + scoreRight, width / 2, 18);
+      }
+
+      function drawMessage() {
+        if (!messageText) return;
+        noStroke();
+        fill(255, 255, 255, 220);
+        textAlign(CENTER, CENTER);
+        textSize(18);
+        text(messageText, width / 2, height - 28);
+      }
+
+      function resetGame() {
+        scoreLeft = 0;
+        scoreRight = 0;
+        gameState = "playing";
+        messageText = "";
+        ball.reset(random([-1, 1]));
+      }
+
+      // ============================================================
+      // SAFE FOUNDATION AREA: p5.js setup/draw
+      // CoreToolkit、センサー受信、Chart.jsを起動する土台。基本的に残す。
+      // ============================================================
+      function setup() {
+        const canvas = createCanvas(gameCanvasWidth(), 420);
+        canvas.parent("gameCanvas");
+        textFont("sans-serif");
+
+        ball = new Ball();
+        leftPaddle = new Paddle("left");
+        rightPaddle = new Paddle("right");
+
+        setupCoreToolkit();
+        setupCharts();
+        updateStatusText();
+      }
+
+      function draw() {
+        drawGame();
+        updateChartsIfNeeded();
+      }
+
+      function windowResized() {
+        resizeCanvas(gameCanvasWidth(), 420);
+        leftPaddle = new Paddle("left");
+        rightPaddle = new Paddle("right");
+        ball.reset(random([-1, 1]));
+      }
+
+      function mousePressed() {
+        if (gameState === "finished") resetGame();
+      }
+
+      function keyPressed() {
+        if (key === "r" || key === "R") resetGame();
+
+        // COREがない時のテスト用。ワークショップ前の動作確認に便利。
+        if (keyCode === UP_ARROW) sensors[0].euler.pitch += 0.15;
+        if (keyCode === DOWN_ARROW) sensors[0].euler.pitch -= 0.15;
+      }
+
+      function gameCanvasWidth() {
+        const parent = document.querySelector("#gameCanvas");
+        const parentWidth = parent ? parent.clientWidth : 900;
+        return Math.max(320, Math.min(900, parentWidth));
+      }
+
+      // ============================================================
+      // SAFE FOUNDATION AREA: ORPHE CORE + CoreToolkit
+      // Copilotにゲーム変更を頼む時も、この下はなるべく残す。
+      // ============================================================
+      function setupCoreToolkit() {
+        const notification = "STEP_ANALYSIS_AND_SENSOR_VALUES";
+        const options = {
+          autoReconnect: true,
+          reconnectIntervalMs: 3000,
+          reconnectMaxAttempts: 120,
+        };
+
+        for (let i = 0; i < 2; i++) {
+          bles[i].setup();
+          buildCoreToolkit(
+            document.querySelector("#toolkit" + i),
+            "CORE 0" + (i + 1),
+            i,
+            notification,
+            options
+          );
+
+          const modalTitle = document.querySelector("#settings_modal" + i + " .modal-title");
+          if (modalTitle) modalTitle.textContent = "CORE 0" + (i + 1) + " Settings";
+
+          attachSensorCallbacks(bles[i], i);
+        }
+
+        guardCoreToolkitBluetooth({
+          coreIds: [0, 1],
+          messageElement: "#ble-support-message",
+        });
+      }
+
+      function attachSensorCallbacks(ble, id) {
+        ble.onConnect = function () {
+          sensors[id].connected = true;
+          sensors[id].status = "connected";
+          if (id === 0 && gameState === "ready") {
+            gameState = "playing";
+            messageText = "";
+          }
+          updateStatusText();
+        };
+
+        ble.onDisconnect = function () {
+          sensors[id].connected = false;
+          sensors[id].status = "disconnected";
+          updateStatusText();
+        };
+
+        ble.onReconnectAttempt = function (info) {
+          sensors[id].status = "reconnecting " + info.attempt;
+          updateStatusText();
+        };
+
+        ble.onReconnectSuccess = function () {
+          sensors[id].connected = true;
+          sensors[id].status = "reconnected";
+          updateStatusText();
+        };
+
+        ble.onReconnectFailed = function () {
+          sensors[id].connected = false;
+          sensors[id].status = "connect again";
+          updateStatusText();
+        };
+
+        ble.gotQuat = function (quat) {
+          const normalizedQuat = normalizeQuaternion(quat);
+          const euler = quaternionToEuler(normalizedQuat);
+          sensors[id].euler = euler;
+          pushChartSample(id, "euler", {
+            x: euler.pitch,
+            y: euler.roll,
+            z: euler.yaw,
+          });
+        };
+
+        ble.gotConvertedAcc = function (acc) {
+          sensors[id].acc = acc;
+          pushChartSample(id, "acc", acc);
+          updateStatusText();
+        };
+
+        ble.gotConvertedGyro = function (gyro) {
+          sensors[id].gyro = gyro;
+          pushChartSample(id, "gyro", gyro);
+        };
+
+        ble.gotStepsNumber = function (stepsNumber) {
+          sensors[id].steps = stepsNumber.value;
+          updateStatusText();
+        };
+
+        ble.gotGait = function (gait) {
+          sensors[id].gait = gait;
+        };
+
+        ble.gotStride = function (stride) {
+          sensors[id].stride = stride;
+        };
+
+        ble.gotFootAngle = function (footAngle) {
+          sensors[id].footAngle = footAngle.value;
+        };
+
+        ble.gotPronation = function (pronation) {
+          sensors[id].pronation = pronation;
+        };
+
+        ble.gotLandingImpact = function (landingImpact) {
+          sensors[id].landingImpact = landingImpact.value;
+        };
+      }
+
+      function updateStatusText() {
+        for (let i = 0; i < 2; i++) {
+          setText("status" + i, sensors[i].status);
+          setText("steps" + i, sensors[i].steps);
+          setText("acc" + i, formatVec3(sensors[i].acc));
+        }
+      }
+
+      function setText(id, value) {
+        const element = document.querySelector("#" + id);
+        if (element) element.textContent = value;
+      }
+
+      function formatVec3(vector) {
+        return fixed(vector.x) + " / " + fixed(vector.y) + " / " + fixed(vector.z);
+      }
+
+      function fixed(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return "0.00";
+        return number.toFixed(2);
+      }
+
+      function normalizeQuaternion(quat) {
+        const norm = Math.sqrt(
+          quat.w * quat.w +
+          quat.x * quat.x +
+          quat.y * quat.y +
+          quat.z * quat.z
+        );
+
+        if (!Number.isFinite(norm) || norm < 0.000001) {
+          return { w: 1, x: 0, y: 0, z: 0 };
+        }
+
+        return {
+          w: quat.w / norm,
+          x: quat.x / norm,
+          y: quat.y / norm,
+          z: quat.z / norm,
+        };
+      }
+
+      function quaternionToEuler(quat) {
+        const q = new Quaternion(quat.w, quat.x, quat.y, quat.z);
+        return q.toEuler();
+      }
+
+      // ============================================================
+      // SAFE FOUNDATION AREA: Chart.js raw sensor graph
+      // 生データの変化を見ながらゲームを作るための下部グラフ。
+      // ============================================================
+      const charts = [
+        { acc: null, gyro: null, euler: null },
+        { acc: null, gyro: null, euler: null },
+      ];
+      let chartSampleCount = 0;
+      let lastChartUpdateMs = 0;
+
+      function setupCharts() {
+        charts[0].acc = makeChart("chartAcc0", ["acc.x", "acc.y", "acc.z"], -2, 2);
+        charts[0].gyro = makeChart("chartGyro0", ["gyro.x", "gyro.y", "gyro.z"], -250, 250);
+        charts[0].euler = makeChart("chartEuler0", ["pitch", "roll", "yaw"], -3.2, 3.2);
+        charts[1].acc = makeChart("chartAcc1", ["acc.x", "acc.y", "acc.z"], -2, 2);
+        charts[1].gyro = makeChart("chartGyro1", ["gyro.x", "gyro.y", "gyro.z"], -250, 250);
+        charts[1].euler = makeChart("chartEuler1", ["pitch", "roll", "yaw"], -3.2, 3.2);
+      }
+
+      function makeChart(canvasId, labels, suggestedMin, suggestedMax) {
+        return new Chart(document.getElementById(canvasId), {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              { label: labels[0], data: [], borderColor: "#d8585c", pointRadius: 0, borderWidth: 1 },
+              { label: labels[1], data: [], borderColor: "#2f9e44", pointRadius: 0, borderWidth: 1 },
+              { label: labels[2], data: [], borderColor: "#2f6fd6", pointRadius: 0, borderWidth: 1 },
+            ],
+          },
+          options: {
+            animation: false,
+            responsive: true,
+            scales: {
+              x: { display: false },
+              y: { suggestedMin: suggestedMin, suggestedMax: suggestedMax },
+            },
+            plugins: {
+              legend: { display: true, labels: { boxWidth: 12 } },
+            },
+          },
+        });
+      }
+
+      function pushChartSample(coreId, kind, vector) {
+        const chart = charts[coreId][kind];
+        if (!chart) return;
+
+        chartSampleCount++;
+        chart.data.labels.push(chartSampleCount);
+        chart.data.datasets[0].data.push(vector.x);
+        chart.data.datasets[1].data.push(vector.y);
+        chart.data.datasets[2].data.push(vector.z);
+
+        while (chart.data.labels.length > 80) {
+          chart.data.labels.shift();
+          chart.data.datasets.forEach(function (dataset) {
+            dataset.data.shift();
+          });
+        }
+      }
+
+      function updateChartsIfNeeded() {
+        if (millis() - lastChartUpdateMs < 120) return;
+        lastChartUpdateMs = millis();
+
+        for (let coreId = 0; coreId < 2; coreId++) {
+          if (charts[coreId].acc) charts[coreId].acc.update("none");
+          if (charts[coreId].gyro) charts[coreId].gyro.update("none");
+          if (charts[coreId].euler) charts[coreId].euler.update("none");
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1678,11 +1678,14 @@ class Orphe {
       // 通常のupdate sensor valuesであればヘッダは40。このときにはserial_numberはパケットに含まれていない
       else if (data.getUint8(0) == 40) {
 
+        // CORE 2.0 の通常 SENSOR_VALUES は quaternion が Q14 形式で入る。
+        // Q15 (/32768) として読むと norm が約 0.5 になり、Euler 角が不安定になる。
+        const quatScale = 16384;
         this.quat = {
-          w: data.getInt16(1) / 32768,
-          x: data.getInt16(3) / 32768,
-          y: data.getInt16(5) / 32768,
-          z: data.getInt16(7) / 32768
+          w: data.getInt16(1) / quatScale,
+          x: data.getInt16(3) / quatScale,
+          y: data.getInt16(5) / quatScale,
+          z: data.getInt16(7) / quatScale
         }
         this.gyro = {
           x: data.getInt8(9) / 127,
@@ -1724,7 +1727,7 @@ class Orphe {
         this.gotGyro(this.gyro);
         this.gotConvertedAcc(this.converted_acc);
         this.gotConvertedGyro(this.converted_gyro);
-        let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z);
+        let q = new Quaternion(this.quat.w, this.quat.x, this.quat.y, this.quat.z).normalize();
         this.euler = q.toEuler();
         this.gotEuler(this.euler);
         this._notifyBridgeBatch({

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ORPHE CORE CoreToolkit p5.js Step Analysis</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    >
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css"
+    >
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #f5f7fb;
+        color: #18202f;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 880px;
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin: 0 0 12px;
+      }
+
+      #toolkit {
+        align-items: center;
+        background: #ffffff;
+        border: 1px solid #d8dee8;
+        display: flex;
+        min-height: 52px;
+        padding: 12px;
+      }
+
+      #ble-support-message {
+        display: none;
+      }
+
+      #canvas-area {
+        margin-top: 16px;
+      }
+
+      .data-grid {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        margin-top: 16px;
+      }
+
+      .data-item {
+        background: #ffffff;
+        border: 1px solid #d8dee8;
+        padding: 10px 12px;
+      }
+
+      .data-label {
+        color: #5a6475;
+        display: block;
+        font-size: 12px;
+      }
+
+      .data-value {
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      canvas {
+        display: block;
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ORPHE CORE + CoreToolkit + p5.js</h1>
+      <div id="toolkit"></div>
+      <div id="ble-support-message" class="alert alert-warning mt-3">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
+
+      <div id="canvas-area"></div>
+
+      <div class="data-grid">
+        <div class="data-item">
+          <span class="data-label">status</span>
+          <span class="data-value" id="status">waiting</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">steps</span>
+          <span class="data-value" id="steps">0</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">gait type</span>
+          <span class="data-value" id="gaitType">none</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">distance</span>
+          <span class="data-value" id="distance">0.00</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">foot angle</span>
+          <span class="data-value" id="footAngle">0.00</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">landing impact</span>
+          <span class="data-value" id="landingImpact">0.00</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">stride x / y / z</span>
+          <span class="data-value" id="stride">0.00 / 0.00 / 0.00</span>
+        </div>
+        <div class="data-item">
+          <span class="data-label">pronation x / y / z</span>
+          <span class="data-value" id="pronation">0.00 / 0.00 / 0.00</span>
+        </div>
+      </div>
+    </main>
+
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/BleSharedBridge.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/CoreToolkit.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      const values = {
+        status: "waiting",
+        steps: 0,
+        gaitType: "none",
+        distance: 0,
+        footAngle: 0,
+        landingImpact: 0,
+        stride: { x: 0, y: 0, z: 0 },
+        pronation: { x: 0, y: 0, z: 0 },
+      };
+
+      const gaitNames = ["none", "walk", "run", "stand"];
+
+      function fixed(value, digits = 2) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return "0.00";
+        return number.toFixed(digits);
+      }
+
+      function setText(id, text) {
+        const element = document.querySelector("#" + id);
+        if (element) element.textContent = text;
+      }
+
+      function updateText() {
+        setText("status", values.status);
+        setText("steps", values.steps);
+        setText("gaitType", values.gaitType);
+        setText("distance", fixed(values.distance));
+        setText("footAngle", fixed(values.footAngle));
+        setText("landingImpact", fixed(values.landingImpact));
+        setText(
+          "stride",
+          fixed(values.stride.x) + " / " + fixed(values.stride.y) + " / " + fixed(values.stride.z)
+        );
+        setText(
+          "pronation",
+          fixed(values.pronation.x) + " / " + fixed(values.pronation.y) + " / " + fixed(values.pronation.z)
+        );
+      }
+
+      function setup() {
+        const canvas = createCanvas(canvasWidth(), 280);
+        canvas.parent("canvas-area");
+        textFont("sans-serif");
+
+        const ble = bles[0];
+        ble.setup();
+
+        buildCoreToolkit(
+          document.querySelector("#toolkit"),
+          "CORE 01",
+          0,
+          "STEP_ANALYSIS",
+          {
+            autoReconnect: true,
+            reconnectIntervalMs: 3000,
+            reconnectMaxAttempts: 120,
+          }
+        );
+        const modalTitle = document.querySelector("#settings_modal0 .modal-title");
+        if (modalTitle) modalTitle.textContent = "CORE 01 Settings";
+
+        guardCoreToolkitBluetooth({
+          coreIds: [0],
+          messageElement: "#ble-support-message",
+        });
+
+        ble.onConnect = function () {
+          values.status = "connected";
+          updateText();
+        };
+
+        ble.onDisconnect = function () {
+          values.status = "disconnected";
+          updateText();
+        };
+
+        ble.onReconnectAttempt = function (info) {
+          values.status = "reconnecting " + info.attempt;
+          updateText();
+        };
+
+        ble.onReconnectSuccess = function () {
+          values.status = "reconnected";
+          updateText();
+        };
+
+        ble.onReconnectFailed = function () {
+          values.status = "connect again";
+          updateText();
+        };
+
+        ble.gotStepsNumber = function (stepsNumber) {
+          values.steps = stepsNumber.value;
+          updateText();
+        };
+
+        ble.gotGait = function (gait) {
+          values.distance = gait.distance;
+          values.gaitType = gaitNames[gait.type] || String(gait.type);
+          updateText();
+        };
+
+        ble.gotFootAngle = function (footAngle) {
+          values.footAngle = footAngle.value;
+          updateText();
+        };
+
+        ble.gotLandingImpact = function (landingImpact) {
+          values.landingImpact = landingImpact.value;
+          updateText();
+        };
+
+        ble.gotStride = function (stride) {
+          values.stride = stride;
+          updateText();
+        };
+
+        ble.gotPronation = function (pronation) {
+          values.pronation = pronation;
+          updateText();
+        };
+
+        updateText();
+      }
+
+      function canvasWidth() {
+        const parent = document.querySelector("#canvas-area");
+        const width = parent ? parent.clientWidth : 560;
+        return Math.max(320, Math.min(560, width));
+      }
+
+      function windowResized() {
+        resizeCanvas(canvasWidth(), 280);
+      }
+
+      function drawMetric(label, value, x, y, w, maxValue, color) {
+        const safeValue = Math.max(0, Math.min(Number(value) || 0, maxValue));
+        const barWidth = map(safeValue, 0, maxValue, 0, w);
+
+        noStroke();
+        fill(255);
+        rect(x, y, w, 34);
+        fill(color);
+        rect(x, y, barWidth, 34);
+        fill(30);
+        textSize(14);
+        textAlign(LEFT, CENTER);
+        text(label + ": " + fixed(value), x + 8, y + 17);
+      }
+
+      function draw() {
+        const chartWidth = width - 40;
+
+        background(230, 235, 244);
+        fill(24, 32, 47);
+        textSize(20);
+        textAlign(LEFT, TOP);
+        text("STEP_ANALYSIS values", 20, 18);
+
+        textSize(14);
+        text("status: " + values.status, 20, 50);
+        text("steps: " + values.steps + " / gait: " + values.gaitType, 20, 72);
+
+        drawMetric("distance", values.distance, 20, 112, chartWidth, 20, color(70, 160, 210));
+        drawMetric("foot angle", Math.abs(values.footAngle), 20, 156, chartWidth, 90, color(236, 175, 70));
+        drawMetric("landing impact", values.landingImpact, 20, 200, chartWidth, 10, color(212, 88, 92));
+      }
+    </script>
+  </body>
+</html>

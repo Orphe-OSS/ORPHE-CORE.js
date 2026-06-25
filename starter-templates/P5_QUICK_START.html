@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ORPHE CORE JS p5.js Quick Start</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.1/p5.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: sans-serif;
+      }
+
+      button {
+        margin: 12px;
+        padding: 8px 16px;
+        font-size: 16px;
+      }
+
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="connectButton">connect</button>
+
+    <script
+      src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      var ble = new Orphe(0);
+      var statusText = "click connect";
+
+      function setup() {
+        ble.setup();
+        createCanvas(400, 400);
+        textAlign(CENTER, CENTER);
+
+        document
+          .querySelector("#connectButton")
+          .addEventListener("click", async function () {
+            statusText = "connecting...";
+            try {
+              await ble.begin("STEP_ANALYSIS");
+              ble.setLED(1, 0);
+              statusText = "connected";
+            } catch (error) {
+              console.error(error);
+              statusText = "connection canceled";
+            }
+          });
+      }
+
+      function draw() {
+        background(200);
+        text("hello p5.js and ORPHE CORE", width / 2, height / 2 - 12);
+        text(statusText, width / 2, height / 2 + 16);
+      }
+    </script>
+  </body>
+</html>

@@ -13,13 +13,11 @@ let rightPaddleSizeConfig = 60;
 let leftSensitivityConfig = 1;
 let rightSensitivityConfig = 1;
 
-let counter3 = 4; // カウントダウン開始値
-let lastUpdateTime = 0; // 最後にカウンターが更新された時刻を記録する変数
-let counterVisible = true; // カウンターが表示されているかどうかのフラグ
+let countdownEndsAt = null;
+const COUNTDOWN_DURATION_MS = 3000;
 
 let bottoncolor = '#19191A'; // ボタンの色
 
-let farstgame = true;
 let button;
 let myFont;
 
@@ -100,14 +98,9 @@ function draw() {
 
 
     button.style('display', 'none');
-        count3s();
+        drawGameCountdown();
         drawMiddleLine();
         displayScore();
-        if(farstgame == false){
-            checkStartGame_regame();
-        }else{
-            checkStartGame();
-        }
         break;
     case 2:
         background(255,255,255,100);   
@@ -118,10 +111,7 @@ function draw() {
         bgmA.stop();
         BGMplay(2);
         showWinMessage();//ゲーム終了
-        farstgame = false;
-        counter3 = 3;
         gameStarted = false;
-        ccc = 0;
         button.style('display', 'inline-block');
 
         break;
@@ -129,40 +119,33 @@ function draw() {
 
   if (gameStarted) {
     ball.update();
-    ball.display();
     ball.checkPaddle(leftPaddle);
     ball.checkPaddle(rightPaddle);
 
     if (ball.scored()) {
       if (ball.x < 0) {
         //console.log('leftScore');
-        ccc = 0;
         rightScore++;
         p1.play();
-        gameStarted = false; // 得点後、一時停止
-      //  setTimeout(startGame, 1000);
-      startGame();
-        
+        gameStarted = false;
+
       } else if (ball.x > width) {
-        ccc = 0;
         //console.log('rightScore');
         leftScore++;
         p1.play();
-        gameStarted = false; // 得点後、一時停止
-       // setTimeout(startGame, 1000);
-        startGame();
+        gameStarted = false;
       }
-      //gameStarted = false;
-      ball.reset();
       if (leftScore >= maxScore || rightScore >= maxScore) {
         whistleSound.play(); // 勝利時にホイッスル音を再生
         gamestage = 2;
       } else {
-        //setTimeout(startGame, 1000);
-       // p2.play();
         startGame();
       }
     }
+  }
+
+  if (gamestage === 1) {
+    ball.display();
   }
 
   leftPaddle.display();
@@ -224,28 +207,36 @@ function loadGame(){
     textFont(myFont);
 }
 
-var ccc = 0;
-function startGame() {
-    if(ccc === 0){
-    //console.log('startgame');
-    ball.reset();
-  gameStarted = true;
-  ccc++ ;
-    }
+function beginGameCountdown() {
+  if (countdownEndsAt !== null || gameStarted) return;
+
+  gamestage = 1;
+  gameStarted = false;
+  ball.parkAtCenter();
+  countdownEndsAt = millis() + COUNTDOWN_DURATION_MS;
 }
 
-// 接続デバイスが3つになったらゲームスタート
-function checkStartGame() {
-  if (connectedDevices === 3 && !gameStarted) {
-    setTimeout(startGame, 3000); 
+function drawGameCountdown() {
+  if (countdownEndsAt === null) return;
+
+  const remainingMs = countdownEndsAt - millis();
+  if (remainingMs <= 0) {
+    countdownEndsAt = null;
+    startGame();
+    return;
   }
+
+  fill(255);
+  textSize(100);
+  textAlign(CENTER, CENTER);
+  text(Math.ceil(remainingMs / 1000), width / 2, height / 2 - 70);
 }
 
-function checkStartGame_regame(){
-    if(gameStarted === false){
-        //console.log('gamestarttime');
-        setTimeout(startGame, 3000); 
-    }
+function startGame() {
+  if (gameStarted) return;
+
+  ball.launchFromCenter();
+  gameStarted = true;
 }
 
 // ゲームの勝利メッセージ表示
@@ -314,15 +305,26 @@ class Paddle {
 // ボールクラス
 class Ball {
   constructor() {
-    this.reset();
+    this.parkAtCenter();
   }
 
-  reset() {
+  parkAtCenter() {
     this.x = width / 2;
     this.y = height / 2;
     this.diameter = ballSizeConfig;
-    this.xSpeed = random(ballSpeedConfig, ballSpeedConfig) * (random() > 0.5 ? 1 : -1);
-    this.ySpeed = random(ballSpeedConfig, ballSpeedConfig) * (random() > 0.5 ? 1 : -1);
+    this.xSpeed = 0;
+    this.ySpeed = 0;
+  }
+
+  launchFromCenter() {
+    this.parkAtCenter();
+
+    const horizontalDirection = random() < 0.5 ? -1 : 1;
+    this.xSpeed = ballSpeedConfig * horizontalDirection;
+    this.ySpeed = random(
+      -ballSpeedConfig * 0.75,
+      ballSpeedConfig * 0.75
+    );
   }
 
   update() {
@@ -354,36 +356,13 @@ class Ball {
   }
 }
 
-function count3s(){
-    if (counterVisible) {
-        // 現在のフレームの時刻が、最後に更新してから1秒以上経過しているかチェック
-        if (millis() - lastUpdateTime >= 1000) {
-          counter3--; // カウンターをデクリメント
-          lastUpdateTime = millis(); // 最後に更新した時刻をリセット
-        }
-    
-        if (counter3 >= 0) {
-            fill(255); // テキストの色を設定
-            textSize(100); // テキストのサイズを設定
-            textAlign(CENTER, CENTER); // テキストの揃え位置を設定
-          text(counter3, width / 2, height / 2); // カウンターの値を画面中央に表示
-        } else {
-          // カウンターが0になった1秒後に表示を消す
-          if (millis() - lastUpdateTime >= 1000) {
-            counterVisible = false; // カウンターを非表示にする
-          }
-        }
-      }
-}
-
 function regame(){
-    //console.log('ボタンがクリックされました');
     loop();
-    gamestage = 1;
     leftScore = 0;
     rightScore = 0;
-    counterVisible = true;
-    counter3 = 3;
+    gameStarted = false;
+    countdownEndsAt = null;
+    beginGameCountdown();
 }
 // 色の初期設定関数
 function initColors() {
@@ -467,4 +446,16 @@ function updateLeftSensitivity(sensitivity) {
 
 function updateRightSensitivity(sensitivity) {
   rightSensitivityConfig = sensitivity;
+}
+
+function stopGameForDisconnect() {
+  gameStarted = false;
+  countdownEndsAt = null;
+  gamestage = 0;
+  bgmcont1 = 0;
+  bgmcont2 = 0;
+
+  if (ball) ball.parkAtCenter();
+  if (bgmA) bgmA.stop();
+  if (bgmB) bgmB.stop();
 }

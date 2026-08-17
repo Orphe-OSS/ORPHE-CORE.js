@@ -110,12 +110,9 @@ window.onload = function () {
     ble.setup();
     ble.onConnect = function (uuid) {
       console.log('onConnect:', uuid);
-      document.querySelector(`#status${ble.id}`).innerText = 'ONLINE';
-      document.querySelector(`#status${ble.id}`).classList = 'bg-primary text-white'
     }
     ble.onDisconnect = function () {
-      document.querySelector(`#status${ble.id}`).innerText = 'OFFLINE';
-      document.querySelector(`#status${ble.id}`).classList = 'bg-secondary text-white'
+      console.log('onDisconnect');    
     }
 
     buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
@@ -124,10 +121,7 @@ window.onload = function () {
 
     ble.onConnectGATT = function (uuid) {
       console.log('> connected GATT!');
-      document.getElementById(`uuid_name${this.id + 1}`).innerHTML = uuid;
-      document.querySelector(`#startNotifications${this.id}`).classList = 'btn btn-danger';
-      document.querySelector(`#button_name${this.id}`).innerHTML = "disconnect";
-      document.querySelector(`#char${this.id}`).disabled = true;
+      document.getElementById(`uuid_name${this.id}`).innerHTML = uuid; 
   }
 
   ble.onScan = function (deviceName) {
@@ -141,7 +135,6 @@ window.onload = function () {
     
     //code inserted for this example
     //pronations[this.id][0] = pronation.y.toFixed(3);
-    pronations[this.id][0] = pronation.y;
     pronations[this.id].unshift(pronation.y);
     if (pronations[this.id].length > 5) {
       pronations[this.id].pop();

@@ -112,7 +112,7 @@ window.onload = function () {
       console.log('onConnect:', uuid);
     }
     ble.onDisconnect = function () {
-      console.log('onDisconnect');    
+      console.log('onDisconnect');
     }
 
     buildCoreToolkit(document.querySelector('#toolkit_placeholder'),
@@ -121,7 +121,7 @@ window.onload = function () {
 
     ble.onConnectGATT = function (uuid) {
       console.log('> connected GATT!');
-      document.getElementById(`uuid_name${this.id}`).innerHTML = uuid; 
+      document.getElementById(`uuid_name${this.id}`).innerHTML = uuid;
   }
 
   ble.onScan = function (deviceName) {

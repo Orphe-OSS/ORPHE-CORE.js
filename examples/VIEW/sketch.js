@@ -40,11 +40,14 @@ function draw() {
         0, 1, 0
     )
     theta += .01;
-    if (eulers.length > 0) {
+    if (quats[0] || quats[1]) {
         scale(1);
 
-        let count = 0;
-        for (quat of quats) {
+        for (let i = 0; i < 2; i++) {
+            const quat = quats[i];
+            if (!quat) {
+                continue;
+            }
 
             const quatr = new toxi.geom.Quaternion(quat.z, -quat.x, quat.y, quat.w);
             let axisAngle = quatr.toAxisAngle();
@@ -52,7 +55,7 @@ function draw() {
             let r = axisAngle[0];
             let v = createVector(axisAngle[1], axisAngle[2], axisAngle[3]);
             push();
-            translate(-100 + 200 * count, 0, 0);
+            translate(-100 + 200 * i, 0, 0);
             rotateZ(PI);
             rotate(r, v);
 
@@ -62,10 +65,9 @@ function draw() {
             ambientMaterial(255, 255, 255);
             noStroke();
 
-            if (count == 0) model(my_model_R);
-            if (count == 1) model(my_model_L);
+            if (i == 0) model(my_model_R);
+            if (i == 1) model(my_model_L);
             pop();
-            count++;
         }
     }
     else {
@@ -100,7 +102,7 @@ var bles = [new Orphe(0), new Orphe(1)];
 //ロード時の処理
 //--------------------------------------------------
 window.onload = function () {
-    for (ble of bles) {
+    for (const ble of bles) {
         ble.setup();
 
         ble.onConnectGATT = function (uuid) {

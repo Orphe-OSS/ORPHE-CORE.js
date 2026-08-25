@@ -6,7 +6,7 @@ It is useful when you want to inspect values directly rather than plot them.
 ## What this example shows
 
 - Connect up to two ORPHE CORE modules.
-- Switch each device between `STEP_ANALYSIS` and `SENSOR_VALUES`.
+- Select notification type (`STEP_ANALYSIS_AND_SENSOR_VALUES`, `STEP_ANALYSIS`, or `SENSOR_VALUES`).
 - Inspect quaternion, gyro, accelerometer, gait, stride, foot angle, pronation,
   and landing impact values.
 - Reset motion sensor attitude after connection.
@@ -29,7 +29,7 @@ for each device, then use the switch beside the selector to connect.
 
 ## Data
 
-- Notify types: `STEP_ANALYSIS` or `SENSOR_VALUES`
+- Notify types: `STEP_ANALYSIS_AND_SENSOR_VALUES` (default: all data), `STEP_ANALYSIS`, or `SENSOR_VALUES`
 - Main callbacks: quaternion, gyro, accelerometer, gait, stride, foot angle,
   pronation, landing impact
 

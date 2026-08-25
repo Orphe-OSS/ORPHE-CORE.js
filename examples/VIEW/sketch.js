@@ -137,6 +137,13 @@ window.onload = function () {
             document.querySelector(`#svg${this.id}_z`).innerHTML = `${gyro.z.toFixed(3)}`;
         }
 
+        // gotConvertedGyro は実角速度 (deg/s) を返す。テーブル表示用に使用。
+        ble.gotConvertedGyro = function (gyro) {
+            document.querySelector(`#svg${this.id}_x`).innerHTML = `${gyro.x.toFixed(3)}`;
+            document.querySelector(`#svg${this.id}_y`).innerHTML = `${gyro.y.toFixed(3)}`;
+            document.querySelector(`#svg${this.id}_z`).innerHTML = `${gyro.z.toFixed(3)}`;
+        }
+
         // gotConvertedAcc は実 G 値 (±range G) を返す。テーブル表示用に
         // こちらを使うと正規化値より直感的に読める。
         ble.gotConvertedAcc = function (acc) {
@@ -174,8 +181,9 @@ window.onload = function () {
         }
 
         ble.onStartNotify = function (uuid) {
-            console.log('> Start Notify!');
-            document.getElementById(`uuid_name${this.id}`).innerHTML = uuid;
+            console.log('> Start Notify!', uuid);
+            // 接続モード名(STEP_ANLYSIS_AND_SENSOR_VALUES等)を表示
+            document.getElementById(`uuid_name${this.id}`).innerHTML = this.notification_type || uuid;
         }
 
         ble.onStopNotify = function (uuid) {

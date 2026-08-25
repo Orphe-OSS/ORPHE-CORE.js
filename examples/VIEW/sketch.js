@@ -193,43 +193,43 @@ window.onload = function () {
     }
 }
 
-//--------------------------------------------------                                                                           
-// テーブル表示の初期化（非対応データに '-' を表示）                                                                           
-//--------------------------------------------------                                                                           
-function initTableDisplay(id, kind) {                                                                                          
-    const allCells = [                                                                                                         
-        `sq${id}_w`, `sq${id}_x`, `sq${id}_y`, `sq${id}_z`,                                                                    
-        `svg${id}_x`, `svg${id}_y`, `svg${id}_z`,                                                                              
-        `sva${id}_x`, `sva${id}_y`, `sva${id}_z`,                                                                              
-        `sd${id}_x`, `sd${id}_y`, `sd${id}_z`,                                                                                 
-        `gait${id}_w`, `gait${id}_x`, `gait${id}_y`, `gait${id}_z`,                                                            
-        `stride${id}_w`, `stride${id}_x`, `stride${id}_y`, `stride${id}_z`,                                                    
-        `pronation${id}_w`, `pronation${id}_x`, `pronation${id}_y`, `pronation${id}_z`                                         
-    ];                                                                                                                         
-    // 一旦全セルを空文字にクリア                                                                                              
-    allCells.forEach(cellId => {                                                                                               
-        const el = document.querySelector(`#${cellId}`);                                                                       
-        if (el) el.innerHTML = '';                                                                                             
-    });                                                                                                                        
-                                                                                                                                
-    if (kind === 'STEP_ANALYSIS') {                                                                                            
-        // STEP_ANALYSIS では Gyro と Acc は取得できないため '-' を表示                                                        
-        [`svg${id}_x`, `svg${id}_y`, `svg${id}_z`,                                                                             
-            `sva${id}_x`, `sva${id}_y`, `sva${id}_z`].forEach(cellId => {                                                         
-            const el = document.querySelector(`#${cellId}`);                                                                   
-            if (el) el.innerHTML = '-';                                                                                        
-        });                                                                                                                    
-    } else if (kind === 'SENSOR_VALUES') {                                                                                     
-        // SENSOR_VALUES では Delta と歩行解析データは取得できないため '-' を表示                                              
-        [`sd${id}_x`, `sd${id}_y`, `sd${id}_z`,                                                                                
-            `gait${id}_w`, `gait${id}_x`, `gait${id}_y`, `gait${id}_z`,                                                           
-            `stride${id}_w`, `stride${id}_x`, `stride${id}_y`, `stride${id}_z`,                                                   
-            `pronation${id}_w`, `pronation${id}_x`, `pronation${id}_y`, `pronation${id}_z`].forEach(cellId => {                   
-            const el = document.querySelector(`#${cellId}`);                                                                   
-            if (el) el.innerHTML = '-';                                                                                        
-        });                                                                                                                    
-    }                                                                                                                          
-}      
+//--------------------------------------------------
+// テーブル表示の初期化（非対応データに '-' を表示）
+//--------------------------------------------------
+function initTableDisplay(id, kind) {
+    const allCells = [
+        `sq${id}_w`, `sq${id}_x`, `sq${id}_y`, `sq${id}_z`,
+        `svg${id}_x`, `svg${id}_y`, `svg${id}_z`,
+        `sva${id}_x`, `sva${id}_y`, `sva${id}_z`,
+        `sd${id}_x`, `sd${id}_y`, `sd${id}_z`,
+        `gait${id}_w`, `gait${id}_x`, `gait${id}_y`, `gait${id}_z`,
+        `stride${id}_w`, `stride${id}_x`, `stride${id}_y`, `stride${id}_z`,
+        `pronation${id}_w`, `pronation${id}_x`, `pronation${id}_y`, `pronation${id}_z`
+    ];
+    // 一旦全セルを空文字にクリア
+    allCells.forEach(cellId => {
+        const el = document.querySelector(`#${cellId}`);
+        if (el) el.innerHTML = '';
+    });
+
+    if (kind === 'STEP_ANALYSIS') {
+        // STEP_ANALYSIS では Gyro と Acc は取得できないため '-' を表示
+        [`svg${id}_x`, `svg${id}_y`, `svg${id}_z`,
+            `sva${id}_x`, `sva${id}_y`, `sva${id}_z`].forEach(cellId => {
+            const el = document.querySelector(`#${cellId}`);
+            if (el) el.innerHTML = '-';
+        });
+    } else if (kind === 'SENSOR_VALUES') {
+        // SENSOR_VALUES では Delta と歩行解析データは取得できないため '-' を表示
+        [`sd${id}_x`, `sd${id}_y`, `sd${id}_z`,
+            `gait${id}_w`, `gait${id}_x`, `gait${id}_y`, `gait${id}_z`,
+            `stride${id}_w`, `stride${id}_x`, `stride${id}_y`, `stride${id}_z`,
+            `pronation${id}_w`, `pronation${id}_x`, `pronation${id}_y`, `pronation${id}_z`].forEach(cellId => {
+            const el = document.querySelector(`#${cellId}`);
+            if (el) el.innerHTML = '-';
+        });
+    }
+}
 
 //-------------------------------------------------
 //ボタンが押された時のイベント登録
@@ -242,14 +242,14 @@ function toggleConnect(dom) {
     if (!checked) {
         bles[id].reset();
         document.querySelector(`#char${id}`).disabled = false;
-        document.getElementById(`uuid_name${id}`).innerHTML = '';                                                              
+        document.getElementById(`uuid_name${id}`).innerHTML = '';
         initTableDisplay(id, null);
         dom.innerHTML = "connect";
         dom.classList = 'form-check-input';
     }
     else {
         const kind = document.querySelector(`#char${id}`).value;
-        initTableDisplay(id, kind); 
+        initTableDisplay(id, kind);
         bles[id].begin(kind);
     }
 }

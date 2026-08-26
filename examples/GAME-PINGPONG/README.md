@@ -23,7 +23,7 @@ Simple competitive game concept using ORPHE input.
 
 ## 実機確認
 
-- **未実機確認** — 静的検証 (パス・参照) のみ。BLE 接続後の挙動はオーナーレビュー待ち。
+- **実機確認済み** — 2台のORPHE COREを接続し、カウントダウンとボールの移動を確認済み。
 
 ## 既知の課題
 

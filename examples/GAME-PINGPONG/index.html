@@ -93,57 +93,14 @@
   <script>
     var bles = [new Orphe(0), new Orphe(1)];
     bles[0].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
     bles[1].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'SENSOR_VALUES');
     guardCoreToolkitBluetooth({
       coreIds: [0, 1],
       messageElement: '#ble-support-message'
     });
-    var connectedDevices = 0;
     var gamestage = 0;
-
-    /*
-    ble1.onConnect = function () {
-        console.log('ble1 connected');
-        if (connectedDevices == 3) {
-          mystart(ble1);
-          mystart(ble2);
-        }
-        connectedDevices++;
-      };
-    ble2.onConnect = function () {
-        console.log('ble1 connected');
-        if (connectedDevices == 3) {
-          mystart(ble1);
-          mystart(ble2);
-        }
-        connectedDevices++;
-      };
-
-      */
-      for (let ble of bles) {
-        ble.onConnect = function () {
-
-            connectedDevices++;
-            // STEP_ANALYSIS_AND_SENSOR_VALUES では onConnect が
-            // 1 デバイスにつき 2 回発火する (各 characteristic ごと)。
-            // 2 デバイス × 2 characteristic = 4 回で完全接続完了。
-            // 旧コードは === 3 で「片方が中途半端な状態」で start していたため修正。
-            if (connectedDevices === 4) {
-            //接続されたときの処理
-
-            mystart(bles[0]);
-            mystart(bles[1]);
-
-            gamestage = 1;
-
-
-            }
-
-      }
-    }
-
 
     var devices = {
       0: {
@@ -200,6 +157,16 @@
       }
     };
 
+    // パドル操作に必要なEuler値を受信したプレイヤーIDを保持する。
+    const readyDeviceIds = new Set();
+
+    function markDeviceReady(deviceId) {
+      readyDeviceIds.add(deviceId);
+
+      if (readyDeviceIds.size === bles.length && gamestage === 0) {
+        beginGameCountdown();
+      }
+    }
 
     function mystart(ble_device) {
       ble_device.gotQuat = function (_quat) {
@@ -207,14 +174,13 @@
       };
       ble_device.gotEuler = function (_euler) {
         devices[this.id].eulers = _euler;
+        markDeviceReady(this.id);
       };
       ble_device.gotGait = function (_gait) {
         devices[this.id].gaits = _gait;
-        updateMetrics(this.id, _gait);
       };
       ble_device.gotStride = function (_stride) {
         devices[this.id].strides = _stride;
-        updateStrideLength(this.id, _stride);
       };
       ble_device.gotFootAngle = function (_foot_angle) {
         devices[this.id].foot_angles = _foot_angle.value;
@@ -222,7 +188,15 @@
       ble_device.gotPronation = function (_pronation) {
         devices[this.id].pronations = _pronation;
       };
-      // gotDuration は SDK に存在しないコールバックのため削除
+    }
+
+    for (const ble of bles) {
+      mystart(ble);
+
+      ble.onDisconnect = function () {
+        readyDeviceIds.delete(this.id);
+        stopGameForDisconnect();
+      };
     }
     
     // スライダーの値変更イベントリスナー

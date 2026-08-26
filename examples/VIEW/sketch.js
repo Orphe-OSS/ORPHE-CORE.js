@@ -40,11 +40,14 @@ function draw() {
         0, 1, 0
     )
     theta += .01;
-    if (eulers.length > 0) {
+    if (quats[0] || quats[1]) {
         scale(1);
 
-        let count = 0;
-        for (quat of quats) {
+        for (let i = 0; i < 2; i++) {
+            const quat = quats[i];
+            if (!quat) {
+                continue;
+            }
 
             const quatr = new toxi.geom.Quaternion(quat.z, -quat.x, quat.y, quat.w);
             let axisAngle = quatr.toAxisAngle();
@@ -52,7 +55,7 @@ function draw() {
             let r = axisAngle[0];
             let v = createVector(axisAngle[1], axisAngle[2], axisAngle[3]);
             push();
-            translate(-100 + 200 * count, 0, 0);
+            translate(-100 + 200 * i, 0, 0);
             rotateZ(PI);
             rotate(r, v);
 
@@ -62,10 +65,9 @@ function draw() {
             ambientMaterial(255, 255, 255);
             noStroke();
 
-            if (count == 0) model(my_model_R);
-            if (count == 1) model(my_model_L);
+            if (i == 0) model(my_model_R);
+            if (i == 1) model(my_model_L);
             pop();
-            count++;
         }
     }
     else {
@@ -100,7 +102,7 @@ var bles = [new Orphe(0), new Orphe(1)];
 //ロード時の処理
 //--------------------------------------------------
 window.onload = function () {
-    for (ble of bles) {
+    for (const ble of bles) {
         ble.setup();
 
         ble.onConnectGATT = function (uuid) {
@@ -130,6 +132,13 @@ window.onload = function () {
         }
 
         ble.gotGyro = function (gyro) {
+            document.querySelector(`#svg${this.id}_x`).innerHTML = `${gyro.x.toFixed(3)}`;
+            document.querySelector(`#svg${this.id}_y`).innerHTML = `${gyro.y.toFixed(3)}`;
+            document.querySelector(`#svg${this.id}_z`).innerHTML = `${gyro.z.toFixed(3)}`;
+        }
+
+        // gotConvertedGyro は実角速度 (deg/s) を返す。テーブル表示用に使用。
+        ble.gotConvertedGyro = function (gyro) {
             document.querySelector(`#svg${this.id}_x`).innerHTML = `${gyro.x.toFixed(3)}`;
             document.querySelector(`#svg${this.id}_y`).innerHTML = `${gyro.y.toFixed(3)}`;
             document.querySelector(`#svg${this.id}_z`).innerHTML = `${gyro.z.toFixed(3)}`;
@@ -172,8 +181,9 @@ window.onload = function () {
         }
 
         ble.onStartNotify = function (uuid) {
-            console.log('> Start Notify!');
-            document.getElementById(`uuid_name${this.id}`).innerHTML = uuid;
+            console.log('> Start Notify!', uuid);
+            // 接続モード名(STEP_ANLYSIS_AND_SENSOR_VALUES等)を表示
+            document.getElementById(`uuid_name${this.id}`).innerHTML = this.notification_type || uuid;
         }
 
         ble.onStopNotify = function (uuid) {
@@ -183,6 +193,43 @@ window.onload = function () {
     }
 }
 
+//--------------------------------------------------
+// テーブル表示の初期化（非対応データに '-' を表示）
+//--------------------------------------------------
+function initTableDisplay(id, kind) {
+    const allCells = [
+        `sq${id}_w`, `sq${id}_x`, `sq${id}_y`, `sq${id}_z`,
+        `svg${id}_x`, `svg${id}_y`, `svg${id}_z`,
+        `sva${id}_x`, `sva${id}_y`, `sva${id}_z`,
+        `sd${id}_x`, `sd${id}_y`, `sd${id}_z`,
+        `gait${id}_w`, `gait${id}_x`, `gait${id}_y`, `gait${id}_z`,
+        `stride${id}_w`, `stride${id}_x`, `stride${id}_y`, `stride${id}_z`,
+        `pronation${id}_w`, `pronation${id}_x`, `pronation${id}_y`, `pronation${id}_z`
+    ];
+    // 一旦全セルを空文字にクリア
+    allCells.forEach(cellId => {
+        const el = document.querySelector(`#${cellId}`);
+        if (el) el.innerHTML = '';
+    });
+
+    if (kind === 'STEP_ANALYSIS') {
+        // STEP_ANALYSIS では Gyro と Acc は取得できないため '-' を表示
+        [`svg${id}_x`, `svg${id}_y`, `svg${id}_z`,
+            `sva${id}_x`, `sva${id}_y`, `sva${id}_z`].forEach(cellId => {
+            const el = document.querySelector(`#${cellId}`);
+            if (el) el.innerHTML = '-';
+        });
+    } else if (kind === 'SENSOR_VALUES') {
+        // SENSOR_VALUES では Delta と歩行解析データは取得できないため '-' を表示
+        [`sd${id}_x`, `sd${id}_y`, `sd${id}_z`,
+            `gait${id}_w`, `gait${id}_x`, `gait${id}_y`, `gait${id}_z`,
+            `stride${id}_w`, `stride${id}_x`, `stride${id}_y`, `stride${id}_z`,
+            `pronation${id}_w`, `pronation${id}_x`, `pronation${id}_y`, `pronation${id}_z`].forEach(cellId => {
+            const el = document.querySelector(`#${cellId}`);
+            if (el) el.innerHTML = '-';
+        });
+    }
+}
 
 //-------------------------------------------------
 //ボタンが押された時のイベント登録
@@ -195,11 +242,14 @@ function toggleConnect(dom) {
     if (!checked) {
         bles[id].reset();
         document.querySelector(`#char${id}`).disabled = false;
+        document.getElementById(`uuid_name${id}`).innerHTML = '';
+        initTableDisplay(id, null);
         dom.innerHTML = "connect";
         dom.classList = 'form-check-input';
     }
     else {
         const kind = document.querySelector(`#char${id}`).value;
+        initTableDisplay(id, kind);
         bles[id].begin(kind);
     }
 }

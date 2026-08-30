@@ -175,6 +175,54 @@ const convertedForRaw = (result, raw) =>
   near(converted.x, 127 * 256 * 0.07, 'header40 2000dps int8=127 → 2275.84 deg/s', 1e-9);
   near(converted.y, -1 * 256 * 0.07, 'header40 2000dps int8=-1 → -17.92 deg/s');
   near(converted.z, 0, 'header40 int8=0 → 0');
+
+  // 旧実装（int8/127 × range）との比は 1.13792（≈ +13.8%）。ヘッダ50 の 1.14688（≈ +14.7%）とは
+  // 別の値になる（旧コードは ヘッダ50 を /32768、ヘッダ40 を /127 で正規化しており約 0.8% 不整合だった）。
+  const oldHeader40 = (127 / 127) * 2000;
+  near(converted.x / oldHeader40, 1.13792, 'header40 ratio to previous int8/127 conversion', 1e-5);
+  near(converted.x / oldHeader40, (256 * 2000 * 0.000035) / (2000 / 127), 'header40 ratio exact form', 1e-12);
+}
+
+// ── ヘッダ40 と ヘッダ50 の整合: 同じ物理 raw16 なら同じ deg/s ────────────
+// ヘッダ40 の int8 は raw16 の上位バイト（raw16 >> 8）。raw16 = 0x4000 → int8 = 0x40 で
+// 両経路の gotConvertedGyro が一致すること（±2000 dps で 0x4000 × 0.07 = 1146.88 deg/s）。
+{
+  const RAW16 = 0x4000;
+  const INT8 = RAW16 >> 8; // 0x40
+
+  // header 50 (int16)
+  const c50 = new Orphe(0);
+  c50.device_information = { range: { acc: 3, gyro: 3 } };
+  const conv50 = [];
+  c50.gotConvertedGyro = v => conv50.push(v);
+  c50.onRead(makeHeader50Packet(RAWS.map(() => ({ gyro: [RAW16, -RAW16, 0], acc: [16384, 0, 0] }))), 'SENSOR_VALUES');
+  assert.equal(conv50.length, 4, 'consistency: header50 dispatches 4 frames');
+
+  // header 40 (int8 = raw16 >> 8)
+  const bytes = new Uint8Array(20);
+  bytes[0] = 40;
+  bytes[1] = 0x40; bytes[2] = 0x00; // quat w = 1.0 (Q14)
+  bytes[9] = INT8; bytes[10] = (-INT8) & 0xff; bytes[11] = 0;
+  bytes[16] = 8;
+  const c40 = new Orphe(0);
+  c40.device_information = { range: { acc: 3, gyro: 3 } };
+  let conv40 = null;
+  c40.gotConvertedGyro = v => { conv40 = v; };
+  c40.onRead(new DataView(bytes.buffer), 'SENSOR_VALUES');
+  assert.ok(conv40, 'consistency: header40 dispatches gotConvertedGyro');
+
+  for (const f of conv50) {
+    near(f.x, conv40.x, 'header40 int8 0x40 and header50 raw16 0x4000 give identical deg/s (x)', 1e-9);
+    near(f.y, conv40.y, 'header40 int8 -0x40 and header50 raw16 -0x4000 give identical deg/s (y)', 1e-9);
+    near(f.z, conv40.z, 'header40/header50 zero agrees (z)');
+  }
+  near(conv40.x, 1146.88, 'header40 int8 0x40 @±2000 dps → 1146.88 deg/s', 1e-9);
+  near(conv40.y, -1146.88, 'header40 int8 -0x40 @±2000 dps → -1146.88 deg/s', 1e-9);
+
+  // ヘッダ50 の旧実装比（1.14688）を ratio 単体でも固定し、ヘッダ40（1.13792）と別値であることを明示する
+  const oldHeader50 = (RAW16 / 32768) * 2000;
+  near(conv40.x / oldHeader50, 1.14688, 'header50 ratio (raw16 path) is 1.14688, distinct from header40 1.13792', 1e-5);
+  assert.ok(Math.abs(1.14688 - 1.13792) > 5e-3, 'the two ratios are intentionally different');
 }
 
 console.log('core-gyro-scale.test.js passed');

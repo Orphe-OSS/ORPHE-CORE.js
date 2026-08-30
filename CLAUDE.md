@@ -176,7 +176,7 @@ ble.gotGyro = function(gyro) {
 ble.gotConvertedGyro = function(gyro) {
   // gyro: { x, y, z } - actual values in deg/s
   // v1.4.0+: raw int16 × per-range datasheet sensitivity (±250/500/1000/2000 dps → 8.75/17.5/35/70 mdps/LSB),
-  // not raw/32768×range (that ideal-Q15 formula was ~12.8% too small at ±2000 dps)
+  // not raw/32768×range (the old ideal-Q15 formula under-reported by ~12.8% at ±2000 dps → new values are ~+14.7% vs old; header 40 (int8, formerly int8/127) is ~+13.8%)
 };
 
 ble.gotQuat = function(quat) {
@@ -577,7 +577,7 @@ ble.gotConvertedAcc = function(acc) {
 
 ## Version History
 
-- **v1.4.0** (2026/08/30): Current version. Converted gyro (`gotConvertedGyro`) now uses per-range LSM6DSOX datasheet sensitivity (~+12.8% at ±2000 dps); `gotGyro` normalized values and acc conversion unchanged. Adds CHANGELOG.md and `npm test`. See [CHANGELOG.md](CHANGELOG.md).
+- **v1.4.0** (2026/08/30): Current version. Converted gyro (`gotConvertedGyro`) now uses per-range LSM6DSOX datasheet sensitivity (new values ~+14.7% vs old at ±2000 dps for header 50 — the old formula under-reported by ~12.8%; header 40, formerly int8/127, ~+13.8%); `gotGyro` normalized values and acc conversion unchanged. Adds CHANGELOG.md and `npm test`. See [CHANGELOG.md](CHANGELOG.md).
 - **v1.3.4** (2026/01/31): JSDoc `@version` aligned release
 - **v1.3**: DateTime characteristic support, time sync
 - **v1.2**: ES6 class-based refactoring

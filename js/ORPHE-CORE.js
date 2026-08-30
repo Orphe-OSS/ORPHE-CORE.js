@@ -1,16 +1,17 @@
 var orphe_js_version_date = `
-Last modified: 2026/01/31 23:52:51
+Last modified: 2026/08/30 20:34:31
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 Class形式で記述を変更したバージョン
+v1.4.0 ジャイロの deg/s 換算をレンジ別のデータシート感度（LSM6DSOX）に修正
 v1.3 Date Time機能の追加
 v1.2 クラス記述形式に変更
 v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.3.4
+@version 1.4.0
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -49,6 +50,29 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _orpheAutoLoadOptionalLibs, { once: true });
 } else {
   _orpheAutoLoadOptionalLibs();
+}
+
+
+// ---------------------------------------------------------------------------
+// ジャイロの物理単位 [deg/s] 換算
+// LSM6DSOX のジャイロ代表感度はフルスケール 1 dps あたり 0.035 mdps/LSB
+// （±250/500/1000/2000 dps で 8.75/17.5/35/70 mdps/LSB）。
+// raw int16 を理想 Q15（raw/32768*range）として扱うと ±2000 dps で 61.035 mdps/LSB となり、
+// データシート感度より約 12.8% 小さい物理値になるため、感度側を正とする
+// （ORPHE-INSOLE.js v1.3.2 と同じ換算）。
+// 正規化コールバック（gotGyro = raw/32768）は後方互換のため従来どおり。
+// 加速度は /32768*range がデータシート感度（±16G で 0.488 mg/LSB）と一致するため変更しない。
+// ---------------------------------------------------------------------------
+const ORPHE_CORE_GYRO_DPS_PER_LSB_PER_RANGE = 0.000035;
+
+/**
+ * ジャイロの raw 値（int16 LSB）をレンジ別のデータシート感度で deg/s に変換する。
+ * @param {number} raw - int16 の生値。8bit 圧縮パケット（ヘッダ40）では上位バイト(int8)を 256 倍して int16 相当に戻したもの
+ * @param {number} gyroRangeDps - フルスケール [deg/s]（250 / 500 / 1000 / 2000）
+ * @returns {number} 角速度 [deg/s]（例: ±2000 dps で 1 LSB = 0.07 deg/s）
+ */
+function orpheCoreGyroRawToDps(raw, gyroRangeDps) {
+  return raw * gyroRangeDps * ORPHE_CORE_GYRO_DPS_PER_LSB_PER_RANGE;
 }
 
 
@@ -309,8 +333,9 @@ class Orphe {
     }
 
     /**
-     * ジャイロレンジに合わせて変換したジャイロセンサの値を保存する連想配列です。
-     * @property {Object} converted_gyro - ジャイロセンサの値
+     * ジャイロレンジに合わせて deg/s に変換したジャイロセンサの値を保存する連想配列です。
+     * 換算はレンジ別のデータシート感度（±250/500/1000/2000 dps → 8.75/17.5/35/70 mdps/LSB）を使います。
+     * @property {Object} converted_gyro - ジャイロセンサの値 [deg/s]
      * @property {number} converted_gyro.x - X軸方向のジャイロセンサの値
      * @property {number} converted_gyro.y - Y軸方向のジャイロセンサの値
      * @property {number} converted_gyro.z - Z軸方向のジャイロセンサの値
@@ -1636,10 +1661,11 @@ class Orphe {
           this.history_sensor_values.acc.push(this.acc);
 
           // ジャイロと加速度補正をかけたものを別途作成
+          // gyro.* は raw int16 / 32768。×32768 で raw に戻してからレンジ別感度を掛ける（orpheCoreGyroRawToDps 参照）
           this.converted_gyro = {
-            x: this.gyro.x * gyroRange,
-            y: this.gyro.y * gyroRange,
-            z: this.gyro.z * gyroRange,
+            x: orpheCoreGyroRawToDps(this.gyro.x * 32768, gyroRange),
+            y: orpheCoreGyroRawToDps(this.gyro.y * 32768, gyroRange),
+            z: orpheCoreGyroRawToDps(this.gyro.z * 32768, gyroRange),
             timestamp: timestamp,
             serial_number: this.serial_number,
             packet_number: 3 - i
@@ -1711,10 +1737,12 @@ class Orphe {
         if (accRange == 2) accRange = 8;
         if (accRange == 3) accRange = 16;
 
+        // ヘッダ40のジャイロは int16 の上位バイト（raw >> 8）が int8 で入るため、
+        // ×256 で int16 相当に戻してからレンジ別感度を掛ける（orpheCoreGyroRawToDps 参照）
         this.converted_gyro = {
-          x: this.gyro.x * gyroRange,
-          y: this.gyro.y * gyroRange,
-          z: this.gyro.z * gyroRange,
+          x: orpheCoreGyroRawToDps(data.getInt8(9) * 256, gyroRange),
+          y: orpheCoreGyroRawToDps(data.getInt8(10) * 256, gyroRange),
+          z: orpheCoreGyroRawToDps(data.getInt8(11) * 256, gyroRange),
         };
         this.converted_acc = {
           x: this.acc.x * accRange,
@@ -1849,8 +1877,10 @@ class Orphe {
    */
   gotAcc(acc) { }
   /**
-   * ジャイロレンジに応じて変換された値を取得する。
-   * @param {Object} gyro {x,y,z} ジャイロレンジに応じて変換したジャイロの取得
+   * ジャイロレンジに応じて deg/s に変換された値を取得する。
+   * 換算はレンジ別のデータシート感度（±250/500/1000/2000 dps → 8.75/17.5/35/70 mdps/LSB）。
+   * v1.4.0 で理想フルスケール（raw/32768×range）から修正され、±2000 dps では従来より約 12.8% 大きい値になる。
+   * @param {Object} gyro {x,y,z} ジャイロレンジに応じて変換したジャイロ [deg/s] の取得
    */
   gotConvertedGyro(gyro) { }
   /**

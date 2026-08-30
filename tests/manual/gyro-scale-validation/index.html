@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>v1.4.0 Gyro Scale Validation — ORPHE CORE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1016;
+      --panel: #121a24;
+      --line: #263444;
+      --text: #ecf2f7;
+      --muted: #93a4b4;
+      --accent: #ffb454;
+      --green: #43e59a;
+      --yellow: #ffbf47;
+      --red: #ff6474;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 15% 0%, rgba(255, 180, 84, 0.08), transparent 28rem), var(--bg);
+      color: var(--text);
+      font-family: Inter, "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .page-width { width: min(1100px, calc(100% - 40px)); margin: 0 auto; }
+    header.app-header {
+      position: sticky; top: 0; z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(11, 16, 22, 0.94);
+      backdrop-filter: blur(14px);
+      padding: 16px 0;
+    }
+    .eyebrow, .section-label { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: 0.16em; }
+    h1 { margin: 3px 0 0; font-size: 21px; }
+    h2 { margin: 4px 0 0; font-size: 18px; }
+    main { padding: 26px 0 64px; }
+    .panel {
+      margin-bottom: 18px; padding: 22px;
+      border: 1px solid var(--line); border-radius: 16px;
+      background: linear-gradient(145deg, rgba(20, 29, 40, 0.97), rgba(14, 22, 31, 0.97));
+    }
+    .panel p, .section-help { color: var(--muted); margin: 8px 0 0; line-height: 1.7; }
+    .panel code { color: var(--text); background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; }
+    .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 4px; }
+    .toolkit-card { padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(6, 10, 15, 0.56); }
+    .toolkit-card .form-check-label { color: var(--text); }
+    .toolkit-card .text-muted { color: var(--muted) !important; }
+    .device-summary { margin-top: 12px; color: var(--muted); font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+    .metric { min-width: 0; padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: rgba(11, 16, 22, 0.72); }
+    .metric span { display: block; color: var(--muted); font-size: 10px; letter-spacing: 0.07em; }
+    .metric strong { display: block; margin-top: 5px; overflow: hidden; color: var(--text); font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+
+    select, button, input { min-height: 40px; border-radius: 10px; font: inherit; }
+    select, input[type="number"] { padding: 0 12px; border: 1px solid var(--line); color: var(--text); background: #0c141c; }
+    button { border: 1px solid transparent; padding: 0 15px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: 0.42; cursor: not-allowed; }
+    .primary-button { color: #1a1206; background: var(--accent); }
+    .secondary-button { color: var(--text); border-color: var(--line); background: #172230; }
+    .ghost-button { color: var(--muted); border-color: transparent; background: transparent; }
+    .danger-button { color: #fff; background: var(--red); }
+
+    .row-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+    .row-controls label { color: var(--muted); font-size: 12px; }
+
+    .verdict { display: inline-block; padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .verdict.pass { color: var(--green); background: rgba(67, 229, 154, 0.12); }
+    .verdict.warn { color: var(--yellow); background: rgba(255, 191, 71, 0.12); }
+    .verdict.fail { color: var(--red); background: rgba(255, 100, 116, 0.12); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { color: var(--muted); font-size: 10px; letter-spacing: 0.08em; }
+    .empty-cell { padding: 20px; color: var(--muted); text-align: center; }
+
+    .log-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .event-log {
+      max-height: 340px; overflow: auto;
+      border: 1px solid var(--line); border-radius: 12px; background: #070c11;
+      font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .event-row { display: grid; grid-template-columns: 96px 60px 1fr; gap: 9px; padding: 7px 10px; border-bottom: 1px solid rgba(38, 52, 68, 0.5); }
+    .event-row time { color: var(--muted); }
+    .event-row.success .level { color: var(--green); }
+    .event-row.warn .level { color: var(--yellow); }
+    .event-row.error .level { color: var(--red); }
+
+    .hint-box {
+      padding: 11px 13px; margin-top: 12px;
+      border: 1px solid rgba(255, 191, 71, 0.35); border-radius: 10px;
+      color: #ffe1a4; background: rgba(255, 191, 71, 0.08); font-size: 12px;
+    }
+    .badge-neutral { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; }
+    ol.steps { color: var(--muted); line-height: 1.8; margin: 10px 0 0; padding-left: 1.4em; }
+    ol.steps b { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="page-width">
+      <div class="eyebrow">ORPHE CORE / v1.4.0 PHYSICAL DEVICE TEST</div>
+      <h1>ジャイロ物理単位換算 実機チェック</h1>
+    </div>
+  </header>
+
+  <main class="page-width">
+    <section class="panel">
+      <span class="section-label">PURPOSE</span>
+      <h2>gyro 感度修正（理想 Q15 → データシート感度）の実機確認</h2>
+      <p>
+        v1.4.0 で <code>gotConvertedGyro</code> の deg/s 換算を「理想 Q15（raw/32768×range）」から
+        「データシート感度（±2000 dps で 0.07 dps/LSB）」に修正しました。新しい値は従来比で
+        16bit パケット（ヘッダ 50）では約 +14.7%、8bit 圧縮パケット（ヘッダ 40、CORE 2.0）では約 +13.8% になります。
+        このページは、実機を机上で水平に回転させたときの <b>gyro-z の積分角</b> と、FW が計算する
+        <b>quaternion 由来の yaw 変化量</b> を比較し、比率が 1.0 付近なら新換算が正しいことを確認します
+        （旧換算のままだと比率は約 0.87 になります）。
+      </p>
+      <ol class="steps">
+        <li><b>接続</b> — 下のスイッチを ON にして CORE を選ぶ（CORE 1.x / 3.0 は 16bit、CORE 2.0 は 8bit パケット。どちらか自動判定して表示）</li>
+        <li><b>静置テスト</b> — 机に置いたまま 10 秒。3 軸の平均が ±3 dps 以内なら PASS</li>
+        <li><b>回転テスト</b> — 目標角度を選んで開始 → CORE を机の上で水平に保ったまま目標角度だけ回す（机の辺に合わせると正確）→ 停止</li>
+        <li><b>判定</b> — 比率 0.93〜1.07 で PASS。約 0.87 なら旧換算のまま。手元に両世代あれば 2.0 でも同じ手順を繰り返す</li>
+        <li><b>証跡</b> — 「ログをコピー」を PR #124 のコメントに貼る</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <span class="section-label">STEP 1</span>
+        <h2>CORE を接続</h2>
+      </div>
+      <p class="section-help">SENSOR_VALUES 通知で接続します。レンジは設定モーダル（歯車）から変更できます（既定はデバイス側の現在値）。</p>
+      <article class="toolkit-card">
+        <div id="toolkit0"></div>
+        <div id="device_summary" class="device-summary">未接続</div>
+        <div class="row-controls" style="margin-top: 12px;">
+          <button id="read_device_info_button" class="secondary-button" disabled>
+            <i class="bi bi-arrow-clockwise"></i> レンジ設定を再取得
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <span class="section-label">STEP 2</span>
+        <h2>静置テスト（10 秒）</h2>
+      </div>
+      <p class="section-help">CORE を机の上に静置した状態でボタンを押してください。10 秒間、gotConvertedGyro の 3 軸を平均・標準偏差で集計します（バイアス確認）。</p>
+      <div class="row-controls">
+        <button id="static_test_button" class="primary-button" disabled>
+          <i class="bi bi-record-circle"></i> 静置テスト開始（10 秒）
+        </button>
+        <span id="static_test_status" class="badge-neutral">未実施</span>
+      </div>
+      <div id="static_test_metrics" class="metric-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <span class="section-label">STEP 3</span>
+        <h2>回転テスト（メイン）</h2>
+      </div>
+      <p class="section-help">目標角度を選び「開始」→ CORE を水平に保ったまま目標角度だけ回転 → 「停止」。gyro-z の積分角と quaternion yaw の変化量を比較します。</p>
+      <div class="row-controls">
+        <label>
+          目標角度
+          <select id="target_angle_select">
+            <option value="90">90°</option>
+            <option value="180">180°</option>
+            <option value="360">360°</option>
+          </select>
+        </label>
+        <button id="rotation_start_button" class="primary-button" disabled><i class="bi bi-play-fill"></i> 開始</button>
+        <button id="rotation_stop_button" class="danger-button" disabled><i class="bi bi-stop-fill"></i> 停止</button>
+        <span id="rotation_status" class="badge-neutral">待機中</span>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric"><span>GYRO 積分角（新換算）</span><strong id="metric_gyro_integral">— °</strong></div>
+        <div class="metric"><span>GYRO 積分角（旧換算・参考）</span><strong id="metric_gyro_integral_old">— °</strong></div>
+        <div class="metric"><span>QUAT yaw 変化量</span><strong id="metric_quat_delta">— °</strong></div>
+        <div class="metric"><span>比率 (gyro / quat)</span><strong id="metric_ratio">—</strong></div>
+        <div class="metric"><span>判定</span><strong id="metric_verdict">—</strong></div>
+        <div class="metric"><span>経過時間</span><strong id="metric_elapsed">0.0 s</strong></div>
+      </div>
+      <div id="rotation_verdict_box" class="hint-box" style="display: none;"></div>
+
+      <div class="table-wrap" style="margin-top: 16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>時刻</th><th>パケット</th><th>目標角</th><th>GYRO 積分(新)</th><th>GYRO 積分(旧・参考)</th>
+              <th>QUAT 変化</th><th>比率</th><th>判定</th>
+            </tr>
+          </thead>
+          <tbody id="history_body">
+            <tr><td colspan="8" class="empty-cell">まだ結果はありません</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <span class="section-label">LIVE</span>
+        <h2>ライブ表示（converted gyro [dps]）</h2>
+      </div>
+      <div class="metric-grid">
+        <div class="metric"><span>gyro X</span><strong id="live_gyro_x">—</strong></div>
+        <div class="metric"><span>gyro Y</span><strong id="live_gyro_y">—</strong></div>
+        <div class="metric"><span>gyro Z</span><strong id="live_gyro_z">—</strong></div>
+        <div class="metric"><span>パケット形式</span><strong id="live_packet_kind">—</strong></div>
+        <div class="metric"><span>コールバック頻度</span><strong id="live_rate">— Hz</strong></div>
+        <div class="metric"><span>新旧比（このパケット形式）</span><strong id="live_factor">—</strong></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <span class="section-label">SHAREABLE EVIDENCE</span>
+        <h2>イベントログ</h2>
+        <div class="log-actions">
+          <button id="copy_log_button" class="secondary-button"><i class="bi bi-clipboard"></i> ログをコピー</button>
+          <button id="download_json_button" class="secondary-button"><i class="bi bi-download"></i> 結果履歴を JSON 保存</button>
+          <button id="clear_log_button" class="ghost-button">ログ消去</button>
+        </div>
+      </div>
+      <div id="event_log" class="event-log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../../js/ORPHE-CORE.js"></script>
+  <script src="../../../js/CoreToolkit.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

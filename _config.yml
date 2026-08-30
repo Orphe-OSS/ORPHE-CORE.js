@@ -1,0 +1,71 @@
+# GitHub Pages (Jekyll) 設定
+#
+# GitHub Pages は既定で Jekyll を通してサイトを配信し、リポジトリ内の .md を
+# 自動で HTML に変換して公開する（jekyll-optional-front-matter）。本リポジトリは
+# これまで .nojekyll で Jekyll を無効化していた（examples/_thumbnails/ のような
+# `_` 始まりのディレクトリを Jekyll が既定で配信対象から外すのを避けるため）。
+# その結果 .md は HTML 化されない代わりに生ファイルのまま配信され、CLAUDE.md /
+# docs/agents.md / docs/in-flight.md / docs/ai/*.md / docs/lessons/*.md /
+# tests/bridge/test-frame.html といった開発者・エージェント向けの内部文書や
+# テストページがそのまま公開され（ライブで 200 を確認）、検索エンジンの
+# インデックス対象になっていた。
+#
+# このファイルは .nojekyll の削除と併せて Jekyll を有効化し、
+# - 公開対象を利用者向け文書に限定する（exclude）
+# - Jekyll が既定で除外する `_` 始まりの公開資産を配信対象へ戻す（include）
+# - サイト全体のメタデータ（title / description / lang）を明示する
+#
+# index.html や examples/**/index.html など front matter の無い HTML は Jekyll に
+# 加工されずそのまま配信されるため、この設定はそれらの見え方を変えない。
+# 変換されるのは .md のみ（README.md / CHANGELOG.md / examples/**/README.md /
+# starter-templates/README.md は利用者向けなので公開のまま。/README.html 等になる）。
+#
+# 内部向けの .md を新しく追加したら、この exclude にも追加すること。
+# `_` や `.` で始まる公開資産を追加したら include にも追加すること。
+
+title: ORPHE-CORE.js
+description: 足装着型 IMU センサーモジュール ORPHE CORE を Web Bluetooth で扱う JavaScript SDK。モーション・歩行解析、LED 制御、ゲームやクリエイティブコーディングをブラウザだけで実現できる。
+lang: ja
+url: https://orphe-oss.github.io
+baseurl: /ORPHE-CORE.js
+
+# Jekyll が既定で除外する `_` 始まりのパスのうち、公開が必要なもの
+# （index.html / en/ / ja/ / examples/index.html のサムネイル画像）
+include:
+  - examples/_thumbnails
+
+# 公開しないもの（内部向け文書・開発用ファイル）
+exclude:
+  # 開発・エージェント向けガイド／作業台帳／監査・計画メモ
+  - CLAUDE.md
+  - README.jsdoc.md
+  - docs/agents.md
+  - docs/in-flight.md
+  - docs/coretoolkit-adoption-audit.md
+  - docs/coretoolkit-poc-plan.md
+  - docs/examples-catalog.md
+  - docs/examples-gallery-plan.md
+  - docs/examples-internal-docs-cleanup-plan.md
+  - docs/examples-publication-decisions.md
+  - docs/examples-roadmap.md
+  - docs/examples-static-quality-audit.md
+  - docs/examples-thumbnail-audit.md
+  - docs/index-linked-examples-audit.md
+  - docs/public-candidate-validation.md
+  - docs/unlisted-examples-audit.md
+  - docs/virtual-track-games-audit.md
+  - docs/ws-tutorial-apps-review.md
+  # AI 向け研究ノート・ハンドオフ・INSOLE 移行計画（公開ページからのリンク無し）
+  - docs/ai/
+  # レッスン案（docs/lessons/README.md: レビュー完了まで LP からリンクしない）
+  - docs/lessons/
+  # Node 単体テスト・手動テストページ（tests/bridge/test-frame.html は cross-origin gate）
+  - tests/
+  # 開発依存・ビルド設定
+  - node_modules/
+  - package.json
+  - package-lock.json
+  - jsdoc.json
+  - Gemfile
+  - Gemfile.lock
+  - vendor/

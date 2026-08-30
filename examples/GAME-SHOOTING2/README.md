@@ -1,6 +1,6 @@
 # ORPHE CORE 3D Shooting Game
 
-> **Status**: `public-candidate` — see [`docs/examples-catalog.md`](../../docs/examples-catalog.md) for the full audit.
+> **Status**: `public-candidate` — see [`docs/examples-catalog.md`](https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/docs/examples-catalog.md) for the full audit.
 
 ORPHE COREの傾きで移動し、足の動きでショットを撃つ3Dシューティングゲームです。キーボード操作にも対応しているため、実機接続前に画面やゲーム進行を確認できます。
 

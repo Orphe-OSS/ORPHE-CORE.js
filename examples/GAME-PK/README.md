@@ -1,6 +1,6 @@
 # Penalty Kick Game
 
-> **Status**: `public-candidate` — see [`docs/examples-catalog.md`](../../docs/examples-catalog.md) for the full audit.
+> **Status**: `public-candidate` — see [`docs/examples-catalog.md`](https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/docs/examples-catalog.md) for the full audit.
 
 1台のORPHE COREを足に装着して、キック動作の強さと向きでシュートを操作するペナルティキックゲームです。マウス操作でも遊べるため、センサー接続前にゲーム内容を確認できます。
 

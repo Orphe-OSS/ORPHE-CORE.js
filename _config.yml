@@ -17,8 +17,14 @@
 #
 # index.html や examples/**/index.html など front matter の無い HTML は Jekyll に
 # 加工されずそのまま配信されるため、この設定はそれらの見え方を変えない。
-# 変換されるのは .md のみ（README.md / CHANGELOG.md / examples/**/README.md /
-# starter-templates/README.md は利用者向けなので公開のまま。/README.html 等になる）。
+# 変換されるのは .md のみ。ただし index.html と同じディレクトリにある README.md
+# （ルート README.md / examples/**/README.md）は GitHub Pages 既定の jekyll-readme-index の
+# 挙動で HTML としては出力されない（ORPHE-INSOLE.js の Pages で /README.html /docs/README.html
+# /examples/README.html が 404、/docs/SENSOR_SPEC.html が 200 であることを確認済み）。
+# これらは github.com 上で読まれる文書として公開のまま。index.html を持たないディレクトリの
+# .md（CHANGELOG.md / starter-templates/README.md など）は /CHANGELOG.html のように配信される。
+# examples/**/README.md から除外対象（docs/examples-catalog.md）への参照は、github.com 上で
+# 確実に解決するよう絶対 URL（github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/...）にしている。
 #
 # 内部向けの .md を新しく追加したら、この exclude にも追加すること。
 # `_` や `.` で始まる公開資産を追加したら include にも追加すること。

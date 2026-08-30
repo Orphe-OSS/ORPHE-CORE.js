@@ -1,6 +1,6 @@
 # OH1 Heart Rate
 
-> **Status**: `public` — see [`docs/examples-catalog.md`](../../docs/examples-catalog.md) for the full audit.
+> **Status**: `public` — see [`docs/examples-catalog.md`](https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/docs/examples-catalog.md) for the full audit.
 
 Polar OH1などのBLE心拍センサーとORPHE COREを同じ画面で扱う統合exampleです。心拍数と足のモーションデータを並べて確認したい研究・実験用途に向いています。
 
@@ -48,4 +48,4 @@ GitHub Pagesでも試せます。
 
 ## 関連example
 
-- (関連 example なし — `docs/examples-catalog.md` の Overlap Families を参照)
+- (関連 example なし — [`docs/examples-catalog.md`](https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/docs/examples-catalog.md) の Overlap Families を参照)

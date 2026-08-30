@@ -1,4 +1,5 @@
 {
+  "license": "SEE LICENSE IN LICENSE.md",
   "dependencies": {
     "@petamoriken/float16": "^3.6.5",
     "electron": "^20.1.1",

@@ -42,8 +42,8 @@ function loadScript(src) {
 // → DOMContentLoaded を待つ。この時点では parser-blocking な静的 <script>
 //    は全て解析・実行済みなので、loadScript の dedup チェックが効く。
 function _orpheAutoLoadOptionalLibs() {
-  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/float16.min.js');
-  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/quaternion.js');
+  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/float16.min.js');
+  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/quaternion.js');
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _orpheAutoLoadOptionalLibs, { once: true });

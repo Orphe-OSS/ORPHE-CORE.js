@@ -126,7 +126,7 @@
         <li><b>接続</b> — 下のスイッチを ON にして CORE を選ぶ（CORE 1.x / 3.0 は 16bit、CORE 2.0 は 8bit パケット。どちらか自動判定して表示）</li>
         <li><b>静置テスト</b> — 机に置いたまま 10 秒。3 軸の平均が ±3 dps 以内なら PASS</li>
         <li><b>回転テスト</b> — 目標角度を選んで開始 → CORE を机の上で水平に保ったまま目標角度だけ回す（机の辺に合わせると正確）→ 停止</li>
-        <li><b>判定</b> — 比率 0.93〜1.07 で PASS。約 0.87 なら旧換算のまま。手元に両世代あれば 2.0 でも同じ手順を繰り返す</li>
+        <li><b>判定</b> — 比率 0.93〜1.07 で PASS。約 0.87 なら旧換算のまま。基準は FW quaternion の yaw 変化（yaw が追従しない機種では目標角）。<b>静置テストを先に</b>実行するとバイアス補正が効く。CORE 2.0（8bit）は 1 LSB = 17.9 dps（±2000）と粗いので、歯車から gyro レンジを <b>±250 dps</b> にして再接続すると精度が上がる</li>
         <li><b>証跡</b> — 「ログをコピー」を PR #124 のコメントに貼る</li>
       </ol>
     </section>
@@ -188,6 +188,7 @@
         <div class="metric"><span>GYRO 積分角（旧換算・参考）</span><strong id="metric_gyro_integral_old">— °</strong></div>
         <div class="metric"><span>QUAT yaw 変化量</span><strong id="metric_quat_delta">— °</strong></div>
         <div class="metric"><span>比率 (gyro / quat)</span><strong id="metric_ratio">—</strong></div>
+        <div class="metric"><span>比率 (gyro / 目標角)</span><strong id="metric_ratio_target">—</strong></div>
         <div class="metric"><span>判定</span><strong id="metric_verdict">—</strong></div>
         <div class="metric"><span>経過時間</span><strong id="metric_elapsed">0.0 s</strong></div>
       </div>
@@ -198,11 +199,11 @@
           <thead>
             <tr>
               <th>時刻</th><th>パケット</th><th>目標角</th><th>GYRO 積分(新)</th><th>GYRO 積分(旧・参考)</th>
-              <th>QUAT 変化</th><th>比率</th><th>判定</th>
+              <th>QUAT 変化</th><th>比率/quat</th><th>比率/目標角</th><th>判定 (基準)</th>
             </tr>
           </thead>
           <tbody id="history_body">
-            <tr><td colspan="8" class="empty-cell">まだ結果はありません</td></tr>
+            <tr><td colspan="9" class="empty-cell">まだ結果はありません</td></tr>
           </tbody>
         </table>
       </div>

@@ -78,8 +78,10 @@ ORPHE-CORE.js v1.4.0以降は、教育・ワークショップ、大学・研究
 ## Version
 機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。
 
-* v1.3.4: Current development version.
-  * `js/ORPHE-CORE.js` のJSDoc `@version` に合わせた現行バージョンです。
+* v1.4.0: Current version（2026/08/30）。詳細は [CHANGELOG.md](./CHANGELOG.md)。
+  * `gotConvertedGyro` / `converted_gyro` の deg/s 換算を、理想フルスケール（raw/32768×range）から LSM6DSOX データシートのレンジ別代表感度（±250/500/1000/2000 dps → 8.75/17.5/35/70 mdps/LSB）に修正しました。従来の換算値は ±2000 dps で約 12.8% 小さかった（新しい値は従来比 約 +14.7%）ため、換算値が大きくなります（ORPHE-INSOLE.js v1.3.2 と同じ修正）。8bit 圧縮パケット（ヘッダ 40、CORE 2.0）は従来 int8/127 で正規化していたため従来比 約 +13.8% で、ヘッダ 50 と同じ物理レートに対して同じ deg/s になります。正規化値（`gotGyro`）と加速度の換算は変更ありません。
+  * 上記の利用方針（v1.4.0以降）が適用される最初のバージョンです。
+* v1.3.4: `js/ORPHE-CORE.js` のJSDoc `@version` に合わせたバージョン（2026/01/31）。
 * v1.3: Date Timeキャラクタリスティック対応
   * COREモジュールの時刻を取得，設定する setDateTime(), getDateTime() を追加しました。この機能を利用して，begin()メソッドを利用した際に必ず最初にコアモジュールの時刻合わせが実行されます．PCの現在時刻にgetDateTime()にかかった時間の1/2を加算して，コアモジュールに時刻設定します．ただしgetDataTime()は3回取得し，その取得時間平均値/2としています．
 * [v1.2](https://github.com/Orphe-OSS/ORPHE-CORE.js/tree/v1.2): ES6 class based version.

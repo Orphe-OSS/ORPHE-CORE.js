@@ -9,6 +9,7 @@
     "clean-jsdoc-theme": "^4.1.6"
   },
   "scripts": {
-    "generate-docs": "jsdoc --configure jsdoc.json --verbose"
+    "generate-docs": "jsdoc --configure jsdoc.json --verbose",
+    "test": "node --check js/ORPHE-CORE.js && node tests/core2-header40-parse.test.js && node tests/core-gyro-scale.test.js"
   }
 }

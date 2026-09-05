@@ -144,8 +144,8 @@ const convertedForRaw = (result, raw) =>
 }
 
 // ── acc は変更しない（raw/32768*range） ─────────────────────────────────
-// 注: range index 0（±2G）は既存の if 連鎖（else if でない）が 0→2→8 と連鎖するため
-// ±8G として換算される既知の別問題（本テストの対象外・別PRで扱う）。ここでは index 3 / 1 で固定する。
+// 注: range index → 実値の変換（index 0 が 2 → 8 に連鎖していた旧バグを含む）は
+// tests/core-acc-range-mapping.test.js で扱う。ここでは index 3 / 1 で固定する。
 {
   const r16 = runHeader50(3, 3, FRAMES);
   for (const a of r16.convertedAcc) near(a.x, 8, 'acc raw=16384 @±16G → 8 G (unchanged)');

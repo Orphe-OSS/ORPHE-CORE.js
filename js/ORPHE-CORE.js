@@ -77,6 +77,29 @@ function orpheCoreGyroRawToDps(raw, gyroRangeDps) {
   return raw * gyroRangeDps * ORPHE_CORE_GYRO_DPS_PER_LSB_PER_RANGE;
 }
 
+// ---------------------------------------------------------------------------
+// センサーレンジ index → 実値
+// DEVICE_INFORMATION の range.acc / range.gyro は 0..3 の index（acc: ±2/4/8/16 G、gyro: ±250/500/1000/2000 dps）。
+// 従来は `if (r == 0) r = 2; if (r == 1) r = 4; if (r == 2) r = 8; …` と else の無い if 連鎖で変換していたため、
+// acc index 0 が 0 → 2 → 8 と連鎖して ±2G が ±8G として換算されていた（gotConvertedAcc が 4 倍大きい）。
+// gyro の連鎖（250/500/1000/2000）は値が index と衝突しないため偶然正しく動いていたが同じ脆い形。
+// index 以外の値（実値 2000 などを直接渡す旧来の使い方・想定外の値）は従来どおり素通しする。
+// ---------------------------------------------------------------------------
+const ORPHE_CORE_ACC_RANGE_G = [2, 4, 8, 16];
+const ORPHE_CORE_GYRO_RANGE_DPS = [250, 500, 1000, 2000];
+
+/**
+ * レンジ index（0..3）を実値に変換する。index 以外の値はそのまま返す（フォールバック）。
+ * @param {number} indexOrValue - DEVICE_INFORMATION の range index（0..3）、または既に実値
+ * @param {number[]} table - ORPHE_CORE_ACC_RANGE_G または ORPHE_CORE_GYRO_RANGE_DPS
+ * @returns {number} フルスケール実値（acc: G、gyro: deg/s）
+ */
+function orpheCoreRangeIndexToValue(indexOrValue, table) {
+  return Number.isInteger(indexOrValue) && indexOrValue >= 0 && indexOrValue < table.length
+    ? table[indexOrValue]
+    : indexOrValue;
+}
+
 
 /**
  * 自動的に決められた配列サイズでunshiftしてくれるクラス
@@ -1604,19 +1627,9 @@ class Orphe {
           data.getUint16(6)
         )
 
-        let gyroRange = this.device_information.range.gyro;
-        let accRange = this.device_information.range.acc;
-
-
-        // 値を変換
-        if (gyroRange == 0) gyroRange = 250;
-        if (gyroRange == 1) gyroRange = 500;
-        if (gyroRange == 2) gyroRange = 1000;
-        if (gyroRange == 3) gyroRange = 2000;
-        if (accRange == 0) accRange = 2;
-        if (accRange == 1) accRange = 4;
-        if (accRange == 2) accRange = 8;
-        if (accRange == 3) accRange = 16;
+        // レンジ index → 実値（orpheCoreRangeIndexToValue 参照。else の無い if 連鎖で acc index 0 が 2 → 8 に連鎖していた問題を修正）
+        const gyroRange = orpheCoreRangeIndexToValue(this.device_information.range.gyro, ORPHE_CORE_GYRO_RANGE_DPS);
+        const accRange = orpheCoreRangeIndexToValue(this.device_information.range.acc, ORPHE_CORE_ACC_RANGE_G);
 
         // 各ブロック（4 サンプル）の時刻。実機（CORE 3.0, 2026-09-05, 1827 packet）の生パケット解析より:
         //  - ブロックの時系列順は 3 → 2 → 1 → 0（ブロック 3 が最古、0 が最新。ジャイロ連続性 Σ|Δgz| がこの順で最小）
@@ -1751,18 +1764,9 @@ class Orphe {
           z: data.getInt8(16) / 127
         }
         // ジャイロと加速度補正をかけたものを別途作成
-        let gyroRange = this.device_information.range.gyro;
-        let accRange = this.device_information.range.acc;
-
-        // 値を変換
-        if (gyroRange == 0) gyroRange = 250;
-        if (gyroRange == 1) gyroRange = 500;
-        if (gyroRange == 2) gyroRange = 1000;
-        if (gyroRange == 3) gyroRange = 2000;
-        if (accRange == 0) accRange = 2;
-        if (accRange == 1) accRange = 4;
-        if (accRange == 2) accRange = 8;
-        if (accRange == 3) accRange = 16;
+        // レンジ index → 実値（orpheCoreRangeIndexToValue 参照。else の無い if 連鎖で acc index 0 が 2 → 8 に連鎖していた問題を修正）
+        const gyroRange = orpheCoreRangeIndexToValue(this.device_information.range.gyro, ORPHE_CORE_GYRO_RANGE_DPS);
+        const accRange = orpheCoreRangeIndexToValue(this.device_information.range.acc, ORPHE_CORE_ACC_RANGE_G);
 
         // ヘッダ40のジャイロは int16 の上位バイト（raw >> 8）が int8 で入るため、
         // ×256 で int16 相当に戻してからレンジ別感度を掛ける（orpheCoreGyroRawToDps 参照）。

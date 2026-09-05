@@ -10,6 +10,6 @@
   },
   "scripts": {
     "generate-docs": "jsdoc --configure jsdoc.json --verbose",
-    "test": "node --check js/ORPHE-CORE.js && node tests/core2-header40-parse.test.js && node tests/core-gyro-scale.test.js && node tests/core-quat-normalize-header50.test.js"
+    "test": "node --check js/ORPHE-CORE.js && node tests/core2-header40-parse.test.js && node tests/core-gyro-scale.test.js && node tests/core-quat-normalize-header50.test.js && node tests/core-header50-sample-timestamps.test.js"
   }
 }

@@ -1618,19 +1618,26 @@ class Orphe {
         if (accRange == 2) accRange = 8;
         if (accRange == 3) accRange = 16;
 
-        let t_start = timestamp;
+        // 各ブロック（4 サンプル）の時刻。実機（CORE 3.0, 2026-09-05, 1827 packet）の生パケット解析より:
+        //  - ブロックの時系列順は 3 → 2 → 1 → 0（ブロック 3 が最古、0 が最新。ジャイロ連続性 Σ|Δgz| がこの順で最小）
+        //  - offset 28+21k (k=0,1,2) の delta は 5 / 10 / 14 ms で一定、連続パケットの基準タイムスタンプ(t_base)は 19〜20 ms 進む
+        //    → delta_k は「t_base からの経過(age)」であり、t_k = t_base − delta_k
+        //  - ブロック 3 には delta が無い（offset 91 は delta ではない）。等間隔と仮定して
+        //    age_3 = delta_2 + (delta_1 − delta_0)（= 14 + 10 − 5 = 19 ms。名目 20 ms）とし t_3 = t_base − age_3
+        // 従来は t_base（ブロック 3）に delta を累積加算していた（0 / +14 / +24 / +29）ため符号も累積も誤っており、
+        // パケット内 dt が 14/10/5 ms、次パケット先頭が約 9 ms 戻る非単調な時刻列になっていた
+        // （この時刻でジャイロを積分すると角度が約 1.4 倍に膨らむ）。
+        const t_base = timestamp;
+        const delta0 = data.getUint8(28);
+        const delta1 = data.getUint8(49);
+        const delta2 = data.getUint8(70);
+        const blockAgeMs = [delta0, delta1, delta2, delta2 + (delta1 - delta0)];
 
-        // それぞれの値は29毎で、4つ分ある。データの順番は古いデータから順番にpushされている。なので、最新が4番目、最古が1番目となる。
+        // それぞれの値は21 byte毎で、4つ分ある。データの順番は古いデータから順番にpushされている。なので、最新が4番目、最古が1番目となる。
+        // i = 3 → 0 の順に処理するので dispatch は時系列順（packet_number = 3 - i、0 が最古）。
         for (let i = 3; i >= 0; i--) {
 
-          // 2番目以降のtimestampは最初のタイムスタンプとの差分になっているため
-          // t_startに数値を足す処理を行って、各パケットのtimestampを算出する
-          if (i == 3) {
-            timestamp = t_start;
-          }
-          else {
-            timestamp = timestamp + data.getUint8(28 + 21 * i);
-          }
+          timestamp = t_base - blockAgeMs[i];
           // quat は FW により Q14（1.0 = 16384。CORE 3.0 実機の生パケットで |q| の中央値は 16383）または
           // Q15（1.0 = 32768）で送られうる。固定スケール（従来は /32768）で割ると Q14 のとき各成分が半分になり、
           // toEuler() の yaw が真値の約 0.2 倍になる（実測: 90° 旋回が 15〜21°）。

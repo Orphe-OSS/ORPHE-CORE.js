@@ -38,6 +38,9 @@ baseurl: /ORPHE-CORE.js
 # Jekyll が既定で除外する `_` 始まりのパスのうち、公開が必要なもの
 # （index.html / en/ / ja/ / examples/index.html のサムネイル画像）
 include:
+  # GitHub Pages の Jekyll 3.x は include をエントリのベース名で照合する（ネストしたパスでは一致しない）ため、
+  # `examples/_thumbnails` ではなく `_thumbnails` と書く。Jekyll 4 との互換のため両方残す。
+  - _thumbnails
   - examples/_thumbnails
 
 # 公開しないもの（内部向け文書・開発用ファイル）

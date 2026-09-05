@@ -24,7 +24,7 @@ This is the shortest path for trying ORPHE CORE from a browser.
 ```html
 <button onclick="connectOrphe()">Connect ORPHE</button>
 
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/ORPHE-CORE.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/ORPHE-CORE.js"></script>
 <script>
   const core = new Orphe(0);
 

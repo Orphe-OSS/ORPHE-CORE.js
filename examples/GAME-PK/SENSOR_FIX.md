@@ -21,10 +21,10 @@ ORPHE-CORE.js:1414 onError: TypeError: Cannot read properties of undefined (read
 
 **変更前:**
 ```html
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/float16.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/quaternion.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/ORPHE-CORE.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/CoreToolkit.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/float16.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/quaternion.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/ORPHE-CORE.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/CoreToolkit.js"></script>
 ```
 
 **変更後:**

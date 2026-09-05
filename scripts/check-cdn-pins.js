@@ -9,7 +9,7 @@
 //   node scripts/check-cdn-pins.js
 //
 // (host = cdn.jsdelivr.net)
-// Allowed:  <host>/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/ORPHE-CORE.js   (release tag)
+// Allowed:  <host>/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/ORPHE-CORE.js   (release tag)
 //           <host>/gh/Orphe-OSS/ORPHE-CORE.js@1140ee7/js/ORPHE-CORE.js  (commit SHA)
 // Rejected: <host>/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js     (branch)
 //           <host>/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js          (no ref = default branch)
@@ -93,7 +93,7 @@ function main() {
   if (report.length) {
     console.error(report.join('\n'));
     console.error(`\ncheck-cdn-pins: ${report.length} unpinned jsDelivr self-reference(s) in ${new Set(report.map((r) => r.split(':')[0])).size} file(s). ` +
-      'Pin them to a release tag (e.g. @v1.4.0). Scanned ' + files.length + ' files.');
+      'Pin them to a release tag (e.g. @v1.4.1). Scanned ' + files.length + ' files.');
     process.exit(1);
   }
   console.log(`check-cdn-pins: OK — no unpinned jsDelivr self-references (scanned ${files.length} files).`);

@@ -176,8 +176,8 @@ ble.gotGait = function(_gait) {
 **Dependencies Used**:
 ```html
 <!-- From CDN -->
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@main/js/ORPHE-CORE.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js/js/CoreToolkit.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/ORPHE-CORE.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.0/js/CoreToolkit.js"></script>
 ```
 
 **Integration Points**:

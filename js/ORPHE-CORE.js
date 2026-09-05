@@ -1631,11 +1631,29 @@ class Orphe {
           else {
             timestamp = timestamp + data.getUint8(28 + 21 * i);
           }
+          // quat は FW により Q14（1.0 = 16384。CORE 3.0 実機の生パケットで |q| の中央値は 16383）または
+          // Q15（1.0 = 32768）で送られうる。固定スケール（従来は /32768）で割ると Q14 のとき各成分が半分になり、
+          // toEuler() の yaw が真値の約 0.2 倍になる（実測: 90° 旋回が 15〜21°）。
+          // 実ノルムで正規化し、FW の固定小数点スケールに依存しない単位クォータニオンにする。
+          const qw = data.getInt16(8 + 21 * i);
+          const qx = data.getInt16(10 + 21 * i);
+          const qy = data.getInt16(12 + 21 * i);
+          const qz = data.getInt16(14 + 21 * i);
+          const qNorm = Math.sqrt(qw * qw + qx * qx + qy * qy + qz * qz);
+          let quatUnit;
+          if (qNorm > 1e-6) {
+            quatUnit = { w: qw / qNorm, x: qx / qNorm, y: qy / qNorm, z: qz / qNorm };
+          } else {
+            // ノルムがほぼ 0（未初期化・欠損）のときは NaN を出さないよう直前の姿勢を維持する（直前も無ければ単位四元数）
+            const p = this.quat;
+            const prevOk = p && Math.hypot(p.w, p.x, p.y, p.z) > 1e-6;
+            quatUnit = prevOk ? { w: p.w, x: p.x, y: p.y, z: p.z } : { w: 1, x: 0, y: 0, z: 0 };
+          }
           this.quat = {
-            w: data.getInt16(8 + 21 * i) / 32768,
-            x: data.getInt16(10 + 21 * i) / 32768,
-            y: data.getInt16(12 + 21 * i) / 32768,
-            z: data.getInt16(14 + 21 * i) / 32768,
+            w: quatUnit.w,
+            x: quatUnit.x,
+            y: quatUnit.y,
+            z: quatUnit.z,
             timestamp: timestamp,
             serial_number: this.serial_number,
             packet_number: 3 - i
@@ -1865,8 +1883,10 @@ class Orphe {
   gotData(data) { }
 
   /**
-   * コアモジュールのクオータニオン情報を取得する
-   * @param {Object} quat {w,x,y,z} クオータニオンの取得
+   * コアモジュールのクオータニオン情報を取得する。
+   * 値は常に単位クォータニオン（|q| = 1）に正規化されている。FW の固定小数点スケール（Q14 / Q15）には依存しない
+   * （v1.4.1 でヘッダ 50 を固定 /32768 から実ノルム正規化に修正。ヘッダ 40 は従来どおり Q14 → normalize）。
+   * @param {Object} quat {w,x,y,z} クオータニオンの取得（単位クォータニオン）
    */
   gotQuat(quat) { }
   /**

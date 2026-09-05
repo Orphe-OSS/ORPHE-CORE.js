@@ -8,6 +8,10 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Header 50 (CORE 1.x / 3.0 200 Hz `SENSOR_VALUES`) quaternion is now normalized by its actual norm** instead of being divided by a fixed 32768 (Q15). Real-device raw packets (CORE 3.0, 2026-09-05, 1827 packets) carry a **Q14** quaternion (|q| median 16383, 1.0 = 16384), so the old code halved every component and `gotEuler.yaw` came out at roughly **0.2× the true angle** (a 90° turn read as 15–21°). `gotQuat` now always delivers a unit quaternion regardless of the firmware's fixed-point scale (Q14 or Q15 — which one CORE 1.x uses is unknown, so the fix is scale-agnostic). A zero/degenerate quaternion keeps the previous orientation (identity on the first packet) instead of producing NaN. The header 40 (CORE 2.0) path already used `quatScale = 16384` plus `.normalize()` and is unchanged. Test: `tests/core-quat-normalize-header50.test.js`.
+
 ## [1.4.0] - 2026-08-30
 
 ### Changed

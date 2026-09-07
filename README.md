@@ -24,7 +24,7 @@ This is the shortest path for trying ORPHE CORE from a browser.
 ```html
 <button onclick="connectOrphe()">Connect ORPHE</button>
 
-<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/ORPHE-CORE.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/ORPHE-CORE.js"></script>
 <script>
   const core = new Orphe(0);
 
@@ -78,7 +78,8 @@ ORPHE-CORE.js v1.4.0以降は、教育・ワークショップ、大学・研究
 ## Version
 機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。
 
-* v1.4.1: Current version（2026/09/05）。ヘッダ 50 の quaternion 正規化（CORE 3.0 は Q14）・サンプル時刻の修正・acc レンジ index 0（±2G）の誤換算修正。詳細は [CHANGELOG.md](./CHANGELOG.md)。
+* v1.4.2: Current version（2026/09/08）。`lostData` の uint16 巻き戻り／serial 0 の誤検出修正、`setup(names, {})` の TypeError 修正、接続後の `onDisconnect` 上書きが効くように、既定ログを `ble.debug = true` でオプトイン化。ESLint・CI・バージョン整合テストを整備。詳細は [CHANGELOG.md](./CHANGELOG.md)。
+* v1.4.1（2026/09/05）: ヘッダ 50 の quaternion 正規化（CORE 3.0 は Q14）・サンプル時刻の修正・acc レンジ index 0（±2G）の誤換算修正。詳細は [CHANGELOG.md](./CHANGELOG.md)。
 * v1.4.0（2026/08/30）: ジャイロの deg/s 換算をレンジ別のデータシート感度に修正。
   * `gotConvertedGyro` / `converted_gyro` の deg/s 換算を、理想フルスケール（raw/32768×range）から LSM6DSOX データシートのレンジ別代表感度（±250/500/1000/2000 dps → 8.75/17.5/35/70 mdps/LSB）に修正しました。従来の換算値は ±2000 dps で約 12.8% 小さかった（新しい値は従来比 約 +14.7%）ため、換算値が大きくなります（ORPHE-INSOLE.js v1.3.2 と同じ修正）。8bit 圧縮パケット（ヘッダ 40、CORE 2.0）は従来 int8/127 で正規化していたため従来比 約 +13.8% で、ヘッダ 50 と同じ物理レートに対して同じ deg/s になります。正規化値（`gotGyro`）と加速度の換算は変更ありません。
   * 上記の利用方針（v1.4.0以降）が適用される最初のバージョンです。

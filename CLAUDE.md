@@ -613,7 +613,8 @@ examples / README / index.html の CDN 参照は**バージョン固定**（`@vX
 
 ## Version History
 
-- **v1.4.1** (2026/09/05): Current version. Header-50 quaternion is normalized by its actual norm (CORE 3.0 sends Q14; yaw was ~0.2× before), per-sample timestamps are `t_base − delta_k` (were cumulative and non-monotonic), and accelerometer range index 0 (±2 G) is no longer converted as ±8 G. See [CHANGELOG.md](CHANGELOG.md).
+- **v1.4.2** (2026/09/08): Current version. `lostData` no longer fires on the uint16 serial wraparound and handles serial 0; `setup(names, {})` no longer throws; overriding `onDisconnect` after `begin()` takes effect (`this` is the instance); default progress logs are opt-in via `ble.debug = true` (default `onError` stays on `console.error`). Adds ESLint, GitHub Actions CI, `tests/core-version-sync.test.js` and `scripts/pin-cdn-version.js`. See [CHANGELOG.md](CHANGELOG.md).
+- **v1.4.1** (2026/09/05): Header-50 quaternion is normalized by its actual norm (CORE 3.0 sends Q14; yaw was ~0.2× before), per-sample timestamps are `t_base − delta_k` (were cumulative and non-monotonic), and accelerometer range index 0 (±2 G) is no longer converted as ±8 G. See [CHANGELOG.md](CHANGELOG.md).
 - **v1.4.0** (2026/08/30): Converted gyro (`gotConvertedGyro`) now uses per-range LSM6DSOX datasheet sensitivity (new values ~+14.7% vs old at ±2000 dps for header 50 — the old formula under-reported by ~12.8%; header 40, formerly int8/127, ~+13.8%); `gotGyro` normalized values and acc conversion unchanged. Adds CHANGELOG.md and `npm test`. See [CHANGELOG.md](CHANGELOG.md).
 - **v1.3.4** (2026/01/31): JSDoc `@version` aligned release
 - **v1.3**: DateTime characteristic support, time sync

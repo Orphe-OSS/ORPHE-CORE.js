@@ -8,6 +8,8 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-09-08
+
 ### Added
 
 - `npm run lint` — ESLint 9 flat config (`eslint.config.js`, `js.configs.recommended`, `ecmaVersion: 2022`, script source type) covering `js/ORPHE-CORE.js`, `js/CoreToolkit.js`, `js/BleSharedBridge.js`, `js/site-analytics.js`, `scripts/` and `tests/`. Examples, workshops, starter templates, generated docs and the vendored libraries under `js/` (p5, quaternion, float16, bootstrap, run_prettify) are ignored. Unused variables / empty blocks are warnings; full-width spaces inside comments are allowed (`no-irregular-whitespace` with `skipComments`).

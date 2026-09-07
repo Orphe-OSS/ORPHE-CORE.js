@@ -1,9 +1,10 @@
 var orphe_js_version_date = `
-Last modified: 2026/09/05 13:30:00
+Last modified: 2026/09/08 03:30:00
 `;
 /**
 ORPHE-CORE.js is javascript library for ORPHE CORE Module, inspired by BlueJelly.js
 Class形式で記述を変更したバージョン
+v1.4.2 serial 番号の wraparound / setup() オプション正規化 / 遅延バインド disconnect ハンドラ / debug ゲート、ESLint・CI・バージョン整合テスト
 v1.4.1 ヘッダ50の quaternion を実ノルムで正規化（CORE 3.0 は Q14）、サンプル時刻を t_base − delta に修正、acc レンジ index 0 の ±8G 誤換算を修正
 v1.4.0 ジャイロの deg/s 換算をレンジ別のデータシート感度（LSM6DSOX）に修正
 v1.3 Date Time機能の追加
@@ -12,7 +13,7 @@ v1.1 2024/05/29
 v1.0 2021/05/01
 @module Orphe
 @author Tetsuaki BABA
-@version 1.4.1
+@version 1.4.2
 
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
@@ -44,8 +45,8 @@ function loadScript(src) {
 // → DOMContentLoaded を待つ。この時点では parser-blocking な静的 <script>
 //    は全て解析・実行済みなので、loadScript の dedup チェックが効く。
 function _orpheAutoLoadOptionalLibs() {
-  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/float16.min.js');
-  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.1/js/quaternion.js');
+  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/float16.min.js');
+  loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/quaternion.js');
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', _orpheAutoLoadOptionalLibs, { once: true });

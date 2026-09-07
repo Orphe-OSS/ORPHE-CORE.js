@@ -101,6 +101,20 @@ function orpheCoreRangeIndexToValue(indexOrValue, table) {
     : indexOrValue;
 }
 
+// ---------------------------------------------------------------------------
+// シリアル番号（uint16）の modular 距離
+// SENSOR_VALUES（ヘッダ 50）の serial_number は 65535 → 0 で巻き戻るので、欠損判定は
+// 数値の差ではなくこの距離で行う（連続なら 1、重複なら 0）。
+// ---------------------------------------------------------------------------
+/**
+ * @param {number} cur 現在のシリアル番号（0..65535）
+ * @param {number} prev 直前のシリアル番号（0..65535）
+ * @returns {number} prev から cur までの前進量（0..65535）
+ */
+function orpheCoreSerialDistance(cur, prev) {
+  return (cur - prev + 65536) % 65536;
+}
+
 
 /**
  * 自動的に決められた配列サイズでunshiftしてくれるクラス
@@ -222,6 +236,26 @@ class Orphe {
     this._lastAutoReconnectError = null;
     this._gattOperationQueue = Promise.resolve();
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
+
+    /**
+     * デバッグログの出力を有効にするフラグです。true にすると既定の onScan / onConnect / onDisconnect 等の
+     * 進行ログと _log() の出力（console.info）が有効になります。接続トラブル調査時に使ってください。
+     * 既定の onError は debug に関係なく console.error に出力します。
+     * @property {boolean} debug
+     */
+    this.debug = false;
+
+    // gattserverdisconnected 用 遅延バインドハンドラ。
+    // this.onDisconnect を直接 addEventListener すると、リスナー登録後にユーザが onDisconnect を
+    // 上書きしても古い関数が呼ばれ続け、ハンドラ内の this も BluetoothDevice になるため、
+    // 必ずこのラッパー（コンストラクタで 1 度だけ生成）を登録する（_attachDisconnectHandler 参照）。
+    this._onDisconnectHandler = (event) => {
+      this._serialInitialized = false;
+      this.onDisconnect(event);
+    };
+    // SENSOR_VALUES（ヘッダ 50）のシリアル番号を 1 度でも受信したか（_checkSerialGap 参照）。
+    // this.serial_number は 0 も正当な値なので、truthiness ではなくこのフラグで判定する。
+    this._serialInitialized = false;
 
     /**
    * デバイスインフォメーションを取得して保存しておく連想配列です。begin()を呼び出すとデバイスから値を取得して初期化されます。
@@ -427,20 +461,20 @@ class Orphe {
   }
   /**
    * 最初に必要な初期化処理メソッドです。利用するキャラクタリスティック（DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS）の指定の他、オプションを指定することができます。オプションでは生データの取得を指定することができます。通常利用では引数を省略して setup() が呼び出されることが多いです。
-   * @param {string[]} [string[]=["DEVICE_INFORMATION", "SENSOR_VALUES", "STEP_ANALYSIS"]] DEVICE_INFORMATION, SENSOR_VALUES, STEP_ANALYSIS
-   * @param {object} [options = {interpolation}] - interpolationは未実装
+   * @param {string[]} [names=["DEVICE_INFORMATION", "DATE_TIME", "SENSOR_VALUES", "STEP_ANALYSIS"]] DEVICE_INFORMATION, DATE_TIME, SENSOR_VALUES, STEP_ANALYSIS
+   * @param {object} [options] - 初期化オプション。省略・`{}`・`null` のいずれも可
+   * @param {object} [options.interpolation] - データ欠損時の線形補間オプション。**受け付けるが未実装（予約）**。
+   *   既定値 `{ enabled: false, max_consecutive_missing: 1 }` とマージして `this.interpolation` に正規化される
+   * @param {boolean} [options.interpolation.enabled=false] - 線形補間の有効化/無効化（未実装）
+   * @param {number} [options.interpolation.max_consecutive_missing=1] - 線形補間する最大の連続欠損数（未実装）
    *
    */
-  setup(names = ['DEVICE_INFORMATION', 'DATE_TIME', 'SENSOR_VALUES', 'STEP_ANALYSIS'],
-    options = {
-      interpolation: {
-        enabled: false, // 線形補間の有効化/無効化
-        max_consecutive_missing: 1 // 線形補間する最大の連続欠損数
-      }
-    }
-  ) {
+  setup(names = ['DEVICE_INFORMATION', 'DATE_TIME', 'SENSOR_VALUES', 'STEP_ANALYSIS'], options = {}) {
 
-    this.interpolation = options.interpolation;
+    // options.interpolation を既定値とマージして常に { enabled, max_consecutive_missing } の形にする。
+    // 旧実装は options.interpolation をそのまま代入していたため setup(names, {}) で TypeError になっていた。
+    const interpolation = (options && typeof options.interpolation === 'object' && options.interpolation) || {};
+    this.interpolation = Object.assign({ enabled: false, max_consecutive_missing: 1 }, interpolation);
     this.history_sensor_values.acc.setSize(this.interpolation.max_consecutive_missing);
     this.history_sensor_values.gyro.setSize(this.interpolation.max_consecutive_missing);
     this.history_sensor_values.quat.setSize(this.interpolation.max_consecutive_missing);
@@ -537,7 +571,7 @@ class Orphe {
 
     // 設定値の書き換え    CORE 2の場合、デバイス情報の書き込みに時間がかかることがあるため、現状コードはスキップさせます
     await this.setDeviceInformation(obj);
-    console.log("Device Information set:", obj);
+    this._log("Device Information set:", obj);
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -603,6 +637,14 @@ class Orphe {
   }
 
 
+  /**
+   * debug が true のときだけ console.info に出力する内部ログ。
+   * @param {...*} args
+   */
+  _log(...args) {
+    if (this.debug) console.info('[ORPHE-CORE]', ...args);
+  }
+
   _reportError(error) {
     if (this._suppressAutoReconnectErrors) {
       this._lastAutoReconnectError = error;
@@ -637,6 +679,20 @@ class Orphe {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  /**
+   * gattserverdisconnected に遅延バインドハンドラ（_onDisconnectHandler）を登録する。
+   * 同じデバイスに複数回呼ばれても登録は 1 つに保つ（先に removeEventListener してから addEventListener）。
+   * 自動再接続用の _autoReconnectDisconnectHandler とは別系統。
+   * @param {BluetoothDevice} device
+   */
+  _attachDisconnectHandler(device) {
+    if (!device || typeof device.addEventListener !== 'function') return;
+    if (typeof device.removeEventListener === 'function') {
+      device.removeEventListener('gattserverdisconnected', this._onDisconnectHandler);
+    }
+    device.addEventListener('gattserverdisconnected', this._onDisconnectHandler);
+  }
+
   _attachAutoReconnectDisconnectHandler(device) {
     if (!device?.addEventListener) return;
     if (this._autoReconnectDevice === device) return;
@@ -655,7 +711,7 @@ class Orphe {
     if (!rememberedDevice) return false;
     this.bluetoothDevice = rememberedDevice;
     this._usingRememberedBluetoothDevice = true;
-    this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+    this._attachDisconnectHandler(this.bluetoothDevice);
     this._attachAutoReconnectDisconnectHandler(this.bluetoothDevice);
     this.onScan(this.bluetoothDevice.name);
     return true;
@@ -827,7 +883,7 @@ class Orphe {
         }
         this.bluetoothDevice = device;
         this._usingRememberedBluetoothDevice = true;
-        this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+        this._attachDisconnectHandler(this.bluetoothDevice);
         this.onScan(this.bluetoothDevice.name);
       })
       .catch(error => {
@@ -867,7 +923,7 @@ class Orphe {
         this.bluetoothDevice = device;
         this._usingRememberedBluetoothDevice = false;
         this._rememberedBluetoothDeviceUnavailable = false;
-        this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+        this._attachDisconnectHandler(this.bluetoothDevice);
         this.onScan(this.bluetoothDevice.name);
       });
   }
@@ -1207,6 +1263,7 @@ class Orphe {
   clear() {
     this.bluetoothDevice = null;
     this.dataCharacteristic = null;
+    this._serialInitialized = false;
     this.onClear();
   }
   /**
@@ -1301,20 +1358,20 @@ class Orphe {
         const selectedDevice = this._findBluetoothDevice(devices, this.bluetoothDevice);
         if (selectedDevice) {
           this.bluetoothDevice = selectedDevice;
-          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          this._attachDisconnectHandler(this.bluetoothDevice);
           await this.begin(str_type);
           return;
         }
         const rememberedDevice = this._findLastBluetoothDevice(devices);
         if (rememberedDevice) {
           this.bluetoothDevice = rememberedDevice;
-          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          this._attachDisconnectHandler(this.bluetoothDevice);
           await this.begin(str_type);
           return;
         }
         if (!lastDeviceInfo && devices.length === 1) {
           this.bluetoothDevice = devices[0];
-          this.bluetoothDevice.addEventListener('gattserverdisconnected', this.onDisconnect);
+          this._attachDisconnectHandler(this.bluetoothDevice);
           await this.begin(str_type);
           return;
         }
@@ -1357,6 +1414,26 @@ class Orphe {
     }
   }
 
+  /**
+   * SENSOR_VALUES（ヘッダ 50）のシリアル番号の連続性を検査し、欠損があれば lostData(current, prev) を呼ぶ。
+   * uint16 の wraparound（65535 → 0）は連続とみなし、serial 0 も正当な値として扱う
+   * （距離は orpheCoreSerialDistance、前回値の有無は _serialInitialized で判定する）。
+   * 線形補間（this.interpolation.enabled）は未実装の予約オプションで、ここでは参照しない。
+   * @param {number} current 受信したパケットのシリアル番号
+   */
+  _checkSerialGap(current) {
+    if (!this._serialInitialized) {
+      this._serialInitialized = true;
+      this.serial_number = current;
+      return;
+    }
+    const prev = this.serial_number;
+    this.serial_number = current;
+    if (orpheCoreSerialDistance(current, prev) !== 1) {
+      this.lostData(current, prev);
+    }
+  }
+
   // Readコールバック
   /**
    * Incoming byte callback function. コアモジュールから送信されるデータを受信するコールバック関数です。それぞれのUUIDに対応するデータを正しく整形して対応するコールバック関数に渡します。ユーザはコールバック関数を手元のコードでオーバーライドして利用します。gotData()がユーザによってオーバーライドされている場合は、gotData以外のnotifyに伴うコールバック関数はすべて呼び出されないことに注意してください。
@@ -1374,26 +1451,8 @@ class Orphe {
       if (uuid == 'SENSOR_VALUES') {
         // 魔改造200Hzの場合はヘッダが50
         if (data.getUint8(0) == 50) {
-          if (this.serial_number) {
-            const serial_number_prev = this.serial_number;
-            this.serial_number = data.getUint16(1);
-
-            // データ欠損が生じた場合
-            if (this.serial_number - serial_number_prev != 1) {
-
-              // 線形補完を有効にしている場合
-              if (this.interpolation.enabled == true) {
-
-              }
-              // ユーザ用コールバック関数の呼び出し
-              this.lostData(this.serial_number, serial_number_prev);
-
-            }
-
-          }
-          else {
-            this.serial_number = data.getUint16(1);
-          }
+          // データ欠損チェック（uint16 wraparound / serial 0 対応）。欠損時は lostData() を呼ぶ
+          this._checkSerialGap(data.getUint16(1));
         }
       }
       return;
@@ -1401,7 +1460,7 @@ class Orphe {
 
     // デバイス情報Readの場合    
     if (uuid == 'DEVICE_INFORMATION') {
-      console.log(this.array_device_information);
+      this._log('DEVICE_INFORMATION read:', this.array_device_information);
 
       /*
       read pay load
@@ -1588,17 +1647,8 @@ class Orphe {
       // 魔改造200Hzの場合はヘッダが50
       if (data.getUint8(0) == 50) {
 
-        // データ欠損チェック
-        if (this.serial_number) {
-          const serial_number_prev = this.serial_number;
-          this.serial_number = data.getUint16(1);
-          if (this.serial_number - serial_number_prev != 1) {
-            this.lostData(this.serial_number, serial_number_prev);
-          }
-        }
-        else {
-          this.serial_number = data.getUint16(1);
-        }
+        // データ欠損チェック（uint16 wraparound / serial 0 対応）
+        this._checkSerialGap(data.getUint16(1));
 
         // エラー処理
         if (data.byteLength != 92) {
@@ -1838,7 +1888,7 @@ class Orphe {
         };
         resolve(this.date_time);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        console.log('Error: ' + error);
+        this._log('Error: ' + error);
         this._reportError(error);
         reject(error);
       });
@@ -1878,7 +1928,7 @@ class Orphe {
         }
         resolve(this.device_information);
       }).catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        console.log('Error: ' + error);
+        this._log('Error: ' + error);
         this._reportError(error);
         reject(error);
       });
@@ -2007,13 +2057,15 @@ class Orphe {
    */
   lostData(serial_number, serial_number_prev) { }
 
-  onScan(deviceName) { console.log("onScan"); }
-  onConnectGATT(uuid) { console.log("onConnectGATT"); }
-  onConnect(uuid) { console.log("onConnect"); }
-  onWrite(uuid) { console.log("onWrite"); }
-  onStartNotify(uuid) { console.log("onStartNotify", uuid); }
-  onStopNotify(uuid) { console.log("onStopNotify", uuid); }
-  onDisconnect() { console.log("onDisconnect"); }
+  // 既定の進行ログは debug=true のときだけ出力する。
+  // 従来どおり常時ログを出したい場合は ble.debug = true にするか、各コールバックを上書きする。
+  onScan(deviceName) { if (this.debug) console.log("onScan", deviceName); }
+  onConnectGATT(uuid) { if (this.debug) console.log("onConnectGATT", uuid); }
+  onConnect(uuid) { if (this.debug) console.log("onConnect", uuid); }
+  onWrite(uuid) { if (this.debug) console.log("onWrite", uuid); }
+  onStartNotify(uuid) { if (this.debug) console.log("onStartNotify", uuid); }
+  onStopNotify(uuid) { if (this.debug) console.log("onStopNotify", uuid); }
+  onDisconnect() { if (this.debug) console.log("onDisconnect"); }
   onReconnectAttempt(info) { }
   onReconnectSuccess(info) { }
   onReconnectFailed(info) { }
@@ -2023,9 +2075,10 @@ class Orphe {
    * @param {float} frequency 
    */
   gotBLEFrequency(frequency) { }
-  onClear() { console.log("onClear"); }
-  onReset() { console.log("onReset"); }
-  onError(error) { console.log("onError: ", error); }
+  onClear() { if (this.debug) console.log("onClear"); }
+  onReset() { if (this.debug) console.log("onReset"); }
+  // onError は debug に関係なく常に出力する（上書きしない利用者にもエラーが見えるように console.error）
+  onError(error) { console.error("onError: ", error); }
 
   //一般開発ユーザからアクセス可能な関数の定義ここまで
   //--------------------------------------------------

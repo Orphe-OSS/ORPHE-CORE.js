@@ -7,7 +7,7 @@ ORPHE COREは足装着型IoTセンサーモジュールです。このガイド�
 ```
 ORPHE-CORE.js/
 ├── js/                         # Core libraries (REQUIRED)
-│   ├── ORPHE-CORE.js          # Main SDK (v1.4.1, ~2000 lines)
+│   ├── ORPHE-CORE.js          # Main SDK (v1.4.1, ~2000 lines) — IIFE 化済み（Orphe は window プロパティとして公開、INSOLE と同一ページで共存可）
 │   ├── CoreToolkit.js         # Connection UI toolkit
 │   ├── quaternion.js          # Quaternion math (auto-loaded)
 │   └── float16.min.js         # Float16 support (auto-loaded)

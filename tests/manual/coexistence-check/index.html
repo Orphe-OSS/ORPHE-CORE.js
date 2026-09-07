@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja" data-load-order="core-first">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Phase 1b Coexistence Check (CORE → INSOLE) — ORPHE CORE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+  <style>
+    :root { color-scheme: dark; --bg:#0b1016; --line:#263444; --text:#ecf2f7; --muted:#93a4b4; --accent:#7cc4ff; --green:#43e59a; --yellow:#ffbf47; --red:#ff6474; }
+    * { box-sizing: border-box; }
+    body { margin:0; background: radial-gradient(circle at 15% 0%, rgba(124,196,255,.08), transparent 28rem), var(--bg); color: var(--text); font-family: Inter, "Noto Sans JP", system-ui, sans-serif; }
+    .page-width { width: min(1100px, calc(100% - 40px)); margin: 0 auto; }
+    header.app-header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line); background: rgba(11,16,22,.94); backdrop-filter: blur(14px); padding: 16px 0; display:flex; }
+    header .page-width { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .eyebrow, .section-label { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .16em; }
+    h1 { margin: 3px 0 0; font-size: 21px; } h2 { margin: 4px 0 0; font-size: 18px; }
+    main { padding: 26px 0 64px; }
+    .panel { margin-bottom: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(145deg, rgba(20,29,40,.97), rgba(14,22,31,.97)); }
+    .panel p, .section-help { color: var(--muted); margin: 8px 0 0; line-height: 1.7; }
+    .panel code { color: var(--text); background: rgba(255,255,255,.06); padding: 1px 5px; border-radius: 4px; }
+    .toolkit-card { padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(6,10,15,.56); }
+    .toolkit-card .form-check-label { color: var(--text); } .toolkit-card .text-muted { color: var(--muted) !important; }
+    .live { margin-top: 12px; color: var(--muted); font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+    th { color: var(--muted); font-size: 10px; letter-spacing: .08em; }
+    td.mono { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); word-break: break-all; }
+    td.ok { color: var(--green); font-weight: 700; } td.ng { color: var(--red); font-weight: 700; }
+    button { min-height: 40px; border-radius: 10px; font: inherit; border: 1px solid transparent; padding: 0 15px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .42; cursor: not-allowed; }
+    .primary-button { color: #061018; background: var(--accent); } .secondary-button { color: var(--text); border-color: var(--line); background: #172230; } .ghost-button { color: var(--muted); background: transparent; }
+    .row-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+    .badge { display:inline-block; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; }
+    .badge.ok { color: var(--green); border-color: rgba(67,229,154,.4); } .badge.ng { color: var(--red); border-color: rgba(255,100,116,.4); }
+    .event-log { max-height: 340px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: #070c11; font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 12px; }
+    .event-row { display: grid; grid-template-columns: 96px 60px 1fr; gap: 9px; padding: 7px 10px; border-bottom: 1px solid rgba(38,52,68,.5); }
+    .event-row time { color: var(--muted); } .event-row.success .level { color: var(--green); } .event-row.warn .level { color: var(--yellow); } .event-row.error .level { color: var(--red); }
+    ol.steps { color: var(--muted); line-height: 1.8; margin: 10px 0 0; padding-left: 1.4em; } ol.steps b { color: var(--text); }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="app-header"><div class="page-width">
+    <div><div class="eyebrow">ORPHE CORE / PHASE 1b PHYSICAL DEVICE TEST</div><h1>IIFE 化の実機チェック — CORE と INSOLE の同一ページ共存</h1></div>
+    <span id="order_badge" class="badge">読み込み順</span>
+  </div></header>
+
+  <main class="page-width">
+    <section class="panel">
+      <span class="section-label">PURPOSE</span>
+      <h2>ORPHE-CORE.js を IIFE で包んでも、単体・INSOLE 同居の両方で従来どおり動くことを確認する</h2>
+      <p>このページは <code>js/ORPHE-CORE.js</code>（このブランチ）と ORPHE-INSOLE.js（jsDelivr <code>@v1.3.4</code> の dist）を
+        <b>CORE → INSOLE</b> の順に読み込んでいます。もう一方の順序は <a href="insole-first.html">INSOLE → CORE</a> で確認します。</p>
+      <ol class="steps">
+        <li><b>グローバル表</b>がすべて OK（<code>Orphe</code> は CORE、<code>OrpheInsole</code> は INSOLE、両者は別、補助クラスと <code>orphe_js_version_date</code> が存在）</li>
+        <li><b>「CORE を 2 回読み込む」</b>で例外なし・<code>Orphe</code> の参照が不変（IIFE 化前は重複宣言の SyntaxError になる）</li>
+        <li><b>CORE を接続</b>（スイッチ ON）→ rate / gyro / acc / yaw が動く → <b>CORE の電源を切る（または離す）</b>→「接続後に上書きした onDisconnect」が <code>this === bles[0]</code> で呼ばれる</li>
+        <li><b>INSOLE を接続</b>（ボタン）→ press / gyro が動く。CORE と同時接続でも両方流れる</li>
+        <li>もう一方の読み込み順のページでも 1〜4 を繰り返す</li>
+        <li>「ログをコピー」を PR に貼る</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">1. GLOBALS</span>
+      <h2>グローバル状態</h2>
+      <table><thead><tr><th>項目</th><th>値</th><th>判定</th></tr></thead><tbody id="globals_table"></tbody></table>
+      <div class="row-controls">
+        <button id="reload_core_button" class="secondary-button"><i class="bi bi-arrow-repeat"></i> CORE を 2 回読み込む</button>
+        <span id="reload_core_status" class="badge">未実施</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">2. CORE</span>
+      <h2>CORE を CoreToolkit で接続</h2>
+      <article class="toolkit-card">
+        <div id="core_toolkit"></div>
+        <div id="core_live" class="live">未接続</div>
+        <div class="row-controls"><span id="core_disconnect_status" class="badge">接続すると onDisconnect を上書きします</span></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">3. INSOLE</span>
+      <h2>INSOLE を同じページで接続（<code>new OrpheInsole(1)</code>）</h2>
+      <p class="section-help">CoreToolkit と InsoleToolkit は DOM ID とグローバル（bles / cores）が衝突するため、INSOLE 側は素の API で接続します。</p>
+      <div class="row-controls">
+        <button id="insole_connect_button" class="primary-button"><i class="bi bi-bluetooth"></i> INSOLE を接続（SENSOR_VALUES / mode 4）</button>
+        <button id="insole_disconnect_button" class="secondary-button" disabled>切断</button>
+      </div>
+      <div id="insole_live" class="live">未接続</div>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">LOG</span>
+      <h2>イベントログ</h2>
+      <div class="row-controls">
+        <button id="copy_log_button" class="secondary-button"><i class="bi bi-clipboard"></i> ログをコピー</button>
+        <button id="clear_log_button" class="ghost-button">ログ消去</button>
+      </div>
+      <div id="event_log" class="event-log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../../js/ORPHE-CORE.js" data-core-sdk></script>
+  <script src="../../../js/CoreToolkit.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-INSOLE.js@v1.3.4/dist/orphe-insole.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

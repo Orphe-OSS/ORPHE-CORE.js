@@ -1,15 +1,23 @@
 {
+  "name": "orphe-core",
+  "version": "1.4.1",
+  "private": true,
+  "description": "JavaScript library for ORPHE CORE motion sensor modules (Web Bluetooth)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Orphe-OSS/ORPHE-CORE.js.git"
+  },
   "license": "SEE LICENSE IN LICENSE.md",
-  "dependencies": {
-    "@petamoriken/float16": "^3.6.5",
-    "electron": "^20.1.1",
-    "jsdoc": "^3.6.10"
-  },
-  "devDependencies": {
-    "clean-jsdoc-theme": "^4.1.6"
-  },
   "scripts": {
     "generate-docs": "jsdoc --configure jsdoc.json --verbose",
-    "test": "node --check js/ORPHE-CORE.js && node tests/core2-header40-parse.test.js && node tests/core-gyro-scale.test.js && node tests/core-quat-normalize-header50.test.js && node tests/core-header50-sample-timestamps.test.js && node tests/core-acc-range-mapping.test.js"
+    "lint": "eslint .",
+    "test": "node --check js/ORPHE-CORE.js && node tests/core2-header40-parse.test.js && node tests/core-gyro-scale.test.js && node tests/core-quat-normalize-header50.test.js && node tests/core-header50-sample-timestamps.test.js && node tests/core-acc-range-mapping.test.js && node tests/core-version-sync.test.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "clean-jsdoc-theme": "^4.1.6",
+    "eslint": "^9.39.4",
+    "globals": "^15.15.0",
+    "jsdoc": "^4.0.4"
   }
 }

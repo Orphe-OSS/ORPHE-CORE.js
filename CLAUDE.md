@@ -132,6 +132,7 @@ var ble = new Orphe(id);  // id: 0 or 1 (supports 2 devices max)
 ble.setup(names, options);
 // names: ['DEVICE_INFORMATION', 'DATE_TIME', 'SENSOR_VALUES', 'STEP_ANALYSIS']
 // options: { interpolation: { enabled: false, max_consecutive_missing: 1 } }
+// interpolation は受け付けるが未実装（予約オプション）。setup() / setup(names) / setup(names, {}) のいずれも可
 
 // Start connection and data streaming
 await ble.begin(notification_type, options);
@@ -153,6 +154,9 @@ ble.resetAnalysisLogs();
 // Device info
 await ble.getDeviceInformation();
 // Returns: { battery, lr, rec_mode, rec_auto_run, led_brightness, range: { acc, gyro } }
+
+// デバッグログ（接続トラブル調査時）。既定の onConnect / onDisconnect 等の進行ログは debug=true のときだけ出る（onError は常時 console.error）
+ble.debug = true;
 ```
 
 ### Data Callbacks - Override these to receive data

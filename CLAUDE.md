@@ -558,6 +558,38 @@ ble.gotConvertedAcc = function(acc) {
 - **Supported**: Chrome (desktop/Android), Edge, Opera
 - **NOT Supported**: Firefox, Safari (iOS/macOS)
 
+## Development
+
+```bash
+npm ci                 # 依存関係のインストール（devDependencies のみ: eslint / jsdoc）
+npm run lint           # ESLint（js/ORPHE-CORE.js, js/CoreToolkit.js, js/BleSharedBridge.js, scripts/, tests/）
+npm test               # 構文チェック + Node 単体テスト（tests/*.test.js）+ バージョン整合テスト
+npm run generate-docs  # JSDoc → api_doc/
+node scripts/check-cdn-pins.js   # jsDelivr 自己参照が @vX.Y.Z / commit SHA に固定されているか
+```
+
+ソースを編集したら `npm run lint` と `npm test` を実行してください。CI（`.github/workflows/ci.yml`、Node 18/20/22）は
+`npm ci` → `npm run lint` → `npm test` → `check-cdn-pins` → `check-examples-catalog` → `check-examples-static-quality` を
+main への push と pull_request で実行します（`npm audit --audit-level=high` は別ジョブで、失敗しても CI は落ちません）。
+
+`js/ORPHE-CORE.js` はトップレベルで `document` を参照するため Node で `require` できません。
+単体テストは `tests/core2-header40-parse.test.js` のように vm コンテキストで評価する方式を使ってください。
+
+### リリース手順（バージョンを上げるとき）
+
+examples / README / index.html の CDN 参照は**バージョン固定**（`@vX.Y.Z`）です。
+`tests/core-version-sync.test.js` が package.json の `version`・`js/ORPHE-CORE.js` ヘッダの `@version`・
+`CITATION.cff`・README の「Current version」行・公開ファイル内の全 jsDelivr 自己参照の一致を検証します
+（更新漏れや `@latest` / `@main` への退行は CI で落ちる）。
+
+1. `package.json` の `version` を上げる
+2. `node scripts/pin-cdn-version.js vX.Y.Z` — 公開ファイル内の jsDelivr 自己参照を新バージョンに一括書き換え（`sed` 手作業は不要）
+3. `js/ORPHE-CORE.js` ヘッダの `@version`（と履歴行）、`CITATION.cff` の `version:` / `date-released:`、
+   README の「Current version」行、CLAUDE.md の Version History を更新
+4. CHANGELOG.md の `[Unreleased]` を `[X.Y.Z] - 日付` に確定し、新しい空の `[Unreleased]` を作る
+5. `npm test`（core-version-sync が通ること）→ PR
+6. マージ後**すぐに** `git tag vX.Y.Z` を push し、GitHub Release を作成する。examples は固定 URL（`@vX.Y.Z`）を
+   読み込むため、タグが存在しない間は jsDelivr が 404 を返す。マージからタグ作成までは数分以内に収めること
 ## Reference Examples
 
 | App Type | Reference | Key Patterns |

@@ -15,73 +15,22 @@
 //           <host>/gh/Orphe-OSS/ORPHE-CORE.js/js/ORPHE-CORE.js          (no ref = default branch)
 //
 // Exit code 1 with one `file:line: <url>` per offender, 0 when clean.
-// TODO: add to `npm test` once the test script from PR #124 lands.
+// Runs in CI (.github/workflows/ci.yml). The file scope / exclusion list lives in
+// scripts/lib/cdn-self-refs.js and is shared with scripts/pin-cdn-version.js and
+// tests/core-version-sync.test.js (which additionally checks that every pinned
+// release tag equals package.json's version).
 
 const fs = require('fs');
-const path = require('path');
-
-const repoRoot = path.resolve(__dirname, '..');
-
-const SCAN_EXTENSIONS = new Set(['.html', '.md', '.js', '.json', '.txt']);
-
-// Generated output / dependencies / VCS + editor metadata (mirrors .gitignore).
-const IGNORE_DIRS = new Set(['.git', '.claude', '.vscode', '.obsidian', 'node_modules', 'api_doc']);
-
-// Internal (non user-facing) trees.
-const IGNORE_PREFIXES = ['docs/ai/'];
-
-// Stale vendored copies of the SDK shipped inside workshop / example folders.
-// They are out of scope for pinning (they are not what the CDN serves).
-const IGNORE_FILES = new Set([
-  'examples/GAME-RHYTHM/ORPHE-CORE.js',
-  'ws/tmu2022/demos/YOU_ARE_theBIRD/ORPHE-CORE.js',
-  'ws/tmu2025/apps/src/ORPHE-CORE.js',
-  'ws/tmu2025/apps/L01/src/ORPHE-CORE.js',
-  'ws/tmu2025/apps/9/src/ORPHE-CORE.js',
-]);
-
-// Any jsDelivr URL for this repo, capturing the optional `@ref`.
-const SELF_REF_RE = /cdn\.jsdelivr\.net\/gh\/Orphe-OSS\/ORPHE-CORE\.js(@[A-Za-z0-9._-]+)?\/[^"'`<>\s)&]*/g;
-
-// Immutable refs: a release tag (vX.Y.Z) or a commit SHA.
-const PINNED_REF_RE = /^@(v\d+\.\d+\.\d+|[0-9a-f]{7,40})$/;
-
-function walk(dir, out) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const abs = path.join(dir, entry.name);
-    const rel = path.relative(repoRoot, abs).split(path.sep).join('/');
-    if (entry.isDirectory()) {
-      if (IGNORE_DIRS.has(entry.name)) continue;
-      if (IGNORE_PREFIXES.some((prefix) => `${rel}/`.startsWith(prefix))) continue;
-      walk(abs, out);
-      continue;
-    }
-    if (!entry.isFile()) continue;
-    if (!SCAN_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
-    if (IGNORE_FILES.has(rel)) continue;
-    if (IGNORE_PREFIXES.some((prefix) => rel.startsWith(prefix))) continue;
-    out.push({ abs, rel });
-  }
-  return out;
-}
+const { listScanFiles, findSelfRefs, isPinnedRef } = require('./lib/cdn-self-refs');
 
 function findOffenders(text) {
-  const offenders = [];
-  const lines = text.split('\n');
-  lines.forEach((line, index) => {
-    SELF_REF_RE.lastIndex = 0;
-    let match;
-    while ((match = SELF_REF_RE.exec(line))) {
-      const ref = match[1];
-      if (ref && PINNED_REF_RE.test(ref)) continue;
-      offenders.push({ line: index + 1, url: match[0], ref: ref || '(no ref → default branch)' });
-    }
-  });
-  return offenders;
+  return findSelfRefs(text)
+    .filter(({ ref }) => !isPinnedRef(ref))
+    .map(({ line, url, ref }) => ({ line, url, ref: ref || '(no ref → default branch)' }));
 }
 
 function main() {
-  const files = walk(repoRoot, []);
+  const files = listScanFiles();
   const report = [];
   for (const file of files) {
     const text = fs.readFileSync(file.abs, 'utf8');

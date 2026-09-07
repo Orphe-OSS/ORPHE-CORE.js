@@ -8,6 +8,17 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 
 ## [Unreleased]
 
+### Added
+
+- `npm run lint` — ESLint 9 flat config (`eslint.config.js`, `js.configs.recommended`, `ecmaVersion: 2022`, script source type) covering `js/ORPHE-CORE.js`, `js/CoreToolkit.js`, `js/BleSharedBridge.js`, `js/site-analytics.js`, `scripts/` and `tests/`. Examples, workshops, starter templates, generated docs and the vendored libraries under `js/` (p5, quaternion, float16, bootstrap, run_prettify) are ignored. Unused variables / empty blocks are warnings; full-width spaces inside comments are allowed (`no-irregular-whitespace` with `skipComments`).
+- GitHub Actions CI (`.github/workflows/ci.yml`): on pushes to `main` and pull requests, runs `npm ci` → `npm run lint` → `npm test` → `node scripts/check-cdn-pins.js` → `node scripts/check-examples-catalog.js` → `node scripts/check-examples-static-quality.js` on Node 18 / 20 / 22, plus a non-blocking `npm audit --audit-level=high` job.
+- `tests/core-version-sync.test.js` (part of `npm test`): asserts that `package.json` `version`, the `@version` header of `js/ORPHE-CORE.js`, `CITATION.cff` `version:`, the README "Current version" line and every release-tag-pinned jsDelivr self-reference (`@vX.Y.Z`) agree. A regression to `@latest` / `@main` / no ref is reported too.
+- `scripts/pin-cdn-version.js vX.Y.Z`: rewrites every jsDelivr self-reference to the given release tag (refuses anything that is not `vX.Y.Z`) and prints the number of rewritten references / files. Uses the same file scope and exclusion list as `check-cdn-pins.js`, now shared through `scripts/lib/cdn-self-refs.js`. Replaces the manual `sed` step used for #127 / #131; release steps are documented in CLAUDE.md ("リリース手順").
+
+### Changed
+
+- `package.json`: added `name` (`orphe-core`), `version` (`1.4.1`), `private: true` (not published to npm), `description` and `repository`. Removed the unused `electron` (EOL) and `@petamoriken/float16` (the SDK loads the vendored `js/float16.min.js`, not the npm package) dependencies. `jsdoc` moved to `devDependencies` and updated to `^4.0.4`; `eslint`, `@eslint/js` and `globals` added as `devDependencies`. `package-lock.json` regenerated (lockfile v3). No runtime behavior changes.
+
 ## [1.4.1] - 2026-09-05
 
 ### Fixed

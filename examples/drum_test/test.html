@@ -14,7 +14,7 @@
             core.setup();                
         }
         function mystart() {
-          core.begin('SENSOR_VALUES');
+          core.begin('SENSOR_VALUES').catch(console.error);
           core.gotAcc = function (acc) {
               console.log(acc);
           }

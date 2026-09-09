@@ -274,7 +274,7 @@
             // 1. Connect Button
             document.getElementById('btn-connect').addEventListener('click', async () => {
                 // Connect to BLE
-                await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+                await ble.begin('STEP_ANALYSIS_AND_SENSOR_VALUES').catch(console.error);
                 
                 // Transition to Level Select
                 switchPhase('LEVEL_SELECT');

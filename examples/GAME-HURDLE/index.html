@@ -1503,7 +1503,7 @@
         if (connectedDevices === 2) {
           // Both devices connected, start data streaming
           for (let device of bles) {
-            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');//ここ変更
+            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES').catch(console.error);//ここ変更
             setupDataCallbacks(device);
           }
         }

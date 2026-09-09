@@ -39,6 +39,7 @@ module.exports = [
         BleSharedBridge: 'readonly',
         // js/ORPHE-CORE.js / js/CoreToolkit.js top-level globals shared across <script> tags
         Orphe: 'writable',
+        orpheCoreIsUserCancel: 'readonly',
         bles: 'writable',
         cores: 'writable',
         orphe_js_version_date: 'writable',

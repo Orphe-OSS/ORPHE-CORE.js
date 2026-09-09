@@ -250,7 +250,7 @@ function toggleConnect(dom) {
     else {
         const kind = document.querySelector(`#char${id}`).value;
         initTableDisplay(id, kind);
-        bles[id].begin(kind);
+        bles[id].begin(kind).catch(console.error);
     }
 }
 

@@ -132,6 +132,63 @@ function orpheCoreSerialDistance(cur, prev) {
 }
 
 
+// ---------------------------------------------------------------------------
+// begin() のエラーモデル（v1.5.0）
+// begin() は「必ず settle する」ことを契約とし、失敗は code 付き Error で reject する。
+// ORPHE-INSOLE.js の _insoleError と同じ設計（Phase 3 で共通化する前提）。
+// ---------------------------------------------------------------------------
+/**
+ * code プロパティ付き Error を生成する（エラー種別のプログラム判定用）。
+ * message は従来の文字列エラーと同一文字列を維持する（後方互換）。
+ * @param {'NO_DEVICE'|'CONNECT_TIMEOUT'|'NOTIFY_FAILED'|'ALREADY_DISCONNECTED'|'DUPLICATE_DEVICE'|'UNSUPPORTED_NOTIFICATION'|'BEGIN_FAILED'} code
+ * @param {string} message
+ * @param {*} [cause] ラップ元のエラー（省略時は cause を付けない）
+ * @returns {Error}
+ */
+function orpheCoreError(code, message, cause) {
+  const error = new Error(message);
+  error.code = code;
+  error.name = 'OrpheCoreError';
+  if (cause !== undefined) error.cause = cause;
+  return error;
+}
+
+/**
+ * Bluetooth 選択ダイアログのキャンセルかどうかを判定する。
+ * Web Bluetooth はダイアログを閉じられると DOMException('NotFoundError') を throw する
+ * （「該当デバイスなし」も同じ name なので、どちらも「デバイスが選ばれなかった」として扱う）。
+ * begin() はこれを失敗ではなくユーザの選択とみなし、undefined を resolve する。
+ * @param {*} error
+ * @returns {boolean}
+ */
+function orpheCoreIsUserCancel(error) {
+  if (!error) return false;
+  if (error.name === 'NotFoundError') return true;
+  const message = error.message ? error.message : String(error);
+  return /cancell?ed|chooser/i.test(message);
+}
+
+/**
+ * begin() の notification_type ごとの、開始する notify と成功時の戻り値。
+ * 未知の値はこのテーブルに無いので UNSUPPORTED_NOTIFICATION で reject する
+ * （従来は if/else のどれにも一致せず Promise が settle せず永久にハングしていた）。
+ */
+const ORPHE_CORE_BEGIN_NOTIFICATIONS = Object.freeze({
+  STEP_ANALYSIS: Object.freeze({
+    uuids: Object.freeze(['STEP_ANALYSIS']),
+    result: 'done begin(); STEP ANALYSIS',
+  }),
+  SENSOR_VALUES: Object.freeze({
+    uuids: Object.freeze(['SENSOR_VALUES']),
+    result: 'done begin(); SENSOR VALUES',
+  }),
+  STEP_ANALYSIS_AND_SENSOR_VALUES: Object.freeze({
+    uuids: Object.freeze(['STEP_ANALYSIS', 'SENSOR_VALUES']),
+    result: 'done begin(); STEP_ANALYSIS and SENSOR VALUES',
+  }),
+});
+
+
 /**
  * 自動的に決められた配列サイズでunshiftしてくれるクラス
  * sensor valuesのデータを保持するクラスです。sensor valuesのデータは、加速度、ジャイロ、クォータニオンの3つのデータを保持します。interpotion処理を行うために、過去のデータを保持する用途に使用します。
@@ -244,12 +301,15 @@ class Orphe {
     this._rememberedBluetoothDeviceUnavailable = false;
     this._autoReconnectEnabled = false;
     this._autoReconnectInProgress = false;
+    // begin() による接続処理中かどうか（connectionState 用）
+    this._connecting = false;
     this._autoReconnectNotificationType = 'STEP_ANALYSIS';
     this._autoReconnectOptions = {};
     this._autoReconnectDevice = null;
     this._autoReconnectDisconnectHandler = (event) => this._handleAutoReconnectDisconnect(event);
     this._suppressAutoReconnectErrors = false;
     this._lastAutoReconnectError = null;
+    this._lastReportedError = null;
     this._gattOperationQueue = Promise.resolve();
     this.array_device_information = new DataView(new ArrayBuffer(20));// device information用の配列
 
@@ -516,10 +576,25 @@ class Orphe {
   /**
    *  begin BLE connection 
    * SENSOR_VALUESまたはSTEP_ANALYSISのセンサー値の取得を開始します。
+   *
+   * **必ず settle します**（v1.5.0 でエラーモデルを整理）:
+   * - 成功                    → 従来どおり truthy な文字列を resolve（`"done begin(); SENSOR VALUES"` 等）
+   * - 選択ダイアログのキャンセル → `undefined` を resolve（失敗ではなくユーザの選択。onError は呼ばない）
+   * - それ以外の失敗          → `error.code` を持つ Error で **reject**
+   *   （`NO_DEVICE` / `CONNECT_TIMEOUT` / `NOTIFY_FAILED` / `DUPLICATE_DEVICE` /
+   *     `UNSUPPORTED_NOTIFICATION` / `BEGIN_FAILED`）
+   *
+   * ```javascript
+   * const ok = await ble.begin('SENSOR_VALUES', { connectTimeoutMs: 10000 }).catch(e => { alert(e.code); return null; });
+   * if (!ok) return; // キャンセル or 失敗
+   * ```
+   *
    * @param {string} [notification_type="STEP_ANALYSIS"] STEP_ANALYSIS, SENSOR_VALUES, STEP_ANALYSIS_AND_SENSOR_VALUES
    * @param {object} [options={range:{acc:-1, gyro:-1}}] {range:{acc:[2,4,8,16],gyro:[250,500,1000,2000]}
+   * @param {boolean} [options.autoReconnect=false] 切断時の自動再接続を有効化
+   * @param {number} [options.connectTimeoutMs] opt-in。GATT 接続がこの ms を超えたら CONNECT_TIMEOUT で reject する（既定なし＝無制限）
    * @async
-   * @return {Promise<string>} 
+   * @return {Promise<string|undefined>} 成功時は結果文字列、キャンセル時は undefined
    * 
    */
   async begin(
@@ -564,91 +639,96 @@ class Orphe {
       this._isBridgeSecondary = false;
     }
 
-    // ── BleSharedBridge: 別タブに Primary が存在するか確認 ──────────────
-    if (typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false) {
-      const bridge = new BleSharedBridge(this.id);
-      if (bridge.isRemotePrimaryAvailable()) {
-        return this._beginAsSecondary(bridge, str_type);
+    this._connecting = true;
+    try {
+      // ── BleSharedBridge: 別タブに Primary が存在するか確認 ──────────────
+      if (typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false) {
+        const bridge = new BleSharedBridge(this.id);
+        if (bridge.isRemotePrimaryAvailable()) {
+          return await this._beginAsSecondary(bridge, str_type);
+        }
       }
-    }
-    // ────────────────────────────────────────────────────────────────────
+      // ────────────────────────────────────────────────────────────────────
 
-    await this.scan('DEVICE_INFORMATION', options);
-    let obj = await this.getDeviceInformation();
+      await this.scan('DEVICE_INFORMATION', options);
+      let obj = await this.getDeviceInformation(options);
 
-    if (range.acc == 16) obj.range.acc = 3;
-    if (range.acc == 8) obj.range.acc = 2;
-    if (range.acc == 4) obj.range.acc = 1;
-    if (range.acc == 2) obj.range.acc = 0;
-    if (range.gyro == 2000) obj.range.gyro = 3;
-    if (range.gyro == 1000) obj.range.gyro = 2;
-    if (range.gyro == 500) obj.range.gyro = 1;
-    if (range.gyro == 250) obj.range.gyro = 0;
+      if (range.acc == 16) obj.range.acc = 3;
+      if (range.acc == 8) obj.range.acc = 2;
+      if (range.acc == 4) obj.range.acc = 1;
+      if (range.acc == 2) obj.range.acc = 0;
+      if (range.gyro == 2000) obj.range.gyro = 3;
+      if (range.gyro == 1000) obj.range.gyro = 2;
+      if (range.gyro == 500) obj.range.gyro = 1;
+      if (range.gyro == 250) obj.range.gyro = 0;
 
-    // 設定値の書き換え    CORE 2の場合、デバイス情報の書き込みに時間がかかることがあるため、現状コードはスキップさせます
-    await this.setDeviceInformation(obj);
-    this._log("Device Information set:", obj);
+      // 設定値の書き換え    CORE 2の場合、デバイス情報の書き込みに時間がかかることがあるため、現状コードはスキップさせます
+      await this.setDeviceInformation(obj, options);
+      this._log("Device Information set:", obj);
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    // DateTimeキャラクタリスティックを利用して時刻を同期する．現在のPC時間とデータ取得にかかる統計値からその分コアの時計を進めておく．
-    await this.syncCoreTime();
+      // DateTimeキャラクタリスティックを利用して時刻を同期する．現在のPC時間とデータ取得にかかる統計値からその分コアの時計を進めておく．
+      await this.syncCoreTime(3, options);
 
-    // ここで実際にnotifyを開始しています．
-    return new Promise((resolve, reject) => {
-
-      if (str_type == "STEP_ANALYSIS") {
-
-        this.startNotify('STEP_ANALYSIS').then(() => {
-          resolve("done begin(); STEP ANALYSIS");
-        })
-          .catch(err => {
-            reject('User cancel.')
-          }
-          );
+      // ここで実際にnotifyを開始しています．
+      // 旧実装は notification_type ごとの if/else 内で startNotify() を .catch なしで呼んでいたため、
+      // notify 失敗や未知の str_type で Promise が settle せず await が永久にハングしていた。
+      const notification = ORPHE_CORE_BEGIN_NOTIFICATIONS[str_type];
+      if (!notification) {
+        throw orpheCoreError(
+          'UNSUPPORTED_NOTIFICATION',
+          `Unsupported notification type: ${str_type}. Use one of ${Object.keys(ORPHE_CORE_BEGIN_NOTIFICATIONS).join(', ')}.`
+        );
       }
-      else if (str_type == "SENSOR_VALUES") {
-        this.startNotify('SENSOR_VALUES').then(() => {
-          resolve("done begin(); SENSOR VALUES");
-        });
+      for (const notifyUuid of notification.uuids) {
+        try {
+          await this.startNotify(notifyUuid, options);
+        } catch (error) {
+          if (orpheCoreIsUserCancel(error)) throw error;
+          const detail = (error && error.message) ? error.message : String(error);
+          throw orpheCoreError('NOTIFY_FAILED', `startNotify('${notifyUuid}') failed: ${detail}`, error);
+        }
       }
-      else if (str_type == "STEP_ANALYSIS_AND_SENSOR_VALUES") {
-        this.startNotify('STEP_ANALYSIS').then(() => {
-          this.startNotify('SENSOR_VALUES').then(() => {
-            resolve("done begin(); STEP_ANALYSIS and SENSOR VALUES");
+      const result = notification.result;
+
+      if (this.bluetoothDevice) {
+        this._rememberBluetoothDevice(this.bluetoothDevice);
+        this._attachAutoReconnectDisconnectHandler(this.bluetoothDevice);
+      }
+
+      // BleSharedBridge: BLE接続成功後にこのタブを Primary として登録
+      if (typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false) {
+        this._bridge = new BleSharedBridge(this.id);
+        this._isBridgeSecondary = false;
+        this._bridge.claimPrimary();
+
+        // Primary の BLE が予期せず切断された場合、他タブへ通知する
+        if (this.bluetoothDevice && !this._bridgeBleDisconnectHooked) {
+          this._bridgeBleDisconnectHooked = true;
+          this.bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+            if (this._bridge && this._bridge.isPrimary) {
+              this._bridge.broadcastDisconnect();
+              this._bridge = null;
+            }
           });
-        });
+        }
       }
-      })
-      .then(async (result) => {
-        if (result && this.bluetoothDevice) {
-          this._rememberBluetoothDevice(this.bluetoothDevice);
-          this._attachAutoReconnectDisconnectHandler(this.bluetoothDevice);
-        }
-
-        // BleSharedBridge: BLE接続成功後にこのタブを Primary として登録
-        if (typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false && result) {
-          this._bridge = new BleSharedBridge(this.id);
-          this._isBridgeSecondary = false;
-          this._bridge.claimPrimary();
-
-          // Primary の BLE が予期せず切断された場合、他タブへ通知する
-          if (this.bluetoothDevice && !this._bridgeBleDisconnectHooked) {
-            this._bridgeBleDisconnectHooked = true;
-            this.bluetoothDevice.addEventListener('gattserverdisconnected', () => {
-              if (this._bridge && this._bridge.isPrimary) {
-                this._bridge.broadcastDisconnect();
-                this._bridge = null;
-              }
-            });
-          }
-        }
-        return result;
-      })
-      .catch(error => {  // ダイアログのキャンセルはそのまま閉じる
-        this._reportError(error);
-        return;
-      });
+      return result;
+    } catch (error) {
+      // ダイアログのキャンセルは「失敗」ではなくユーザの選択。従来どおり undefined を resolve して
+      // 静かに終える（onError も呼ばない）。`if (!ret)` で判定している既存コードはそのまま動く。
+      if (orpheCoreIsUserCancel(error)) {
+        this._log('begin(): chooser cancelled', error);
+        return undefined;
+      }
+      // 本物の失敗は code 付き Error で reject する（旧実装はここで握りつぶして undefined を返していた）。
+      const failure = this._toCoreError(error);
+      this._reportError(failure);
+      throw failure;
+    } finally {
+      this._connecting = false;
+    }
 
   }
 
@@ -661,11 +741,43 @@ class Orphe {
     if (this.debug) console.info('[ORPHE-CORE]', ...args);
   }
 
+  /**
+   * 捕捉した値を code 付き Error に正規化する。
+   * - 既に code を持つ Error はそのまま返す（identity を保つ）
+   * - DOMException など code の無い Error / 生の文字列は cause 付きでラップする
+   *   （DOMException.prototype.code は getter のみなので代入できない。必ず新しい Error を作る）
+   * @param {*} error
+   * @returns {Error} code プロパティを持つ Error
+   */
+  _toCoreError(error) {
+    if (error instanceof Error && typeof error.code === 'string' && error.code) return error;
+    const name = error && error.name;
+    const isDuplicate = name === 'DuplicateBluetoothDeviceError';
+    const message = (error && error.message) ? error.message : String(error);
+    const wrapped = orpheCoreError(isDuplicate ? 'DUPLICATE_DEVICE' : 'BEGIN_FAILED', message, error);
+    if (isDuplicate) wrapped.name = name; // 既存コードの name 判定を壊さない
+    return wrapped;
+  }
+
   _reportError(error) {
     if (this._suppressAutoReconnectErrors) {
       this._lastAutoReconnectError = error;
       return;
     }
+    // 選択ダイアログのキャンセルは失敗ではないので onError には流さない（debug ログのみ）。
+    // scan()/startNotify() など begin() より内側の catch から報告されるぶんもここで止める。
+    if (orpheCoreIsUserCancel(error)) {
+      this._log('Bluetooth chooser cancelled:', error);
+      return;
+    }
+    // 同じ失敗で onError が 2 回呼ばれるのを防ぐ。scan()/connectGATT()/startNotify() は
+    // 失敗時に自分で _reportError() してから throw するため、それを受けた begin() の catch が
+    // そのまま再報告すると重複する。直前に報告したエラー本体と、それを cause に持つラッパーは黙殺する。
+    if (error && typeof error === 'object' &&
+      (this._lastReportedError === error || this._lastReportedError === error.cause)) {
+      return;
+    }
+    if (error && typeof error === 'object') this._lastReportedError = error;
     this.onError(error);
   }
 
@@ -893,8 +1005,8 @@ class Orphe {
         if (!device) return this.requestDevice(uuid, options);
         if (this._isBluetoothDeviceDisallowed(device, options)) {
           this.forgetLastBluetoothDevice();
-          const error = new Error('This ORPHE CORE is already assigned to another slot.');
-          error.name = 'DuplicateBluetoothDeviceError';
+          const error = orpheCoreError('DUPLICATE_DEVICE', 'This ORPHE CORE is already assigned to another slot.');
+          error.name = 'DuplicateBluetoothDeviceError'; // 既存コードの name 判定を壊さない
           throw error;
         }
         this.bluetoothDevice = device;
@@ -932,8 +1044,8 @@ class Orphe {
     return navigator.bluetooth.requestDevice(requestOptions)
       .then(device => {
         if (this._isBluetoothDeviceDisallowed(device, connectionOptions)) {
-          const error = new Error('This ORPHE CORE is already assigned to another slot.');
-          error.name = 'DuplicateBluetoothDeviceError';
+          const error = orpheCoreError('DUPLICATE_DEVICE', 'This ORPHE CORE is already assigned to another slot.');
+          error.name = 'DuplicateBluetoothDeviceError'; // 既存コードの name 判定を壊さない
           throw error;
         }
         this.bluetoothDevice = device;
@@ -1044,11 +1156,14 @@ class Orphe {
   /**
    * GATT通信を始めるための関数。read, write, startNotify, stopNotifyが呼び出されるとscanと一緒に呼び出されます。
    * @param {string} uuid 
+   * @param {object} [options]
+   * @param {number} [options.connectTimeoutMs] opt-in。gatt.connect() がこの ms を超えたら
+   *   CONNECT_TIMEOUT で reject する（既定なし＝従来どおり無制限に待つ）。
    *
    */
-  connectGATT(uuid) {
+  connectGATT(uuid, options = {}) {
     if (!this.bluetoothDevice) {
-      var error = "No Bluetooth Device";
+      const error = orpheCoreError('NO_DEVICE', "No Bluetooth Device");
       this._reportError(error);
       return Promise.reject(error);
     }
@@ -1058,7 +1173,23 @@ class Orphe {
     }
     this.hashUUID_lastConnected = uuid;
 
-    return this.bluetoothDevice.gatt.connect()
+    // connectTimeoutMs（opt-in・既定なし）: gatt.connect() のハング対策
+    let connectPromise = this.bluetoothDevice.gatt.connect();
+    const timeoutMs = Number(options.connectTimeoutMs);
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+      let timeoutTimer;
+      connectPromise = Promise.race([
+        connectPromise.finally(() => clearTimeout(timeoutTimer)),
+        new Promise((_, reject) => {
+          timeoutTimer = setTimeout(() => {
+            try { this.bluetoothDevice?.gatt?.disconnect(); } catch (cleanupError) { void cleanupError; /* タイムアウト後の切断失敗は無視 */ }
+            reject(orpheCoreError('CONNECT_TIMEOUT', `GATT connect timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
+        })
+      ]);
+    }
+
+    return connectPromise
       .then(server => {
         return server.getPrimaryService(this.hashUUID[uuid].serviceUUID);
       })
@@ -1104,10 +1235,10 @@ class Orphe {
    * @param {string} uuid DEVICE_INFORMATION
    * 
    */
-  read(uuid) {
-    return this._queueGattOperation(() => (this.scan(uuid))
+  read(uuid, options = {}) {
+    return this._queueGattOperation(() => (this.scan(uuid, options))
       .then(() => {
-        return this.connectGATT(uuid);
+        return this.connectGATT(uuid, options);
       })
       .then(() => {
         return this.dataCharacteristic.readValue();
@@ -1123,10 +1254,10 @@ class Orphe {
    * @param {dataView} array_value write bytes
    * 
    */
-  write(uuid, array_value) {
-    return this._queueGattOperation(() => (this.scan(uuid))
+  write(uuid, array_value, options = {}) {
+    return this._queueGattOperation(() => (this.scan(uuid, options))
       .then(() => {
-        return this.connectGATT(uuid);
+        return this.connectGATT(uuid, options);
       })
       .then(() => {
         const data = Uint8Array.from(array_value);
@@ -1145,9 +1276,9 @@ class Orphe {
    * @param {string} uuid 
    * 
    */
-  startNotify(uuid) {
-    return this._queueGattOperation(() => this.scan(uuid)
-      .then(() => this.connectGATT(uuid))
+  startNotify(uuid, options = {}) {
+    return this._queueGattOperation(() => this.scan(uuid, options)
+      .then(() => this.connectGATT(uuid, options))
       .then(() => this.dataCharacteristic.startNotifications())
       .then(() => {
         this.dataChangedEventHandlerMap[uuid] = this.dataChanged(this, uuid);
@@ -1155,7 +1286,7 @@ class Orphe {
         this.onStartNotify(uuid);
       })
       .catch(error => {
-        console.error('startNotify: Error : ' + error);
+        if (!orpheCoreIsUserCancel(error)) console.error('startNotify: Error : ' + error);
         this._reportError(error);
         throw error;
       }));
@@ -1203,21 +1334,36 @@ class Orphe {
   }
 
   /**
+   * 接続状態を返す（UI 表示用）。
+   * - 'connected'    : GATT 接続中。BleSharedBridge の Secondary（別タブの接続を共有してデータが
+   *                    流れている状態）もここに含める。自前の GATT リンクは持たないが、
+   *                    アプリから見ればデータが届いている＝接続中のため。
+   * - 'reconnecting' : 自動再接続の試行中
+   * - 'connecting'   : begin() による接続処理中
+   * - 'disconnected' : 上記以外
+   * @returns {'disconnected'|'connecting'|'connected'|'reconnecting'}
+   */
+  get connectionState() {
+    if (this.isConnected() || this._isBridgeSecondary) return 'connected';
+    if (this._autoReconnectInProgress) return 'reconnecting';
+    if (this._connecting) return 'connecting';
+    return 'disconnected';
+  }
+
+  /**
    * BLEデバイスとの接続を切断します。デバイス接続をマニュアルで切断する場合には reset() を利用してください。切断だけでなくクラス内のメンバ変数もクリア初期化する必要があり、reset()を利用するとそれらの処理が行われます。
    * 
    */
   disconnect() {
     if (!this.bluetoothDevice) {
-      var error = "No Bluetooth Device";
-      this._reportError(error);
+      this._reportError(orpheCoreError('NO_DEVICE', "No Bluetooth Device"));
       return;
     }
 
     if (this.bluetoothDevice.gatt.connected) {
       this.bluetoothDevice.gatt.disconnect();
     } else {
-      var error = "Bluetooth Device is already disconnected";
-      this._reportError(error);
+      this._reportError(orpheCoreError('ALREADY_DISCONNECTED', "Bluetooth Device is already disconnected"));
       return;
     }
   }
@@ -1225,9 +1371,9 @@ class Orphe {
    * this.device_informationの連想配列形式でデータを渡すことで、コアモジュールのデバイス設定ができます。
    * @param {object} obj 
    */
-  setDeviceInformation(obj) {
+  setDeviceInformation(obj, options = {}) {
     const senddata = new Uint8Array([0x01, obj.lr, obj.led_brightness, 0, obj.rec_auto_run, obj.time01, obj.time02, obj.range.acc, obj.range.gyro]);
-    return this.write('DEVICE_INFORMATION', senddata);
+    return this.write('DEVICE_INFORMATION', senddata, options);
   }
 
   /**
@@ -1236,13 +1382,13 @@ class Orphe {
    * @param {number}[n=3] n - 平均値算出のためのサンプル数
    * @return {object} {sum_round_trip_time, average_round_trip_time, standard_time, adjusted_time, round_trip_times}
    */
-  async syncCoreTime(n = 3) {
+  async syncCoreTime(n = 3, options = {}) {
     let average_round_trip_time = 0;
     let sum_round_trip_time = 0;
     let core_time;
     let round_trip_times = [];
     for (let i = 0; i < n; i++) {
-      core_time = await this.getDateTime();
+      core_time = await this.getDateTime(options);
       sum_round_trip_time += core_time.round_trip_time;
       round_trip_times.push(core_time.round_trip_time);
     }
@@ -1252,7 +1398,7 @@ class Orphe {
     const adjusted_time = parseInt(standard_time + Math.round(average_round_trip_time / 2));
     core_time.date.setTime(adjusted_time);
 
-    await this.setDateTime(core_time.date);
+    await this.setDateTime(core_time.date, options);
     this.half_round_trip_time = Math.round(average_round_trip_time / 2);
     return { sum_round_trip_time, average_round_trip_time, standard_time, adjusted_time, round_trip_times };
 
@@ -1260,7 +1406,7 @@ class Orphe {
   /**
    * [YY, MM, DD, hh, mm, ss, (sub)ss]の配列を渡すことで、コアモジュールの日時設定ができます。
    */
-  async setDateTime(set_date) {
+  async setDateTime(set_date, options = {}) {
     const array = new Uint8Array(7);
     array[0] = set_date.getFullYear() - 2000;
     array[1] = set_date.getMonth() + 1;
@@ -1270,7 +1416,7 @@ class Orphe {
     array[5] = set_date.getSeconds();
     array[6] = parseInt(set_date.getMilliseconds() / 10);
     const senddata = new Uint8Array([array[0], array[1], array[2], array[3], array[4], array[5], array[6]]);
-    await this.write('DATE_TIME', senddata);
+    await this.write('DATE_TIME', senddata, options);
   }
 
   /**
@@ -1310,7 +1456,7 @@ class Orphe {
    * @param {string} str_type
    * @returns {Promise<string>}
    */
-  _beginAsSecondary(bridge, str_type) {
+  async _beginAsSecondary(bridge, str_type) {
     if (this._bridge && this._bridge !== bridge) this._bridge.release();
     this._bridge = bridge;
     this._isBridgeSecondary = true;
@@ -1332,9 +1478,16 @@ class Orphe {
     }
     callbacks.onPrimaryLost = () => this._handlePrimaryLost(str_type);
 
-    bridge.subscribeAsSecondary(callbacks);
+    try {
+      bridge.subscribeAsSecondary(callbacks);
+    } catch (error) {
+      // 購読に失敗したら Secondary 状態を残さない（begin() は code 付き Error で reject する）
+      this._isBridgeSecondary = false;
+      this._bridge = null;
+      throw this._toCoreError(error);
+    }
     this.onConnect('BRIDGE_SECONDARY');
-    return Promise.resolve('done begin(); BRIDGE SECONDARY');
+    return 'done begin(); BRIDGE SECONDARY';
   }
 
   /**
@@ -1882,10 +2035,10 @@ class Orphe {
    * 
    * @returns {Promise<object>} date_timeを連想配列形式{timestamp, data,round_trip_time}で返す。dataにはCOREから直接送信されてきたdataviewが格納されている。round_trip_timeはデータを取得にかかった時間[ms]。
    */
-  async getDateTime() {
+  async getDateTime(options = {}) {
     return new Promise((resolve, reject) => {
       const startTime = performance.now(); // 関数開始時の時間を取得
-      this.read('DATE_TIME').then((data) => {
+      this.read('DATE_TIME', options).then((data) => {
         const endTime = performance.now(); // データの取得が完了したので，時間を記録
         const date = new Date(
           data.getUint8(0) + 2000,
@@ -1915,9 +2068,9 @@ class Orphe {
    * 呼び出すと現在のデバイス設定を取得します。連想配列形式でリターンされます。asyncに対応させているので、awaitを利用して呼び出すことをおすすめします。
    * @returns {Promise<object>} device_informationを連想配列形式で返す
    */
-  async getDeviceInformation() {
+  async getDeviceInformation(options = {}) {
     return new Promise((resolve, reject) => {
-      this.read('DEVICE_INFORMATION').then((data) => {
+      this.read('DEVICE_INFORMATION', options).then((data) => {
         this.array_device_information.setUint8(0, 1);
         this.array_device_information.setUint8(1, data.getUint8(1));
         this.array_device_information.setUint8(2, data.getUint8(4));
@@ -2116,6 +2269,8 @@ const orpheCoreOptionalExports = {
   FixedSizeArray,
   OrpheTimestamp,
   loadScript,
+  orpheCoreError,
+  orpheCoreIsUserCancel,
   orpheCoreGyroRawToDps,
   orpheCoreRangeIndexToValue,
   orpheCoreSerialDistance,

@@ -42,7 +42,7 @@
             e.innerHTML += "<br>";
         }
         function activateNotify() {
-            core.begin("SENSOR_VALUES");
+            core.begin("SENSOR_VALUES").catch(console.error);
             // gotConvertedAcc は実 G 値 (±range G) を返す。
             // 表示用なので正規化値より読みやすいこちらを使用。
             core.gotConvertedAcc = function (acc) {

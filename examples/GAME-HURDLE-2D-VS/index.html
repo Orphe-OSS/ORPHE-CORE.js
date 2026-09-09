@@ -789,7 +789,7 @@
 
         if (connectedDevices === 2) {
           for (let device of bles) {
-            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
+            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES').catch(console.error);
             setupDataCallbacks(device);
           }
         }

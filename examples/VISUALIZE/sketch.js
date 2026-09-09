@@ -574,7 +574,7 @@ function toggleConnect(dom) {
     else {
         const kind = document.querySelector(`#char${id}`).value;
         console.log(id, checked, kind);
-        bles[id].begin(kind);
+        bles[id].begin(kind).catch(console.error);
     }
 }
 

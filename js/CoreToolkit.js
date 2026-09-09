@@ -219,6 +219,33 @@ function guardCoreToolkitBluetooth(options = {}) {
 }
 
 /**
+ * BLE選択ダイアログのキャンセルかどうかを判定する。
+ * 判定本体は ORPHE-CORE.js の orpheCoreIsUserCancel。古い SDK と組み合わせても
+ * 壊れないよう同等のフォールバックを持つ。
+ * キャンセルは失敗ではないので、UI を静かに戻すだけで onError は呼ばない。
+ * @param {*} error
+ * @returns {boolean}
+ */
+function isCoreToolkitUserCancel(error) {
+    if (error && error.code === 'USER_CANCELED') return true;
+    if (typeof orpheCoreIsUserCancel === 'function') return orpheCoreIsUserCancel(error);
+    const message = error && error.message ? error.message : String(error || '');
+    return Boolean(error && error.name === 'NotFoundError') || /cancell?ed|chooser/i.test(message);
+}
+
+/**
+ * begin() などの fire-and-forget 呼び出しに付ける共通の catch。
+ * begin() は v1.5.0 から本物の失敗を reject するため、catch を付けないと
+ * unhandled rejection になる。キャンセルは静かに無視する。
+ * @param {number} no - core_id(0,1)
+ * @param {*} error
+ */
+function reportCoreToolkitError(no, error) {
+    if (isCoreToolkitUserCancel(error)) return;
+    bles[no].onError(error);
+}
+
+/**
  * BLE接続のトグルボタンが切り替わったときに呼び出される関数
  * @param {Element} dom 
  * @param {object} options 
@@ -262,7 +289,8 @@ async function toggleCoreModule(dom, options = {}) {
         } catch (error) {
             document.querySelector(`#switch_ble${number}`).checked = false;
             document.querySelector(`#ui${number}`).style.visibility = 'hidden';
-            ble.onError(error);
+            // キャンセルはユーザの選択。スイッチを戻すだけで onError は呼ばない（従来の静かな挙動を維持）
+            if (!isCoreToolkitUserCancel(error)) ble.onError(error);
             return;
         } finally {
             ble._coreToolkitConnecting = false;
@@ -332,7 +360,7 @@ async function switchCoreBluetoothDevice(no, options = {}) {
     } catch (error) {
         if (sw) sw.checked = false;
         if (uiEl) uiEl.style.visibility = 'hidden';
-        ble.onError(error);
+        if (!isCoreToolkitUserCancel(error)) ble.onError(error);
     }
 }
 
@@ -346,29 +374,25 @@ async function switchCoreBluetoothDevice(no, options = {}) {
  */
 function changeNotify(no, dom) {
     const options = bles[no]._coreToolkitOptions || {};
+    // setTimeout の中の begin() は誰も await しないので、必ず catch を付ける
+    // （begin() は v1.5.0 から本物の失敗を reject するため、無いと unhandled rejection になる）
+    const restartNotify = () => {
+        setTimeout(function () {
+            bles[no].begin(dom.value, options).catch(error => reportCoreToolkitError(no, error));
+        }, 500);
+    };
+    const onStopNotifyError = (error) => reportCoreToolkitError(no, error);
     if (bles[no].notification_type == 'STEP_ANALYSIS') {
-        bles[no].stopNotify('STEP_ANALYSIS').then(() => {
-            setTimeout(function () {
-                bles[no].begin(dom.value, options);
-            }, 500);
-        });
+        bles[no].stopNotify('STEP_ANALYSIS').then(restartNotify).catch(onStopNotifyError);
     }
     else if (bles[no].notification_type == 'SENSOR_VALUES') {
-        bles[no].stopNotify('SENSOR_VALUES').then(() => {
-            setTimeout(function () {
-                bles[no].begin(dom.value, options);
-            }, 500);
-        });
+        bles[no].stopNotify('SENSOR_VALUES').then(restartNotify).catch(onStopNotifyError);
     }
     else if (bles[no].notification_type == 'STEP_ANALYSIS_AND_SENSOR_VALUES') {
-        bles[no].stopNotify('STEP_ANALYSIS').then(() => {
-            bles[no].stopNotify('SENSOR_VALUES').then(() => {
-                setTimeout(function () {
-                    bles[no].begin(dom.value, options);
-                }, 500);
-            });
-        });
-
+        bles[no].stopNotify('STEP_ANALYSIS')
+            .then(() => bles[no].stopNotify('SENSOR_VALUES'))
+            .then(restartNotify)
+            .catch(onStopNotifyError);
     }
 }
 

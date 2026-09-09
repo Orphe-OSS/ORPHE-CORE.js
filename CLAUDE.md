@@ -135,11 +135,16 @@ ble.setup(names, options);
 // interpolation は受け付けるが未実装（予約オプション）。setup() / setup(names) / setup(names, {}) のいずれも可
 
 // Start connection and data streaming
+// 成功 → truthy な文字列 / キャンセル → undefined / 本物の失敗 → error.code を持つ Error で reject
 await ble.begin(notification_type, options);
 // notification_type: 'STEP_ANALYSIS' | 'SENSOR_VALUES' | 'STEP_ANALYSIS_AND_SENSOR_VALUES'
-// options: { range: { acc: 16, gyro: 2000 } }
+// options: { range: { acc: 16, gyro: 2000 }, autoReconnect: false, connectTimeoutMs: 10000 }
 //   acc: 2, 4, 8, 16 (G)
 //   gyro: 250, 500, 1000, 2000 (deg/s)
+//   connectTimeoutMs: opt-in。GATT接続がこのmsを超えたら CONNECT_TIMEOUT で reject（既定なし＝無制限に待つ）
+
+// 接続状態（UI表示用）: 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+ble.connectionState;
 
 // Stop connection
 ble.stop();
@@ -158,6 +163,44 @@ await ble.getDeviceInformation();
 // デバッグログ（接続トラブル調査時）。既定の onConnect / onDisconnect 等の進行ログは debug=true のときだけ出る（onError は常時 console.error）
 ble.debug = true;
 ```
+
+### begin() のエラーモデル（必ず settle する）
+
+`begin()` は **必ず settle** します（v1.5.0）。旧実装は notify 失敗や未知の notification_type で
+Promise が settle せず `await ble.begin()` が永久にハングし、それ以外の失敗も握りつぶして
+`undefined` を resolve していました。
+
+| 結果 | 挙動 |
+|---|---|
+| 成功 | 従来どおり truthy な文字列を resolve（`"done begin(); SENSOR VALUES"` 等） |
+| Bluetooth選択ダイアログのキャンセル | **`undefined`（falsy）を resolve**。失敗ではなくユーザの選択なので `onError` は呼ばない |
+| それ以外の失敗 | **`error.code` を持つ `Error` で reject** |
+
+推奨の書き方:
+
+```javascript
+const ok = await ble.begin('SENSOR_VALUES', { connectTimeoutMs: 10000 }).catch(e => { alert(e.code); return null; });
+if (!ok) return; // キャンセル or 失敗
+```
+
+`onclick="ble.begin(...)"` のような fire-and-forget 呼び出しには **必ず `.catch()` を付けてください**
+（本物の失敗が reject するようになったため、付けないと unhandled rejection になります）。
+
+**エラーコード一覧**（`error.code`。ラップした場合は `error.cause` に元の DOMException 等が入ります）:
+
+| code | 意味 |
+|---|---|
+| `NO_DEVICE` | BluetoothDevice が未選択のまま GATT 操作をした |
+| `CONNECT_TIMEOUT` | `options.connectTimeoutMs` を超えても `gatt.connect()` が返らない |
+| `NOTIFY_FAILED` | `startNotify()` が失敗した（旧実装ではここでハングしていた） |
+| `ALREADY_DISCONNECTED` | すでに切断済みのデバイスに `disconnect()` した |
+| `DUPLICATE_DEVICE` | 同じ CORE を別スロットに割り当てようとした（`error.name` は従来どおり `DuplicateBluetoothDeviceError`） |
+| `UNSUPPORTED_NOTIFICATION` | 未知の notification_type（旧実装ではハングしていた） |
+| `BEGIN_FAILED` | 上記以外の失敗（DOMException などをラップ。元エラーは `error.cause`） |
+
+キャンセルかどうかの判定には `orpheCoreIsUserCancel(error)`（グローバルに公開）が使えます。
+`connectionState` は `'disconnected' | 'connecting' | 'connected' | 'reconnecting'` を返します
+（BleSharedBridge の Secondary はデータが流れている間 `'connected'`）。
 
 ### Data Callbacks - Override these to receive data
 

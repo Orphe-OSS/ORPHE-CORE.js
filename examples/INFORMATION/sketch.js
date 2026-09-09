@@ -14,7 +14,7 @@ async function toggleConnect(dom) {
     // ble
     if (dom.checked) {
         // 初めてつなぐ時はbegin()。beginはawait対応にしといたので、接続後に次の行に移行する
-        await ble.begin('STEP_ANALYSIS');
+        await ble.begin('STEP_ANALYSIS').catch(console.error);
 
         // Get Device Informationボタンをアクティブにする
         document.getElementById('btn_get_info').disabled = false;

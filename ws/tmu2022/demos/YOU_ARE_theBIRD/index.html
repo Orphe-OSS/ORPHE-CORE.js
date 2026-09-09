@@ -10,7 +10,7 @@
 
 <body>
   <h1>YOU ARE the BIRD あなた鳥</h1>
-  <button onclick="ble.begin('RAW');">connect</button>
+  <button onclick="ble.begin('RAW').catch(console.error);">connect</button>
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/ORPHE-CORE.js"
     crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/float16.min.js" crossorigin="anonymous"

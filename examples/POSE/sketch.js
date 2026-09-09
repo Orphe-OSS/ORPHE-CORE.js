@@ -303,7 +303,7 @@ async function toggleCoreModule(dom) {
   let ble = bles[number];
 
   if (checked == true) {
-    let ret = await ble.begin('STEP_ANALYSIS');
+    let ret = await ble.begin('STEP_ANALYSIS').catch(console.error);
     console.log(number);
     setTimeout(async function () {
       var obj = await ble.getDeviceInformation();
@@ -432,7 +432,7 @@ window.onload = function () {
       document.querySelector(`#switch_ble${ble.id}`).checked = false;
       ble.reset();
       alert('接続が切れました');
-      ble.begin();
+      ble.begin().catch(console.error);
     }
   }
 }

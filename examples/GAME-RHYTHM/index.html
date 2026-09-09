@@ -8,7 +8,7 @@
   </head>
   <body>
     <h1>Hello, ORPHE!</h1>
-    <button onclick="ble.begin('SENSOR_VALUES');">connect</button>
+    <button onclick="ble.begin('SENSOR_VALUES').catch(console.error);">connect</button>
     <script
       src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/ORPHE-CORE.js"
       crossorigin="anonymous"

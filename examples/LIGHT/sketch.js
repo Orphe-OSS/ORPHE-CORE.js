@@ -30,7 +30,7 @@ function toggleConnect(dom) {
     // ble
     if (dom.checked) {
         // 初めてつなぐ時はbegin()で
-        bles[dom.value].begin();
+        bles[dom.value].begin().catch(console.error);
         document.querySelector(`#slider${dom.value}`).disabled = false;
         document.querySelector(`#btnradio${dom.value * 6 + 1}`).checked = true;
         for (let i = 0 + 6 * dom.value; i < 6 + 6 * dom.value; i++) {

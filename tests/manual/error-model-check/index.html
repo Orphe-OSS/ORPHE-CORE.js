@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Phase 1c begin() Error Model Check — ORPHE CORE</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1016; --line:#263444; --text:#ecf2f7; --muted:#93a4b4; --accent:#a78bfa; --green:#43e59a; --yellow:#ffbf47; --red:#ff6474; }
+    * { box-sizing: border-box; }
+    body { margin:0; background: radial-gradient(circle at 15% 0%, rgba(167,139,250,.09), transparent 28rem), var(--bg); color: var(--text); font-family: Inter, "Noto Sans JP", system-ui, sans-serif; }
+    .page-width { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    header.app-header { position: sticky; top:0; z-index:20; border-bottom:1px solid var(--line); background: rgba(11,16,22,.94); backdrop-filter: blur(14px); padding:16px 0; }
+    header .page-width { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .eyebrow, .section-label { color: var(--accent); font-size:11px; font-weight:800; letter-spacing:.16em; }
+    h1 { margin:3px 0 0; font-size:21px; } h2 { margin:4px 0 0; font-size:18px; }
+    main { padding:26px 0 64px; }
+    .panel { margin-bottom:18px; padding:22px; border:1px solid var(--line); border-radius:16px; background: linear-gradient(145deg, rgba(20,29,40,.97), rgba(14,22,31,.97)); }
+    .panel p, .section-help { color: var(--muted); margin:8px 0 0; line-height:1.7; }
+    .panel code { color: var(--text); background: rgba(255,255,255,.06); padding:1px 5px; border-radius:4px; }
+    .live { margin-top:12px; color: var(--muted); font:12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    table { width:100%; border-collapse: collapse; font-size:13px; margin-top:12px; }
+    th, td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align: top; }
+    th { color: var(--muted); font-size:10px; letter-spacing:.08em; white-space: nowrap; }
+    td.mono { font:12px ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-word; }
+    td.ok { color: var(--green); font-weight:700; } td.ng { color: var(--red); font-weight:700; } td.warn { color: var(--yellow); font-weight:700; }
+    .empty-row td { color: var(--muted); text-align:center; padding:20px; }
+    button { min-height:40px; border-radius:10px; font:inherit; border:1px solid transparent; padding:0 15px; font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.42; cursor:not-allowed; }
+    .primary-button { color:#120c22; background: var(--accent); } .secondary-button { color: var(--text); border-color: var(--line); background:#172230; } .ghost-button { color: var(--muted); background: transparent; }
+    .row-controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .badge { display:inline-block; padding:6px 10px; border:1px solid var(--line); border-radius:999px; color: var(--muted); font-size:12px; }
+    .badge.ok { color: var(--green); border-color: rgba(67,229,154,.4); } .badge.ng { color: var(--red); border-color: rgba(255,100,116,.4); } .badge.warn { color: var(--yellow); border-color: rgba(255,191,71,.4); }
+    .chip { display:inline-block; margin:4px 4px 0 0; padding:3px 9px; border-radius:999px; background: rgba(167,139,250,.14); color:#d9ccff; font:11px ui-monospace, Menlo, monospace; }
+    .timeline { margin-top:10px; }
+    .event-log { max-height:320px; overflow:auto; border:1px solid var(--line); border-radius:12px; background:#070c11; font:11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; margin-top:12px; }
+    .event-row { display:grid; grid-template-columns:96px 60px 1fr; gap:9px; padding:7px 10px; border-bottom:1px solid rgba(38,52,68,.5); }
+    .event-row time { color: var(--muted); } .event-row.success .level { color: var(--green); } .event-row.warn .level { color: var(--yellow); } .event-row.error .level { color: var(--red); }
+    ol.steps, ul.notes { color: var(--muted); line-height:1.8; margin:10px 0 0; padding-left:1.4em; } ol.steps b, ul.notes b { color: var(--text); }
+    .case-grid { display:grid; gap:10px; grid-template-columns:1fr; margin-top:14px; }
+    @media (min-width:860px) { .case-grid { grid-template-columns:repeat(2,1fr); } }
+    .case { border:1px solid var(--line); border-radius:12px; padding:14px; background: rgba(6,10,15,.5); display:flex; flex-direction:column; gap:8px; }
+    .case h3 { margin:0; font-size:14.5px; } .case p { margin:0; color: var(--muted); font-size:12.5px; line-height:1.6; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="app-header"><div class="page-width">
+    <div><div class="eyebrow">ORPHE CORE / PHASE 1c PHYSICAL DEVICE TEST</div><h1>begin() エラーモデルの実機チェック</h1></div>
+    <span id="state_badge" class="badge">connectionState: —</span>
+  </div></header>
+
+  <main class="page-width">
+    <section class="panel">
+      <span class="section-label">PURPOSE</span>
+      <h2>「必ず settle する」「キャンセルは静か」「失敗は code 付き」の 3 点を確認する</h2>
+      <p>
+        旧 <code>begin()</code> は、SENSOR_VALUES / 両方 の分岐で <code>startNotify()</code> に <code>.catch</code> が無く、
+        notify 失敗や未知の通知種別で <b>Promise が永久に settle せず</b>、<code>await</code> が戻ってきませんでした。
+        また末尾の <code>.catch</code> が本物の失敗を握りつぶして <code>undefined</code> を返していました。
+        v1.5.0 では <b>成功 → 結果文字列</b>／<b>ダイアログのキャンセル → <code>undefined</code>（<code>onError</code> も呼ばない）</b>／
+        <b>本物の失敗 → <code>error.code</code> 付きの reject</b> になります。
+      </p>
+      <p>各ボタンは <b>settle 監視つき</b>で実行され、20 秒たっても戻らない場合は <code>NOT SETTLED</code> として記録します。</p>
+      <ul class="notes">
+        <li><b>D は実機なしで実行できます</b>（未知の通知種別 → 旧実装のハング再現ケース）。最初に押してください</li>
+        <li>A はダイアログが出たら <b>「キャンセル」</b>を押します。赤いエラーが出ず、<code>onError 呼び出し</code> が増えなければ OK</li>
+        <li>C は <b>CORE の電源を切った状態</b>（またはペアリング済みで圏外）で押します。3 秒で <code>CONNECT_TIMEOUT</code> になれば OK</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">1. STATE</span>
+      <h2>connectionState と onError</h2>
+      <p class="section-help"><code>disconnected → connecting → connected</code> と遷移し、切断で <code>disconnected</code> に戻ること（自動再接続が有効なら <code>reconnecting</code>）。</p>
+      <div class="timeline"><span class="section-label">遷移</span><div id="state_timeline"></div></div>
+      <div class="row-controls"><span id="on_error_count" class="badge">onError 呼び出し: 0 回</span></div>
+      <div id="device_summary" class="live">未接続</div>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">2. CASES</span>
+      <h2>テスト</h2>
+      <div class="case-grid">
+        <article class="case">
+          <h3>D. 未知の通知種別（実機不要）</h3>
+          <p>旧実装ではどの分岐にも入らず永久にハング。期待: <code>UNSUPPORTED_NOTIFICATION</code> で reject。</p>
+          <button class="primary-button" data-action="unsupported">D を実行</button>
+        </article>
+        <article class="case">
+          <h3>A. 接続してダイアログをキャンセル</h3>
+          <p>期待: <code>undefined</code> を resolve、<code>onError</code> は 0 回、赤いエラーなし。</p>
+          <button class="primary-button" data-action="cancel">A を実行（→ キャンセル）</button>
+        </article>
+        <article class="case">
+          <h3>B. 接続してデバイスを選択</h3>
+          <p>期待: 結果文字列を resolve、<code>connectionState</code> が <code>connected</code>。</p>
+          <button class="primary-button" data-action="connect">B を実行（→ 選択）</button>
+        </article>
+        <article class="case">
+          <h3>C. タイムアウト付き接続（電源 OFF で）</h3>
+          <p>期待: 3 秒前後で <code>CONNECT_TIMEOUT</code> で reject。ハングしないこと。</p>
+          <button class="primary-button" data-action="timeout">C を実行</button>
+        </article>
+        <article class="case">
+          <h3>E. 切断 → もう一度切断</h3>
+          <p>期待: 1 回目は成功、2 回目は <code>ALREADY_DISCONNECTED</code> で reject。</p>
+          <button class="primary-button" data-action="disconnect">E を実行</button>
+        </article>
+      </div>
+
+      <table>
+        <thead><tr><th>時刻</th><th>テスト</th><th>結果</th><th>経過</th><th>詳細 / code</th><th>onError</th><th>判定</th></tr></thead>
+        <tbody id="results_body"><tr class="empty-row"><td colspan="7">まだ結果はありません</td></tr></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">3. REGRESSION</span>
+      <h2>通常ページの回帰確認</h2>
+      <p class="section-help">
+        CoreToolkit 経由の通常の使い方が壊れていないことも確認します。別タブで
+        <a href="../../../examples/VISUALIZE/" target="_blank" rel="noopener">examples/VISUALIZE</a> を開き、
+        <b>接続 → データ表示 → 通知種別の変更 → 切断</b>を一通り操作して、コンソールに
+        <code>Uncaught (in promise)</code> が出ないことを見てください（ダイアログをキャンセルしても静かなこと）。
+      </p>
+    </section>
+
+    <section class="panel">
+      <span class="section-label">LOG</span>
+      <h2>イベントログ</h2>
+      <div class="row-controls">
+        <button id="copy_log_button" class="secondary-button">ログをコピー</button>
+        <button id="clear_log_button" class="ghost-button">ログ消去</button>
+      </div>
+      <div id="event_log" class="event-log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="../../../js/ORPHE-CORE.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -621,6 +621,18 @@ class Orphe {
     // Deprecated開始: 2024/05/25
     // ----------------------------------------------
 
+    // 通知種別の検証は I/O の前に行う（fail fast）。ここを後ろに置くと、綴り間違いでも
+    // 選択ダイアログが開き、ユーザがデバイスを選ぶまでエラーが分からない。
+    const notification = ORPHE_CORE_BEGIN_NOTIFICATIONS[str_type];
+    if (!notification) {
+      const error = orpheCoreError(
+        'UNSUPPORTED_NOTIFICATION',
+        `Unsupported notification type: ${str_type}. Use one of ${Object.keys(ORPHE_CORE_BEGIN_NOTIFICATIONS).join(', ')}.`
+      );
+      this._reportError(error);
+      throw error;
+    }
+
 
     const {
       range = { acc: -1, gyro: -1 },
@@ -673,14 +685,8 @@ class Orphe {
 
       // ここで実際にnotifyを開始しています．
       // 旧実装は notification_type ごとの if/else 内で startNotify() を .catch なしで呼んでいたため、
-      // notify 失敗や未知の str_type で Promise が settle せず await が永久にハングしていた。
-      const notification = ORPHE_CORE_BEGIN_NOTIFICATIONS[str_type];
-      if (!notification) {
-        throw orpheCoreError(
-          'UNSUPPORTED_NOTIFICATION',
-          `Unsupported notification type: ${str_type}. Use one of ${Object.keys(ORPHE_CORE_BEGIN_NOTIFICATIONS).join(', ')}.`
-        );
-      }
+      // notify 失敗で Promise が settle せず await が永久にハングしていた（未知の str_type も同様。
+      // そちらは上の fail fast 検証で I/O 前に弾く）。
       for (const notifyUuid of notification.uuids) {
         try {
           await this.startNotify(notifyUuid, options);

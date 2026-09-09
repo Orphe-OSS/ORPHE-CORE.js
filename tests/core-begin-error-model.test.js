@@ -126,6 +126,18 @@ async function assertRejects(promise, label) {
     assert.equal(errors.length, 1, 'onError is called once');
     assert.equal(errors[0].code, 'UNSUPPORTED_NOTIFICATION');
   }
+  // 種別の検証は I/O の前（fail fast）。後ろに置くと、綴り間違いでも選択ダイアログが開き、
+  // ユーザがデバイスを選ぶまでエラーが分からない（実機ページで実際に踏んだ）。
+  {
+    const { core } = makeCore();
+    let scanCalls = 0;
+    const originalScan = core.scan.bind(core);
+    core.scan = (...args) => { scanCalls += 1; return originalScan(...args); };
+    await assertRejects(core.begin('NOT_A_REAL_TYPE'), "begin('NOT_A_REAL_TYPE') before I/O");
+    assert.equal(scanCalls, 0, 'the device chooser (scan) must not run for an unknown type');
+    assert.equal(core.connectionState, 'disconnected', 'a rejected begin() leaves connectionState disconnected');
+    assert.equal(core.notification_type, undefined, 'an invalid type must not be recorded as notification_type');
+  }
 
   // ── startNotify の失敗は 3 種すべてで NOTIFY_FAILED（旧実装のハング回帰） ──────
   const STEP_ANALYSIS_UUID = '4eb776dc-cf99-4af7-b2d3-ad0f791a79dd';

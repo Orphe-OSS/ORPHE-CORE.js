@@ -79,6 +79,36 @@ async function main() {
     await assert.rejects(() => target.setDataStreamingMode('x'), /Invalid ORPHE INSOLE data streaming mode/);
   }
 
+  // ── 公開APIサーフェスの回帰チェック（v1.0.0 からの非意図的削除を防ぐ） ──
+  {
+    const publicMethods = [
+      // v1.0.0 から存在する公開メソッド
+      'setup', 'setUUID', 'begin', 'stop', 'reset', 'clear', 'disconnect', 'isConnected',
+      'scan', 'requestDevice', 'connectGATT', 'read', 'write', 'startNotify', 'stopNotify',
+      'setDataStreamingMode', 'setDeviceInformation', 'getDeviceInformation',
+      'getDateTime', 'setDateTime', 'syncCoreTime', 'resetAnalysisLogs',
+      'autoStartWatchingAdvertisements', 'startWatchingAdvertisements',
+      'stopWatchingAdvertisements', 'connectToNotifications', 'onAdvertisementReceived',
+      'isGotDataOverridden',
+      // v1.0.0 から存在するコールバックプロトタイプ
+      'gotData', 'gotStatus', 'gotPress', 'gotQuat', 'gotGyro', 'gotAcc',
+      'gotConvertedGyro', 'gotConvertedAcc', 'gotDelta', 'gotEuler',
+      'gotGait', 'gotType', 'gotDirection', 'gotCalorie', 'gotDistance',
+      'gotStandingPhaseDuration', 'gotSwingPhaseDuration', 'gotStride', 'gotFootAngle',
+      'gotPronation', 'gotLandingImpact', 'gotStepsNumber', 'gotBLEFrequency', 'lostData',
+      'onScan', 'onConnectGATT', 'onConnect', 'onWrite', 'onStartNotify', 'onStopNotify',
+      'onDisconnect', 'onAdvertisement', 'onClear', 'onReset', 'onError', 'onRead',
+      // v1.1.0 で追加した公開メソッド/コールバック
+      'selectBluetoothDevice', 'forgetLastBluetoothDevice',
+      'onReconnectAttempt', 'onReconnectSuccess', 'onReconnectFailed',
+    ];
+    for (const name of publicMethods) {
+      assert.equal(typeof OrpheInsole.prototype[name], 'function',
+        `public API missing: ${name}`);
+    }
+    assert.equal(typeof OrpheInsole.parseSensorValues, 'function');
+  }
+
   // ── 既存パーサが壊れていないこと（スモーク） ───────────────────
   {
     const data = new DataView(new ArrayBuffer(104));

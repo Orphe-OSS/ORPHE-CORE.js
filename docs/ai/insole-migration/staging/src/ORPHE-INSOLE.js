@@ -989,6 +989,32 @@ class OrpheInsole {
   }
 
   /**
+   * Notificationに接続する処理を実行
+   * @deprecated begin() が同等の処理を行うため通常は不要です。後方互換のために残しています。
+   */
+  async connectToNotifications() {
+    try {
+      console.log('Connecting to notifications...');
+
+      // SENSOR_VALUESのnotificationを開始
+      await this.startNotify('SENSOR_VALUES');
+      console.log('Connected to SENSOR_VALUES notifications');
+
+      // STEP_ANALYSISのnotificationを開始（オプション）
+      try {
+        await this.startNotify('STEP_ANALYSIS');
+        console.log('Connected to STEP_ANALYSIS notifications');
+      } catch (error) {
+        console.warn('STEP_ANALYSIS notification not available:', error.message);
+      }
+
+    } catch (error) {
+      console.error('Failed to connect to notifications:', error);
+      throw error;
+    }
+  }
+
+  /**
    * アドバタイズメント監視を停止
    */
   stopWatchingAdvertisements() {

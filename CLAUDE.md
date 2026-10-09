@@ -7,7 +7,7 @@ ORPHE COREは足装着型IoTセンサーモジュールです。このガイド�
 ```
 ORPHE-CORE.js/
 ├── js/                         # Core libraries (REQUIRED)
-│   ├── ORPHE-CORE.js          # Main SDK (v1.4.1, ~2000 lines)
+│   ├── ORPHE-CORE.js          # Main SDK (v1.4.2, ~2000 lines)
 │   ├── CoreToolkit.js         # Connection UI toolkit
 │   ├── quaternion.js          # Quaternion math (auto-loaded)
 │   └── float16.min.js         # Float16 support (auto-loaded)
@@ -583,13 +583,13 @@ main への push と pull_request で実行します（`npm audit --audit-level=
 
 examples / README / index.html の CDN 参照は**バージョン固定**（`@vX.Y.Z`）です。
 `tests/core-version-sync.test.js` が package.json の `version`・`js/ORPHE-CORE.js` ヘッダの `@version`・
-`CITATION.cff`・README の「Current version」行・公開ファイル内の全 jsDelivr 自己参照の一致を検証します
+`CITATION.cff`・README の「Current version」行・CLAUDE.md の Project Overview（`# Main SDK (vX.Y.Z`）・公開ファイル内の全 jsDelivr 自己参照の一致を検証します
 （更新漏れや `@latest` / `@main` への退行は CI で落ちる）。
 
 1. `package.json` の `version` を上げる
 2. `node scripts/pin-cdn-version.js vX.Y.Z` — 公開ファイル内の jsDelivr 自己参照を新バージョンに一括書き換え（`sed` 手作業は不要）
 3. `js/ORPHE-CORE.js` ヘッダの `@version`（と履歴行）、`CITATION.cff` の `version:` / `date-released:`、
-   README の「Current version」行、CLAUDE.md の Version History を更新
+   README の「Current version」行、CLAUDE.md の Project Overview の版表記と Version History を更新
 4. CHANGELOG.md の `[Unreleased]` を `[X.Y.Z] - 日付` に確定し、新しい空の `[Unreleased]` を作る
 5. `npm test`（core-version-sync が通ること）→ PR
 6. マージ後**すぐに** `git tag vX.Y.Z` を push し、GitHub Release を作成する。examples は固定 URL（`@vX.Y.Z`）を

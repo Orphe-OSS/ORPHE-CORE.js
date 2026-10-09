@@ -1,6 +1,6 @@
 # In-flight Work
 
-Last updated: 2026-05-03 (Claude Tier 1 reconstruction sprint)
+Last updated: 2026-10-09 (Claude: sports-site Phase 1 row added. Rows dated 2026-05 are older than 24 h and have no active PR → stale per the rule below; left as-is for history.)
 
 This file is a lightweight coordination board for humans, Codex, and Claude. It is not a changelog. Keep it short and update it before starting or ending a multi-file task.
 
@@ -18,6 +18,7 @@ This file is a lightweight coordination board for humans, Codex, and Claude. It 
 
 | Agent | Branch | Purpose | Files / Areas | Status | Last Update | Notes |
 |---|---|---|---|---|---|---|
+| Claude (Code, MacBook Air) | claude/sports-site-phase1 | Phase 1 of the sports-site plan (AI-Workspace T98): align current docs with implementation — GAME-BOXING units (G) / explicit demo mode / calibration naming, GAME-PINGPONG validation state vs catalog, CLAUDE.md version line, tutorial placeholder link, ws/tmu2025 time wording, license layering, new device-validation log | `examples/GAME-BOXING/*`, `examples/GAME-PINGPONG/README.md`, `examples/catalog.json` (game-pingpong entry + needs_fix resolutions only), `docs/device-validation-log.md`, `docs/consistency-review-2026-10.md`, `CLAUDE.md` (Project Overview line + release steps), `README.md` (examples/assets license paragraph), `tutorial/index.html`, `ws/tmu2025/index.html`, `tests/core-version-sync.test.js`, `tests/example-boxing-units.test.js`, `package.json` (`test:examples`), `.github/workflows/ci.yml`, `docs/in-flight.md` | active | 2026-10-09 11:10 JST | Worktree `.claude/worktrees/sports-site-phase1` based on origin/main. Does NOT touch `js/ORPHE-CORE.js`, `js/CoreToolkit.js`, CHANGELOG (PR #137 / #138, branch `feat/begin-error-model`). No real-device validation performed; sensitivity-affecting change (boxing acc range ±16 G) flagged for owner check. New participant site lives in a separate local repo `orphe-sports-lab`. |
 | Codex | codex/examples-static-quality-audit | Static quality audit and safe checks for existing examples | `scripts/check-examples-static-quality.js`, `docs/examples-static-quality-audit.md`, `docs/in-flight.md` | merged | 2026-05-03 00:05 JST | No real-device claims. Focus on public/public-candidate example quality, links, thumbnails, titles, CoreToolkit bridge, and catalog consistency. |
 | Claude | claude/research-imu-competitors-yWYtf | IMU competitor research and lesson concept | `docs/ai/` research docs | reference | 2026-05-02 23:35 JST | Research should inform roadmap, not directly edit core SDK. |
 | Claude | claude/lessons-tier1-draft | Tier 1 lesson plans (45-min class drafts) | `docs/lessons/*` | active | 2026-05-03 JST | 6 lessons: Step Count Dashboard / Stride & Cadence / L/R Symmetry / CSV Recorder / Replay Player / Vertical Jump (CMJ). No core SDK or catalog edits. |

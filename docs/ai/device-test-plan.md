@@ -237,7 +237,7 @@ URL: `/examples/GAME-HURDLE/`
 - [ ] localStorage に `hurdle.localRankings` が永続化
 - [ ] (任意) `ranking-frozen.json` に legend データを入れて表示
 
-> **重要**: 旧 Firebase credential `AIzaSyDimrSblIDOusCS6fXwrTE_qLGN0qjYLRY` (project `orphecorejsgamehurdle`) は git history に残っているため、Firebase コンソールで:
+> **重要**: 旧 Firebase 設定値（値はここには記載しない）は git history に残っているため、Firebase コンソールで:
 >
 > - API key を **rotate (再発行)** または revoke
 > - Firestore Security Rules を厳格化

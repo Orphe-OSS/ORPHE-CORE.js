@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <title>Kick Challenge — ORPHE CORE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../css/custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link href="./style.css" rel="stylesheet">
+  <script src="../../js/site-analytics.js"></script>
+</head>
+
+<body class="op-body">
+  <header class="op-header">
+    <div class="container-fluid op-container d-flex flex-wrap align-items-center gap-3 py-2">
+      <a class="op-brand" href="./">
+        <img src="../../images/orphe_black.svg" alt="ORPHE" height="24">
+      </a>
+      <div id="toolkit_placeholder" class="d-flex flex-wrap gap-3 ms-auto align-items-center"></div>
+    </div>
+  </header>
+
+  <main class="container-fluid op-container py-3">
+    <div id="ble-support-message" class="alert alert-warning" style="display:none;">
+      このブラウザでは Web Bluetooth が使えません。Chrome / Edge で開くと ORPHE CORE を接続できます。
+    </div>
+
+    <div class="op-layout">
+    <div class="op-card">
+      <div class="op-toolbar">
+        <button id="btn_camera" class="btn btn-sm btn-dark"><i class="bi bi-camera-video"></i> カメラ開始</button>
+        <select id="sel_camera" class="form-select form-select-sm op-select" title="カメラ"></select>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="chk_mirror" checked>
+          <label class="form-check-label small" for="chk_mirror">ミラー</label>
+        </div>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="chk_sound" checked>
+          <label class="form-check-label small" for="chk_sound">サウンド</label>
+        </div>
+        <button id="btn_rec" class="btn btn-sm op-rec ms-auto" title="記録（R キー）: 画面・カメラ映像・CORE 生データ・姿勢・ゲームの判定を zip で保存"><span class="op-rec-dot"></span><span data-rec-label>REC</span></button>
+        <button id="btn_fullscreen" class="btn btn-sm btn-outline-dark" title="全画面"><i class="bi bi-arrows-fullscreen"></i></button>
+      </div>
+
+      <div class="op-toolbar">
+        <button id="btn_game" class="btn btn-sm kick-start"><i class="bi bi-play-fill"></i> ゲーム開始</button>
+        <label class="kick-range">
+          <span>ゲージ <b id="lbl_threshold">6.0</b> G</span>
+          <input type="range" class="form-range" id="rng_threshold" min="2" max="12" step="0.5" value="6">
+        </label>
+        <label class="kick-range">
+          <span>キック検出 <b id="lbl_trigger">2.0</b> G</span>
+          <input type="range" class="form-range" id="rng_trigger" min="1.2" max="6" step="0.1" value="2">
+        </label>
+      </div>
+
+      <div id="stage" class="op-stage kick-stage">
+        <canvas id="game_canvas"></canvas>
+        <span id="rec_indicator" class="op-rec-indicator" title="記録中"></span>
+        <div id="stage_message" class="op-stage-message">
+          <i class="bi bi-camera-video"></i>
+          <p>「カメラ開始」で全身が映る位置に立ち、右足を上げるとゲームが始まります</p>
+        </div>
+      </div>
+      <p class="op-note">
+        右足を上げるとゲームスタート。ボールが前から飛んでくるので、足を円に合わせて、画面の指示どおり「弱く」「強く」蹴り返すキックゲームです。
+        キックの強さは ORPHE CORE の加速度で判定し、ゲージのラインより下なら「弱く」、上なら「強く」が成功。10 球でスコアが出ます。
+        REC（R キー）で画面・カメラ映像・CORE 生データ・姿勢・判定を記録し、zip で保存します。
+      </p>
+    </div>
+
+      <!-- ORPHE CORE の値（右に縦 2 つ） -->
+      <aside id="core_panels" class="op-cores"></aside>
+    </div>
+  </main>
+
+  <template id="core_panel_template">
+    <div class="op-card op-core" data-core>
+      <div class="op-core-head">
+        <span class="op-core-dot" data-field="dot"></span>
+        <b data-field="title">CORE</b>
+        <span class="op-core-name" data-field="name">未接続</span>
+        <select class="form-select form-select-sm op-select ms-auto" data-field="side" title="この CORE を装着している足">
+          <option value="L">左足</option>
+          <option value="R">右足</option>
+        </select>
+      </div>
+      <canvas class="op-chart" data-field="chart" height="90"></canvas>
+      <div class="op-legend"><span class="lx">acc x</span><span class="ly">acc y</span><span class="lz">acc z</span><span class="ms-auto" data-field="hz">0 Hz</span></div>
+      <table class="op-table">
+        <thead><tr><th></th><th>X</th><th>Y</th><th>Z</th></tr></thead>
+        <tbody>
+          <tr><th>Acc [G]</th><td data-v="acc.x"></td><td data-v="acc.y"></td><td data-v="acc.z"></td></tr>
+          <tr><th>Gyro [°/s]</th><td data-v="gyro.x"></td><td data-v="gyro.y"></td><td data-v="gyro.z"></td></tr>
+          <tr><th>Euler [°]</th><td data-v="euler.pitch" title="pitch"></td><td data-v="euler.roll" title="roll"></td><td data-v="euler.yaw" title="yaw"></td></tr>
+          <tr><th>Quat</th><td colspan="3" data-v="quat" title="w / x / y / z"></td></tr>
+          <tr><th>Stride [m]</th><td data-v="stride.x"></td><td data-v="stride.y"></td><td data-v="stride.z"></td></tr>
+          <tr><th>Pronation</th><td data-v="pronation.x"></td><td data-v="pronation.y"></td><td data-v="pronation.z"></td></tr>
+        </tbody>
+      </table>
+      <div class="op-kv">
+        <div><span>Steps</span><b data-v="steps"></b></div>
+        <div><span>Gait</span><b data-v="gait.type"></b></div>
+        <div><span>Direction</span><b data-v="gait.direction"></b></div>
+        <div><span>Foot Angle</span><b data-v="footAngle"></b></div>
+        <div><span>Impact</span><b data-v="impact"></b></div>
+        <div><span>Distance</span><b data-v="gait.distance"></b></div>
+      </div>
+    </div>
+  </template>
+
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="../../js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="./core.js"></script>
+  <script type="module" src="./game.js"></script>
+</body>
+
+</html>

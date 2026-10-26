@@ -129,7 +129,7 @@
     },
     pose: {
       title: 'Pose + ORPHE CORE',
-      value: 'MediaPipe PoseとORPHE COREのデータを組み合わせます。'
+      value: 'カメラの姿勢推定（ボーン）とORPHE COREのセンサー値を並べて表示します。'
     },
     oh1: {
       title: 'OH1 Heart Rate',
@@ -154,6 +154,10 @@
     'game-hurdle-400m-vs': {
       title: '400mハードル走 VS',
       value: '2台のORPHE COREで走りとジャンプを競う対戦Exampleです。'
+    },
+    'game-kick-challenge': {
+      title: 'キックチャレンジ',
+      value: '前から飛んでくるボールを、画面の指示どおり「弱く」「強く」蹴り返すキックゲームです。'
     },
     'game-udon': {
       title: 'うどんふみふみゲーム',

@@ -23,7 +23,13 @@
                     <button id="connectRight" class="connect-btn">接続</button>
                 </div>
             </div>
+            <div class="demo-mode">
+                <button id="demoBtn" class="demo-btn" type="button">説明用モード（擬似データ）を開始</button>
+                <span class="demo-note">ORPHE COREがなくても画面の動きを確認できます。擬似データは実測ではなく、基準の測定・スコアには使われません。</span>
+            </div>
         </header>
+
+        <div class="demo-banner" id="demoBanner" hidden>説明用モード：擬似データを表示中です（実測ではありません）。ORPHE COREを接続すると自動で終了します。</div>
 
         <main class="game-main">
             <!-- ゲーム画面 -->
@@ -54,7 +60,7 @@
                     
                     <div class="punch-power">
                         <div class="power-bar">
-                            <div class="power-label">パンチ力</div>
+                            <div class="power-label">パンチの勢い（基準比）</div>
                             <div class="power-meter">
                                 <div class="power-fill" id="powerFill"></div>
                             </div>
@@ -94,7 +100,7 @@
                         <div class="stats-value" id="hitRate">0%</div>
                     </div>
                     <div class="stats-item">
-                        <div class="stats-label">平均パンチ力</div>
+                        <div class="stats-label">平均ピーク加速度 (G)</div>
                         <div class="stats-value" id="avgPower">0</div>
                     </div>
                 </div>
@@ -108,9 +114,9 @@
                         <canvas id="leftChart"></canvas>
                     </div>
                     <div class="sensor-values" id="leftValues">
-                        <div>加速度: <span id="leftAccel">-</span> m/s²</div>
+                        <div>加速度: <span id="leftAccel">-</span> G</div>
                         <div>ジャイロ: <span id="leftGyro">-</span> °/s</div>
-                        <div>合成加速度: <span id="leftResultant">-</span> m/s²</div>
+                        <div>合成加速度: <span id="leftResultant">-</span> G</div>
                     </div>
                 </div>
                 
@@ -120,9 +126,9 @@
                         <canvas id="rightChart"></canvas>
                     </div>
                     <div class="sensor-values" id="rightValues">
-                        <div>加速度: <span id="rightAccel">-</span> m/s²</div>
+                        <div>加速度: <span id="rightAccel">-</span> G</div>
                         <div>ジャイロ: <span id="rightGyro">-</span> °/s</div>
-                        <div>合成加速度: <span id="rightResultant">-</span> m/s²</div>
+                        <div>合成加速度: <span id="rightResultant">-</span> G</div>
                     </div>
                 </div>
             </div>
@@ -130,10 +136,10 @@
             <!-- ゲームコントロール -->
             <div class="game-controls">
                 <div class="calibration-section">
-                    <h3>キャリブレーション</h3>
-                    <button id="calibrateBtn" class="control-btn">最大速度測定</button>
+                    <h3>基準の測定（キャリブレーション）</h3>
+                    <button id="calibrateBtn" class="control-btn">基準を測る（5秒・最大合成加速度）</button>
                     <div class="calibration-status">
-                        <div>基準値: <span id="baselineValue">未測定</span></div>
+                        <div>基準値（最大合成加速度）: <span id="baselineValue">未測定</span> G</div>
                         <div>測定状況: <span id="calibrationStatus">待機中</span></div>
                     </div>
                 </div>
@@ -161,14 +167,14 @@
                         <span id="comboIntervalValue">600</span> ms
                     </div>
                     <div class="setting-item">
-                        <label for="lowerThreshold">下限閾値:</label>
+                        <label for="lowerThreshold">下限閾値（現在の判定では未使用）:</label>
                         <input type="range" id="lowerThreshold" min="1" max="5" value="2" step="0.1">
-                        <span id="lowerThresholdValue">2.0</span> m/s²
+                        <span id="lowerThresholdValue">2.0</span> G
                     </div>
                     <div class="setting-item">
-                        <label for="upperThreshold">上限閾値:</label>
-                        <input type="range" id="upperThreshold" min="5" max="30" value="15" step="0.5">
-                        <span id="upperThresholdValue">15.0</span> m/s²
+                        <label for="upperThreshold">上限閾値（パンチ判定）:</label>
+                        <input type="range" id="upperThreshold" min="5" max="16" value="15" step="0.5">
+                        <span id="upperThresholdValue">15.0</span> G
                     </div>
                     <div class="setting-item">
                         <label for="gameTime">楽曲ノーツ数:</label>

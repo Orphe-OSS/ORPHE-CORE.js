@@ -485,10 +485,10 @@
       "audience": ["game-player"],
       "value": "Simple competitive game concept using ORPHE input.",
       "topics": ["game", "two-player"],
-      "data": ["euler", "convertedAcc"],
+      "data": ["euler"],
       "devices": 2,
-      "validation": ["existing-public-link", "thumbnail-exists", "needs-device-verification"],
-      "issues": ["test.html has a broken local SDK path; fix is proposed in PR #40"],
+      "validation": ["existing-public-link", "thumbnail-exists", "real-device-validated", "see docs/device-validation-log.md (2026-08-14, PR #119)"],
+      "issues": [],
       "category": "playable-app",
       "difficulty": "beginner",
       "featured": true,
@@ -500,7 +500,7 @@
       },
       "requires_device": true,
       "device_count": 2,
-      "needs_real_device_validation": true,
+      "needs_real_device_validation": false,
       "public_navigation": "featured"
     },
     {
@@ -1344,19 +1344,19 @@
       "path": "examples/GAME-MARIO/test.html",
       "issue": "References ../js/ORPHE-CORE.js from a nested example directory.",
       "suggested_fix": "Use ../../js/ORPHE-CORE.js or the CDN script.",
-      "resolution": "proposed in PR #40 (chore/fix-broken-test-html-paths)"
+      "resolution": "fixed (PR #40 merged; file now loads ../../js/ORPHE-CORE.js — re-checked 2026-10-09)"
     },
     {
       "path": "examples/GAME-PINGPONG/test.html",
       "issue": "References ../js/ORPHE-CORE.js from a nested example directory.",
       "suggested_fix": "Use ../../js/ORPHE-CORE.js or the CDN script.",
-      "resolution": "proposed in PR #40 (chore/fix-broken-test-html-paths)"
+      "resolution": "fixed (PR #40 merged; file now loads ../../js/ORPHE-CORE.js — re-checked 2026-10-09)"
     },
     {
       "path": "examples/GAME-SHOOTING/test.html",
       "issue": "References ../js/ORPHE-CORE.js from a nested example directory.",
       "suggested_fix": "Use ../../js/ORPHE-CORE.js or the CDN script.",
-      "resolution": "proposed in PR #40 (chore/fix-broken-test-html-paths)"
+      "resolution": "fixed (PR #40 merged; file now loads ../../js/ORPHE-CORE.js — re-checked 2026-10-09)"
     },
     {
       "path": "examples/p5.ORPHE.FSR_visualise_0327_submit/index.html",

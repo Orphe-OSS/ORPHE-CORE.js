@@ -10,6 +10,7 @@
   "license": "SEE LICENSE IN LICENSE.md",
   "scripts": {
     "generate-docs": "jsdoc --configure jsdoc.json --verbose",
+    "test:examples": "node tests/example-boxing-units.test.js",
     "lint": "eslint .",
     "test": "node --check js/ORPHE-CORE.js && node tests/core2-header40-parse.test.js && node tests/core-gyro-scale.test.js && node tests/core-quat-normalize-header50.test.js && node tests/core-header50-sample-timestamps.test.js && node tests/core-acc-range-mapping.test.js && node tests/core-version-sync.test.js && node tests/core-serial-gap.test.js && node tests/core-setup-options.test.js && node tests/core-disconnect-handler.test.js && node tests/core-debug-gate.test.js"
   },

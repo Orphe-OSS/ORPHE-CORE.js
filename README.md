@@ -75,6 +75,16 @@ ORPHE-CORE.js v1.4.0以降は、教育・ワークショップ、大学・研究
 
 詳細は [LICENSE.md](./LICENSE.md) を参照してください。v1.3.xまでの既存公開済みバージョンは、その公開時点で適用されていた条件に従って利用できます。
 
+### Examples・素材の利用条件について / Scope of the policy for examples and assets
+
+上記の利用方針が適用されるのは **ORPHE-CORE.js 本体（`js/` のライブラリ）** です。`examples/`・`ws/` に含まれるものは、次のように適用範囲が分かれます。
+
+* **各 example のゲーム独自コード**: 特記がない限り本ライブラリと同じ利用方針に従います。example の README に別のライセンス表記がある場合はその表記が優先されます（例: `examples/GAME-BOXING/` は作者が MIT と記載）。
+* **同梱の第三者ライブラリ**（Chart.js、p5.js、Three.js、MediaPipe など）: それぞれのライセンスに従います。
+* **画像・音・フォントなどの素材、および `ws/` の学生作品**: 各作品・素材の作者の条件に従います。SDK の利用方針が自動的に適用されるものではありません。
+
+The usage policy above applies to **the ORPHE-CORE.js library itself** (`js/`). Game-specific code in `examples/` follows the same policy unless the example's README states otherwise (e.g. `examples/GAME-BOXING/` is marked MIT by its author); bundled third-party libraries keep their own licenses; images, sounds, fonts and the student works under `ws/` remain under their authors' terms and are not covered by the SDK policy.
+
 ## Version
 機能追加でマイナーバージョンアップを行います。バグフィックスやリファクタリングはパッチバージョンアップとします。
 

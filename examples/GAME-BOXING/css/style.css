@@ -850,4 +850,50 @@ body {
         transform: translateY(-100px) scale(0);
         opacity: 0;
     }
-} 
+}
+/* 説明用モード（擬似データ）: 実測と混同しないための明示的な開始ボタンとバナー */
+.demo-mode {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.demo-btn {
+    padding: 8px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    background: transparent;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.demo-btn.active {
+    background: #ffeb3b;
+    border-color: #ffeb3b;
+    color: #1a1a2e;
+}
+
+.demo-note {
+    font-size: 0.85em;
+    opacity: 0.85;
+    max-width: 640px;
+    text-align: center;
+}
+
+.demo-banner {
+    margin: 0 20px 10px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: #ffeb3b;
+    color: #1a1a2e;
+    font-weight: bold;
+    text-align: center;
+}
+
+.demo-banner[hidden] {
+    display: none;
+}

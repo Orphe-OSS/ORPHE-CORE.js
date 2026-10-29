@@ -18,6 +18,18 @@ v1.0 2021/05/01
 @see https://github.com/Orphe-OSS/ORPHE-CORE.js
 */
 
+// ── ライブラリ本体 ────────────────────────────────────────────────
+// ORPHE-INSOLE.js と同一ページで共存できるよう、class / const / function をトップレベルに置かず IIFE で包む
+// （v1.5.0）。トップレベルの class / const 宣言はグローバルなレキシカル束縛を作るため、同名の宣言を持つ
+// 別スクリプトとの衝突や、同じファイルの 2 回読み込みで SyntaxError（重複宣言）になっていた。
+// 公開 API は末尾で global（window）へプロパティとして公開する:
+//   - `Orphe` は常に CORE を指す（INSOLE の後方互換エイリアスより優先。ただし CORE 自身が公開済みなら差し替えない）
+//   - FixedSizeArray / OrpheTimestamp / 換算ヘルパは未定義のときだけ公開（INSOLE は同一実装を持つ）
+//   - Node では module.exports にも公開する（テスト・ツール用）
+// `orphe_js_version_date`（CoreToolkit が参照）はこれまでどおり var のグローバルに置く。
+(function (global) {
+
+
 // 外部スクリプトを読み込む関数
 // 同じ src / 同じファイル名の <script> が既に DOM に挿入されていれば skip。
 function loadScript(src) {
@@ -48,10 +60,13 @@ function _orpheAutoLoadOptionalLibs() {
   loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/float16.min.js');
   loadScript('https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/quaternion.js');
 }
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _orpheAutoLoadOptionalLibs, { once: true });
-} else {
-  _orpheAutoLoadOptionalLibs();
+// Node / テスト（document 無し）では読み込まない
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _orpheAutoLoadOptionalLibs, { once: true });
+  } else {
+    _orpheAutoLoadOptionalLibs();
+  }
 }
 
 
@@ -2084,3 +2099,35 @@ class Orphe {
   //一般開発ユーザからアクセス可能な関数の定義ここまで
   //--------------------------------------------------
 }
+
+
+// ── グローバル公開 ─────────────────────────────────────────────
+// `Orphe` は ORPHE-CORE.js が所有する名前。ORPHE-INSOLE.js が先に読み込まれて後方互換の `Orphe`
+// エイリアス（= OrpheInsole）を置いていても、CORE が読み込まれた時点で CORE を指すようにする。
+// ただし既に CORE 自身（SDK マーカー付き）が公開済みなら差し替えない
+// （同じファイルを 2 回読み込んでも、先に作られたインスタンスの instanceof が壊れない）。
+Orphe.SDK = 'ORPHE-CORE.js';
+if (!global.Orphe || global.Orphe.SDK !== 'ORPHE-CORE.js') {
+  global.Orphe = Orphe;
+}
+// 補助クラス・換算ヘルパは、他のスクリプトが先に公開していれば上書きしない
+// （ORPHE-INSOLE.js は FixedSizeArray / OrpheTimestamp の同一実装を持つ）。
+const orpheCoreOptionalExports = {
+  FixedSizeArray,
+  OrpheTimestamp,
+  loadScript,
+  orpheCoreGyroRawToDps,
+  orpheCoreRangeIndexToValue,
+  orpheCoreSerialDistance,
+  ORPHE_CORE_GYRO_DPS_PER_LSB_PER_RANGE,
+  ORPHE_CORE_ACC_RANGE_G,
+  ORPHE_CORE_GYRO_RANGE_DPS,
+};
+for (const name of Object.keys(orpheCoreOptionalExports)) {
+  if (typeof global[name] === 'undefined') global[name] = orpheCoreOptionalExports[name];
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Object.assign({ Orphe }, orpheCoreOptionalExports);
+}
+
+})(typeof globalThis !== 'undefined' ? globalThis : this);

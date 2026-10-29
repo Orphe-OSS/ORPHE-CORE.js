@@ -8,6 +8,15 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 
 ## [Unreleased]
 
+### Changed
+
+- **`js/ORPHE-CORE.js` is now wrapped in an IIFE** (`(function (global) { … })(globalThis)`), the same structure ORPHE-INSOLE.js uses. `class` / `const` / helper `function`s no longer create global lexical bindings, so the SDK can be loaded twice on one page (previously a `SyntaxError: Identifier 'FixedSizeArray' has already been declared`) and coexists with ORPHE-INSOLE.js in either load order. Public API is exported as properties of `window`: `Orphe` always refers to the CORE class (it replaces INSOLE's backward-compatible `Orphe` alias if INSOLE loaded first, but is never replaced on a second CORE load thanks to the `Orphe.SDK === 'ORPHE-CORE.js'` marker, so existing instances stay `instanceof Orphe`); `FixedSizeArray`, `OrpheTimestamp`, `loadScript`, the range/gyro/serial helpers and constants are exported only if not already defined. `orphe_js_version_date` stays a plain global (`var`) for CoreToolkit. The optional-library auto-load is now skipped when `document` is undefined, and the file exports the same API via `module.exports` for Node (`require('./js/ORPHE-CORE.js')`). No API names or callback semantics changed; `<script src>` users need no changes.
+
+### Added
+
+- `tests/core-insole-coexistence.test.js` (part of `npm test`): loads the real `js/ORPHE-CORE.js` together with the released ORPHE-INSOLE.js dist (jsDelivr `@v1.3.4`, or `ORPHE_INSOLE_DIST=<path>` / sibling checkout offline) in both orders and asserts `Orphe` is CORE, `OrpheInsole` is INSOLE, both instantiate, helpers are present, and a second CORE load is harmless. INSOLE's own coexistence test only uses a CORE stub, so this is the first cross-repository check.
+- `tests/manual/coexistence-check/` (`index.html` = CORE→INSOLE, `insole-first.html` = INSOLE→CORE): a real-device page that shows the global state table, reloads the SDK a second time, connects a CORE through CoreToolkit (and verifies that overriding `onDisconnect` after connecting takes effect), and connects an INSOLE with the plain `OrpheInsole` API on the same page.
+
 ## [1.4.2] - 2026-09-08
 
 ### Added

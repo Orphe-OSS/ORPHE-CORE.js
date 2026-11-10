@@ -52,10 +52,12 @@ GAME-DDR/
 
 Connect ORPHE CORE sensors and perform steps in the following directions:
 
-- **Left Step** (direction = 0): Left lane
-- **Forward Step** (direction = 2): Up lane
-- **Backward Step** (direction = 4): Down lane
-- **Right Step** (direction = 6): Right lane
+- **Forward Step**: Up lane
+- **Backward Step**: Down lane
+- **Step to the Left**: Left lane
+- **Step to the Right**: Right lane
+
+Left/right steps are judged from the CORE's LEFT/RIGHT setting (CoreToolkit settings), so set it to the foot the CORE is worn on.
 
 ### Gameplay
 
@@ -114,22 +116,23 @@ Adjusts the music volume.
 
 ### Direction Mapping
 
-The game uses ORPHE's `gait.direction` property:
+The game uses ORPHE's `gait.direction` property (`directionToLane()` in `main.js`):
 
 ```javascript
 Direction Values:
-0 → Left step  → Lane 0 (←)
-2 → Forward    → Lane 2 (↑)
-4 → Backward   → Lane 1 (↓)
-6 → Right step → Lane 3 (→)
+0 → None     → ignored
+1 → Forward  → Lane 2 (↑)
+2 → Backward → Lane 1 (↓)
+3 → Inside   → Lane 3 (→) on a left foot / Lane 0 (←) on a right foot
+4 → Outside  → Lane 0 (←) on a left foot / Lane 3 (→) on a right foot
 ```
 
-### Preventing Double Triggers
+Inside / outside are foot-relative. The foot is read from `device_information.lr` (bit0: 0 = left, 1 = right).
+See `docs/ai/SENSOR_RECIPES.md` Recipe 4.
 
-The game implements several mechanisms to prevent duplicate inputs:
-- Direction change detection (only triggers when direction changes)
-- Result flag (blocks input for 200ms after a hit)
-- Last direction tracking per device
+### Duplicate Inputs
+
+`gotGait` is called once per new step, so no direction-based de-duplication is needed.
 
 ## 📝 Creating Custom Charts
 
@@ -247,7 +250,8 @@ Keyboard Press / ORPHE Step →
 - `setupOrpheCORE()`: Configure ORPHE CORE devices
 - `startGame()`: Begin gameplay
 - `gameLoop()`: Main rendering loop
-- `handleOrpheInput(direction)`: Process ORPHE step input
+- `handleOrpheInput(direction, deviceInformation)`: Process ORPHE step input
+- `directionToLane(direction, lr)`: Map `gait.direction` to a lane
 - `handleGameInput(lane)`: Universal input handler
 
 ### ORPHE Integration
@@ -255,8 +259,8 @@ Keyboard Press / ORPHE Step →
 ```javascript
 // Setup ORPHE callbacks
 ble.gotGait = function(_gait) {
-    const direction = _gait.direction;
-    handleOrpheInput(direction);
+    // `this` is the Orphe instance (use a regular function, not an arrow function)
+    handleOrpheInput(_gait.direction, this.device_information);
 };
 ```
 

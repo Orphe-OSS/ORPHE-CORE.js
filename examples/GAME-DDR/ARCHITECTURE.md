@@ -137,18 +137,12 @@ USER INPUT
            │
            └─> ble.gotGait(_gait)
                   │
-                  └─> direction = _gait.direction
+                  └─> handleOrpheInput(_gait.direction, this.device_information)
+                         │   (gotGait fires once per new step; no de-dup needed)
                          │
-                         ├─> Check: direction !== lastDirection
-                         │       │
-                         │       └─> YES: Continue
-                         │       └─> NO: Ignore (prevent duplicate)
-                         │
-                         └─> orpheDirectionMap[direction] → lane
+                         └─> directionToLane(direction, lr) → lane
                                 │
-                                └─> handleOrpheInput(direction)
-                                       │
-                                       └─> handleGameInput(lane)
+                                └─> handleGameInput(lane)
 
 GAME INPUT HANDLER
     │

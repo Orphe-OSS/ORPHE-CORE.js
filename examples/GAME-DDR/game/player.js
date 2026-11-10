@@ -34,14 +34,6 @@ class PlayerManager {
             'ArrowRight': 3   // Lane 3 (Right)
         };
         
-        // ORPHE direction mapping
-        this.orpheDirectionMap = {
-            0: 0,  // Left step → Lane 0
-            2: 2,  // Forward step → Lane 2 (Up)
-            4: 1,  // Backward step → Lane 1 (Down)
-            6: 3   // Right step → Lane 3
-        };
-        
         this.setupKeyboardInput();
     }
 
@@ -72,20 +64,6 @@ class PlayerManager {
         
         if (this.onInput) {
             this.onInput(lane);
-        }
-    }
-
-    /**
-     * Handle ORPHE CORE gait direction
-     * @param {number} direction - ORPHE direction (0, 2, 4, 6)
-     */
-    handleOrpheDirection(direction) {
-        if (!this.orpheEnabled) return;
-        
-        const lane = this.orpheDirectionMap[direction];
-        if (lane !== undefined) {
-            console.log(`ORPHE input: direction=${direction} → lane=${lane}`);
-            this.handleInput(lane);
         }
     }
 

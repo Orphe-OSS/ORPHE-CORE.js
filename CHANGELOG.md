@@ -8,6 +8,12 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- `BleSharedBridge`: Secondary tabs now receive the Primary's `device_information` (`lr`, `range`, etc.) through the heartbeat. Previously it stayed `''` in Secondary tabs, so `device_information.lr` was unavailable and foot-relative `gait.direction` 3/4 could not be mapped to left/right. Mixed versions keep working (an older Primary simply shares nothing).
+- `CoreToolkit`: changing the acc range, gyro range or LED brightness no longer overwrites the local `device_information.lr` with `0xFF` (the "keep LR unchanged" value is now set only on the copy that is written to the device).
+- `examples/GAME-DDR`: uses the actual `gait.direction` values (1 forward, 2 backward, 3 inside, 4 outside) and the CORE's LR setting to choose lanes. The old 0/2/4/6 mapping sent backward steps to ↑ and outside steps to ↓, and ignored forward/inside steps.
+
 ## [1.4.2] - 2026-09-08
 
 ### Added

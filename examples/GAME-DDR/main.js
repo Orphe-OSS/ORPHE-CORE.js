@@ -18,7 +18,6 @@ let orpheData = {
         { type: 0, direction: 0, steps: 0 },
         { type: 0, direction: 0, steps: 0 }
     ],
-    lastDirection: [-1, -1], // Track last direction to prevent duplicate triggers
     resultFlag: false // Prevent input during result display
 };
 
@@ -139,12 +138,12 @@ function setupOrpheCORE() {
                 console.log(`✅ ORPHE Device ${i} connected! Total: ${connectedDevices}/2`);
             };
             
+            // gotGait は新しい 1 歩ごとに 1 回だけ呼ばれるので、重複防止は不要
             bles[i].gotGait = function(gait) {
                 orpheData.gaits[i] = gait;
-                
-                // Handle direction change for step input
+
                 if (gait.direction !== undefined) {
-                    handleOrpheInput(gait.direction);
+                    handleOrpheInput(gait.direction, this.device_information);
                 }
             };
         }
@@ -156,24 +155,51 @@ function setupOrpheCORE() {
     }
 }
 
+let warnedMissingLR = false;
+
+/**
+ * Map ORPHE gait.direction to a lane (0 = ←, 1 = ↓, 2 = ↑, 3 = →)
+ *
+ * gait.direction: 0 = none, 1 = forward, 2 = backward, 3 = inside, 4 = outside.
+ * inside / outside are foot-relative, so the screen side depends on the LR setting
+ * (device_information.lr bit0: 0 = left foot, 1 = right foot).
+ * See docs/ai/SENSOR_RECIPES.md Recipe 4.
+ *
+ * @param {number} direction - ORPHE gait.direction (0-4)
+ * @param {number} lr - device_information.lr (0-3)
+ * @returns {number|null} lane, or null when the step has no direction
+ */
+function directionToLane(direction, lr) {
+    const isRightFoot = (lr & 1) === 1;
+    switch (direction) {
+        case 1: return 2;                    // Forward  → Lane 2 (↑)
+        case 2: return 1;                    // Backward → Lane 1 (↓)
+        case 3: return isRightFoot ? 0 : 3;  // Inside   → toward the other foot
+        case 4: return isRightFoot ? 3 : 0;  // Outside  → away from the other foot
+        default: return null;
+    }
+}
+
 /**
  * Handle ORPHE CORE step input
- * @param {number} direction - ORPHE direction (0, 2, 4, 6)
+ * @param {number} direction - ORPHE gait.direction (0-4)
+ * @param {Object} deviceInformation - Orphe#device_information (uses .lr)
  */
-function handleOrpheInput(direction) {
-    // Map ORPHE direction to lane
-    // 0 = left, 2 = forward (up), 4 = backward (down), 6 = right
-    const directionMap = {
-        0: 0,  // Left → Lane 0
-        2: 2,  // Forward → Lane 2 (Up)
-        4: 1,  // Backward → Lane 1 (Down)
-        6: 3   // Right → Lane 3
-    };
-    
-    const lane = directionMap[direction];
-    
-    if (lane !== undefined) {
-        console.log(`👟 ORPHE step detected: direction=${direction} → lane=${lane}`);
+function handleOrpheInput(direction, deviceInformation) {
+    let lr = deviceInformation && deviceInformation.lr;
+    if (typeof lr !== 'number') {
+        // LR が取れない場合は左足として扱う（左右の横ステップが逆になる可能性がある）
+        if (!warnedMissingLR) {
+            console.warn('⚠️ device_information.lr is not available; treating the device as a left foot.');
+            warnedMissingLR = true;
+        }
+        lr = 0;
+    }
+
+    const lane = directionToLane(direction, lr);
+
+    if (lane !== null) {
+        console.log(`👟 ORPHE step detected: direction=${direction} (lr=${lr}) → lane=${lane}`);
         
         // Trigger visual feedback (lane indicator flash)
         if (window.gameRenderer && typeof window.gameRenderer.triggerLanePress === 'function') {
@@ -475,7 +501,6 @@ function restartGame() {
     }
     
     // Reset ORPHE tracking
-    orpheData.lastDirection = [-1, -1];
     orpheData.resultFlag = false;
     
     // Show start button

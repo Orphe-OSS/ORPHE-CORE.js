@@ -280,7 +280,7 @@ class Orphe {
      * 歩容解析のデータを保存しておく連想配列です。
      * @property {Object} gait - 歩容解析のデータ
      * @property {number} gait.type - 歩容のタイプ（0: 通常歩行, 1: 走行, 2: ランニング）
-     * @property {number} gait.direction - 歩容の向き（0: 前進, 1: 後退, 2: 左, 3: 右）
+     * @property {number} gait.direction - 歩容の向き（0: なし, 1: 前, 2: 後, 3: 内側, 4: 外側。3/4 の左右は LR 設定で入れ替わる）
      * @property {number} gait.calorie - 消費カロリー
      * @property {number} gait.distance - 移動距離
      * @property {number} gait.steps - 歩数
@@ -1998,7 +1998,7 @@ class Orphe {
   gotType(type) { }
   /**
    * ランニングの方向を取得する
-   * @param {Object} direction {value} 0:none, 1:foward, 2:backward, 3:inside, 4:outside
+   * @param {Object} direction {value} 0:none, 1:forward, 2:backward, 3:inside, 4:outside
    */
   gotDirection(direction) { }
   /**

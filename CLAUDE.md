@@ -197,9 +197,10 @@ ble.gotEuler = function(euler) {
 // === STEP_ANALYSIS callbacks (lower frequency: ~30Hz, event-driven) ===
 
 ble.gotGait = function(gait) {
+  // Called once per new step.
   // gait: {
   //   type: 0-2,        // 0: none, 1: walk, 2: run
-  //   direction: 0-6,   // 0: left, 2: forward, 4: backward, 6: right
+  //   direction: 0-4,   // 0: none, 1: forward, 2: backward, 3: inside, 4: outside
   //   calorie: float,
   //   distance: float,  // meters
   //   steps: int,
@@ -260,19 +261,16 @@ buildCoreToolkit(
 ```javascript
 // ORPHE direction values → Game directions
 const DIRECTION_MAP = {
-  0: 'left',     // 左
-  2: 'forward',  // 前
-  4: 'backward', // 後
-  6: 'right'     // 右
+  0: 'none',
+  1: 'forward',  // 前
+  2: 'backward', // 後
+  3: 'inside',   // 内側（足基準）
+  4: 'outside'   // 外側（足基準）
 };
 
-// For DDR-style games:
-const LANE_MAP = {
-  0: 0,  // Left step → Lane 0 (←)
-  2: 2,  // Forward  → Lane 2 (↑)
-  4: 1,  // Backward → Lane 1 (↓)
-  6: 3   // Right    → Lane 3 (→)
-};
+// inside / outside の左右はデバイスの LR 設定（device_information.lr の bit0: 0 = 左, 1 = 右）で入れ替わる
+// LR = 左: 右へ動かす = 3, 左へ動かす = 4 / LR = 右: その逆
+// DDR 風のレーン割り当て例: docs/ai/SENSOR_RECIPES.md Recipe 4
 ```
 
 ### Sensor Ranges
@@ -314,32 +312,7 @@ const GYRO_RANGE = {
 
 ## Common Patterns
 
-### Pattern 1: Duplicate Input Prevention (CRITICAL)
-
-ゲームでは必ず重複入力を防止してください：
-
-```javascript
-let lastDirection = -1;
-let lastInputTime = 0;
-const DEBOUNCE_MS = 200;
-
-ble.gotGait = function(gait) {
-  const now = Date.now();
-
-  // Skip if same direction
-  if (gait.direction === lastDirection) return;
-
-  // Skip if too soon after last input
-  if (now - lastInputTime < DEBOUNCE_MS) return;
-
-  lastDirection = gait.direction;
-  lastInputTime = now;
-
-  handleInput(gait.direction);
-};
-```
-
-### Pattern 2: Kick/Impact Detection
+### Pattern 1: Kick/Impact Detection
 
 ```javascript
 const KICK_THRESHOLD = 3.0;  // G
@@ -367,7 +340,7 @@ function calculatePower(buffer) {
 }
 ```
 
-### Pattern 3: Tilt Control
+### Pattern 2: Tilt Control
 
 ```javascript
 ble.gotEuler = function(euler) {
@@ -379,7 +352,7 @@ ble.gotEuler = function(euler) {
 };
 ```
 
-### Pattern 4: Jump Detection
+### Pattern 3: Jump Detection
 
 ```javascript
 let lastAccZ = 0;
@@ -401,7 +374,7 @@ ble.gotLandingImpact = function(impact) {
 };
 ```
 
-### Pattern 5: Dual Device (2-Player)
+### Pattern 4: Dual Device (2-Player)
 
 ```javascript
 // Setup for both devices
@@ -514,24 +487,7 @@ ble.gotGait = function(gait) {
 };
 ```
 
-### 3. Not handling duplicate inputs
-
-```javascript
-// WRONG - will trigger multiple times for single step
-ble.gotGait = function(gait) {
-  handleInput(gait.direction);
-};
-
-// CORRECT - track last direction
-let lastDir = -1;
-ble.gotGait = function(gait) {
-  if (gait.direction === lastDir) return;
-  lastDir = gait.direction;
-  handleInput(gait.direction);
-};
-```
-
-### 4. Wrong sensor range for use case
+### 3. Wrong sensor range for use case
 
 ```javascript
 // WRONG for high-impact games
@@ -542,7 +498,7 @@ ble.begin('SENSOR_VALUES', { range: { acc: 2, gyro: 250 } });
 ble.begin('SENSOR_VALUES', { range: { acc: 16, gyro: 2000 } });
 ```
 
-### 5. Using raw acc values instead of converted
+### 4. Using raw acc values instead of converted
 
 ```javascript
 // WRONG - values are normalized (-1 to 1)

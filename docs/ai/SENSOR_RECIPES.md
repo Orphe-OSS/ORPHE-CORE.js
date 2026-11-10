@@ -290,38 +290,35 @@ ble.gotStride = function(stride) {
 ```javascript
 // === Direction Map ===
 const DIRECTION = {
-  0: 'left',
-  2: 'forward',
-  4: 'backward',
-  6: 'right'
+  0: 'none',
+  1: 'forward',
+  2: 'backward',
+  3: 'inside',   // 足基準
+  4: 'outside'   // 足基準
 };
 
-// For 4-lane rhythm games
-const LANE_MAP = {
-  0: 0,  // Left → Lane 0
-  2: 2,  // Forward → Lane 2 (Up)
-  4: 1,  // Backward → Lane 1 (Down)
-  6: 3   // Right → Lane 3
-};
+// inside / outside: LR = left → 右へ動かす = 3, 左へ動かす = 4 / LR = right → その逆
+// lr = device_information.lr (bit0: 0 = left, 1 = right)
 
-// === Duplicate Prevention (CRITICAL) ===
-let lastDirection = -1;
-let lastDirectionTime = 0;
-const DIRECTION_DEBOUNCE = 200;  // ms
+// For 4-lane rhythm games (lane 0 = ←, 1 = ↓, 2 = ↑, 3 = →)
+function directionToLane(direction, lr) {
+  const isRightFoot = (lr & 1) === 1;
+  switch (direction) {
+    case 1: return 2;                    // Forward → Lane 2 (Up)
+    case 2: return 1;                    // Backward → Lane 1 (Down)
+    case 3: return isRightFoot ? 0 : 3;  // Inside
+    case 4: return isRightFoot ? 3 : 0;  // Outside
+    default: return null;
+  }
+}
 
 ble.gotGait = function(gait) {
   const now = Date.now();
   const direction = gait.direction;
 
-  // Skip if same direction or too soon
-  if (direction === lastDirection) return;
-  if (now - lastDirectionTime < DIRECTION_DEBOUNCE) return;
-
-  lastDirection = direction;
-  lastDirectionTime = now;
-
   const directionName = DIRECTION[direction] || 'unknown';
-  const lane = LANE_MAP[direction];
+  const lane = directionToLane(direction, this.device_information.lr);
+  if (lane === null) return;
 
   onDirectionChange({
     raw: direction,
@@ -344,21 +341,13 @@ function onDirectionChange(data) {
 **Multi-Device Direction (2-Player)**:
 
 ```javascript
-let lastDirections = [-1, -1];
-let lastDirectionTimes = [0, 0];
-
 for (let i = 0; i < 2; i++) {
   bles[i].gotGait = function(gait) {
     const playerId = this.id;  // 0 or 1
-    const now = Date.now();
+    const lane = directionToLane(gait.direction, this.device_information.lr);
+    if (lane === null) return;
 
-    if (gait.direction === lastDirections[playerId]) return;
-    if (now - lastDirectionTimes[playerId] < 200) return;
-
-    lastDirections[playerId] = gait.direction;
-    lastDirectionTimes[playerId] = now;
-
-    players[playerId].handleDirection(LANE_MAP[gait.direction]);
+    players[playerId].handleDirection(lane);
   };
 }
 ```
@@ -948,7 +937,7 @@ class SensorMonitor {
   }
 
   updateGait(gait) {
-    const dirs = ['L', '?', 'F', '?', 'B', '?', 'R'];
+    const dirs = ['-', 'F', 'B', 'In', 'Out'];
     this.gaitEl.textContent =
       `Dir:${dirs[gait.direction]} Steps:${gait.steps} Dist:${gait.distance.toFixed(1)}m`;
   }
@@ -1063,10 +1052,11 @@ Rest value:      ~1G (gravity)
 Kick threshold:  2-5G typical
 
 === Direction (gait.direction) ===
-0: Left
-2: Forward
-4: Backward
-6: Right
+0: None
+1: Forward
+2: Backward
+3: Inside
+4: Outside
 
 === Euler Angles (radians) ===
 pitch: Forward/backward tilt

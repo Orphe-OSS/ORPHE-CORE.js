@@ -84,7 +84,7 @@ URL: `/examples/CORETOOLKIT-STARTER/`
 - [X] 接続スイッチが 2 つ表示されている
 - [X] 1 つ目に接続できる
 - [X] テーブルに値が表示される
-- [X] 歩くと gait.direction (0/2/4/6) が変化する
+- [X] 歩くと gait.direction (1〜4) が変化する
 - [X] 2 台目も接続できる
 - [ ] Console エラーが無い
 

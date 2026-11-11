@@ -62,23 +62,29 @@ in [core3-compat-validation.md](core3-compat-validation.md). They are earlier
 measurements and do not establish a fresh post-deployment result for other
 examples.
 
-During this follow-up the user reported connecting two CORE 3 devices to the
-virtual hurdle page. The computer-control connection then remained unavailable,
-so no new packet counter, disconnect counter or continuous-update record was
-obtained by the agent. The requested new run of more than one minute is pending
-independent observation; it must not be reported as passed from elapsed time
-alone. A manual observation reported by the user should be identified as such.
+During this follow-up the user connected two CORE 3 devices to the published
+virtual hurdle page and confirmed that both devices' displays continued updating
+for more than one minute. The confirmation answered a question explicitly asking
+whether both Hz displays remained active and Pitch/Accel changed with light
+movement: "2台とも1分以上、表示が更新し続けている".
 
-After computer control is restored, keep the existing pair connected and use
+Result: the requested two-device continuous-display check passed by user
+observation. The computer-control connection remained unavailable, so the agent
+did not independently obtain new packet counters, error/disconnect counters or
+an exact duration. This result establishes observed display continuity, not
+lossless delivery or the absence of short intermediate transport interruptions.
+
+For a future instrumented reliability run after computer control is restored, use
 the opt-in `tests/physical-game-probe.js` on the actual public GAME-HURDLE page.
 For both slots, record a baseline and a snapshot after at least 60 seconds:
 connected state, changing packet/sample counters, nonfinite values, errors and
 disconnects. Observe updates during the interval as well: two endpoint snapshots
 cannot exclude intermediate stream stalls. A 60-second connected state alone is
-not a no-data-loss result. Then test INFORMATION/LIGHT, VISUALIZE, VIEW,
+not a no-data-loss result. Other examples still needing physical checks include
+INFORMATION/LIGHT, VISUALIZE, VIEW,
 CORETOOLKIT-STARTER, STEP_ANALYSIS consumers and the affected game variants.
 Camera, external heart-rate/FSR hardware, audio and foot-worn gameplay need their
 own applicable functional checks.
 
-No additional example has a new physical-device pass in this follow-up, and the
-follow-up changes have not been pushed, merged or deployed.
+No example beyond GAME-HURDLE has a new physical-device pass in this follow-up.
+The follow-up changes have not been pushed, merged or deployed.

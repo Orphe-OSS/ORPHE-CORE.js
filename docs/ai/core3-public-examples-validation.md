@@ -3,10 +3,10 @@
 Date: 2026-11-11. Published baseline: `1a7998991089c0e7e9eed40e8b73007f57d07421` (PR #145).
 Follow-up branch: `fix/core3-other-examples`.
 
-The published examples do not all inherit the CORE 3 fix. Four pages load the
-older release SDK, and three hurdle variants repeat connection startup from
-per-characteristic connection events. These defects were reproduced from the
-published source, then fixed locally. This is not an all-examples hardware pass.
+At the published baseline, four pages loaded the older release SDK and three
+hurdle variants repeated connection startup from per-characteristic connection
+events. These defects were reproduced from the published source, then fixed in
+this change. This is not an all-examples hardware pass.
 
 ## Published-source checks
 
@@ -87,4 +87,5 @@ Camera, external heart-rate/FSR hardware, audio and foot-worn gameplay need thei
 own applicable functional checks.
 
 No example beyond GAME-HURDLE has a new physical-device pass in this follow-up.
-The follow-up changes have not been pushed, merged or deployed.
+These follow-up changes were still local when the observations above were
+recorded. The pull request tracks subsequent merge and deployment status.

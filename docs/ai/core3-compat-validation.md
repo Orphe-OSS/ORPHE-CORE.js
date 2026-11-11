@@ -88,6 +88,16 @@ installed Bluetooth controller firmware or when the user updated either one.
    were observed. Reloaded the page to clear the pending connection. The
    physical device's power/advertising state at this attempt was unconfirmed.
    This attempt does not establish successful GAME-HURDLE reconnection.
+10. To map the browser slots to physical units, the user shook one CORE while
+    leaving the other untouched; the shaken unit was designated A. Power-off
+    of both units was not confirmed. A CR-3 candidate was selected in slot 1,
+    and the patched SDK connected and received 4,426 header-50 / 104-byte
+    notifications, 17,704 acceleration samples and 17,704 Euler samples over
+    approximately 92 seconds, with 148 serial-discontinuity callbacks and no
+    unexpected disconnect observed. The reported application firmware fields
+    were again version 3.1, date 2026-01-25, patch 1. During the follow-up
+    second-slot search, only the paired, connected CR-3 was visible. Waking
+    the other physical unit (B) and connecting it remains pending.
 
 **Single-device discovery and 104-byte decoding are verified on this host.**
 The second physical device, simultaneous two-device streaming, reversed order,
@@ -97,9 +107,10 @@ compatibility mismatch; they do not establish a dated firmware regression.
 
 ## Remaining hardware check
 
-1. Power off both CORE devices, then start only the problem second device in
-   connectable advertising near the Mac with phone applications disconnected.
-   Record its candidate identity and firmware-name response if connectable.
+1. Keep A connected and stationary, then have the user wake the other physical
+   unit (B). Compare candidate presence before and after waking B, and record
+   its firmware version fields if connectable. Do not equate a browser slot
+   number with a particular physical CORE until the mapping is established.
 2. Compare old and updated discovery in the manual test page. Record the exact
    candidate names and which device was selected; do not infer discovery from
    Bluetooth Internals' cached names or GATT services.

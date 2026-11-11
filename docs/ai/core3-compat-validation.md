@@ -138,6 +138,14 @@ installed Bluetooth controller firmware or when the user updated either one.
     observed console; the remaining chooser-cancellation error resulted from
     manually cancelling the search for A when no separate candidate appeared.
     Waking A again and completing the B -> A game trial remains pending.
+14. A later GAME-HURDLE page showed nonzero values for both slots and a finish
+    result, but runtime inspection found both disconnected and remembered
+    device names CR-2. Those retained values and the finish screen are not
+    evidence of live two-CORE-3.0 gameplay. Cleared only the two remembered
+    device entries and reloaded before selecting CR-3 again. One CR-3 connected
+    and updated game values; an additional, unpaired CR-3 candidate failed with
+    `NetworkError: Unsupported device`. That candidate was not established as
+    the previously mapped physical A. Two-CORE-3.0 gameplay remains unverified.
 
 **Discovery and 104-byte decoding on both physical units, including simultaneous
 streaming, are verified on this host.** Reversed connection order and two-device

@@ -9,20 +9,16 @@ GAME-HURDLE's nested connection startup.
 
 ## Packet format evidence
 
-A locally inspected CORE 3.0 firmware checkout (`ac7ebfe`, not necessarily the
-firmware installed on the devices) contains:
+The CORE 3.0 physical trials below received header-50 notifications of 104
+bytes. The patched parser accepted these only after checking that bytes
+92..103 were zero; each accepted notification produced the existing four-frame
+sensor callbacks. Synthetic 92-byte and zero-padded 104-byte inputs also
+produced equivalent decoded values, sample order and timestamps.
 
-- `nRF5_driver.h`: `NRF5_UPDATE_SENSOR_VALUES_CHAR_DATA_SIZE` is 104.
-- `AppBleDataUpdater::updateSensorValues4datasCharNotify()`: zero-initializes
-  that buffer, writes the header-50 four-frame layout, writes the checksum at
-  byte 91, and passes the full buffer to `setUpdateSensorVal()`.
-- `nRF5_driver.c`: uses the same size for the sensor-values transmit attribute.
-
-This justifies accepting 104 bytes only when bytes 92..103 are zero. It does
-not justify interpreting arbitrary longer notifications, FIFO packets, or
-other headers as header 50. The existing 92-byte decoder and unit conversions
-are retained. This is compatibility evidence, not a dated firmware regression
-or proof of the installed firmware version.
+This covers one observed padded variant. It does not justify interpreting
+arbitrary longer notifications, FIFO packets or other headers as header 50.
+The existing 92-byte decoder and unit conversions are retained. These results
+establish compatibility, not when or why a firmware change occurred.
 
 ## GAME-HURDLE initialization evidence
 

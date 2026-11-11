@@ -79,7 +79,7 @@ function orpheCoreGyroRawToDps(raw, gyroRangeDps) {
   return raw * gyroRangeDps * ORPHE_CORE_GYRO_DPS_PER_LSB_PER_RANGE;
 }
 
-// Header 50 keeps its four-frame payload and checksum in bytes 0..91.
+// Header 50 keeps its existing four-frame layout in bytes 0..91.
 // CORE 3.0 firmware can send it in a 104-byte, zero-initialized BLE buffer.
 // Accept only that known padding variant; other lengths/layouts are not decoded.
 function orpheCoreIsSupportedHeader50Packet(data) {

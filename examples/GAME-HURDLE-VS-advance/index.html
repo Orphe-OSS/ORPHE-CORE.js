@@ -1587,11 +1587,10 @@
     }
 
     // Build CoreToolkit for each device
-    buildCoreToolkit(document.querySelector('#toolkit_p1'), 'Player 1', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
-    buildCoreToolkit(document.querySelector('#toolkit_p2'), 'Player 2', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_p1'), 'Player 1', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
+    buildCoreToolkit(document.querySelector('#toolkit_p2'), 'Player 2', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
     guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
 
-    var connectedDevices = 0;
 
     window.devices = {
       0: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 } },
@@ -1606,26 +1605,10 @@
     const accelCooldownMs = 250;
     const jumpCooldownMs = 200;
 
-    // Connection handlers - same as original HURDLE
+    // CoreToolkit owns connection and notification startup.
+    // Install callbacks once; onConnect fires for each GATT characteristic.
     for (let ble of bles) {
-      ble.onConnect = function() {
-        connectedDevices++;
-        console.log('🟢 ORPHE CORE Device ' + this.id + ' connected (Total: ' + connectedDevices + '/2)');
-
-        if (connectedDevices === 2) {
-          // Both devices connected, start data streaming
-          for (let device of bles) {
-            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');
-            setupDataCallbacks(device);
-          }
-          console.log('📡 Started data streaming for both devices');
-        }
-      };
-
-      ble.onDisconnect = function() {
-        connectedDevices--;
-        console.log('🔴 ORPHE CORE Device ' + this.id + ' disconnected (Total: ' + connectedDevices + '/2)');
-      };
+      setupDataCallbacks(ble);
     }
 
     function setupDataCallbacks(ble_device) {

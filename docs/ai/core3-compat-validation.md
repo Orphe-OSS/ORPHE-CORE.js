@@ -165,23 +165,26 @@ installed Bluetooth controller firmware or when the user updated either one.
     connected. Both subsequently reported connected and advancing serials.
     Then reloaded the updated HTML and used the ordinary two switches: both
     opened their own chooser and allowed B then A to be selected. B resumed
-    reception; A's completion after that reload remains pending a final wake.
+    reception; A's initial request subsequently failed while it was unavailable.
+    After the user moved the units again, retried A using the ordinary switch
+    and selected the mapped A. Both switches completed and showed live pitch
+    and acceleration (approximately 1 G). This final trial used the reloaded
+    HTML's actual forced-selection options, without a console connection call.
 
 **Discovery and 104-byte decoding on both physical units, simultaneous streaming,
 and live two-CORE-3.0 GAME-HURDLE reception in B -> A order are verified on this
-host.** The final ordinary-switch reload trial and worn GAME-HURDLE movement
-controls remain incomplete. These observations establish
+host, including the final ordinary-switch reload/retry trial.** Worn
+GAME-HURDLE movement controls remain unverified. These observations establish
 an SDK/FW compatibility mismatch and a game initialization defect; they do not
 establish a dated firmware regression.
 
 ## Remaining hardware check
 
-1. Finish the ordinary-switch reload trial with A connected alongside B.
-2. Test the local GAME-HURDLE page's acceleration and jump inputs with actual
+1. Test the local GAME-HURDLE page's acceleration and jump inputs with actual
    movements, and observe two-device continuity for at least 60 seconds.
-3. Isolate the two-device transport degradation separately with matched
+2. Isolate the two-device transport degradation separately with matched
    device/order/host tests; do not attribute it to a foot or firmware yet.
-4. Preserve an old 92-byte CORE and a CORE 2.0 header-40 physical regression
+3. Preserve an old 92-byte CORE and a CORE 2.0 header-40 physical regression
    check before publishing a release.
 
 Serve the repository root locally, for example:

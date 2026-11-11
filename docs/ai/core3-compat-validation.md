@@ -178,14 +178,44 @@ GAME-HURDLE movement controls remain unverified. These observations establish
 an SDK/FW compatibility mismatch and a game initialization defect; they do not
 establish a dated firmware regression.
 
+## CORE 2.0 physical compatibility check (2026-11-11 JST)
+
+Same host, browser and branch, using the local GAME-HURDLE page with
+`STEP_ANALYSIS_AND_SENSOR_VALUES`. Two separate CR-2 candidates were displayed
+and selected. Runtime inspection confirmed different browser device IDs,
+both named CR-2, physically connected (`secondary: false`). Device identifiers
+are omitted; CORE 2.0 firmware versions were not read.
+
+Loaded the opt-in `tests/physical-game-probe.js` into the running game. It wraps
+the existing read/sensor/error/disconnect callbacks, calls their originals,
+and writes no device settings. Over 74.7 seconds of simultaneous reception:
+
+| Slot | Sensor header / bytes | Notifications | Converted acc | Converted gyro | Quaternion / Euler | Nonfinite values | Disconnects | Errors |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 40 / 20 | 3,622 | 3,622 | 3,622 | 6,662 each | 0 | 0 | 0 |
+| 1 | 40 / 20 | 3,632 | 3,632 | 3,632 | 6,650 each | 0 | 0 | 0 |
+
+Both remained connected at the end. Sensor notification rates were approximately
+48.5 and 48.6 per second. Each header-40 notification produced one converted
+acceleration and gyroscope callback. Quaternion/Euler counts also include
+STEP_ANALYSIS outputs because this game subscribes to both notification types.
+The game displayed finite changing pitch and approximately 1.02 G at rest in
+both slots. Stopped the probe to restore the original callbacks, then verified
+that both toggles remained on and game values continued updating.
+
+This verifies CORE 2.0 discovery, two-device game connection and header-40
+decoding with the CORE 3.0 fixes present. It does not establish lossless delivery
+or validate worn foot-stamp/jump detection. No CORE 2.0 code change was needed.
+
 ## Remaining hardware check
 
 1. Test the local GAME-HURDLE page's acceleration and jump inputs with actual
    movements, and observe two-device continuity for at least 60 seconds.
 2. Isolate the two-device transport degradation separately with matched
    device/order/host tests; do not attribute it to a foot or firmware yet.
-3. Preserve an old 92-byte CORE and a CORE 2.0 header-40 physical regression
-   check before publishing a release.
+3. Preserve an old 92-byte CORE physical regression check before publishing a
+   release. The CORE 2.0 header-40 physical check above is complete for desk
+   connection/reception behavior.
 
 Serve the repository root locally, for example:
 
@@ -199,3 +229,11 @@ without writing settings, synchronizing time, enabling recording, or updating
 firmware. Its all-device chooser is diagnostic-only and does not connect a
 selected device. It does not load BleSharedBridge or use remembered-device
 selection, so the patched discovery and parser are exercised directly.
+
+For an already connected example, the game probe can be loaded from DevTools:
+
+```js
+await import('/tests/physical-game-probe.js');
+orpheGameProbe.snapshot();
+orpheGameProbe.stop(); // restore original callbacks; reload for another run
+```

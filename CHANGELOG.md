@@ -17,6 +17,7 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 ### Added
 
 - Discovery, padded-packet and GAME-HURDLE initialization regression tests, plus `tests/physical-core3-compat.html` for manually comparing chooser filters and inspecting two devices' notification lengths and decoded sensor values.
+- Opt-in `tests/physical-game-probe.js` to count original notification formats, parsed sensor callbacks, nonfinite values, errors and disconnects in an already connected example while preserving its handlers. Verified two CORE 2.0 units receiving header-40 / 20-byte data together for 74.7 seconds in GAME-HURDLE.
 
 ## [1.4.2] - 2026-09-08
 

@@ -7,16 +7,22 @@ const core3Checks = [0, 1].map(id => {
   section.innerHTML = `<h2>Device ${id + 1}</h2>
     <button data-action="connect">Device ${id + 1}: 修正版で接続</button>
     <button data-action="disconnect">Device ${id + 1}: 切断</button>
-    <pre></pre>`;
+    <p data-summary></p><pre data-firmware></pre><pre data-state></pre>`;
   document.getElementById('devices').append(section);
   const state = {
     status: '未接続', name: null, startedAt: null, elapsedSeconds: 0,
     packets: {}, samples: 0, eulerSamples: 0, gaps: 0,
     lastAcc: null, lastEuler: null, lastPacketAt: null, error: null,
   };
+  let firmware = 'FW情報: 未取得';
+  let stoppedAt = null;
   const render = () => {
-    state.elapsedSeconds = state.startedAt ? Math.round((Date.now() - state.startedAt) / 1000) : 0;
-    section.querySelector('pre').textContent = JSON.stringify(state, null, 2);
+    state.elapsedSeconds = state.startedAt ? Math.round(((stoppedAt || Date.now()) - state.startedAt) / 1000) : 0;
+    section.querySelector('[data-summary]').textContent =
+      `${state.status} / ${state.elapsedSeconds}s / ${Object.values(state.packets).reduce((a, b) => a + b, 0)} packets / ` +
+      `${state.samples} acc samples / ${state.eulerSamples} Euler samples / ${state.gaps} serial discontinuities`;
+    section.querySelector('[data-firmware]').textContent = firmware;
+    section.querySelector('[data-state]').textContent = JSON.stringify(state, null, 2);
   };
   const originalRead = core.onRead;
   core.onRead = function(data, uuid) {
@@ -34,7 +40,7 @@ const core3Checks = [0, 1].map(id => {
   core.gotEuler = function(euler) { state.eulerSamples++; state.lastEuler = euler; };
   core.lostData = function() { state.gaps++; };
   core.onError = function(error) { state.error = String(error); render(); };
-  core.onDisconnect = function() { state.status = '切断'; render(); };
+  core.onDisconnect = function() { stoppedAt = Date.now(); state.status = '切断'; render(); };
   section.querySelector('[data-action="connect"]').onclick = async () => {
     state.status = '候補選択中'; state.error = null; render();
     try {
@@ -45,10 +51,30 @@ const core3Checks = [0, 1].map(id => {
           .map(c => c.core.bluetoothDevice?.id).filter(Boolean),
       });
       state.name = core.bluetoothDevice.name;
+      firmware = 'FW情報: 未取得';
+      state.status = '接続中'; render();
       const info = await core.getDeviceInformation();
       state.deviceInformation = { battery: info.battery, lr: info.lr, range: info.range };
-      await core.startNotify('SENSOR_VALUES');
+      // Read-only CORE firmware-name characteristic. Retain raw bytes alongside
+      // the documented 23-byte name/version/date fields; older devices may lack it.
+      try {
+        const service = await core.bluetoothDevice.gatt.getPrimaryService(core.ORPHE_OTHER_SERVICE);
+        const characteristic = await service.getCharacteristic('690ecd23-c460-4ce3-8b5c-c0de65eb02d2');
+        const data = await characteristic.readValue();
+        const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+        const metadata = { hex: Array.from(bytes, v => v.toString(16).padStart(2, '0')).join(' ') };
+        if (data.byteLength === 23) {
+          metadata.identity = String.fromCharCode(...bytes.slice(0, 15));
+          metadata.version = `${data.getUint8(15)}.${data.getUint16(16)}`;
+          metadata.date = `${data.getUint16(18)}-${data.getUint8(20)}-${data.getUint8(21)}`;
+          metadata.patch = data.getUint8(22);
+        }
+        firmware = JSON.stringify(metadata, null, 2);
+      } catch (error) { firmware = `FW情報を読めません: ${error}`; }
+      state.packets = {}; state.samples = 0; state.eulerSamples = 0; state.gaps = 0;
+      stoppedAt = null;
       state.startedAt = Date.now();
+      await core.startNotify('SENSOR_VALUES');
       state.status = '受信中';
     } catch (error) { state.status = 'エラー'; state.error = String(error); }
     render();

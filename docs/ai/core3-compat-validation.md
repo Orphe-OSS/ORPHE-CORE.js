@@ -45,30 +45,52 @@ sensor callbacks. With the fix:
 ## Browser/device validation (2026-11-11 JST)
 
 Host: macOS 26.6.2 (25G83), Chrome 157.0.8103.39, existing work profile.
-Installed device firmware versions were not captured.
+The connected CR-3's read-only, 23-byte firmware-name response reported
+version 3.1, date 2026-01-25, patch 1. Identifying fields and raw response
+bytes are omitted from this public report.
+
+This identifies the reported application firmware fields, not the separately
+installed Bluetooth controller firmware or when the user updated either one.
 
 1. The public GAME-HURDLE page previously received sensor notifications while
    repeatedly logging `SENSOR VALUES: Data length is not 92`; decoded
    acceleration was not displayed. This was before the fix.
-2. Opened `http://localhost:8765/tests/physical-core3-compat.html` from this
-   branch. Old information-service-only search showed an empty chooser.
-3. Updated SDK discovery also showed an empty chooser in the current state.
-4. Disconnected the existing public VIEW and GAME-HURDLE connections and retried
-   updated discovery; still no selectable device was observed.
-5. The diagnostic `acceptAllDevices` chooser displayed nearby Bluetooth
-   devices, but no `CR-3` name was observed. This verifies that scanning can
-   return results, not that all unnamed candidates are unrelated to CORE.
+2. Disconnected the public VIEW and GAME-HURDLE connections, then compared
+   chooser conditions in `http://localhost:8765/tests/physical-core3-compat.html`.
+   After the user prepared the hardware, updated discovery displayed CR-3 and
+   allowed connection. An old information-service-only comparison subsequently
+   displayed an empty chooser, verified by screenshot after scanning.
+3. Some chooser rows were absent from the accessibility tree although visible
+   in screenshots. Earlier accessibility-only "empty" observations are therefore
+   inconclusive; candidate presence was rechecked visually.
+4. The first single-device trial received 3,379 header-50, 104-byte notifications
+   and 13,516 acceleration plus 13,516 Euler callbacks over approximately
+   73 seconds before manual disconnect. Live values were finite.
+5. A repeat trial read the firmware version fields above, then received 3,033 such
+   notifications and 12,132 callbacks of each kind over approximately 64 seconds
+   before manual disconnect. No unexpected disconnect was observed. Final
+   acceleration was approximately (-0.0024, 0.0059, 1.0039) G.
+6. Serial-discontinuity callbacks occurred 185 times in the first trial and
+   120 times in the repeat. These are counts of gap events, not missing packets.
+   No lossless-streaming claim is made, and this patch does not resolve them.
+7. One updated chooser briefly displayed four CR-3 candidate rows with different
+   addresses. They have not been established as four physical devices. With the
+   selected CR-3 connected, a second-slot search showed only that paired device;
+   an all-device scan showed other nearby devices but no separate CR-3 name.
+   Unnamed results were not identified as belonging to or excluding the second
+   CORE. The user confirmed that two CORE 3.0 units were powered on.
 
-**Physical validation is incomplete.** No device was selected/connected through
-the patched SDK, so no on-device packet length, decoded rate, two-device
-continuity, or GAME-HURDLE control improvement is claimed. The discovery
-change has not yet been shown to resolve the reported empty chooser.
+**Single-device discovery and 104-byte decoding are verified on this host.**
+The second physical device, simultaneous two-device streaming, reversed order,
+and GAME-HURDLE movement controls remain unverified. A device-isolation trial is
+needed to identify the second unit. These observations establish an SDK/FW
+compatibility mismatch; they do not establish a dated firmware regression.
 
 ## Remaining hardware check
 
-1. Put both CORE devices into connectable advertising near the Mac, disconnect
-   other phone applications, and record their firmware versions and the
-   host/browser versions.
+1. Power off both CORE devices, then start only the problem second device in
+   connectable advertising near the Mac with phone applications disconnected.
+   Record its candidate identity and firmware-name response if connectable.
 2. Compare old and updated discovery in the manual test page. Record the exact
    candidate names and which device was selected; do not infer discovery from
    Bluetooth Internals' cached names or GATT services.
@@ -86,7 +108,8 @@ Serve the repository root locally, for example:
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-The manual page reads device information and subscribes to sensor values
+The manual page reads device information and optional firmware-name metadata,
+then subscribes to sensor values
 without writing settings, synchronizing time, enabling recording, or updating
 firmware. Its all-device chooser is diagnostic-only and does not connect a
 selected device. It does not load BleSharedBridge or use remembered-device

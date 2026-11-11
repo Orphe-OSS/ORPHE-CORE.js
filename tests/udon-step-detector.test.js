@@ -360,7 +360,53 @@ for (const gravity of [[0, 0, 1], [1, 0, 0], [0, -1, 0], [0.6, 0.64, 0.48]]) {
   }
 }
 
-// 18) 設定値の検証
+// 18) 速く「バタバタ」ふみつづけても数えられる（実機で見つかった不具合の再発防止）。
+//     足が止まる瞬間がなく、動きの大きさがずっとしきい値より上にある。以前は山の半分まで下がらないと
+//     次を数え始めなかったので、最初の 1 回しか数えられなかった
+{
+  const stamping = ({ A, f, kind, fs, secs = 8, seed = 4 }) => {
+    const rand = rng(seed);
+    const g = () => (rand() - 0.5) * 0.04;
+    const lead = 1500, T = 1000 / f;
+    const out = [];
+    for (let i = 0; i < (lead + secs * 1000 + 300) * fs / 1000; i++) {
+      const t = i * 1000 / fs;
+      let v = 0, th = 0;
+      if (t >= lead && t < lead + secs * 1000) {
+        const d = (t - lead) % T, ph = d / T;
+        if (kind === 'sine') {
+          v = A * Math.sin(2 * Math.PI * ph);                      // なめらかな上下動（座って足をゆする など）
+        } else {
+          if (d < 35) v += A * Math.sin(Math.PI * d / 35);         // 着地の鋭い衝撃
+          v += 0.3 * A * Math.exp(-d / 40) * Math.sin(2 * Math.PI * d / 40);   // そのあとの揺れ
+          v -= 0.35 * A * Math.sin(2 * Math.PI * (ph - 0.15));     // 振り上げ・振り下ろし
+        }
+        th = 0.25 * Math.sin(2 * Math.PI * ph + 1);                // 足の傾き
+      }
+      out.push({ t, x: Math.sin(th) + 0.3 * v + g(), y: g(), z: Math.cos(th) + 0.95 * v + g() });
+    }
+    return out;
+  };
+  for (const kind of ['impact', 'sine']) {
+    for (const [lv, A] of [[1, 6], [2, 2], [2, 8], [3, 3], [4, 1]]) {
+      for (const f of [1.5, 2.5, 3.5]) for (const fs of [50, 200]) {
+        const det = new UdonStepDetector();
+        det.setLevel(lv);
+        const found = run(det, 0, stamping({ A, f, kind, fs }), fs === 200 ? { packet: 4, withSampleTs: true } : {});
+        const cycles = Math.round(8 * f);
+        // 1 往復で 1 ふみ。行きと帰りの両方を数えて倍にもならない。
+        // （やさしい感度は不応期が長めなので、毎秒 7 ふみ相当の速さでは 6 割以上数えられればよしとする）
+        const least = lv >= 4 && f > 3 ? 0.6 : 0.8;
+        assert.ok(found.length >= cycles * least && found.length <= cycles * 1.3,
+          `fast ${kind} stamping ${A}G at ${f}Hz, level ${lv} @${fs}Hz: counted ${found.length} for ${cycles} cycles`);
+      }
+    }
+  }
+  // 速くふんでいる間は不応期が短くなり、ゆっくりに戻れば元の長さに戻る
+  assert.equal(UdonStepDetector.DEFAULTS.minRefractoryMs < UdonStepDetector.levelById(2).refractoryMs, true);
+}
+
+// 19) 設定値の検証
 {
   const det = new UdonStepDetector();
   assert.equal(det.setThreshold(100), UdonStepDetector.MAX_THRESHOLD);

@@ -9,9 +9,11 @@
  *                  （動きに引きずられると、ふんだあとに「余韻」が残って次のふみを数えられなくなるため）
  *   2. 動きの大きさ dyn = |acc − g|   … 足の向きに関係なく「どれだけ動いたか」[G]
  *   3. なめらかな包絡線 env（立ち上がりは速く、戻りはゆっくり）
- *   4. env がしきい値を超え、かつ直前の谷から十分に立ち上がったら 1 ふみ。
- *      次を数えるには、env がしきい値の 55%（または直前の山の半分）まで下がる必要がある
- *      ＋同じ足の連続検出を防ぐ不応期＋反対の足への振動の伝わり（クロストーク）対策
+ *   4. env の「山」と「谷」を追いかける。しきい値を超え、かつ直前の谷から十分に立ち上がったら 1 ふみ。
+ *      次を数えるには、山から 3 割ほど下がればよい（速くバタバタふんで、包絡線がしきい値まで
+ *      下がりきらなくても数えられる）。
+ *      ＋同じ足の連続検出を防ぐ不応期（足踏みが速いときは自動で短くなる）
+ *      ＋反対の足への振動の伝わり（クロストーク）対策
  *
  * しきい値（＝感度）を下げれば、座ったままのやさしい足踏みでも反応します。
  * 従来版は「連続 2 サンプルの差が 0.06（正規化値）以上」という衝撃ベースの判定で、
@@ -37,12 +39,20 @@
 
   var DEFAULTS = {
     threshold: 0.6,       // [G]
-    refractoryMs: 280,    // 同じ足が次に数えられるまでの最短時間
-    crossLockMs: 140,     // 反対の足の直後はクロストークとみなして数えない
+    refractoryMs: 280,    // 同じ足が次に数えられるまでの最短時間（ゆっくりふんでいるとき）
+    minRefractoryMs: 170, // 速くふんでいるときは、ここまで短くなる
+    refractoryIntervalRatio: 0.45, // 不応期 ＝ 直近のふみ間隔 × この割合
+    crossLockMs: 140,     // 反対の足の直後は、クロストークかどうかを確かめる
+    crossRatio: 0.5,      // 反対の足の大きさのこの割合に満たない動きは、伝わってきた振動とみなす
     rearmRatio: 0.55,     // しきい値のこの割合まで下がったら再び検出可能
-    relRearmRatio: 0.5,   // または直前の山のこの割合まで下がったら（強く速い足踏みでも数えられるように）
-    riseRatio: 0.3,       // 谷からしきい値のこの割合ぶん立ち上がって、はじめて「ふみ」
-    gravityTauMs: 4000,   // 重力推定: 動いている間の時定数（ほとんど動かさない）
+    fallRatio: 0.3,       // または、山からこの割合ぶん下がったら（速い足踏みでも次を数えられるように）
+    riseRatio: 0.3,       // 谷から「しきい値 × この割合」ぶん立ち上がって、はじめて「ふみ」
+    relRiseRatio: 0.2,    // 強くふんでいるときは「最近の山の高さ × この割合」ぶんの立ち上がりが要る
+    levelTauMs: 700,      // 「最近の山の高さ」を覚えておく時間
+    oppositeCos: -0.3,    // 前のふみと逆向きの動き（cos がこれ未満）が…
+    oppositeRatio: 0.7,   // …直近のふみ間隔のこの割合より早く来たら、同じ 1 歩の「行き・帰り」とみなして数えない
+    dirTauMs: 30,         // 動きの向きをならす時間
+    gravityTauMs: 1500,   // 重力推定: 動いている間の時定数（ゆっくり）
     gravityStillTauMs: 40, //          止まっている間の時定数（すばやく合わせる）
     gravityClampG: 0.3,   // 動いている間の 1 回の修正量の上限（衝撃で引きずられない）
     settleTauMs: 110,     // 接続直後に重力推定を落ち着かせる時定数
@@ -53,7 +63,7 @@
     fastTauMs: 40,        // ゆらぎを測るための短い平均
     jitterTauMs: 40,
     attackTauMs: 25,      // 包絡線の立ち上がり
-    releaseTauMs: 90,     // 包絡線の戻り
+    releaseTauMs: 60,     // 包絡線の戻り
     peakWindowMs: 220,    // ふみ検出後、この時間内の最大値を「ふみの強さ」とする
     warmupMs: 350,        // 接続直後は重力推定が落ち着くまで数えない
     noiseRiseTauMs: 6000, // ノイズフロア推定: 上がるのはゆっくり（足踏みの山を覚えない）
@@ -100,7 +110,8 @@
       fx: 0, fy: 0, fz: 0, jit: 0, stillMs: 0, jMinCur: Infinity, jMinPrev: Infinity, jWinT0: 0,
       px: 0, py: 0, pz: 0, lsbCur: Infinity, lsbPrev: Infinity, lsbT0: 0,
       env: 0, dyn: 0, noise: 0.01,
-      armed: false, peak: 0, valley: 0, lastStepT: -1e9, firstT: null,
+      armed: false, peak: 0, valley: 0, level: 0, ivl: 1000, lastStepT: -1e9, firstT: null,
+      dvx: 0, dvy: 0, dvz: 0, ux: 0, uy: 0, uz: 0,
       prevSampleTs: null, cur: null,
       dtEst: null, rateT0: null, rateN: 0,
       lastT: -1e9, samples: 0
@@ -268,6 +279,10 @@
       st.gz += aG * clamp(dz, -cl, cl);
     }
 
+    // 動きの向き（少しならしたもの）。足を「振り上げる」と「ふみおろす」では逆を向く
+    var aD = 1 - Math.exp(-dt / c.dirTauMs);
+    st.dvx += aD * (dx - st.dvx); st.dvy += aD * (dy - st.dvy); st.dvz += aD * (dz - st.dvz);
+
     // --- 3) 包絡線 ---
     var aE = 1 - Math.exp(-dt / (dyn > st.env ? c.attackTauMs : c.releaseTauMs));
     st.env += (dyn - st.env) * aE;
@@ -292,26 +307,49 @@
     var tauN = st.env > st.noise ? (learning ? c.noiseLearnTauMs : c.noiseRiseTauMs) : c.noiseFallTauMs;
     st.noise += (st.env - st.noise) * (1 - Math.exp(-dt / tauN));
 
-    // --- 4) ふみの判定 ---
+    // --- 4) ふみの判定（山と谷を追いかける） ---
+    // 最近の山の高さ（ゆっくり忘れる）。強くふんでいる間は、小さな揺れを 1 ふみに数えないために使う
+    st.level = Math.max(st.env, st.level * Math.exp(-dt / c.levelTauMs));
+
     if (!st.armed) {
-      // いったん下がるまで待つ。強く速い足踏みでは包絡線がしきい値まで下がりきらないので、
-      // 「直前の山の半分」まで下がれば次を数えられるようにする
+      // 山を追いかけ、そこから十分に下がったら次の立ち上がりを待つ。
+      // 速い足踏みでは包絡線がしきい値まで下がりきらないので、「山から 3 割下がった」でもよいことにする
       if (st.env > st.peak) st.peak = st.env;
-      if (st.env < Math.max(thr * c.rearmRatio, st.peak * c.relRearmRatio)) {
+      if (st.env < Math.max(thr * c.rearmRatio, st.peak * (1 - c.fallRatio))) {
         st.armed = true;
         st.valley = st.env;
       }
       return null;
     }
     if (st.env < st.valley) st.valley = st.env;
-    if (st.env < thr || (st.env - st.valley) < thr * c.riseRatio) return null;
+    var rise = Math.max(thr * c.riseRatio, st.level * c.relRiseRatio);
+    if (st.env < thr || (st.env - st.valley) < rise) return null;
+
+    // 反対の足の直後で、しかもずっと小さい動きなら、床を伝わってきた振動かもしれない。
+    // まだ数えずに様子を見る（本当にふんでいれば、このあと大きくなって数えられる）
+    var other = this.feet[1 - foot];
+    if (this.lastStepFoot !== foot && (tMs - this.lastStepAnyT) < c.crossLockMs && st.env < other.level * c.crossRatio) {
+      return null;
+    }
 
     // 山が来た。数えるかどうかにかかわらず、いったん下がるまで再検出しない
     st.armed = false;
     st.peak = st.env;
-    if (tMs - st.lastStepT < c.refractoryMs) return null;
-    if (this.lastStepFoot !== foot && (tMs - this.lastStepAnyT) < c.crossLockMs) return null;
+    // 不応期: ゆっくりふんでいるときは長め（持ち上げと着地の二重カウントを防ぐ）、速いときは短め
+    var since = tMs - st.lastStepT;
+    var refractory = clamp(st.ivl * c.refractoryIntervalRatio, Math.min(c.minRefractoryMs, c.refractoryMs), c.refractoryMs);
+    if (since < refractory) return null;
 
+    // 足を上下に動かすと、加速度は 1 歩のあいだに「行き」と「帰り」で逆向きの山を 2 つ作る。
+    // 前のふみと逆向きの山が、いつもの間隔よりずっと早く来たら、同じ 1 歩の残り半分なので数えない
+    var dn = Math.sqrt(st.dvx * st.dvx + st.dvy * st.dvy + st.dvz * st.dvz);
+    if (dn > 1e-6) {
+      var cos = (st.dvx * st.ux + st.dvy * st.uy + st.dvz * st.uz) / dn;
+      if (cos < c.oppositeCos && since < Math.min(st.ivl, 1500) * c.oppositeRatio) return null;
+      st.ux = st.dvx / dn; st.uy = st.dvy / dn; st.uz = st.dvz / dn;
+    }
+
+    st.ivl = since > 1500 ? 1000 : st.ivl + (since - st.ivl) * 0.4;
     st.lastStepT = tMs;
     this.lastStepAnyT = tMs;
     this.lastStepFoot = foot;

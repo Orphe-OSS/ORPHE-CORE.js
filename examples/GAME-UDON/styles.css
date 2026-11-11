@@ -1,5 +1,5 @@
 /*
- * ふみふみうどん
+ * うどんふみふみ
  *
  * 元のゲームの色（朱の背景・墨のふちどり・生地の白・丼の青緑・もちもち度の藍・肌色の数字）を
  * そのまま土台にしています。ステージ内の寸法はすべて em で書き、ステージ幅に比例する
@@ -374,6 +374,9 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 .u-course.is-on em { color: var(--yolk); }
 .u-course.is-on em small, .u-course.is-on > small { color: #E9DED4; }
 
+.u-course-note { font-weight: 900; font-size: 0.92em; color: #4A3F39; }
+.u-course-note i { color: var(--shu); margin-right: 0.2em; }
+
 .u-levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5em; }
 
 .u-level {
@@ -453,6 +456,8 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 .u-intro-ja { font-family: var(--display); font-size: 2.55em; line-height: 1.3; color: #FFFDF8; -webkit-text-stroke: 0.22em var(--ink); paint-order: stroke fill; }
 .u-intro-ja2 { font-family: var(--display); font-size: 1.75em; line-height: 1.45; margin-top: 1em; color: var(--ink); }
 .u-intro-en { font-weight: 900; font-size: 1em; letter-spacing: 0.04em; color: var(--ink); opacity: 0.72; margin-top: 0.3em; }
+.u-intro-tip { display: inline-block; margin-top: 1.3em !important; padding: 0.5em 1.2em; border-radius: 1em; background: var(--paper); border: 0.22em solid var(--ink); font-weight: 900; font-size: 1.05em; line-height: 1.45; }
+.u-intro-tip i { color: var(--shu); margin-right: 0.3em; }
 
 .u-count {
   position: absolute;
@@ -503,16 +508,39 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 .u-phases li.is-now { background: var(--ink); border-color: var(--ink); color: #fff; }
 .u-phases li.is-done { background: var(--ai); border-color: var(--ink); color: #fff; }
 
+.u-combo { display: flex; align-items: center; gap: 0.7em; margin-top: 0.55em; }
+.u-combo-label { font-family: var(--display); font-size: 1.1em; white-space: nowrap; width: 5.6em; }
+.u-combo-bar { position: relative; flex: 1; height: 1.05em; border-radius: 999px; background: rgba(35, 24, 21, 0.1); border: 0.2em solid var(--ink); overflow: hidden; }
+.u-combo-bar > i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: var(--muted); transition: width 0.18s ease-out, background 0.2s; }
+.u-combo-bar > em { position: absolute; top: 0; bottom: 0; width: 0.16em; background: rgba(35, 24, 21, 0.5); }
+.u-combo-mult { font-family: var(--display); font-weight: 400; font-size: 1.05em; min-width: 2.9em; text-align: center; padding: 0.02em 0; border-radius: 999px; border: 0.18em solid var(--ink); background: #fff; }
+.u-combo[data-level="1"] .u-combo-bar > i { background: var(--ai); }
+.u-combo[data-level="2"] .u-combo-bar > i { background: var(--shu); }
+.u-combo[data-level="3"] .u-combo-bar > i { background: var(--yolk); }
+.u-combo[data-level="1"] .u-combo-mult { background: var(--ai); color: #fff; }
+.u-combo[data-level="2"] .u-combo-mult { background: var(--shu); color: #fff; }
+.u-combo[data-level="3"] .u-combo-mult { background: var(--yolk); animation: u-combo-max 0.5s ease-in-out infinite alternate; }
+.u-combo:not([data-level="0"]) .u-combo-mult { animation: u-combo-up 0.4s cubic-bezier(0.2, 1.8, 0.4, 1); }
+.u-combo[data-level="3"] .u-combo-mult { animation: u-combo-max 0.5s ease-in-out infinite alternate; }
+.u-combo.is-break .u-combo-bar { animation: u-combo-break 0.35s ease-out; }
+
+@keyframes u-combo-up { from { transform: scale(0.5); } }
+@keyframes u-combo-max { to { transform: scale(1.12) rotate(-3deg); } }
+@keyframes u-combo-break {
+  20% { transform: translateX(-0.25em); }
+  50% { transform: translateX(0.2em); }
+  80% { transform: translateX(-0.1em); }
+}
+
 .u-hud-time { position: absolute; top: 0.4em; right: 2em; text-align: right; }
 .u-hud-time > span { display: block; font-family: var(--display); font-size: 5em; line-height: 1.1; color: var(--peach); -webkit-text-stroke: 0.09em var(--ink); paint-order: stroke fill; }
 .u-hud-time small { display: inline-block; font-weight: 900; font-size: 1.15em; padding: 0.1em 0.9em; border-radius: 999px; background: var(--ink); color: #fff; }
 .u-hud-time small b { font-family: var(--display); font-weight: 400; font-size: 1.25em; color: var(--yolk); margin: 0 0.1em; }
-.u-hud-time small i { font-style: normal; }
 
 .u-callout {
   position: absolute;
   right: 0.9em;
-  top: 6.3em;
+  top: 9.2em;
   max-width: 11em;
   text-align: center;
   font-family: var(--display);

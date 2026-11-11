@@ -78,13 +78,14 @@ assert.equal(pushed.length, 3);
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 const scripts = Array.from(html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g), m => m[1]);
 const order = name => scripts.indexOf(name);
-for (const name of ['step-detector.js', 'health-analysis.js', 'udon-menu.js', 'udon-art.js', 'charts.js', 'audio.js', 'game.js', 'scripts.js']) {
+for (const name of ['step-detector.js', 'health-analysis.js', 'udon-menu.js', 'combo.js', 'udon-art.js', 'charts.js', 'audio.js', 'game.js', 'scripts.js']) {
   assert.ok(order(name) >= 0, `${name} is loaded`);
   assert.ok(fs.existsSync(path.join(dir, name)), `${name} exists`);
 }
 assert.ok(order('../../js/CoreToolkit.js') < order('scripts.js'));
 assert.ok(order('game.js') < order('scripts.js'), 'UdonGame is defined before the bridge runs');
 assert.ok(order('step-detector.js') < order('game.js'));
+assert.ok(order('combo.js') < order('game.js'));
 for (const id of ['toolkit_placeholder1', 'toolkit_placeholder2', 'ble-support-message', 'stage', 'stageCanvas']) {
   assert.ok(html.includes(`id="${id}"`), `#${id} exists`);
 }

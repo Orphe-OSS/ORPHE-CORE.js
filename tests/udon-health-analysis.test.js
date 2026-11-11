@@ -244,8 +244,10 @@ const score = (r, key) => r.axes.find(a => a.key === key).score;
   assert.equal(pick({ power: 30 }, { medianPeak: 0.3 }), 'tanuki', 'soft stepping → tanuki');
   assert.equal(pick({}, {}, { pauses: 1 }), 'ume');
   assert.equal(pick({}, { restCount: 2 }), 'ume');
-  assert.equal(pick({}, { stepCount: 100 }, { target: 100 }), 'chikara');
-  assert.equal(pick({}, { stepCount: 70 }, { target: 100 }), 'kake', 'chikara needs the big course to be finished');
+  // コンボで早く進むので、ふみ数は目標より少なくてよい。大盛り以上を「ふみきった」ことが条件
+  assert.equal(pick({}, { stepCount: 55 }, { target: 100, completed: true }), 'chikara');
+  assert.equal(pick({}, { stepCount: 70 }, { target: 100, completed: false }), 'kake', 'chikara needs the big course to be finished');
+  assert.equal(pick({}, { stepCount: 60 }, { target: 60, completed: true }), 'kake', 'the regular course is not enough for chikara');
   assert.equal(pick({ rhythm: 99, balance: 99, stamina: 99, steady: 99 }, { total: 92 }), 'nabeyaki');
   assert.equal(pick({ rhythm: 99, balance: 99 }, { total: 92, stepCount: 30 }), 'kitsune', 'nabeyaki needs 40+ steps');
   assert.equal(pick({ balance: null, rhythm: 75 }), 'kitsune', 'unmeasured balance never yields tsukimi');

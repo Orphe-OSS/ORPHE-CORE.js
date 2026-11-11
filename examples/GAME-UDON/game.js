@@ -1,5 +1,5 @@
 /**
- * ふみふみうどん — ゲーム本体（進行・描画・リザルト）
+ * うどんふみふみ — ゲーム本体（進行・描画・リザルト）
  *
  * センサーまわりは scripts.js（CORE 接続）→ UdonGame.pushAcc() → step-detector.js の順に流れてきます。
  * このファイルは「ふみ」を受け取ってからの世界（生地・足・麺棒・包丁のアニメーション、HUD、
@@ -13,7 +13,7 @@
   var INK = '#231815';
   var COL = {
     shu: '#E15C3A', shuLight: '#E86B49', dough: '#F2EFE9', doughShade: '#E2DDD3', white: '#FFFDF8',
-    wood: '#EAC690', woodDark: '#D4A562', peach: '#FAD4BC', cheek: '#F5A9A0', yolk: '#F7B500',
+    wood: '#EAC690', woodDark: '#D4A562', peach: '#FAD4BC', yolk: '#F7B500', glow: '#F7A735',
     steel: '#D5DBDE', led: ['#39C6F4', '#FFD23F']
   };
   var LW = 1280, LH = 720;        // キャンバスの論理サイズ
@@ -34,7 +34,8 @@
     roll: ['ころころ', 'のび〜', 'すーっ', 'ころん'],
     cut: ['トン', 'トン!', 'ストン', 'トントン']
   };
-  var STREAK_CALLS = { 4: 'いいリズム！', 8: 'のってきた！', 16: '職人のリズム！', 30: '名人芸！' };
+  // リズムのコンボ（combo.js）: おなじ間隔でふみつづけると、1 ふみで進む量（もちもち度）が増える
+  var COMBO_LEVELS = UdonCombo.LEVELS;
 
   var $ = function (id) { return document.getElementById(id); };
   var stage = $('stage');
@@ -79,7 +80,7 @@
               at: new Date(e.at).toISOString(), udon: UdonMenu.byId(e.udon) ? e.udon : 'kake',
               course: courseById(e.course) ? e.course : 'nami', feet: e.feet === 1 ? 1 : 2,
               total: Math.min(100, num(e.total)), rank: String(e.rank || '').replace(/[^a-z]/g, '').slice(0, 20),
-              steps: num(e.steps), activeSec: num(e.activeSec), cadence: num(e.cadence),
+              steps: num(e.steps), activeSec: num(e.activeSec), cadence: num(e.cadence), combo: num(e.combo),
               axes: (e.axes && typeof e.axes === 'object') ? e.axes : {}
             });
           });
@@ -262,23 +263,29 @@
     hideAssist();
     $('playHint').classList.add('is-gone');
 
-    // リズムの連続（直前の間隔と 18% 以内なら「そろっている」）
-    var n = run.steps.length;
-    if (n >= 3) {
-      var a = run.steps[n - 1].t - run.steps[n - 2].t;
-      var b = run.steps[n - 2].t - run.steps[n - 3].t;
-      if (a < 2000 && b < 2000 && Math.abs(a - b) <= Math.max(a, b) * 0.18) run.streak++;
-      else run.streak = 0;
-      if (STREAK_CALLS[run.streak]) { callout(STREAK_CALLS[run.streak]); UdonAudio.good(); }
+    // リズムのコンボ: いつもの間隔とほぼ同じ間隔でふめたら、つながる（規則は combo.js）
+    var prevLevel = UdonCombo.level(run.streak);
+    var combo = UdonCombo.advance(run.steps, run.streak);
+    run.streak = combo.streak;
+    if (combo.broke) comboBreak();
+    if (run.streak > run.maxCombo) run.maxCombo = run.streak;
+    var level = UdonCombo.level(run.streak);
+    var mult = UdonCombo.mult(run.streak);
+    if (level > prevLevel) {
+      callout(COMBO_LEVELS[level - 1].call);
+      UdonAudio.good();
+      burst(DOUGH_X, BOARD_Y - 220, 6 + level * 3);
     }
+    run.level = level;
+    run.points = Math.min(run.target, run.points + mult);
 
-    var p = run.count / run.target;
+    var p = run.points / run.target;
     var prevPhase = run.phase;
     run.phase = p >= ROLL_END ? 'cut' : (p >= KNEAD_END ? 'roll' : 'knead');
     var strength = Math.min(1, step.peak / Math.max(0.3, detector.getThreshold() * 3));
 
-    if (run.count >= run.target) {
-      sceneStep(prevPhase, step.foot, strength);
+    if (run.points >= run.target - 1e-9) {
+      sceneStep(prevPhase, step.foot, strength, mult);
       beginBoil();
       return;
     }
@@ -286,17 +293,24 @@
       enterPhase(run.phase);
     } else if (run.phase === 'knead') {
       // 生地をたたんで、もう一度（こねる区間を 3 回に分ける）
-      var kneadSteps = Math.max(3, Math.round(run.target * KNEAD_END));
-      var fold = Math.floor(run.count / (kneadSteps / 3));
+      var per = run.target * KNEAD_END / 3;
+      var fold = Math.floor(run.points / per + 1e-9);
       if (fold > run.folds && fold < 3) {
         run.folds = fold;
-        scene.dough.cycle0 = run.count;
-        callout('たたんで もういちど！');
+        scene.dough.cycle0 = run.points;
+        if (level <= prevLevel) callout('たたんで もういちど！');
         UdonAudio.fold();
         burst(DOUGH_X, BOARD_Y - 160, 8);
       }
     }
-    sceneStep(run.phase, step.foot, strength);
+    sceneStep(run.phase, step.foot, strength, mult);
+  }
+
+  function comboBreak() {
+    var el = $('combo');
+    el.classList.remove('is-break');
+    void el.offsetWidth;
+    el.classList.add('is-break');
   }
 
   function enterPhase(phase) {
@@ -384,8 +398,8 @@
     var course = courseById(store.settings.course) || COURSES[1];
     var live = liveFeet();
     run = {
-      course: course, target: course.steps, count: 0, steps: [], phase: 'knead', folds: 0,
-      clockStart: 0, clock: 0, pausedMs: 0, pauseStart: 0, pauses: 0, streak: 0,
+      course: course, target: course.steps, count: 0, points: 0, steps: [], phase: 'knead', folds: 0,
+      clockStart: 0, clock: 0, pausedMs: 0, pauseStart: 0, pauses: 0, streak: 0, maxCombo: 0, level: 0,
       startedAt: performance.now(), lastStepAt: performance.now(), done: false,
       assistUntil: 0, assistOff: false, restNext: false,
       idle: newIdle(), motion: [0, 0],
@@ -393,7 +407,6 @@
     };
     state.paused = false;
     $('pausedLayer').hidden = true;
-    $('hudTarget').textContent = course.steps;
     $('playHint').classList.remove('is-gone');
     hideAssist();
     resetScene();
@@ -448,12 +461,13 @@
     var analysis = UdonHealth.analyze({ steps: steps, feet: feetInPlay(steps) });
     var feet = analysis.feet;
     var pick = UdonMenu.pick(analysis, {
-      target: run.target, threshold: detector.getThreshold(), pauses: run.pauses, collected: store.collection
+      target: run.target, completed: run.points >= run.target - 1e-9,
+      threshold: detector.getThreshold(), pauses: run.pauses, collected: store.collection
     });
     if (state.debug.udon && UdonMenu.byId(state.debug.udon)) {
       pick = { id: state.debug.udon, item: UdonMenu.byId(state.debug.udon), isNew: !store.collection[state.debug.udon] };
     }
-    state.result = { analysis: analysis, pick: pick, course: run.course, sens: sensLabel(), at: new Date() };
+    state.result = { analysis: analysis, pick: pick, course: run.course, sens: sensLabel(), at: new Date(), maxCombo: run.maxCombo };
 
     // 図鑑ときろく
     var c = store.collection[pick.id] || { count: 0, best: 0 };
@@ -466,6 +480,7 @@
     entry.udon = pick.id;
     entry.course = run.course.id;
     entry.feet = feet;
+    entry.combo = run.maxCombo;
     store.history.push(entry);
     if (store.history.length > HISTORY_MAX) store.history = store.history.slice(-HISTORY_MAX);
     saveStore();
@@ -627,7 +642,7 @@
     var tiles = [
       ['じかん', UdonCharts.timeLabel(a.activeSec), a.restCount ? ('ひとやすみ ' + a.restCount + '回') : 'ふんでいた時間'],
       ['ふみ数', a.stepCount + '<small>ふみ</small>', r.course.name + 'コース'],
-      ['テンポ', Math.round(a.cadence) + '<small>ふみ/分</small>', 'いいリズム 最長 ' + a.bestStreak + 'ふみ'],
+      ['テンポ', Math.round(a.cadence) + '<small>ふみ/分</small>', 'さいだいコンボ ' + r.maxCombo],
       a.feet === 2
         ? ['左右', Math.round(a.left.share * 100) + '<small>:</small>' + Math.round(a.right.share * 100), '左（01）: 右（02）']
         : ['ちから', a.medianPeak.toFixed(2) + '<small>G</small>', 'ふみこみの強さ']
@@ -793,7 +808,7 @@
     scene.dough = {
       x: DOUGH_X, baseY: BOARD_Y + 4, w: 330, h: 250, ex: 0.72, ey: 0.78,
       off: new Array(N + 1).fill(0), vel: new Array(N + 1).fill(0),
-      squash: 0, squashV: 0, mood: 'idle', moodUntil: 0, cycle0: 0, blink: 2
+      squash: 0, squashV: 0, cycle0: 0
     };
     scene.legs = [
       { x: 452, soleY: 0, state: 'idle', t: 0, press: 0, glow: 0, init: false },
@@ -816,20 +831,23 @@
     return d.baseY - d.h * Math.pow(s, d.ey);
   }
 
-  /** 1 ふみぶんの演出 */
-  function sceneStep(phase, foot, k) {
+  /** 1 ふみぶんの演出。mult = コンボの倍率 */
+  function sceneStep(phase, foot, k, mult) {
     var d = scene.dough;
+    var lv = run ? run.level : 0;
+    if (lv > 0) scene.glowPulse = 1;   // コンボ中は、ふむたびに後ろの丸がふくらむ
     if (phase === 'knead') {
       var leg = scene.legs[foot];
       leg.state = 'down'; leg.t = 0; leg.press = 22 + 26 * k; leg.glow = 1;
       leg.from = leg.soleY;
       d.squashV += 2.2 + 2.4 * k;
-      d.mood = 'squish'; d.moodUntil = scene.t + 0.32;
       var cx = leg.x + LEG_W * 0.44;
       puffs(d.x - d.w / 2 - 6, d.baseY - 10, -1, 3);
       puffs(d.x + d.w / 2 + 6, d.baseY - 10, 1, 3);
-      word(pickWord('knead'), cx + (foot ? 150 : -190), restTop(d, cx) - 70 - Math.random() * 40);
-      UdonAudio.play('puni', { rate: (foot ? 1.06 : 0.95) + (Math.random() - 0.5) * 0.06, gain: 0.7 + 0.5 * k });
+      word(pickWord('knead'), cx + (foot ? 150 : -190), restTop(d, cx) - 90 - Math.random() * 40);
+      if (mult > 1) word('+' + mult, d.x + (foot ? 70 : -70) + (Math.random() - 0.5) * 60, restTop(d, d.x) - 150 - Math.random() * 40, COL.yolk);
+      // コンボが上がるほど、音が少しずつ高くなる
+      UdonAudio.play('puni', { rate: (foot ? 1.06 : 0.95) + lv * 0.07 + (Math.random() - 0.5) * 0.06, gain: 0.7 + 0.5 * k });
     } else if (phase === 'roll') {
       var pin = scene.pin;
       pin.dir = (foot === 0) === (pin.dir > 0) ? -pin.dir : pin.dir;
@@ -838,32 +856,36 @@
       pin.tx = d.x + (foot === 0 || pin.dir < 0 ? -half : half);
       if (Math.abs(pin.tx - pin.x) < 40) pin.tx = d.x + (pin.x > d.x ? -half : half);
       d.squashV += 1.2;
-      d.mood = 'happy'; d.moodUntil = scene.t + 0.5;
+      if (mult > 1) word('+' + mult, d.x + (Math.random() - 0.5) * 160, d.baseY - d.h - 150 - Math.random() * 40, COL.yolk);
       scene.side = -(scene.side || 1);
-      word(pickWord('roll'), d.x + scene.side * 250, d.baseY - d.h - 190 - Math.random() * 30);
+      word(pickWord('roll'), d.x + scene.side * 210, BOARD_Y - 340 - Math.random() * 30);
       UdonAudio.roll();
     } else {
-      scene.cut.n++;
-      scene.cut.chopT = 0;
       var K = cutTotal();
+      // コンボ中は 1 回の「トン」でたくさん切れる
+      var cutP = (run.points / run.target - ROLL_END) / (1 - ROLL_END);
+      scene.cut.n = Math.min(K, Math.max(scene.cut.n + 1, Math.round(K * cutP)));
+      scene.cut.chopT = 0;
       var xCut = cutX(scene.cut.n, K);
       puffs(xCut, BOARD_Y - 6, 1, 2);
       scene.side = -(scene.side || 1);
       word(pickWord('cut'), xCut + 120 + scene.side * 90, BOARD_Y - 250 - (scene.side > 0 ? 70 : 0));
+      if (mult > 1) word('+' + mult, xCut - 90 + (Math.random() - 0.5) * 80, BOARD_Y - 330 - Math.random() * 40, COL.yolk);
       UdonAudio.chop();
     }
   }
 
-  function cutTotal() { return run ? Math.max(1, run.target - Math.round(run.target * ROLL_END)) : 12; }
+  /** 「きる」区間で、生地を何本ぶんに切り分けて見せるか */
+  function cutTotal() { return run ? Math.max(6, Math.min(40, Math.round(run.target * (1 - ROLL_END)))) : 12; }
   var CUT_W = 600, CUT_H = 112;
   function cutX(n, K) { return DOUGH_X - 60 + CUT_W / 2 - CUT_W * Math.min(1, n / K); }
 
   function pickWord(kind) { var w = WORDS[kind]; return w[Math.floor(Math.random() * w.length)]; }
 
   var WORD_LIFE = 0.62;
-  function word(text, x, y) {
-    scene.words.push({ text: text, x: Math.max(120, Math.min(LW - 120, x)), y: y, t: 0, rot: (Math.random() - 0.5) * 0.3 });
-    if (scene.words.length > 3) scene.words.shift();
+  function word(text, x, y, color) {
+    scene.words.push({ text: text, x: Math.max(120, Math.min(LW - 120, x)), y: y, t: 0, rot: (Math.random() - 0.5) * 0.3, color: color });
+    if (scene.words.length > 4) scene.words.shift();
   }
 
   function puffs(x, y, dir, n) {
@@ -894,16 +916,14 @@
     var phase = run ? run.phase : 'knead';
     if (state.screen === 'intro') phase = 'knead';
     if (phase === 'knead') {
-      var kneadSteps = run ? Math.max(3, Math.round(run.target * KNEAD_END)) : 18;
-      var per = kneadSteps / 3;
-      var c = run ? Math.min(1, (run.count - d.cycle0) / per) : (0.25 + 0.2 * Math.sin(scene.t * 0.8));
+      var per = run ? run.target * KNEAD_END / 3 : 6;
+      var c = run ? Math.min(1, (run.points - d.cycle0) / per) : (0.25 + 0.2 * Math.sin(scene.t * 0.8));
       var folds = run ? run.folds : 0;
       tw = 330 + (290 + folds * 16) * ease(c);
       th = 250 - (130 - folds * 4) * ease(c);
       ex = 0.72; ey = 0.78;
     } else if (phase === 'roll') {
-      var a = Math.round(run.target * KNEAD_END), b = Math.round(run.target * ROLL_END);
-      var cr = Math.min(1, (run.count - a) / Math.max(1, b - a));
+      var cr = Math.max(0, Math.min(1, (run.points / run.target - KNEAD_END) / (ROLL_END - KNEAD_END)));
       tw = 640 + 250 * cr; th = 92 - 44 * cr; ex = 0.3; ey = 0.42;
     } else {
       tw = CUT_W; th = CUT_H; ex = 0.12; ey = 0.2;
@@ -928,9 +948,6 @@
       for (i = 0; i <= N; i++) o[i] += v[i] * h;
     }
 
-    if (d.mood !== 'idle' && scene.t > d.moodUntil) d.mood = 'idle';
-    d.blink -= dt;
-    if (d.blink < -0.12) d.blink = 2 + Math.random() * 3;
   }
 
   function doughPoints(d) {
@@ -992,6 +1009,10 @@
 
   function updateScene(dt) {
     scene.t += dt;
+    // コンボの明るさ（ふみふみ中だけ。なめらかに追従する）
+    var wantGlow = (run && state.screen === 'play' && !run.done) ? run.level : 0;
+    scene.glow = (scene.glow || 0) + (wantGlow - (scene.glow || 0)) * (1 - Math.exp(-dt * 4));
+    scene.glowPulse = Math.max(0, (scene.glowPulse || 0) - dt * 4);
     var i;
     for (i = scene.parts.length - 1; i >= 0; i--) {
       var p = scene.parts[i];
@@ -1025,7 +1046,6 @@
           var leg = scene.legs[beat % 2];
           leg.state = 'down'; leg.t = 0; leg.press = 34; leg.from = leg.soleY;
           scene.dough.squashV += 3;
-          scene.dough.mood = 'squish'; scene.dough.moodUntil = scene.t + 0.3;
         }
       }
       updateDough(dt);
@@ -1056,6 +1076,12 @@
   }
 
   // --- 描画 -------------------------------------------------------------------
+  function mix(a, b, k) {
+    var pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+    var ch = function (sh) { return Math.round(((pa >> sh) & 255) + (((pb >> sh) & 255) - ((pa >> sh) & 255)) * k); };
+    return 'rgb(' + ch(16) + ',' + ch(8) + ',' + ch(0) + ')';
+  }
+
   function inkShape(fill, lw) {
     ctx.fillStyle = fill; ctx.fill();
     ctx.lineWidth = lw === undefined ? 11 : lw;
@@ -1066,9 +1092,22 @@
   function drawBackdrop() {
     ctx.fillStyle = COL.shu;
     ctx.fillRect(-400, -400, LW + 800, LH + 800);
-    // うしろの大きな丸（のれんの向こうの明かり）
-    ctx.beginPath(); ctx.arc(DOUGH_X, 400, 372, 0, Math.PI * 2);
-    ctx.fillStyle = COL.shuLight; ctx.fill();
+    // うしろの大きな丸（のれんの向こうの明かり）。コンボが続くほど明るくなる
+    var glow = scene.glow || 0;
+    if (glow > 2.05) {
+      // 最高のコンボ: 光の筋がゆっくり回る
+      ctx.save();
+      ctx.translate(DOUGH_X, 400); ctx.rotate(scene.t * 0.25);
+      ctx.fillStyle = mix(COL.shu, COL.glow, 0.28 * Math.min(1, glow - 2.05) / 0.95);
+      for (var r = 0; r < 12; r++) {
+        ctx.beginPath(); ctx.moveTo(0, 0);
+        ctx.arc(0, 0, 1400, r * Math.PI / 6, r * Math.PI / 6 + Math.PI / 12);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.beginPath(); ctx.arc(DOUGH_X, 400, 372 + (scene.glowPulse || 0) * 16, 0, Math.PI * 2);
+    ctx.fillStyle = mix(COL.shuLight, COL.glow, Math.min(1, glow / 3) * 0.8); ctx.fill();
     // のし板
     ctx.fillStyle = COL.wood;
     ctx.fillRect(-400, BOARD_Y, LW + 800, LH - BOARD_Y + 400);
@@ -1080,33 +1119,7 @@
     ctx.strokeStyle = INK; ctx.lineWidth = 11; ctx.stroke();
   }
 
-  function drawFace(x, y, sc, mood, blink) {
-    ctx.save();
-    ctx.translate(x, y); ctx.scale(sc, sc);
-    ctx.fillStyle = COL.cheek;
-    ctx.beginPath(); ctx.ellipse(-66, 16, 17, 10, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(66, 16, 17, 10, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    if (mood === 'squish') {
-      ctx.beginPath(); ctx.moveTo(-48, -12); ctx.lineTo(-30, -2); ctx.lineTo(-48, 8);
-      ctx.moveTo(48, -12); ctx.lineTo(30, -2); ctx.lineTo(48, 8); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(0, 18, 9, 11, 0, 0, Math.PI * 2);
-      ctx.fillStyle = '#B5473A'; ctx.fill(); ctx.stroke();
-    } else if (mood === 'happy') {
-      ctx.beginPath(); ctx.arc(-38, 2, 11, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
-      ctx.beginPath(); ctx.arc(38, 2, 11, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, 8, 13, Math.PI * 0.1, Math.PI * 0.9); ctx.stroke();
-    } else {
-      var eh = blink < 0 ? 1.5 : 8;
-      ctx.beginPath(); ctx.ellipse(-38, -2, 7, eh, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(38, -2, 7, eh, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(0, 8, 10, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function drawDough(d, opts) {
-    opts = opts || {};
+  function drawDough(d) {
     var pts = doughPoints(d);
     // 板に落ちる影
     ctx.fillStyle = COL.woodDark;
@@ -1128,12 +1141,6 @@
     ctx.moveTo(pts[q][0] + 16, pts[q][1] + 26);
     ctx.quadraticCurveTo(pts[q + 2][0] + 10, pts[q + 2][1] + 20, pts[q2][0], pts[q2][1] + 20);
     ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.stroke();
-    if (opts.face !== false) {
-      var mid = Math.round(N / 2);
-      var sc = Math.max(0.42, Math.min(1, d.h / 190));
-      var fy = d.baseY - d.h * 0.44 + d.off[mid] * 0.7 + d.squash * 6;
-      drawFace(d.x, Math.min(fy, d.baseY - 30 * sc), sc, d.mood, d.blink);
-    }
   }
 
   function drawLeg(i) {
@@ -1293,7 +1300,7 @@
     if (t < 2.1) drawWordAt('ゆであがるよ〜', cx, 118, 70, 1);
   }
 
-  function drawWordAt(text, x, y, size, alpha, rot) {
+  function drawWordAt(text, x, y, size, alpha, rot, color) {
     ctx.save();
     ctx.translate(x, y); ctx.rotate(rot || 0);
     ctx.globalAlpha = alpha;
@@ -1301,7 +1308,7 @@
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round'; ctx.strokeStyle = INK; ctx.lineWidth = size * 0.26;
     ctx.strokeText(text, 0, 0);
-    ctx.fillStyle = COL.white; ctx.fillText(text, 0, 0);
+    ctx.fillStyle = color || COL.white; ctx.fillText(text, 0, 0);
     ctx.restore();
   }
 
@@ -1339,19 +1346,18 @@
     scene.words.forEach(function (w) {
       var k = w.t / WORD_LIFE;
       var pop = k < 0.15 ? 0.6 + 0.5 * (k / 0.15) : (k < 0.8 ? 1.1 - 0.1 * Math.min(1, (k - 0.15) / 0.2) : Math.max(0.05, (1 - k) / 0.2));
-      drawWordAt(w.text, w.x, w.y - k * 46, 46 * pop, 1, w.rot);
+      drawWordAt(w.text, w.x, w.y - k * 46, 46 * pop, 1, w.rot, w.color);
     });
   }
 
-  /** タイトルなどで、生地の子が板の上をぴょんぴょん歩く（元の待機アニメーション） */
+  /** タイトルなどで、生地のかたまりが板の上をぴょんぴょん跳ねていく（元の待機アニメーション） */
   function drawHopper() {
     var h = scene.hop;
     var s = Math.abs(Math.sin(h.phase * Math.PI));
     var land = Math.max(0, 1 - s * 5);
     var d = {
       x: h.x, baseY: BOARD_Y + 4 - s * 96, w: 150 * (1 + land * 0.22), h: 118 * (1 - land * 0.24 + s * 0.08),
-      ex: 0.72, ey: 0.78, off: scene.dough.off.map(function () { return 0; }), squash: 0,
-      mood: s > 0.5 ? 'happy' : 'idle', blink: scene.dough.blink
+      ex: 0.72, ey: 0.78, off: scene.dough.off.map(function () { return 0; }), squash: 0
     };
     ctx.fillStyle = COL.woodDark;
     ctx.beginPath(); ctx.ellipse(h.x, BOARD_Y + 10, 70 - s * 26, 10 - s * 4, 0, 0, Math.PI * 2); ctx.fill();
@@ -1363,7 +1369,11 @@
     }
     ctx.lineTo(pts[N][0], d.baseY);
     ctx.closePath(); inkShape(COL.dough, 10);
-    drawFace(h.x, d.baseY - d.h * 0.46, 0.6, d.mood, d.blink);
+    // つや
+    ctx.beginPath();
+    ctx.moveTo(h.x - d.w * 0.3, d.baseY - d.h * 0.5);
+    ctx.quadraticCurveTo(h.x - d.w * 0.26, d.baseY - d.h * 0.78, h.x - d.w * 0.06, d.baseY - d.h * 0.84);
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.stroke();
   }
 
   var view = { scale: 1, ox: 0, oy: 0, w: 0, h: 0 };
@@ -1461,10 +1471,17 @@
 
     if (state.screen === 'play' && run) {
       for (var g = 0; g < 2; g++) $('hudFoot' + g).querySelector('.u-foot-meter b').style.height = meterPct(g) + '%';
-      var p = Math.min(1, run.count / run.target);
+      var p = Math.min(1, run.points / run.target);
       $('gaugeFill').style.width = (p * 100) + '%';
-      $('gaugePct').textContent = Math.round(p * 100) + '%';
+      $('gaugePct').textContent = Math.floor(p * 100) + '%';
       $('hudSteps').textContent = run.count;
+      // コンボ: おなじリズムが続くほどバーがのび、区切りをこえると倍率が上がる
+      var combo = $('combo');
+      if (combo.dataset.level !== String(run.level)) {
+        combo.dataset.level = run.level;
+        $('comboMult').textContent = '×' + (run.level ? COMBO_LEVELS[run.level - 1].mult : 1);
+      }
+      $('comboFill').style.width = Math.min(100, run.streak / UdonCombo.FULL * 100) + '%';
       var clock = run.count === 0 ? 0 : (state.paused ? run.pauseStart : now) - run.clockStart - run.pausedMs;
       $('hudTime').textContent = Math.floor(clock / 1000) + 's';
 
@@ -1644,7 +1661,7 @@
   // 起動
   // ---------------------------------------------------------------------------
   function init() {
-    $('noren').innerHTML = UdonArt.noren(['ふ', 'み', 'ふ', 'み', 'う', 'ど', 'ん'], { height: 200 });
+    $('noren').innerHTML = UdonArt.noren(['う', 'ど', 'ん', 'ふ', 'み', 'ふ', 'み'], { height: 200 });
     $('hudFoot0').querySelector('.u-foot-icon').innerHTML = UdonArt.footprint('L');
     $('hudFoot1').querySelector('.u-foot-icon').innerHTML = UdonArt.footprint('R');
     legImg[0] = UdonArt.toImage(UdonArt.leg({ core: COL.led[0], width: 465 }));
@@ -1701,8 +1718,7 @@
     startPlay();
     if (screen === 'play') {
       var p = Math.max(0, Math.min(0.99, parseFloat(q.get('p') || '0.3')));
-      var n = Math.floor(run.target * p);
-      for (var i = 0; i < n; i++) {
+      for (var i = 0; i < 400 && run.points < run.target * p; i++) {
         var foot = feet === 2 ? i % 2 : 0;
         registerStep({ foot: foot, t: performance.now(), peak: 1 + Math.random() });
         run.clockStart -= 520;
@@ -1715,6 +1731,8 @@
     if (q.has('seed')) seedStore();
     run.steps = fakeLog(run.target, q.get('style') || '');
     run.count = run.target;
+    run.points = run.target;
+    run.maxCombo = q.get('style') === 'ragged' ? 2 : 17;
     run.feetUsed = [true, feet === 2];
     run.feetLive = [true, feet === 2];
     if (q.get('style') === 'gentle') { store.settings.sens = { mode: 'level', level: 4, threshold: 0.18 }; applySensitivity(); }

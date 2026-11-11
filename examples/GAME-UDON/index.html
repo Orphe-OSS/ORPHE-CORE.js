@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ふみふみうどん｜おいしいうどんを作ろう！</title>
+    <title>うどんふみふみ｜おいしいうどんを作ろう！</title>
     <meta name="description" content="ORPHE CORE をつけて足踏みすると、うどんがこね上がるゲーム。ふみかたで 12 種類のうどんができあがり、足踏みのリズムや左右バランスをレーダーチャートでふり返れます。">
     <link rel="icon" href="udon.png">
 
@@ -20,7 +20,7 @@
 <body>
     <header class="u-topbar">
         <img id="rogo" src="rogo.png" alt="ORPHE" height="25">
-        <span class="u-topbar-name">ふみふみうどん</span>
+        <span class="u-topbar-name">うどんふみふみ</span>
         <div class="u-dock" aria-label="ORPHE CORE の接続">
             <span class="u-dock-label">CORE をつなぐ<i class="bi bi-arrow-right-short"></i></span>
             <div id="toolkit_placeholder1" class="u-dock-slot"></div>
@@ -81,6 +81,7 @@
                 <div class="u-panel">
                     <h4><span class="u-num">1</span>どれくらい ふむ？</h4>
                     <div class="u-courses" id="courseList" role="radiogroup" aria-label="コース"></div>
+                    <p class="u-course-note"><i class="bi bi-music-note-beamed"></i> おなじリズムでふみつづけると、コンボで早く進みます</p>
                 </div>
                 <div class="u-panel">
                     <h4><span class="u-num">2</span>ふみ心地（感度）</h4>
@@ -114,6 +115,7 @@
                 <p class="u-intro-en">Making udon is a true craft!</p>
                 <p class="u-intro-ja2">じぶんのペースで ふみふみして<br>生地をもちもちにしよう！</p>
                 <p class="u-intro-en">Knead at your own pace to make the dough chewy!</p>
+                <p class="u-intro-tip"><i class="bi bi-music-note-beamed"></i> おなじリズムでふみつづけると<br>コンボで早く進むよ</p>
             </div>
             <div class="u-count" id="countdown" aria-live="assertive"></div>
         </section>
@@ -131,10 +133,15 @@
                     <li data-phase="roll"><b>のばす</b></li>
                     <li data-phase="cut"><b>きる</b></li>
                 </ol>
+                <div class="u-combo" id="combo" data-level="0" title="おなじリズムでふみつづけると、コンボで早く進みます">
+                    <span class="u-combo-label">リズム</span>
+                    <div class="u-combo-bar"><i id="comboFill"></i><em style="left:21.4%"></em><em style="left:50%"></em></div>
+                    <b class="u-combo-mult" id="comboMult">×1</b>
+                </div>
             </div>
             <div class="u-hud-time">
                 <span id="hudTime">0s</span>
-                <small>ふみ <b id="hudSteps">0</b> / <i id="hudTarget">60</i></small>
+                <small>ふみ <b id="hudSteps">0</b></small>
             </div>
             <div class="u-callout" id="callout" aria-live="polite"></div>
             <div class="u-hint" id="playHint">
@@ -256,8 +263,8 @@
             </li>
             <li>
                 <b>ふむ</b>
-                <p>ORPHE CORE で足踏みして、うどんをこねて、のばして、きりましょう。感度を上げれば、座ったままのやさしい足踏みでも少しずつ進みます。</p>
-                <p class="en">Step to knead, roll and cut the udon. Raise the sensitivity and even gentle, seated steps make progress.</p>
+                <p>ORPHE CORE で足踏みして、うどんをこねて、のばして、きりましょう。おなじリズムでふみつづけるとコンボで早く進みます。感度を上げれば、座ったままのやさしい足踏みでも少しずつ進みます。</p>
+                <p class="en">Step to knead, roll and cut the udon. Keep an even rhythm to build a combo and go faster. Raise the sensitivity and even gentle, seated steps make progress.</p>
             </li>
             <li>
                 <b>ふりかえる</b>
@@ -279,6 +286,7 @@
     <script src="step-detector.js" defer></script>
     <script src="health-analysis.js" defer></script>
     <script src="udon-menu.js" defer></script>
+    <script src="combo.js" defer></script>
     <script src="udon-art.js" defer></script>
     <script src="charts.js" defer></script>
     <script src="audio.js" defer></script>

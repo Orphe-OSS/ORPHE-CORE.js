@@ -88,7 +88,8 @@
   /**
    * @param {object} analysis UdonHealth.analyze() の結果
    * @param {object} [ctx]
-   * @param {number} [ctx.target] コースの目標ふみ数
+   * @param {number} [ctx.target] コースの大きさ（もちもち度の目標。コンボなしなら、ふみ数とおなじ）
+   * @param {boolean} [ctx.completed] コースを最後までふみきった
    * @param {number} [ctx.threshold] 感度のしきい値 [G]
    * @param {number} [ctx.pauses] 「ひとやすみ」ボタンを使った回数
    * @param {object} [ctx.collected] 図鑑 { id: 回数 }
@@ -123,7 +124,7 @@
         cand.push({ id: 'tanuki', strength: 0.65 });
       }
       // 大盛り以上をふみきった
-      if (ctx.target >= 100 && analysis.stepCount >= 100) cand.push({ id: 'chikara', strength: 0.8 });
+      if (ctx.target >= 100 && ctx.completed) cand.push({ id: 'chikara', strength: 0.8 });
     }
     // ひとやすみした（ボタン、または長い間隔）
     if (ctx.pauses >= 1 || (analysis && analysis.restCount >= 1)) cand.push({ id: 'ume', strength: 0.62 });

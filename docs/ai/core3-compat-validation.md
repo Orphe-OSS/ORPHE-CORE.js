@@ -79,6 +79,15 @@ installed Bluetooth controller firmware or when the user updated either one.
    an all-device scan showed other nearby devices but no separate CR-3 name.
    Unnamed results were not identified as belonging to or excluding the second
    CORE. The user confirmed that two CORE 3.0 units were powered on.
+8. A later page observation showed streaming in slot 2 and
+   `DuplicateBluetoothDeviceError` in slot 1. This demonstrates rejection of
+   the same browser device in both slots, not simultaneous physical devices.
+9. Opened the branch's local GAME-HURDLE page and selected the paired CR-3.
+   During observation, the connection toggle remained disabled and the SDK
+   reported `connected: false` / `connecting: true`; no game sensor updates
+   were observed. Reloaded the page to clear the pending connection. The
+   physical device's power/advertising state at this attempt was unconfirmed.
+   This attempt does not establish successful GAME-HURDLE reconnection.
 
 **Single-device discovery and 104-byte decoding are verified on this host.**
 The second physical device, simultaneous two-device streaming, reversed order,

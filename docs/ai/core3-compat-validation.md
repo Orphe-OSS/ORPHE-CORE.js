@@ -3,8 +3,9 @@
 ## Scope
 
 Branch: `fix/core3-discovery-packet-compat`, based on `origin/main` (`b2f6028`).
-The change does not update device firmware. It adds discovery alternatives and
-supports one known padded notification layout in the JavaScript SDK.
+The change does not update device firmware. It adds discovery alternatives,
+supports one known padded notification layout in the JavaScript SDK, and fixes
+GAME-HURDLE's nested connection startup.
 
 ## Packet format evidence
 
@@ -23,13 +24,27 @@ other headers as header 50. The existing 92-byte decoder and unit conversions
 are retained. This is compatibility evidence, not a dated firmware regression
 or proof of the installed firmware version.
 
+## GAME-HURDLE initialization evidence
+
+`onConnect(uuid)` fires when a GATT characteristic is obtained, not just once
+per physical device. GAME-HURDLE counted these events as connected devices;
+on the second event for the first CORE it called `begin()` on both instances
+again. Chrome reproduced a second chooser attempt without a user gesture:
+`SecurityError: Failed to execute 'requestDevice' on 'Bluetooth': Must be
+handling a user gesture to show a permission request.`
+
+The game now installs its acceleration/Euler handlers once and leaves each
+connection and notification startup to the corresponding CoreToolkit toggle.
+It no longer overrides `onConnect` to count events or start nested `begin()`.
+
 ## Automated validation
 
 The new regression tests were run against the original implementation and
-failed: name-only CR-3 discovery did not match, and 104-byte data dispatched no
-sensor callbacks. With the fix:
+failed: name-only CR-3 discovery did not match, 104-byte data dispatched no
+sensor callbacks, and repeated GATT events started two nested game connections.
+With the fixes:
 
-- `npm test`: all existing tests and both new regression tests pass.
+- `npm test`: all existing tests and all three new regression tests pass.
 - Header 50: synthetic 92-byte and zero-padded 104-byte inputs produce identical
   acceleration, gyroscope, quaternion, converted values, Euler angles,
   timestamps, and four-sample order.
@@ -39,6 +54,9 @@ sensor callbacks. With the fix:
 - Discovery still accepts existing service-based devices, supports name-only
   CR devices, rejects unrelated names/services, retains optional GATT services,
   and preserves the two-slot duplicate-device guard.
+- GAME-HURDLE's actual inline handlers receive acceleration/Euler input from
+  either slot independently. Repeated/reconnect GATT events start no additional
+  `begin()` calls; callback routing and the shared jump cooldown are retained.
 - `npm run lint`: zero errors (existing warnings remain).
 - CDN pin, example catalog and example static-quality checks pass.
 
@@ -96,30 +114,46 @@ installed Bluetooth controller firmware or when the user updated either one.
     approximately 92 seconds, with 148 serial-discontinuity callbacks and no
     unexpected disconnect observed. The reported application firmware fields
     were again version 3.1, date 2026-01-25, patch 1. During the follow-up
-    second-slot search, only the paired, connected CR-3 was visible. Waking
-    the other physical unit (B) and connecting it remains pending.
+    second-slot search, only the paired, connected CR-3 was visible.
+11. After the user shook the other unit (B), a separate CR-3 candidate appeared
+    and connected in slot 2 while A remained connected. Both reported the
+    application firmware fields above. Read settings were A: mount index 1,
+    B: mount index 0; both battery index 1 and range indices acc=3, gyro=3.
+    Both streamed header-50 / 104-byte notifications until manual disconnect:
+    A had 18,095 notifications / 72,380 samples / 2,587 discontinuity callbacks
+    over 435 seconds total (including the preceding single-device period);
+    B had 5,554 notifications / 22,216 samples / 228 discontinuity callbacks
+    over 118 seconds. Acceleration and Euler counts each equaled four times
+    notifications, values were finite, and no unexpected disconnect occurred.
+12. In an approximately 110-second simultaneous observation window, A's count
+    advanced 15,212 -> 18,022 notifications and B's 223 -> 5,411, approximately
+    25.5 and 47.2 notifications/s respectively. Their discontinuity-event
+    counts rose by 1,874 and 213. A's reception degraded after B joined; this
+    patch does not fix that transport limitation or identify its firmware/host
+    cause. Gap events are not a count of missing packets.
+13. On the local GAME-HURDLE page, connecting B first reproduced the
+    no-user-gesture SecurityError described above. After changing the game's
+    initialization and reloading, B connected and showed approximately 1 G and
+    changing pitch before A connected. The SecurityError did not recur in the
+    observed console; the remaining chooser-cancellation error resulted from
+    manually cancelling the search for A when no separate candidate appeared.
+    Waking A again and completing the B -> A game trial remains pending.
 
-**Single-device discovery and 104-byte decoding are verified on this host.**
-The second physical device, simultaneous two-device streaming, reversed order,
-and GAME-HURDLE movement controls remain unverified. A device-isolation trial is
-needed to identify the second unit. These observations establish an SDK/FW
-compatibility mismatch; they do not establish a dated firmware regression.
+**Discovery and 104-byte decoding on both physical units, including simultaneous
+streaming, are verified on this host.** Reversed connection order and two-device
+GAME-HURDLE movement controls remain unverified. These observations establish
+an SDK/FW compatibility mismatch and a game initialization defect; they do not
+establish a dated firmware regression.
 
 ## Remaining hardware check
 
-1. Keep A connected and stationary, then have the user wake the other physical
-   unit (B). Compare candidate presence before and after waking B, and record
-   its firmware version fields if connectable. Do not equate a browser slot
-   number with a particular physical CORE until the mapping is established.
-2. Compare old and updated discovery in the manual test page. Record the exact
-   candidate names and which device was selected; do not infer discovery from
-   Bluetooth Internals' cached names or GATT services.
-3. Connect each device to a different slot. Observe original header/length
-   counts, four decoded samples per header-50 packet, live finite acceleration
-   and attitude, gaps and disconnects for at least 60 seconds per trial.
-4. Repeat with both devices and reversed connection order, then test the local
-   GAME-HURDLE page's acceleration and jump inputs with actual movements.
-5. Preserve an old 92-byte CORE and a CORE 2.0 header-40 physical regression
+1. Keep B connected in GAME-HURDLE and have the user wake A again, then connect
+   A to the other slot to complete the reverse physical connection order.
+2. Test the local GAME-HURDLE page's acceleration and jump inputs with actual
+   movements, and observe two-device continuity for at least 60 seconds.
+3. Isolate the two-device transport degradation separately with matched
+   device/order/host tests; do not attribute it to a foot or firmware yet.
+4. Preserve an old 92-byte CORE and a CORE 2.0 header-40 physical regression
    check before publishing a release.
 
 Serve the repository root locally, for example:

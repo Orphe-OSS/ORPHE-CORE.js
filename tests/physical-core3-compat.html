@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CORE 3.0 接続・受信検証</title>
+  <style>
+    body { font: 16px system-ui; margin: 32px auto; max-width: 1000px; padding: 0 20px; }
+    button, select { font: inherit; padding: 10px; margin: 5px; }
+    section { border: 1px solid #ccc; border-radius: 10px; margin: 20px 0; padding: 16px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f4f5f6; padding: 16px; }
+  </style>
+  <script src="../js/float16.min.js"></script>
+  <script src="../js/quaternion.js"></script>
+  <script src="../js/ORPHE-CORE.js"></script>
+</head>
+<body>
+  <h1>CORE 3.0 接続・受信検証</h1>
+  <p>旧条件と修正版で候補を比較し、2台それぞれの通知サイズ・解析数・値を確認します。
+    設定・FWは変更しません。取得結果はこのタブだけに表示します。</p>
+  <button id="legacy">旧条件で候補を検索</button>
+  <button id="unfiltered">診断: 全デバイスの候補を表示</button>
+  <p id="legacy-result">旧条件: 未実行（サービスUUIDだけで絞り込み）</p>
+  <p>比較用の窓は候補を確認したらキャンセルしてください。「全デバイス」はOSのスキャン確認専用です。
+    同じ機器を2枠に選ぶとエラーになります。</p>
+  <div id="devices"></div>
+  <p><a href="../examples/GAME-HURDLE/">修正版のGAME-HURDLEを開く</a></p>
+  <script src="physical-core3-compat.js"></script>
+</body>
+</html>

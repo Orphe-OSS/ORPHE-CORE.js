@@ -1465,14 +1465,12 @@
     // Initialize ORPHE CORE devices
     var bles = [new Orphe(0), new Orphe(1)];
     bles[0].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
     //STEP_ANALYSIS_AND_SENSOR_VALUES
     //SENSOR_VALUES
     bles[1].setup();
-    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES');
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
     guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
-    
-    var connectedDevices = 0;
     
     // Global variables for sensor data
     window.devices = {
@@ -1494,22 +1492,13 @@
     let lastAccelTime = 0;
     const accelCooldownMs = 100;
     
-    // Connection handlers for both devices
-    for (let ble of bles) {
-      ble.onConnect = function() {
-        connectedDevices++;
-        console.log('ORPHE CORE Device ' + this.id + ' connected');
-        
-        if (connectedDevices === 2) {
-          // Both devices connected, start data streaming
-          for (let device of bles) {
-            device.begin('STEP_ANALYSIS_AND_SENSOR_VALUES');//ここ変更
-            setupDataCallbacks(device);
-          }
-        }
-      };
+    // CoreToolkit starts each connection from its own user gesture.
+    // onConnect fires per GATT characteristic, not once per physical CORE.
+    // Bind sensor handlers once; never call begin() again from onConnect.
+    for (const ble of bles) {
+      setupDataCallbacks(ble);
     }
-    
+
     function setupDataCallbacks(ble_device) {
       ble_device.gotConvertedAcc = function(_acc) {
         window.devices[this.id].acc = _acc;

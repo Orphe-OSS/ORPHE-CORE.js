@@ -79,6 +79,18 @@ function orpheCoreGyroRawToDps(raw, gyroRangeDps) {
   return raw * gyroRangeDps * ORPHE_CORE_GYRO_DPS_PER_LSB_PER_RANGE;
 }
 
+// Header 50 keeps its existing four-frame layout in bytes 0..91.
+// CORE 3.0 firmware can send it in a 104-byte, zero-initialized BLE buffer.
+// Accept only that known padding variant; other lengths/layouts are not decoded.
+function orpheCoreIsSupportedHeader50Packet(data) {
+  if (data.byteLength === 92) return true;
+  if (data.byteLength !== 104) return false;
+  for (let i = 92; i < 104; i++) {
+    if (data.getUint8(i) !== 0) return false;
+  }
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // センサーレンジ index → 実値
 // DEVICE_INFORMATION の range.acc / range.gyro は 0..3 の index（acc: ±2/4/8/16 G、gyro: ±250/500/1000/2000 dps）。
@@ -899,13 +911,13 @@ class Orphe {
    */
   requestDevice(uuid, connectionOptions = {}) {
     let requestOptions = {
-      /*
-      ORPHE core module name: CR-2, CR-3
-      service UUIDを ORPHE_OTHER_SERVICE に指定することで，ORPHE core moduleのみを検出することができます．さらに，namePrefixを指定することで，CR-2, CR-3のみを検出することができます．
-      */
+      // Filters are OR alternatives. Allow the CR- name when firmware does not
+      // advertise the information-service UUID. Keep service-based
+      // discovery for renamed devices, and allow the name on its own as well.
       filters: [
-        { services: [this.ORPHE_INFORMATION] }
-        // { namePrefix: ['CR-'] }
+        { services: [this.ORPHE_INFORMATION] },
+        { services: [this.ORPHE_OTHER_SERVICE] },
+        { namePrefix: 'CR-' }
       ],
       acceptAllDevices: false,
       optionalServices: [
@@ -1451,7 +1463,7 @@ class Orphe {
       // データ欠損チェック
       if (uuid == 'SENSOR_VALUES') {
         // 魔改造200Hzの場合はヘッダが50
-        if (data.getUint8(0) == 50) {
+        if (data.byteLength > 0 && data.getUint8(0) == 50 && orpheCoreIsSupportedHeader50Packet(data)) {
           // データ欠損チェック（uint16 wraparound / serial 0 対応）。欠損時は lostData() を呼ぶ
           this._checkSerialGap(data.getUint16(1));
         }
@@ -1643,20 +1655,17 @@ class Orphe {
       }
     }
     else if (uuid == 'SENSOR_VALUES') {
-
+      if (data.byteLength === 0) return;
 
       // 魔改造200Hzの場合はヘッダが50
       if (data.getUint8(0) == 50) {
 
-        // データ欠損チェック（uint16 wraparound / serial 0 対応）
-        this._checkSerialGap(data.getUint16(1));
-
-        // エラー処理
-        if (data.byteLength != 92) {
-          console.warn("SENSOR VALUES: Data length is not 92");
+        // Validate before reading the serial number or updating the gap tracker.
+        if (!orpheCoreIsSupportedHeader50Packet(data)) {
+          console.warn(`SENSOR VALUES: Unsupported header 50 packet (${data.byteLength} bytes; expected 92 or zero-padded 104)`);
           return
         }
-
+        this._checkSerialGap(data.getUint16(1));
 
         // COREから送られてきたタイムスタンプをUNIXタイムスタンプに変換
         function toTimestamp(hours, minutes, seconds, milliseconds) {

@@ -8,6 +8,17 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- Discover CORE devices advertising a `CR-` name or the sensor service even when the information-service UUID is absent from the advertisement. Existing information-service discovery and required GATT service permissions remain available.
+- Decode header-50 notifications sent as a 104-byte buffer with 12 trailing zero bytes, using the same four-frame payload as the legacy 92-byte format. Reject other lengths and nonzero padding before advancing the serial-gap tracker; raw `gotData` callbacks still receive the original packets.
+- Initialize GAME-HURDLE sensor callbacks once and leave connection startup to CoreToolkit. Per-characteristic `onConnect` events no longer count as separate physical devices or start nested `begin()` calls, which attempted to open the second chooser without a user gesture. Both game toggles explicitly open a fresh device choice so old remembered devices or a failed candidate can be replaced.
+
+### Added
+
+- Discovery, padded-packet and GAME-HURDLE initialization regression tests, plus `tests/physical-core3-compat.html` for manually comparing chooser filters and inspecting two devices' notification lengths and decoded sensor values.
+- Opt-in `tests/physical-game-probe.js` to count original notification formats, parsed sensor callbacks, nonfinite values, errors and disconnects in an already connected example while preserving its handlers. Verified two CORE 2.0 units receiving header-40 / 20-byte data together for 74.7 seconds in GAME-HURDLE.
+
 ## [1.4.2] - 2026-09-08
 
 ### Added

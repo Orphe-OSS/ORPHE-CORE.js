@@ -15,8 +15,13 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 - Decode header-50 notifications sent as a 104-byte buffer with 12 trailing zero bytes, using the same four-frame payload as the legacy 92-byte format. Reject other lengths and nonzero padding before advancing the serial-gap tracker; raw `gotData` callbacks still receive the original packets.
 - Initialize GAME-HURDLE sensor callbacks once and leave connection startup to CoreToolkit. Per-characteristic `onConnect` events no longer count as separate physical devices or start nested `begin()` calls, which attempted to open the second chooser without a user gesture. Both game toggles explicitly open a fresh device choice so old remembered devices or a failed candidate can be replaced.
 
+### Changed
+
+- GAME-UDON is rebuilt as "ふみふみうどん" (CORE connection via CoreToolkit is unchanged; p5.js is no longer needed). Steps are detected from `gotConvertedAcc` with a gravity-removed envelope instead of the sample-to-sample jump of normalized `gotAcc`: gravity is re-estimated whenever the foot is still, a step needs a rise from the preceding valley, and the threshold is selectable in five levels (1.2 G down to 0.1 G) or auto-calibrated, so gentle or seated stepping is counted. If the player keeps moving without a step registering, the sensitivity is raised automatically after a short countdown. Play is kneading → rolling → cutting; the result is one of 12 bowls chosen from how the player stepped, with a stepping report (radar chart of rhythm, tempo, left/right balance, power, stamina and steadiness, a step log chart, CSV export, a one-page print layout, a collection and a local history). One CORE is enough to play, and a keyboard/tap demo mode needs none. Not yet verified on real devices.
+
 ### Added
 
+- `tests/udon-step-detector.test.js`, `tests/udon-health-analysis.test.js` and `tests/udon-core-bridge.test.js` (part of `npm test`): synthetic-signal tests for the GAME-UDON step detector (sensitivity levels, rest / quantisation noise, cross-talk, push / back-and-forth / tilt motions of different widths and tempos at 50 Hz and 200 Hz, calibration), the stepping analysis and bowl selection, and the CORE-to-game bridge.
 - Discovery, padded-packet and GAME-HURDLE initialization regression tests, plus `tests/physical-core3-compat.html` for manually comparing chooser filters and inspecting two devices' notification lengths and decoded sensor values.
 - Opt-in `tests/physical-game-probe.js` to count original notification formats, parsed sensor callbacks, nonfinite values, errors and disconnects in an already connected example while preserving its handlers. Verified two CORE 2.0 units receiving header-40 / 20-byte data together for 74.7 seconds in GAME-HURDLE.
 

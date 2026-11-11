@@ -36,6 +36,8 @@ handling a user gesture to show a permission request.`
 The game now installs its acceleration/Euler handlers once and leaves each
 connection and notification startup to the corresponding CoreToolkit toggle.
 It no longer overrides `onConnect` to count events or start nested `begin()`.
+Both game controls also use `forceDeviceSelection: true`: old remembered units
+or a failed selected candidate must not silently replace a new manual choice.
 
 ## Automated validation
 
@@ -57,6 +59,10 @@ With the fixes:
 - GAME-HURDLE's actual inline handlers receive acceleration/Euler input from
   either slot independently. Repeated/reconnect GATT events start no additional
   `begin()` calls; callback routing and the shared jump cooldown are retained.
+- A test executes the game's actual toolkit initialization and passes its
+  options into the real SDK scan path. Even with an old remembered CR-2, both
+  controls open a new chooser, including when replacing a cached selection on
+  a subsequent attempt. This test failed before adding the game options.
 - `npm run lint`: zero errors (existing warnings remain).
 - CDN pin, example catalog and example static-quality checks pass.
 
@@ -146,17 +152,31 @@ installed Bluetooth controller firmware or when the user updated either one.
     and updated game values; an additional, unpaired CR-3 candidate failed with
     `NetworkError: Unsupported device`. That candidate was not established as
     the previously mapped physical A. Two-CORE-3.0 gameplay remains unverified.
+15. While the user kept the units moving, the previously mapped A appeared
+    again. Used the toolkit's manual reselection helper for slot 2, selecting
+    A while B stayed connected. Runtime inspection showed both `name: CR-3`,
+    `connected: true`, and `secondary: false`, with finite acceleration and
+    pitch updating in both game slots. Two observed snapshots approximately
+    78 seconds apart showed both connected and updated sensor timestamps.
+    This verifies live two-CORE-3.0 reception in the game, rather than retained
+    UI values. It does not verify a worn movement/playthrough test.
+16. Invoked the actual toolkit toggle handler with the new forced-selection
+    option; it opened a fresh chooser and reconnected A while B stayed
+    connected. Both subsequently reported connected and advancing serials.
+    Then reloaded the updated HTML and used the ordinary two switches: both
+    opened their own chooser and allowed B then A to be selected. B resumed
+    reception; A's completion after that reload remains pending a final wake.
 
-**Discovery and 104-byte decoding on both physical units, including simultaneous
-streaming, are verified on this host.** Reversed connection order and two-device
-GAME-HURDLE movement controls remain unverified. These observations establish
+**Discovery and 104-byte decoding on both physical units, simultaneous streaming,
+and live two-CORE-3.0 GAME-HURDLE reception in B -> A order are verified on this
+host.** The final ordinary-switch reload trial and worn GAME-HURDLE movement
+controls remain incomplete. These observations establish
 an SDK/FW compatibility mismatch and a game initialization defect; they do not
 establish a dated firmware regression.
 
 ## Remaining hardware check
 
-1. Keep B connected in GAME-HURDLE and have the user wake A again, then connect
-   A to the other slot to complete the reverse physical connection order.
+1. Finish the ordinary-switch reload trial with A connected alongside B.
 2. Test the local GAME-HURDLE page's acceleration and jump inputs with actual
    movements, and observe two-device continuity for at least 60 seconds.
 3. Isolate the two-device transport degradation separately with matched

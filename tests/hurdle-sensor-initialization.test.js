@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { loadOrphe } = require('./helpers/orphe-core-vm');
 
 // Exercise the actual inline sensor handlers, without loading the 3D game or
 // Bluetooth hardware. onConnect is a per-GATT-characteristic callback, so two
@@ -69,4 +70,46 @@ bles[1].onConnect('DEVICE_INFORMATION');
 bles[0].onConnect('SENSOR_VALUES');
 assert.equal(beginCalls.length, 0, 'repeated/reconnect GATT events never start another begin');
 assert.equal(bles[0].gotConvertedAcc, originalCallback, 'callbacks are initialized once');
-console.log('hurdle-sensor-initialization.test.js passed');
+
+(async () => {
+  // Run the actual game's toolkit initialization and pass its connection
+  // options to the real SDK scan path. A previously remembered CORE 2 must
+  // not silently replace the user's next manual choice of a CORE 3.
+  let pickerCalls = 0;
+  let rememberedCalls = 0;
+  const { Orphe } = loadOrphe({ navigator: { bluetooth: {
+    requestDevice: async () => ({
+      id: `chosen-${++pickerCalls}`, name: 'CR-3', addEventListener() {},
+    }),
+  } } });
+  const toolkits = [];
+  const boot = {
+    Orphe,
+    document: { querySelector() { return {}; } },
+    buildCoreToolkit(parent, title, id, notification, options) {
+      toolkits.push({ id, notification, options });
+    },
+    guardCoreToolkitBluetooth() {},
+  };
+  const bootStart = html.indexOf('// Initialize ORPHE CORE devices');
+  assert.ok(bootStart >= 0 && bootStart < start);
+  vm.runInNewContext(html.slice(bootStart, start), boot);
+  assert.equal(toolkits.length, 2);
+  for (const toolkit of toolkits) {
+    const core = boot.bles[toolkit.id];
+    core._getLastBluetoothDeviceInfo = () => ({ bluetoothId: 'old-core-2', bluetoothName: 'CR-2' });
+    core._requestRememberedBluetoothDevice = async () => {
+      rememberedCalls++;
+      return { id: 'old-core-2', name: 'CR-2', addEventListener() {} };
+    };
+    await core.scan('DEVICE_INFORMATION', toolkit.options);
+    assert.equal(core.bluetoothDevice.name, 'CR-3', 'each toggle must open a fresh choice');
+    const firstChoice = core.bluetoothDevice.id;
+    // A failed/cached candidate must also be replaceable on the next attempt.
+    await core.scan('DEVICE_INFORMATION', toolkit.options);
+    assert.notEqual(core.bluetoothDevice.id, firstChoice);
+  }
+  assert.equal(pickerCalls, 4);
+  assert.equal(rememberedCalls, 0);
+  console.log('hurdle-sensor-initialization.test.js passed');
+})().catch(error => { console.error(error); process.exitCode = 1; });

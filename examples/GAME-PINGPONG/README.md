@@ -1,38 +1,114 @@
-# Ping Pong Game
+# Ping Pong Game — 湯けむりピンポン
 
 > **Status**: `public` — see [`docs/examples-catalog.md`](https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/docs/examples-catalog.md) for the full audit.
 
-Simple competitive game concept using ORPHE input.
+ORPHE CORE を足の甲か太ももに着け、足首の曲げ伸ばし（底背屈）や太もも上げでラケットを動かす、温泉卓球のリハビリゲームです。試合のあとに、動きを 6 項目で分析したレポート（レーダーチャート・番付）が出ます。
+
+A hot-spring ping-pong rehabilitation game: wear an ORPHE CORE on the instep or the thigh and move the paddle by flexing the ankle or raising the thigh. After each match a report scores the movement on six axes.
+
+## あそびかた
+
+1. ORPHE CORE を **足の甲**（足首の運動）か **太もも**（太もも上げ）に固定して、いすに深く座ります。向きは問いません。
+2. 画面上の **01**（あか）・**02**（あお）のスイッチで CORE を接続します。
+3. あそびかたを選んで「はじめる」。**じゅんび運動**（じっとする → 上げる → 下げる）で動かせる範囲をはかります。
+4. つま先（太もも）を **上げるとラケットが奥へ、下げると手前へ**。先に決めた点数をとった方の勝ちです。
+
+| あそびかた | 内容 | CORE |
+|---|---|---|
+| ふたりで対戦 | 先に 3 / 5 / 7 / 11 点 | 2 台 |
+| ふたりで協力 | ミス 3 回までに、ふたりで合計「点数 × 6」回ラリーをつなぐ | 2 台 |
+| ひとりで練習 | コンピューター（やさしい / ふつう / つよい）と対戦 | 1 台 |
+
+CORE がなくても、あか `W` `S`、あお `↑` `↓`（またはドラッグ）で体験できます。`?demo=1` を付けると、コンピューターが代わりに操作して試合からレポートまでを確認できます。`?season=spring|summer|autumn|winter` で庭の季節を指定できます（ふだんは暦どおり）。
 
 ## このexampleで学べること
 
-- Simple competitive game concept using ORPHE input.
+- **取り付け向きに依存しない傾きの測り方** — クォータニオンから「センサーから見た重力の向き」を求め、休んだ姿勢からの回転角を使う（`input.js`）。ヨー方向のドリフトの影響を受けません。
+- **可動域キャリブレーション** — 「上げる」動きから回転軸を見つけ、上下の可動域を測ってラケットの移動範囲に割り当てる。
+- **ルールと描画の分離** — `game.js` と `analysis.js`、`input.js` は DOM にも three.js にも依存せず、Node のテストから読み込める。
+- **センサーログからの指標づくり** — 可動域・運動量・なめらかさ（SPARC）・正確さ・反応・持久力を 0〜100 点にする（`analysis.js`）。
+- CoreToolkit を独自 UI の中に置くときの注意（Bootstrap モーダルと重なり順、`index.html` / `style.css` のコメント参照）。
 
 ## 使うデータ
 
-- オイラー角 (euler)
-- 加速度 (gotConvertedAcc, 実Gスケール)
+- クォータニオン (`gotQuat`) — 傾き角の計算に使用
+- オイラー角 (`gotEuler`) — データが届き始めたことの検知に使用
+
+通知タイプは `SENSOR_VALUES`。接続まわり（`bles[i].setup()`、`buildCoreToolkit(...)`、`guardCoreToolkitBluetooth(...)`）は元の example のままです。
 
 ## 必要なORPHE CORE数
 
-- 2 台
+- 1 〜 2 台（「ひとりで練習」は 1 台）
+
+## 操作のしくみ
+
+```
+g  = センサーから見た重力の向き（クォータニオンの回転行列の 3 行目）
+g0 = 休んだ姿勢での g
+a  = 「上げる」ときに g が回る軸（じゅんび運動で求める）
+傾き = a のまわりに g0 から g まで回った角度（上げる向きが +）
+```
+
+じゅんび運動の前は `a = -Y` で、SDK の `euler.pitch`（から休んだ姿勢の分を引いた値）と同じ、つまり元の example と同じ操作になります。傾きは 1€ フィルターでならし、測った可動域の中心を台のまん中、「感度」倍した端を台の端に対応させます。
+
+設定（歯車）で、プレイヤーごとに 感度・なめらか補正・上下反転・ラケットの大きさ・おたすけ（球の方へラケットが寄る）を変えられます。設定と可動域はブラウザーの `localStorage` に保存されます。
+
+## 分析の指標
+
+| 項目 | 何を見ているか | 満点のめやす |
+|---|---|---|
+| 可動域 | 試合中に使った角度の幅（上位・下位 2% を除く） | めやす（足首 40° / 太もも 30°）と、自分の測定値の両方に届く |
+| 運動量 | 上げ下げの回数と、動かした角度の合計 | 毎分 6 回、1 回あたりめやすの幅 |
+| なめらかさ | 1 回の動きごとの速度波形の SPARC（スペクトル弧長） | −1.6（なめらかな 1 山の動き） |
+| 正確さ | 返球できた割合と、ラケットのまん中で打てたか | すべて返球・まん中 |
+| 反応 | 相手が打ってから動き出すまでの時間の中央値（3 回以上） | 0.4 秒以下 |
+| 持久力 | 前半に対する後半の動きの大きさ（60 秒以上の試合） | 90% 以上 |
+
+総合点は測れた項目の重みつき平均で、横綱〜序ノ口の番付になります。前回の記録（同じプレイヤー枠・同じ運動）と比べ、1 件のアドバイスを出します。「記録を保存 (CSV)」で、50 Hz の角度ログと集計値を書き出せます。
+
+**これは運動のめやすを楽しく知るためのもので、医療機器ではありません。** しきい値は出発点として置いたもので、臨床的に検証された基準ではありません。
+
+## ファイル構成
+
+| ファイル | 役割 |
+|---|---|
+| `index.html` | 画面の骨組みと ORPHE CORE の接続（CoreToolkit） |
+| `main.js` | 進行（ロビー → じゅんび運動 → 試合 → 結果）と各モジュールの接続 |
+| `input.js` | クォータニオン → 傾き角 → ラケット位置、可動域キャリブレーション、キー入力 |
+| `game.js` | ルール（球・ラケット・得点・アイテム・CPU） |
+| `analysis.js` | 試合ログ → 6 項目のスコア |
+| `world.js` / `fx.js` | three.js のシーン（旅館の遊技場と季節の庭）とエフェクト |
+| `audio.js` | Web Audio による効果音と自動演奏（箏・笛・太鼓） |
+| `ui.js` / `report.js` / `style.css` | 画面の表示、結果レポート |
+| `store.js` | 設定・可動域・記録の保存（`localStorage`） |
+
+`BGMA.mp3` / `BGMB.mp3` は元の example の曲で、設定の「音楽 → オリジナル曲」で使えます。`test.html` は歩数表示の確認用ページで、ゲームとは独立しています。
+
+## テスト
+
+```bash
+node tests/pingpong-analysis.test.js   # スコア計算（合成した動きで検証）
+node tests/pingpong-game.test.js       # ルール、傾き角とキャリブレーションの計算
+```
+
+どちらも `npm test` に含まれます。
 
 ## 想定読者
 
-- ゲームプレイヤー
+- リハビリ・介護予防の現場で使えるゲームを作りたい人
+- ゲームプレイヤー、センサー入力のゲームを作るクリエイティブコーダー
 
 ## 実機確認
 
-- **実機確認済み** — 2台のORPHE COREを接続し、カウントダウンとボールの移動を確認済み。
+- **リマスター版は実機未確認** — 合成したクォータニオンを `bles[i].gotQuat` に流して、接続表示・じゅんび運動・試合・レポートまでを自動確認しています。実際の CORE での確認項目は [`docs/ai/device-test-plan.md`](../../docs/ai/device-test-plan.md) の 4-C にあります。
+- 元の p5.js 版は 2 台の CORE で動作確認済みでした。
 
 ## 既知の課題
 
-- test.html broken local SDK path was fixed in PR #40
+- 上げる・下げるの向きが逆に測れた場合は、設定の「上下を反対にする」か「可動域をはかり直す」で直してください。
+- 縦長の画面は想定していません（表示はされます）。
 
 ## 関連example
 
-- (関連 example なし — [`docs/examples-catalog.md`](https://github.com/Orphe-OSS/ORPHE-CORE.js/blob/main/docs/examples-catalog.md) の Overlap Families を参照)
-
-## 元データ
-
-このREADMEは `examples/catalog.json` の `game-pingpong` エントリから自動生成された最小スケルトンです。手動で詳細・スクリーンショット・遊び方を加筆してください。
+- [`examples/GAME-HURDLE/`](../GAME-HURDLE/README.md) — three.js を使った 110m ハードル走
+- [`examples/MOVEYOURFEET/`](../MOVEYOURFEET/README.md) — 足を動かして遊ぶエクササイズゲーム

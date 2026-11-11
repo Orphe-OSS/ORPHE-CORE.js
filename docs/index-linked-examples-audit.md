@@ -40,7 +40,7 @@ changed or verified with real ORPHE CORE devices.
 | `examples/GESTURE-DEMO/` | Real-time toe/heel/stomp detection | 1 | `STEP_ANALYSIS_AND_SENSOR_VALUES` | CoreToolkit | yes | Already CoreToolkit-based; overlaps Technical and Application sections. |
 | `examples/GAME-UDON/` | Foot-powered kneading game | 2 | `SENSOR_VALUES` | CoreToolkit | yes | Listed and playable; needs human playtest. |
 | `examples/MOVEYOURFEET/` | Exercise / foot movement game | 2 | `SENSOR_VALUES` | CoreToolkit | yes | Listed and playable; connection UI already visible. |
-| `examples/GAME-PINGPONG/` | Two-player ping pong game | 2 | `STEP_ANALYSIS_AND_SENSOR_VALUES` in `index.html` | CoreToolkit | yes | Listed; stale helper files still mention `ANALYSIS`, so avoid touching logic without a focused cleanup. |
+| `examples/GAME-PINGPONG/` | Hot-spring ping pong rehabilitation game (versus / co-op / solo) | 2 (1 in solo) | `SENSOR_VALUES` | CoreToolkit | yes | Listed; rebuilt with three.js, needs a real-device play test. |
 | `examples/drum_test/` | Gesture drum sampler | 2 | `SENSOR_VALUES` | CoreToolkit | yes | Listed; directory name is still test-like, but rename should be deferred. |
 | `examples/GAME-HURDLE/` | 110m hurdle game | 2 | `STEP_ANALYSIS_AND_SENSOR_VALUES` | CoreToolkit | yes | Listed; real-device validation required for ranking/gesture flow. |
 | `examples/GAME-BOXING/` | Punch rhythm/action game | 2 | `SENSOR_VALUES` | custom raw API | yes | Needs design before CoreToolkit; README is detailed but still has project-template deployment wording. |

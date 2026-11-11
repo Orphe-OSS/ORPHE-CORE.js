@@ -482,13 +482,13 @@
       "path": "examples/GAME-PINGPONG/",
       "type": "web-app",
       "status": "public",
-      "audience": ["game-player"],
-      "value": "Simple competitive game concept using ORPHE input.",
-      "topics": ["game", "two-player"],
-      "data": ["euler", "convertedAcc"],
+      "audience": ["game-player", "fitness"],
+      "value": "3D hot-spring ping pong played with ankle flexion or thigh raises: range-of-motion calibration, versus / co-op / solo modes and a post-match movement report with a radar chart.",
+      "topics": ["game", "two-player", "fitness", "calibration", "analysis", "3d"],
+      "data": ["quat", "euler"],
       "devices": 2,
       "validation": ["existing-public-link", "thumbnail-exists", "needs-device-verification"],
-      "issues": ["test.html has a broken local SDK path; fix is proposed in PR #40"],
+      "issues": ["The three.js remaster has been exercised with synthetic quaternions only; it still needs a play test with real CORE devices (see docs/ai/device-test-plan.md 4-C)."],
       "category": "playable-app",
       "difficulty": "beginner",
       "featured": true,
@@ -1384,10 +1384,6 @@
       {
         "file": "examples/FOOT ANGLE/index.html",
         "title": "ORPHE CORE JS"
-      },
-      {
-        "file": "examples/GAME-PINGPONG/index.html",
-        "title": "ping pong game"
       },
       {
         "file": "examples/GAME-RHYTHM/index.html",

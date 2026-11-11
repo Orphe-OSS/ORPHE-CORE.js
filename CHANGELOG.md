@@ -15,8 +15,17 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 - Decode header-50 notifications sent as a 104-byte buffer with 12 trailing zero bytes, using the same four-frame payload as the legacy 92-byte format. Reject other lengths and nonzero padding before advancing the serial-gap tracker; raw `gotData` callbacks still receive the original packets.
 - Initialize GAME-HURDLE sensor callbacks once and leave connection startup to CoreToolkit. Per-characteristic `onConnect` events no longer count as separate physical devices or start nested `begin()` calls, which attempted to open the second chooser without a user gesture. Both game toggles explicitly open a fresh device choice so old remembered devices or a failed candidate can be replaced.
 
+### Changed
+
+- GAME-PINGPONG rebuilt as 湯けむりピンポン, a rehabilitation game for ankle dorsi/plantarflexion (CORE on the instep) and thigh raises (CORE on the thigh). The p5.js sketch is replaced by a three.js scene (the game corner of a hot-spring inn with a seasonal garden), procedural Web Audio and ES modules (`main.js`, `game.js`, `input.js`, `analysis.js`, `world.js`, `fx.js`, `audio.js`, `ui.js`, `report.js`, `store.js`). The CoreToolkit connection block (two COREs, `SENSOR_VALUES`) is unchanged.
+  - Control: the paddle follows a tilt angle measured from the direction of gravity in the sensor frame around an axis found by a three-step range-of-motion calibration, so the sensor can be mounted in any orientation and gyro yaw drift does not move the paddle. Before calibration it equals the previous `euler.pitch` control. Sensitivity, smoothing, direction, paddle size and an aim assist are adjustable per player; keyboard and pointer input work without a CORE.
+  - Play: versus, co-op rally and solo against a CPU; rally speed-up, smashes, three items, an optional landing guide.
+  - Result: each player gets six 0-100 scores (range of motion, activity, smoothness as SPARC, accuracy, reaction, endurance), a total with a rank, a radar chart against the previous session, the tilt over time and one piece of advice; sessions are kept in `localStorage` and can be exported as CSV. These are wellness indicators, not clinical measurements.
+  - Removed the sketch's `sketch.js`, `scripts.js`, `styles.css` and the assets only it used (`p1.mp3`, `p2.mp3`, `sound-hockey1.mp3`, `sound-hockey2.mp3`, `orpheimg.png`). Not yet play-tested with real CORE devices.
+
 ### Added
 
+- `tests/pingpong-analysis.test.js` and `tests/pingpong-game.test.js` for GAME-PINGPONG's score calculation, rules and tilt / calibration maths, with `tests/helpers/load-example-module.js` to load dependency-free example modules in Node.
 - Discovery, padded-packet and GAME-HURDLE initialization regression tests, plus `tests/physical-core3-compat.html` for manually comparing chooser filters and inspecting two devices' notification lengths and decoded sensor values.
 - Opt-in `tests/physical-game-probe.js` to count original notification formats, parsed sensor callbacks, nonfinite values, errors and disconnects in an already connected example while preserving its handlers. Verified two CORE 2.0 units receiving header-40 / 20-byte data together for 74.7 seconds in GAME-HURDLE.
 

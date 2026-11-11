@@ -29,7 +29,7 @@ Do not convert every example to CoreToolkit.
 | `examples/GESTURE-DEMO/` | `already-coretoolkit` | Practical gesture demo already uses CoreToolkit. |
 | `examples/GAME-UDON/` | `already-coretoolkit` | Two-device physical game; CoreToolkit is appropriate. |
 | `examples/MOVEYOURFEET/` | `already-coretoolkit` | Two-device physical game; CoreToolkit is appropriate. |
-| `examples/GAME-PINGPONG/` | `already-coretoolkit` | Two-device game; stale helper files should be cleaned separately. |
+| `examples/GAME-PINGPONG/` | `already-coretoolkit` | Two-device game (one device in solo mode); rebuilt with three.js, the stale p5 helper files are gone. |
 | `examples/drum_test/` | `already-coretoolkit` | Two-device gesture instrument; connection UI is useful. |
 | `examples/GAME-HURDLE/` | `already-coretoolkit` | Two-device game and ranking flow; keep CoreToolkit. |
 | `examples/GAME-DDR/` | `already-coretoolkit` | Two-device rhythm game; CoreToolkit fits. |
@@ -51,9 +51,9 @@ Do not convert every example to CoreToolkit.
 
 ## Static issues noticed
 
-- `examples/GAME-PINGPONG/scripts.js` still contains `ANALYSIS`, while
-  `index.html` uses `STEP_ANALYSIS_AND_SENSOR_VALUES`. Treat as stale helper
-  cleanup, not CoreToolkit migration.
+- Resolved: `examples/GAME-PINGPONG/scripts.js` (which still contained `ANALYSIS`)
+  was removed when the example was rebuilt with three.js; `index.html` connects
+  with `SENSOR_VALUES` through CoreToolkit as before.
 - `examples/GAME-MARIO/scripts.js` similarly contains legacy `ANALYSIS`; check
   whether it is loaded before editing.
 - `examples/VISUALIZE/README.md` still says RAW even though the page uses

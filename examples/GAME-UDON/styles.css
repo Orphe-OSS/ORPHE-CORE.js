@@ -87,6 +87,32 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 .u-dock-slot .text-muted { color: #D8D1CB !important; cursor: pointer; }
 .u-dock-slot .modal { color: var(--ink); }
 
+/* つかうセンサーの切り替え（CORE / INSOLE）。えらんでいない側の接続スイッチはしまっておく */
+.u-device { display: inline-flex; padding: 3px; border-radius: 999px; background: #3B3938; }
+.u-device button {
+  border: 0;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: transparent;
+  color: #B9B1AB;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.u-device button.is-on { background: var(--peach); color: var(--ink); }
+.u-device button:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; }
+body[data-device="insole"] .u-dock-core { display: none; }
+body:not([data-device="insole"]) .u-dock-insole { display: none; }
+
+.u-insole { display: flex; align-items: center; gap: 0.35em; margin: 0; min-height: 0; }
+.u-insole .form-check-input { float: none; margin-left: 0; margin-right: 0.2em; flex: none; }
+.u-insole .form-check-input:disabled { opacity: 0.45; cursor: not-allowed; }
+.u-insole-badge { padding: 0 0.5em; border-radius: 999px; font-size: 12px; font-weight: 900; line-height: 1.6; color: var(--ink); background: #39C6F4; }
+.u-insole-badge[data-foot="1"] { background: #FFD23F; }
+.u-insole-note { font-size: 12px; font-weight: 700; color: #B9B1AB; white-space: nowrap; }
+
 .u-iconbtn {
   width: 42px;
   height: 42px;
@@ -417,7 +443,18 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 }
 
 .u-try.is-calib { border-style: solid; border-color: var(--shu); background: #FBE3D6; }
-.u-try-meters { display: flex; gap: 0.7em; }
+.u-try-meters { display: flex; gap: 0.7em; align-items: center; }
+
+/* INSOLE: ためしふみの足うらマップ（6 つのセンサ） */
+.u-trymap { display: none; width: 3.1em; transition: opacity 0.3s; }
+.u-stage[data-device="insole"] .u-trymap { display: block; }
+/* マップのぶん横幅がいるので、「じどうで合わせる」は説明の下へ回す */
+.u-stage[data-device="insole"] .u-try { grid-template-columns: auto 1fr; grid-template-areas: "meters text" "meters action"; row-gap: 0.5em; }
+.u-stage[data-device="insole"] .u-try-meters { grid-area: meters; gap: 0.5em; }
+.u-stage[data-device="insole"] .u-try-text { grid-area: text; align-self: end; }
+.u-stage[data-device="insole"] .u-try > .u-btn { grid-area: action; justify-self: start; align-self: start; }
+.u-trymap.is-off { opacity: 0.35; }
+.udon-insolemap { width: 100%; height: auto; display: block; overflow: visible; }
 
 .u-meter {
   position: relative;
@@ -605,6 +642,8 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 .u-foot-meter::after { content: ""; position: absolute; left: 0; right: 0; bottom: 62%; border-top: 0.16em solid var(--shu); }
 .u-foot-meter b { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--ai); }
 .u-foot.is-off { opacity: 0.3; }
+/* INSOLE: 足あとの代わりに、足うらの圧力マップを出す */
+.u-stage[data-device="insole"] .u-foot-icon { width: 4.4em; }
 .u-foot.is-hit .u-foot-icon { animation: u-stomp 0.34s ease-out; }
 .u-foot.is-hit > span { background: var(--shu); }
 
@@ -840,6 +879,29 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 .u-axislist li.is-none { opacity: 0.6; }
 
 .u-log-actions { display: flex; gap: 0.8em; justify-content: flex-end; padding-bottom: 0.4em; }
+
+/* リザルト「あしうら」（INSOLE のときだけ） */
+.u-sole { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.7em; }
+.u-sole-feet { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1.6em; }
+.u-sole-foot { margin: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr); align-items: center; gap: 1.2em; padding: 0.8em 1.2em; border-radius: 1.1em; background: var(--paper-2); }
+.u-sole-foot .udon-insolemap { width: 100%; max-width: 10.5em; height: auto; margin: 0 auto; }
+.u-sole-foot figcaption > b { font-family: var(--display); font-weight: 400; font-size: 1.35em; }
+.u-sole-foot figcaption > p { margin: 0.7em 0 0; font-size: 0.92em; font-weight: 700; line-height: 1.5; color: #4A3F39; }
+.u-sole-foot.is-none { opacity: 0.5; }
+.u-sole-zones { list-style: none; margin: 0.5em 0 0; padding: 0; display: grid; gap: 0.45em; }
+.u-sole-zones li { display: grid; grid-template-columns: 4.5em 1fr 2.7em; align-items: center; gap: 0.5em; font-size: 0.95em; }
+.u-sole-zones span { font-weight: 900; }
+.u-sole-zones i { height: 0.8em; border-radius: 999px; background: rgba(35, 24, 21, 0.12); overflow: hidden; }
+.u-sole-zones em { display: block; height: 100%; border-radius: 999px; background: var(--shu); }
+.u-sole-zones b { font-family: var(--display); font-weight: 400; text-align: right; }
+.u-sole-zones small { font-size: 0.7em; margin-left: 0.1em; }
+.u-sole-side { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.5em; margin-top: 0.7em; font-size: 0.82em; font-weight: 900; color: #4A3F39; }
+.u-sole-side i { position: relative; height: 0.5em; border-radius: 999px; background: rgba(35, 24, 21, 0.12); }
+.u-sole-side i::before { content: ""; position: absolute; left: 50%; top: -0.3em; bottom: -0.3em; border-left: 0.12em solid rgba(35, 24, 21, 0.35); }
+.u-sole-side em { position: absolute; top: 50%; width: 1.1em; height: 1.1em; margin: -0.55em 0 0 -0.55em; border-radius: 50%; background: var(--ai); border: 0.18em solid var(--ink); }
+.u-sole-time { margin: 0.6em 0 0; font-size: 0.86em; font-weight: 700; color: var(--muted); }
+.u-sole-time b { font-family: var(--display); font-weight: 400; color: var(--ink); margin-left: 0.3em; }
+.u-sole-note { margin: 0; font-size: 0.82em; font-weight: 700; color: var(--muted); }
 
 .u-disclaimer { margin-top: 0.4em !important; font-size: 0.74em; font-weight: 700; color: var(--muted); text-align: right; }
 

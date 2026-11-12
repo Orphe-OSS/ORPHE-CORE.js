@@ -117,8 +117,10 @@
 
   /**
    * @param {object} input
-   * @param {Array<{t:number, foot:number, peak:number, rest?:boolean}>} input.steps ふみのログ（t はミリ秒）。
-   *   rest = true は「この 1 ふみの前に、ひとやすみ（一時停止）をはさんだ」
+   * @param {Array<{t:number, foot:number, peak:number, rest?:boolean, press?:number, fore?:number}>} input.steps
+   *   ふみのログ（t はミリ秒）。rest = true は「この 1 ふみの前に、ひとやすみ（一時停止）をはさんだ」。
+   *   press / fore は ORPHE INSOLE のときだけ付く（押しぐあいと、つま先／かかとのどちらでふんだか）。
+   *   点数には使わず、そのままログ（CSV）に出す
    * @param {number} [input.feet] 使った足の数（1 | 2）。省略時はログから判断
    * @returns {object} 解析結果
    */
@@ -126,7 +128,13 @@
     input = input || {};
     var steps = (input.steps || [])
       .filter(function (s) { return s && isFinite(s.t) && isFinite(s.peak); })
-      .map(function (s) { return { t: s.t, foot: s.foot === 1 ? 1 : 0, peak: Math.max(0, s.peak), rest: !!s.rest }; })
+      .map(function (s) {
+        return {
+          t: s.t, foot: s.foot === 1 ? 1 : 0, peak: Math.max(0, s.peak), rest: !!s.rest,
+          press: isFinite(s.press) && s.press !== null ? Number(s.press) : null,
+          fore: isFinite(s.fore) && s.fore !== null ? Number(s.fore) : null
+        };
+      })
       .sort(function (a, b) { return a.t - b.t; });
     var n = steps.length;
 
@@ -318,7 +326,10 @@
       series: {
         cadence: series,
         steps: steps.map(function (s, idx) {
-          return { t: s.t - (n ? steps[0].t : 0), foot: s.foot, peak: s.peak, afterRest: idx > 0 && isRest[idx - 1] };
+          return {
+            t: s.t - (n ? steps[0].t : 0), foot: s.foot, peak: s.peak, afterRest: idx > 0 && isRest[idx - 1],
+            press: s.press, fore: s.fore
+          };
         })
       }
     };
@@ -340,8 +351,10 @@
 
   /** ふみふみログを CSV にする（健康づくりの記録や、スタッフとの共有用） */
   function toCsv(result) {
-    var rows = ['no,time_sec,foot,strength_g,interval_sec,after_rest'];
     var steps = result.series.steps;
+    // ORPHE INSOLE で遊んだときだけ、圧力の列を足す
+    var withPress = steps.some(function (s) { return s.press !== null && s.press !== undefined; });
+    var rows = ['no,time_sec,foot,strength_g,interval_sec,after_rest' + (withPress ? ',press_rel,fore_aft' : '')];
     for (var i = 0; i < steps.length; i++) {
       var s = steps[i];
       rows.push([
@@ -351,7 +364,10 @@
         s.peak.toFixed(3),
         i === 0 ? '' : ((s.t - steps[i - 1].t) / 1000).toFixed(3),
         s.afterRest ? 1 : 0
-      ].join(','));
+      ].concat(withPress ? [
+        s.press === null || s.press === undefined ? '' : s.press.toFixed(2),
+        s.fore === null || s.fore === undefined ? '' : s.fore.toFixed(2)
+      ] : []).join(','));
     }
     return rows.join('\n') + '\n';
   }

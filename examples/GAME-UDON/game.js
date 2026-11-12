@@ -2,6 +2,8 @@
  * うどんふみふみ — ゲーム本体（進行・描画・リザルト）
  *
  * センサーまわりは scripts.js（CORE 接続）→ UdonGame.pushAcc() → step-detector.js の順に流れてきます。
+ * ORPHE INSOLE をえらんだときは insole-connect.js → UdonGame.pushInsoleAcc() / pushPress() で、
+ * 足の動き（step-detector.js）に加えて足うらの圧力（insole-pressure.js）も届きます。
  * このファイルは「ふみ」を受け取ってからの世界（生地・足・麺棒・包丁のアニメーション、HUD、
  * できあがりとリザルト、図鑑ときろく）を受け持ちます。
  *
@@ -47,7 +49,7 @@
   // ---------------------------------------------------------------------------
   function loadStore() {
     var base = {
-      settings: { course: 'nami', sens: { mode: 'level', level: 2, threshold: 0.6 }, sound: true },
+      settings: { course: 'nami', sens: { mode: 'level', level: 2, threshold: 0.6 }, sound: true, device: 'core' },
       collection: {},
       history: []
     };
@@ -64,6 +66,7 @@
             };
           }
           base.settings.sound = raw.settings.sound !== false;
+          base.settings.device = raw.settings.device === 'insole' ? 'insole' : 'core';
         }
         // 保存データはそのまま画面（innerHTML）に出すので、知っている項目だけを数値・既知の id に直して取り込む
         var num = function (v) { v = Number(v); return isFinite(v) ? Math.max(0, Math.round(v)) : 0; };
@@ -106,7 +109,8 @@
   // ---------------------------------------------------------------------------
   var state = {
     screen: 'title',
-    mode: 'core',          // core | demo
+    mode: 'core',          // core = センサーで遊ぶ（CORE でも INSOLE でも）| demo = おためし（キーボード・タップ）
+    device: 'core',        // core = ORPHE CORE | insole = ORPHE INSOLE（画面上の切り替えでえらぶ）
     paused: false,
     tryCount: 0,
     calib: null,           // じどう調整中 { cal, until }
@@ -118,14 +122,20 @@
   };
   var run = null;          // ふみふみ中の記録
 
-  var detector = new UdonStepDetector({ onStep: handleStep });
+  var detector = new UdonStepDetector({ onStep: handleImuStep });
+  // ORPHE INSOLE の足うらの圧力（6ch）。CORE のときは使わない
+  var press = new UdonInsolePressure({ onStep: handlePressStep });
   applySensitivity();
 
   function applySensitivity() {
     var s = store.settings.sens;
     if (s.mode === 'auto') detector.setThreshold(s.threshold);
     else s.threshold = detector.setLevel(s.level).threshold;
+    // 圧力の感度も、同じ 5 段階に合わせる
+    press.setLevel(s.mode === 'auto' ? UdonStepDetector.nearestLevel(s.threshold).id : s.level);
   }
+
+  function isInsole() { return state.device === 'insole'; }
 
   function sensLabel() {
     var s = store.settings.sens;
@@ -134,7 +144,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 入力: CORE（scripts.js から）とおためしモード（キーボード・タップ）
+  // 入力: CORE（scripts.js から）・INSOLE（insole-connect.js から）・おためしモード（キーボード・タップ）
   // ---------------------------------------------------------------------------
   var coreSeen = [false, false];
 
@@ -142,15 +152,55 @@
   function pushAcc(foot, acc) {
     if (!acc) return;
     coreSeen[foot] = true;
+    if (isInsole()) return;              // INSOLE をえらんでいる間は、CORE のデータは使わない
     if (state.mode === 'demo') return;   // おためし中は、キーボード／タップの合成データだけを使う
     detector.push(foot, acc.x, acc.y, acc.z, performance.now(), acc.timestamp);
     afterSample(foot);
+  }
+
+  /**
+   * insole-connect.js の gotConvertedAcc から呼ばれる。足うらに CORE を付けたのと同じように、足の動きとして扱う。
+   * INSOLE は 1 パケットの全サンプルが同じ時刻で届くので、サンプル間隔は届いた数から見積もらせる
+   */
+  function pushInsoleAcc(foot, acc) {
+    if (!acc || !isInsole() || state.mode === 'demo') return;
+    if (!isFinite(acc.x) || !isFinite(acc.y) || !isFinite(acc.z)) return;
+    detector.push(foot, acc.x, acc.y, acc.z, performance.now());
+    afterSample(foot);
+  }
+
+  /** insole-connect.js の gotPress から呼ばれる。values は 6ch の生値 */
+  function pushPress(foot, values) {
+    if (!isInsole() || state.mode === 'demo') return;
+    press.record = recording();
+    press.push(foot, values, performance.now());
+  }
+
+  /** リザルト用の集計をためてよいか（ふみふみ中で、止めていない） */
+  function recording() {
+    return !!(run && state.screen === 'play' && !state.paused && !run.done && run.count > 0);
+  }
+
+  // INSOLE: 加速度のふみと、圧力のふみを 1 つにまとめる（規則は insole-pressure.js の Fusion）。
+  // 圧力でふみを数えられている間は圧力を正とし、圧力が反応しないときは CORE と同じように加速度で数える
+  var fusion = new UdonInsolePressure.Fusion(press);
+
+  function handleImuStep(step) {
+    if (isInsole() && !fusion.acceptImu(step, performance.now())) return;
+    handleStep(step);
+  }
+
+  function handlePressStep(step) {
+    if (!fusion.acceptPress(step, performance.now())) return;
+    if (state.calib) state.calib.pressSteps++;
+    handleStep(step);
   }
 
   /** 1 サンプルごとの記録（実機・おためし共通） */
   function afterSample(foot) {
     var env = detector.level(foot);
     if (state.calib) state.calib.cal.add(env);
+    if (isInsole()) fusion.track(foot, env, performance.now());
     if (run && state.screen === 'play' && !state.paused && !run.done) {
       // その足がどれだけ動いたか（CORE をつけているのに ふめていない足と、置いてあるだけの CORE を見分ける）
       if (env > run.motion[foot]) run.motion[foot] = env;
@@ -180,7 +230,11 @@
     return cal.result();
   }
 
-  var demo = { timer: null, pulses: [[], []], next: 0 };
+  var demo = { timer: null, pulses: [[], []], soles: [[], []], next: 0 };
+  // おためしモードでまねる足うらの圧力。実機と同じく、のせていなくても 220 前後の値が出ていて、
+  // 立っているだけで かかと・中足部に少し圧がかかっている
+  var DEMO_FLOOR = [220, 222, 220, 256, 222, 221];
+  var DEMO_STAND = [0, 10, 0, 40, 90, 150];
 
   function demoTick() {
     var now = performance.now();
@@ -195,11 +249,31 @@
       var n = function () { return (Math.random() - 0.5) * 0.012; };
       detector.push(foot, 0.25 * p + n(), n(), 1 + 0.95 * p + n(), now);
       afterSample(foot);
+      if (isInsole()) demoPress(foot, now);
     }
   }
 
+  /** おためしモード × INSOLE: かかとから着いて、つま先へぬける 1 歩ぶんの圧力をまねる */
+  function demoPress(foot, now) {
+    var v = DEMO_FLOOR.map(function (base, ch) { return base + DEMO_STAND[ch] + (Math.random() - 0.5) * 3; });
+    var list = demo.soles[foot];
+    for (var i = list.length - 1; i >= 0; i--) {
+      var u = (now - list[i].t0) / list[i].w;
+      if (u > 1) { list.splice(i, 1); continue; }
+      var e = Math.pow(Math.sin(Math.PI * u), 0.7) * list[i].amp * 900;
+      v[5] += e * 0.45 * (1.25 - u);          // かかと
+      v[4] += e * 0.26;                        // 中足部（外）
+      v[3] += e * 0.12;                        // 中足部（中）
+      v[1] += e * 0.16 * u * 1.6;              // 母趾球
+      v[0] += e * 0.10 * u * u * 2;            // つま先（内）
+      v[2] += e * 0.05 * u * u * 2;            // つま先（外）
+    }
+    press.record = recording();
+    press.push(foot, v, now);
+  }
+
   function setMode(mode) {
-    if (state.mode !== mode) detector.reset();   // 実機とおためしのデータを混ぜない
+    if (state.mode !== mode) { detector.reset(); press.reset(); fusion.reset(); }   // 実機とおためしのデータを混ぜない
     state.mode = mode;
     stage.dataset.mode = mode;
     if (mode === 'demo' && !demo.timer) demo.timer = setInterval(demoTick, 10);
@@ -214,6 +288,14 @@
       w: gentle ? 170 : 85,
       amp: gentle ? 0.27 + Math.random() * 0.1 : 1.1 + Math.random() * 1.3
     });
+    if (isInsole()) {
+      demo.soles[foot].push({
+        t0: performance.now(),
+        w: gentle ? 520 : 300,
+        // そっとふむ: 「ふつう」では届かず、「やさしい」より右で数えられる強さ
+        amp: gentle ? 0.11 + Math.random() * 0.04 : 0.75 + Math.random() * 0.4
+      });
+    }
   }
 
   function liveFeet() {
@@ -283,6 +365,8 @@
     var prevPhase = run.phase;
     run.phase = p >= ROLL_END ? 'cut' : (p >= KNEAD_END ? 'roll' : 'knead');
     var strength = Math.min(1, step.peak / Math.max(0.3, detector.getThreshold() * 3));
+    // INSOLE: 圧力で数えたふみは、押しぐあい（その人のいつもの強さ = 1）も演出の強さに使う
+    if (step.source === 'press') strength = Math.max(strength, Math.min(1, step.rel * 0.8));
 
     if (run.points >= run.target - 1e-9) {
       sceneStep(prevPhase, step.foot, strength, mult);
@@ -365,6 +449,7 @@
     clearTimeout(state.finishTimer);
     cancelCalibration();
     setMode('core');
+    press.record = false;
     run = null;
     state.paused = false;
     refreshZukanCount();
@@ -373,13 +458,18 @@
 
   var TRY_TEXT = {
     core: '足踏みしてみましょう。メーターが線をこえると「ふみ」になります。',
+    insole: '足踏みしてみましょう。足うらの丸がふくらみ、メーターが線をこえると「ふみ」になります。',
     demo: 'F・J キー（またはメーターをタップ）でためしふみ。Shift を押しながらだと「そっと」ふみます。'
   };
+
+  function tryText() {
+    return TRY_TEXT[state.mode === 'demo' ? 'demo' : state.device];
+  }
 
   function goSetup() {
     state.tryCount = 0;
     $('tryCount').textContent = '0';
-    $('tryText').textContent = TRY_TEXT[state.mode];
+    $('tryText').textContent = tryText();
     cancelCalibration();
     renderSetup();
     showScreen('setup');
@@ -406,6 +496,8 @@
       feetUsed: [false, false], feetLive: [live[0], live[1]]
     };
     state.paused = false;
+    press.resetStats();
+    press.clearMissed();
     $('pausedLayer').hidden = true;
     $('playHint').classList.remove('is-gone');
     hideAssist();
@@ -457,7 +549,11 @@
   }
 
   function finishRun() {
-    var steps = run.steps.map(function (s) { return { t: s.t, foot: s.foot, peak: s.ref.peak, rest: s.rest }; });
+    var steps = run.steps.map(function (s) {
+      // INSOLE: 圧力で数えたふみ、または加速度が先に数えて圧力があとから同じ着地を見つけたふみには、押しぐあいが付く
+      var sole = s.ref.source === 'press' ? s.ref : (s.ref.sole || null);
+      return { t: s.t, foot: s.foot, peak: s.ref.peak, rest: s.rest, press: sole ? sole.rel : null, fore: sole ? sole.fore : null };
+    });
     var analysis = UdonHealth.analyze({ steps: steps, feet: feetInPlay(steps) });
     var feet = analysis.feet;
     var pick = UdonMenu.pick(analysis, {
@@ -467,7 +563,12 @@
     if (state.debug.udon && UdonMenu.byId(state.debug.udon)) {
       pick = { id: state.debug.udon, item: UdonMenu.byId(state.debug.udon), isNew: !store.collection[state.debug.udon] };
     }
-    state.result = { analysis: analysis, pick: pick, course: run.course, sens: sensLabel(), at: new Date(), maxCombo: run.maxCombo };
+    state.result = {
+      analysis: analysis, pick: pick, course: run.course, sens: sensLabel(), at: new Date(), maxCombo: run.maxCombo,
+      device: state.device,
+      // INSOLE: 足うらのどこに体重がのっていたか（左・右）
+      sole: isInsole() ? [press.summary(0), press.summary(1)] : null
+    };
 
     // 図鑑ときろく
     var c = store.collection[pick.id] || { count: 0, best: 0 };
@@ -585,13 +686,14 @@
 
   function startCalibration() {
     if (state.calib) return;
-    state.calib = { cal: new UdonStepDetector.Calibrator(), until: performance.now() + 6000 };
+    state.calib = { cal: new UdonStepDetector.Calibrator(), until: performance.now() + 6000, pressSteps: 0 };
     $('btnCalibrate').disabled = true;
     stage.querySelector('.u-try').classList.add('is-calib');
   }
 
   function endCalibration() {
     var r = state.calib.cal.result();
+    var pressSteps = state.calib.pressSteps;
     state.calib = null;
     $('btnCalibrate').disabled = false;
     stage.querySelector('.u-try').classList.remove('is-calib');
@@ -603,8 +705,12 @@
       $('tryText').textContent = 'ぴったりの感度に合わせました。ためしにふんで、たしかめてみましょう。';
       toast('感度を合わせました（' + r.level.label + '相当）');
       UdonAudio.good();
+    } else if (isInsole() && pressSteps >= 3) {
+      // 足の動きは小さいが、足うらの圧力ではっきり数えられている（座ったままの、やさしい足踏みなど）
+      $('tryText').textContent = 'そっとした足踏みですが、足うらの圧力で ' + pressSteps + ' ふみ 数えられました。このままで大丈夫です。';
+      UdonAudio.good();
     } else {
-      $('tryText').textContent = '足の動きが見つかりませんでした。CORE の接続をたしかめて、もう一度どうぞ。';
+      $('tryText').textContent = '足の動きが見つかりませんでした。' + (isInsole() ? 'INSOLE' : 'CORE') + ' の接続をたしかめて、もう一度どうぞ。';
     }
   }
 
@@ -628,7 +734,8 @@
     $('resultReason').textContent = item.reason;
     var d = r.at;
     $('resultDate').textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 ' +
-      d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2) + '｜' + r.course.name + 'コース｜感度 ' + r.sens;
+      d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2) + '｜' + r.course.name + 'コース｜感度 ' + r.sens +
+      (r.device === 'insole' ? '｜INSOLE' : '');
 
     // スコア
     countUp($('scoreNum'), a.ok ? a.total : 0);
@@ -662,8 +769,53 @@
     }).join('');
 
     $('zukanInline').innerHTML = zukanHtml(r.pick.id);
+    var sole = soleHtml(r.sole);
+    $('tabSole').hidden = !sole;
+    $('soleReport').innerHTML = sole;
     selectTab('score');
     refreshZukanCount();
+  }
+
+  /**
+   * INSOLE のリザルト「あしうら」: 足うらのどこに体重がのっていたか。
+   * センサどうし・左右どうしの生値は比べられないので（個体差がある）、足ごとの「割合」だけを見せる
+   */
+  function soleHtml(sole) {
+    if (!sole || !(sole[0].ok || sole[1].ok)) return '';
+    var pct = function (v) { return Math.round(v * 100); };
+    var html = '<div class="u-sole-feet">';
+    sole.forEach(function (f, i) {
+      var side = i === 0 ? 'L' : 'R';
+      var name = i === 0 ? '左足' : '右足';
+      if (!f.ok) {
+        html += '<figure class="u-sole-foot is-none">' + UdonArt.insoleMap(side, { layout: UdonInsolePressure.LAYOUT }) +
+          '<figcaption><b>' + name + '</b><p>きろくがありません</p></figcaption></figure>';
+        return;
+      }
+      var max = Math.max.apply(null, f.share) || 1;
+      var zones = [['つま先', f.fore], ['まんなか', f.mid], ['かかと', f.heel]];
+      html += '<figure class="u-sole-foot">' +
+        UdonArt.insoleMap(side, { layout: UdonInsolePressure.LAYOUT, values: f.share.map(function (v) { return v / max; }) }) +
+        '<figcaption><b>' + name + '</b><ul class="u-sole-zones">' + zones.map(function (z) {
+          return '<li><span>' + z[0] + '</span><i><em style="width:' + pct(z[1]) + '%"></em></i><b>' + pct(z[1]) + '<small>%</small></b></li>';
+        }).join('') + '</ul>' +
+        // 内がわ（親指側）と外がわ（小指側）のどちらに体重がのっていたか。左足は内がわが右、右足は内がわが左
+        '<div class="u-sole-side">' + (i === 0 ? '<span>外がわ</span>' : '<span>内がわ</span>') +
+        '<i><em style="left:' + pct(i === 0 ? f.inner : 1 - f.inner) + '%"></em></i>' +
+        (i === 0 ? '<span>内がわ</span>' : '<span>外がわ</span>') + '</div>' +
+        '<p class="u-sole-time">のせていた時間<b>' + pct(f.loadedRatio) + '%</b></p>' +
+        '<p>' + esc(soleComment(f)) + '</p></figcaption></figure>';
+    });
+    html += '</div><p class="u-sole-note"><i class="bi bi-info-circle"></i> 丸が大きいところほど、体重がよくのっていました。' +
+      'センサの当たり方は、くつやインソールの位置で変わります。目安としてごらんください。</p>';
+    return html;
+  }
+
+  function soleComment(f) {
+    if (f.heel >= 0.62) return 'かかと中心でふんでいます。足うら全体をつけると、安定してふめます。';
+    if (f.fore >= 0.5) return 'つま先寄りでふんでいます。かかとまで下ろすと、ふくらはぎが楽になります。';
+    if (f.fore < 0.08) return 'かかとから まんなかでふんでいます。つま先まで体重をのせると、ふみ切りが強くなります。';
+    return '足うら全体で、バランスよくふめています。';
   }
 
   function rankColor(key) {
@@ -800,7 +952,8 @@
   // シーン（キャンバス）
   // ---------------------------------------------------------------------------
   var N = 36;   // 生地の上面の制御点の数
-  var legImg = [null, null];
+  var legImg = [null, null];       // CORE を足の甲に付けた足
+  var legImgBare = [null, null];   // INSOLE 用（CORE なし。インソールは drawLeg が足の下に描く）
   var scene = {};
 
   function resetScene() {
@@ -811,8 +964,8 @@
       squash: 0, squashV: 0, cycle0: 0
     };
     scene.legs = [
-      { x: 452, soleY: 0, state: 'idle', t: 0, press: 0, glow: 0, init: false },
-      { x: 668, soleY: 0, state: 'idle', t: 0, press: 0, glow: 0, init: false }
+      { x: 452, soleY: 0, state: 'idle', t: 0, press: 0, glow: 0, init: false, kick: 0, tilt: 0 },
+      { x: 668, soleY: 0, state: 'idle', t: 0, press: 0, glow: 0, init: false, kick: 0, tilt: 0 }
     ];
     scene.pin = { x: DOUGH_X - 200, tx: DOUGH_X - 200, rot: 0, dir: 1 };
     scene.cut = { n: 0, chopT: 9 };
@@ -823,6 +976,16 @@
   }
 
   var LEG_W = 200, LEG_H = LEG_W * 910 / 465;
+  var INSOLE_H = 15;   // 足の下に描くインソールの厚み
+
+  /**
+   * INSOLE の圧力で足を動かしているか。動かしているなら、その足の押しぐあい 0〜1 を返す（そうでなければ null）。
+   * ふみふみ中は、画面の足が「ふんだ瞬間」だけでなく、足うらにかかっている圧力のとおりに生地を押す
+   */
+  function soleLoad(foot) {
+    if (!isInsole() || state.screen !== 'play') return null;
+    return press.isLive(foot, performance.now()) ? press.load(foot) : null;
+  }
 
   function restTop(d, x) {
     var u = Math.min(1, Math.abs((x - d.x) / (d.w / 2)));
@@ -838,8 +1001,14 @@
     if (lv > 0) scene.glowPulse = 1;   // コンボ中は、ふむたびに後ろの丸がふくらむ
     if (phase === 'knead') {
       var leg = scene.legs[foot];
-      leg.state = 'down'; leg.t = 0; leg.press = 22 + 26 * k; leg.glow = 1;
-      leg.from = leg.soleY;
+      leg.glow = 1;
+      if (soleLoad(foot) !== null) {
+        // INSOLE: 足の上下は圧力が決める。ふんだ瞬間は、ぐっと押しこむ勢いだけ足す
+        leg.kick = 1;
+      } else {
+        leg.state = 'down'; leg.t = 0; leg.press = 22 + 26 * k;
+        leg.from = leg.soleY;
+      }
       d.squashV += 2.2 + 2.4 * k;
       var cx = leg.x + LEG_W * 0.44;
       puffs(d.x - d.w / 2 - 6, d.baseY - 10, -1, 3);
@@ -853,8 +1022,11 @@
       pin.dir = (foot === 0) === (pin.dir > 0) ? -pin.dir : pin.dir;
       if (run && !(run.feetUsed[0] && run.feetUsed[1])) pin.dir = -pin.dir;   // 片足のときは往復
       var half = d.w / 2 - 80;
-      pin.tx = d.x + (foot === 0 || pin.dir < 0 ? -half : half);
-      if (Math.abs(pin.tx - pin.x) < 40) pin.tx = d.x + (pin.x > d.x ? -half : half);
+      // INSOLE を両足につけているときは、麺棒は体重の移動で転がる（updateScene の rollBySole）
+      if (!rollBySole()) {
+        pin.tx = d.x + (foot === 0 || pin.dir < 0 ? -half : half);
+        if (Math.abs(pin.tx - pin.x) < 40) pin.tx = d.x + (pin.x > d.x ? -half : half);
+      }
       d.squashV += 1.2;
       if (mult > 1) word('+' + mult, d.x + (Math.random() - 0.5) * 160, d.baseY - d.h - 150 - Math.random() * 40, COL.yolk);
       scene.side = -(scene.side || 1);
@@ -873,6 +1045,20 @@
       if (mult > 1) word('+' + mult, xCut - 90 + (Math.random() - 0.5) * 80, BOARD_Y - 330 - Math.random() * 40, COL.yolk);
       UdonAudio.chop();
     }
+  }
+
+  /**
+   * INSOLE を両足につけているとき、「のばす」の麺棒を体重の移動で転がす。
+   * 左足に体重をのせると左へ、右足にのせると右へ。動かしたら true（片足のときは、従来どおり 1 ふみごとに往復）
+   */
+  function rollBySole() {
+    var l = soleLoad(0), r = soleLoad(1);
+    if (l === null || r === null) return false;
+    var d = scene.dough;
+    var half = d.w / 2 - 80;
+    var shift = Math.max(-1, Math.min(1, (r - l) * 1.5));
+    scene.pin.tx = d.x + half * shift;
+    return true;
   }
 
   /** 「きる」区間で、生地を何本ぶんに切り分けて見せるか */
@@ -963,8 +1149,11 @@
     return pts;
   }
 
-  /** 足の裏が生地を押し下げる（足の下の制御点を足裏より上に行かせない） */
-  function pressDough(x0, x1, soleY) {
+  /**
+   * 足の裏が生地を押し下げる（足の下の制御点を足裏より上に行かせない）。
+   * slope を渡すと足裏がかたむく（x が 1 進むごとに slope だけ下がる。pivotX での高さが soleY）
+   */
+  function pressDough(x0, x1, soleY, slope, pivotX) {
     var d = scene.dough;
     var sx = 1 + d.squash * 0.045, sy = 1 - d.squash * 0.07;
     for (var i = 0; i <= N; i++) {
@@ -973,7 +1162,7 @@
       var x = d.x + (d.w / 2) * sx * (c < 0 ? -1 : 1) * Math.pow(Math.abs(c), d.ex);
       if (x < x0 || x > x1) continue;
       var rest = d.baseY - d.h * sy * Math.pow(s, d.ey);
-      var need = Math.min(soleY, d.baseY - 26) - rest;
+      var need = Math.min(soleY + (slope ? (x - pivotX) * slope : 0), d.baseY - 26) - rest;
       if (d.off[i] < need) { d.off[i] = need; if (d.vel[i] < 0) d.vel[i] = 0; }
     }
   }
@@ -988,6 +1177,25 @@
       if (!leg.init) { leg.soleY = hover; leg.init = true; }
       leg.t += dt;
       leg.glow = Math.max(0, leg.glow - dt * 2.4);
+      var load = soleLoad(i);
+      if (load !== null) {
+        // INSOLE: 足うらの圧力のとおりに、足が生地にしずむ。圧がぬけると足が上がる
+        leg.state = 'idle';
+        leg.kick = Math.max(0, leg.kick - dt * 7);
+        var touch = Math.min(1, load / 0.1);                      // 足が生地にふれているか
+        var lifted = top - 78 + Math.sin(scene.t * 2.2 + i * Math.PI) * 4;
+        var deep = Math.min(top + 14 + 44 * load + leg.kick * 12, d.baseY - 30);
+        var want = lifted + (deep - lifted) * touch;
+        leg.soleY += (want - leg.soleY) * (1 - Math.exp(-dt * 30));
+        // つま先寄り・かかと寄りで、足がすこしかたむく（つま先は左）
+        var cop = press.cop(i);
+        var tiltWant = cop.valid ? -cop.fore * 0.06 * Math.min(1, load * 2.5) : 0;
+        leg.tilt += (tiltWant - leg.tilt) * (1 - Math.exp(-dt * 12));
+        // インソールの光り方が見えるよう、生地の線はインソールのすぐ下にくる
+        if (touch > 0.05) pressDough(leg.x + 8, leg.x + LEG_W * 0.9, leg.soleY + 3, Math.tan(leg.tilt), leg.x + LEG_W * 0.72);
+        continue;
+      }
+      leg.tilt += (0 - leg.tilt) * (1 - Math.exp(-dt * 12));
       var pressY = Math.min(top + leg.press, d.baseY - 30);
       if (leg.state === 'down') {
         var k = Math.min(1, leg.t / 0.075);
@@ -1067,6 +1275,7 @@
         updateDough(dt);
         if (run.phase === 'knead') updateLegs(dt);
         var pin = scene.pin;
+        if (run.phase === 'roll') rollBySole();
         var dx = (pin.tx - pin.x) * (1 - Math.exp(-dt * 9));
         pin.x += dx; pin.rot += dx / 52;
         scene.cut.chopT += dt;
@@ -1145,10 +1354,15 @@
 
   function drawLeg(i) {
     var leg = scene.legs[i];
-    var img = legImg[i];
+    var sole = isInsole();
+    var img = (sole ? legImgBare : legImg)[i];
     if (!img || !img.complete || !img.naturalWidth) return;
-    var y = leg.soleY - LEG_H + 4;
     var k = LEG_W / 465;
+    var y = leg.soleY - LEG_H + 4 - (sole ? INSOLE_H : 0);
+    if (sole) {
+      drawSoleLeg(i, leg, img, y, k);
+      return;
+    }
     ctx.drawImage(img, leg.x, y, LEG_W, LEG_H);
     // 画像の上端より先（ひざから上）を、画面の外までつぎ足す
     var x0 = leg.x + 206 * k, x1 = leg.x + 444 * k, yTop = y + 12 * k;
@@ -1166,6 +1380,55 @@
       ctx.strokeStyle = COL.led[i]; ctx.globalAlpha = leg.glow; ctx.lineWidth = 6; ctx.stroke();
       ctx.globalAlpha = 1;
     }
+  }
+
+  /**
+   * INSOLE の足: 足の下にインソールを描き、つま先・まんなか・かかとの 3 つに分けて、
+   * 圧力がかかっているところほど濃く光らせる。足首を中心に、つま先寄り／かかと寄りでかたむく
+   */
+  function drawSoleLeg(i, leg, img, y, k) {
+    var px = leg.x + 330 * k, py = y + 800 * k;   // 足首のあたり
+    var pads = press.pads(i);
+    var live = soleLoad(i) !== null;
+    var zone = live ? [Math.max(pads[0], pads[2]), Math.max(pads[1], pads[3], pads[4]), pads[5]] : [0, 0, 0];
+    ctx.save();
+    ctx.translate(px, py); ctx.rotate(leg.tilt); ctx.translate(-px, -py);
+    // インソール（つま先が左）
+    var bx = leg.x + 18 * k, bw = 424 * k, by = y + 897 * k, bh = INSOLE_H + 3;
+    roundRect(bx, by, bw, bh, bh / 2);
+    ctx.fillStyle = COL.white; ctx.fill();
+    ctx.save();
+    roundRect(bx, by, bw, bh, bh / 2); ctx.clip();
+    var cuts = [0, 0.3, 0.68, 1];
+    for (var z = 0; z < 3; z++) {
+      ctx.fillStyle = mix(COL.white, COL.led[i], 0.18 + 0.82 * Math.min(1, zone[z]));
+      ctx.fillRect(bx + bw * cuts[z], by, bw * (cuts[z + 1] - cuts[z]), bh);
+    }
+    ctx.restore();
+    roundRect(bx, by, bw, bh, bh / 2);
+    ctx.strokeStyle = INK; ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.lineWidth = 4; ctx.lineCap = 'butt';
+    ctx.beginPath();
+    ctx.moveTo(bx + bw * 0.3, by); ctx.lineTo(bx + bw * 0.3, by + bh);
+    ctx.moveTo(bx + bw * 0.68, by); ctx.lineTo(bx + bw * 0.68, by + bh);
+    ctx.stroke();
+    ctx.drawImage(img, leg.x, y, LEG_W, LEG_H);
+    // ひざから上を画面の外までつぎ足す（かたむいても切れ目が見えないよう、足といっしょに回す）
+    var x0 = leg.x + 206 * k, x1 = leg.x + 444 * k, yTop = y + 12 * k;
+    ctx.fillStyle = COL.peach;
+    ctx.fillRect(x0 + 10 * k, -2000, x1 - x0 - 20 * k, yTop + 2000 + 16 * k);
+    ctx.strokeStyle = INK; ctx.lineWidth = 22 * k; ctx.lineCap = 'butt';
+    ctx.beginPath();
+    ctx.moveTo(x0, -2000); ctx.lineTo(x0, yTop + 6 * k);
+    ctx.moveTo(x1, -2000); ctx.lineTo(x1, yTop + 6 * k);
+    ctx.stroke();
+    if (leg.glow > 0) {
+      // ふんだ瞬間、インソールが光る
+      ctx.beginPath(); ctx.ellipse(bx + bw / 2, by + bh / 2, bw / 2 + (1 - leg.glow) * 26, bh / 2 + (1 - leg.glow) * 20, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = COL.led[i]; ctx.globalAlpha = leg.glow; ctx.lineWidth = 6; ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
   }
 
   function drawPin(d) {
@@ -1436,7 +1699,44 @@
 
   function meterPct(foot) {
     var thr = detector.effectiveThreshold(foot);
-    return Math.min(100, detector.level(foot) / thr * 62);   // しきい値の線は 62% の高さ
+    var ratio = detector.level(foot) / thr;
+    if (isInsole()) {
+      // INSOLE: 圧力でふみを数えられている間は、圧力の立ち上がりを見せる（線をこえると 1 ふみ）
+      var now = performance.now();
+      if (press.isLive(foot, now)) ratio = press.isActive(foot, now) ? press.meter(foot) : Math.max(ratio, press.meter(foot));
+    }
+    return Math.min(100, ratio * 62);   // しきい値の線は 62% の高さ
+  }
+
+  // ---------------------------------------------------------------------------
+  // INSOLE の足うらマップ（HUD と ためしふみ）: 6 つのセンサの丸を、圧力に合わせてふくらませる
+  // ---------------------------------------------------------------------------
+  var soleMaps = { hud: [null, null], tryout: [null, null] };
+
+  function buildSoleMap(host, foot) {
+    host.innerHTML = UdonArt.insoleMap(foot === 0 ? 'L' : 'R', { layout: UdonInsolePressure.LAYOUT });
+    return {
+      pads: Array.prototype.slice.call(host.querySelectorAll('.udon-pad')),
+      cop: host.querySelector('.udon-cop'), shown: -1
+    };
+  }
+
+  function paintSoleMap(map, foot, now) {
+    if (!map) return;
+    var live = press.isLive(foot, now);
+    var pads = press.pads(foot);
+    for (var i = 0; i < map.pads.length; i++) {
+      var v = live ? pads[i] : 0;
+      map.pads[i].setAttribute('r', (5 + 9 * v).toFixed(1));
+      map.pads[i].setAttribute('fill-opacity', (v > 0.02 ? 0.25 + 0.75 * v : 0).toFixed(2));
+    }
+    var c = press.cop(foot);
+    var on = live && c.valid;
+    if (on) {
+      map.cop.setAttribute('cx', (10 + c.x * 100).toFixed(1));
+      map.cop.setAttribute('cy', (8 + c.y * 218).toFixed(1));
+    }
+    if (map.shown !== (on ? 1 : 0)) { map.shown = on ? 1 : 0; map.cop.setAttribute('opacity', on ? 0.85 : 0); }
   }
 
   function updateHud(now, dt) {
@@ -1444,24 +1744,45 @@
     chipTimer -= dt;
     if (chipTimer <= 0) {
       chipTimer = 0.3;
+      var slots = (isInsole() && window.UdonInsole) ? window.UdonInsole.status() : null;
       for (var i = 0; i < 2; i++) {
         var chip = $('chipCore' + i);
-        var on = live[i] && state.mode === 'core';
+        // CORE は 01 = 左・02 = 右。INSOLE は左右を自分で知っているので、スイッチ（01・02）ごとに「どちらの足か」を出す
+        var on = (slots ? (slots[i].state === 'on' && live[slots[i].foot]) : live[i]) && state.mode === 'core';
         chip.classList.toggle('is-on', on);
-        chip.querySelector('b').textContent = on ? 'つながりました' : '未接続';
-        ['hudFoot', 'tryMeter'].forEach(function (p) { $(p + i).classList.toggle('is-off', !live[i]); });
+        var text = on ? 'つながりました' : '未接続';
+        if (slots) {
+          if (on && slots[i].side !== null) text = 'つながりました（' + (slots[i].foot === 0 ? '左足' : '右足') + '）';
+          else if (slots[i].state === 'connecting') text = '接続中…';
+          else if (slots[i].state === 'retry') text = '再接続中…';
+        }
+        chip.querySelector('b').textContent = text;
+        ['hudFoot', 'tryMeter', 'tryMap'].forEach(function (p) { $(p + i).classList.toggle('is-off', !live[i]); });
       }
       var any = (live[0] || live[1]) && state.mode === 'core';
       document.body.dataset.cores = state.mode === 'core' ? ((live[0] ? 1 : 0) + (live[1] ? 1 : 0)) : 'demo';
       $('btnStart').disabled = !any;
-      $('titleGuide').innerHTML = any
-        ? ((live[0] && live[1]) ? '2 台つながりました。<b>はじめる</b> を押してください' : '1 台つながりました。このまま <b>はじめる</b> か、もう 1 台つなぐと左右バランスも見られます')
-        : '画面上の <b>01</b>・<b>02</b> のスイッチで ORPHE CORE をつないでください（1 台でも遊べます）';
+      var guide;
+      if (isInsole()) {
+        var unit = '枚';
+        if (window.UdonInsole && !window.UdonInsole.available) guide = 'ORPHE INSOLE の SDK を読み込めませんでした。インターネット接続をたしかめて、ページを開き直してください';
+        else if (!any) guide = '画面上の <b>01</b>・<b>02</b> のスイッチで ORPHE INSOLE をつないでください（1 ' + unit + 'でも遊べます）';
+        else if (live[0] && live[1]) guide = '2 ' + unit + 'つながりました。<b>はじめる</b> を押してください';
+        else guide = '1 ' + unit + 'つながりました。このまま <b>はじめる</b> か、もう 1 ' + unit + 'つなぐと左右バランスも見られます';
+      } else {
+        guide = any
+          ? ((live[0] && live[1]) ? '2 台つながりました。<b>はじめる</b> を押してください' : '1 台つながりました。このまま <b>はじめる</b> か、もう 1 台つなぐと左右バランスも見られます')
+          : '画面上の <b>01</b>・<b>02</b> のスイッチで ORPHE CORE をつないでください（1 台でも遊べます）';
+      }
+      if (state.guide !== guide) { state.guide = guide; $('titleGuide').innerHTML = guide; }
       if (run && state.screen === 'play') { run.feetLive[0] = run.feetLive[0] || live[0]; run.feetLive[1] = run.feetLive[1] || live[1]; }
     }
 
     if (state.screen === 'setup') {
-      for (var f = 0; f < 2; f++) $('tryMeter' + f).querySelector('.u-meter-fill').style.height = meterPct(f) + '%';
+      for (var f = 0; f < 2; f++) {
+        $('tryMeter' + f).querySelector('.u-meter-fill').style.height = meterPct(f) + '%';
+        if (isInsole()) paintSoleMap(soleMaps.tryout[f], f, now);
+      }
       if (state.calib) {
         var left = Math.max(0, state.calib.until - now);
         $('tryText').textContent = 'いつもの強さで ふみふみ… あと ' + Math.ceil(left / 1000) + ' 秒';
@@ -1470,7 +1791,10 @@
     }
 
     if (state.screen === 'play' && run) {
-      for (var g = 0; g < 2; g++) $('hudFoot' + g).querySelector('.u-foot-meter b').style.height = meterPct(g) + '%';
+      for (var g = 0; g < 2; g++) {
+        $('hudFoot' + g).querySelector('.u-foot-meter b').style.height = meterPct(g) + '%';
+        if (isInsole()) paintSoleMap(soleMaps.hud[g], g, now);
+      }
       var p = Math.min(1, run.points / run.target);
       $('gaugeFill').style.width = (p * 100) + '%';
       $('gaugePct').textContent = Math.floor(p * 100) + '%';
@@ -1501,8 +1825,10 @@
     if (el.hidden) {
       if (now - run.lastStepAt < ASSIST_AFTER_MS) return;
       if (detector.getThreshold() <= UdonStepDetector.LEVELS[4].threshold + 0.001) return;
-      // じっとしているだけ（ひとやすみ中など）なら何もしない
-      if (!idleResult().ok) return;
+      // じっとしているだけ（ひとやすみ中など）なら何もしない。
+      // INSOLE では、足うらを押しているのに しきい値に届かない山が続いているときも声をかける
+      var pressed = isInsole() && (press.missedCount(0, now) + press.missedCount(1, now)) >= 3;
+      if (!idleResult().ok && !pressed) return;
       run.assistUntil = now + ASSIST_COUNT_MS;
       el.hidden = false;
     }
@@ -1529,6 +1855,7 @@
     applySensitivity();
     saveStore();
     hideAssist();
+    press.clearMissed();
     if (run) { run.lastStepAt = performance.now(); run.idle = newIdle(); }
     toast('感度を「' + label + '」に上げました');
   }
@@ -1537,6 +1864,65 @@
   // 操作
   // ---------------------------------------------------------------------------
   function on(id, handler) { $(id).addEventListener('click', function (e) { UdonAudio.unlock(); UdonAudio.tap(); handler(e); }); }
+
+  // ---------------------------------------------------------------------------
+  // つかうセンサーの切り替え（ORPHE CORE / ORPHE INSOLE）
+  // ---------------------------------------------------------------------------
+  var DEVICE_TEXT = {
+    core: { name: 'CORE', kicker: 'ORPHE CORE で足踏み', dock: 'CORE をつなぐ', feet: ['01', '02'] },
+    insole: { name: 'INSOLE', kicker: 'ORPHE INSOLE で足踏み', dock: 'INSOLE をつなぐ', feet: ['左', '右'] }
+  };
+
+  function setDevice(device, save) {
+    device = device === 'insole' ? 'insole' : 'core';
+    if (state.device !== device) {
+      detector.reset(); press.reset(); fusion.reset();
+      if (state.calib) cancelCalibration();   // 別のセンサーのデータで、じどう調整を終わらせない
+    }
+    state.device = device;
+    if (save) { store.settings.device = device; saveStore(); }
+    document.body.dataset.device = device;
+    stage.dataset.device = device;
+    var t = DEVICE_TEXT[device];
+    var buttons = $('deviceSwitch').querySelectorAll('[data-device]');
+    for (var i = 0; i < buttons.length; i++) {
+      var sel = buttons[i].dataset.device === device;
+      buttons[i].classList.toggle('is-on', sel);
+      buttons[i].setAttribute('aria-checked', sel);
+    }
+    $('dockLabel').textContent = t.dock;
+    $('titleKicker').textContent = t.kicker;
+    $('btnDemoLabel').textContent = t.name + ' なしでおためし';
+    for (var f = 0; f < 2; f++) {
+      $('chipCore' + f).querySelector('span').textContent = t.name + ' 0' + (f + 1);
+      $('hudFoot' + f).querySelector('span').textContent = t.feet[f];
+      $('tryMeter' + f).querySelector('span').textContent = t.feet[f];
+      var icon = $('hudFoot' + f).querySelector('.u-foot-icon');
+      if (device === 'insole') {
+        soleMaps.hud[f] = buildSoleMap(icon, f);
+        soleMaps.tryout[f] = buildSoleMap($('tryMap' + f), f);
+      } else {
+        icon.innerHTML = UdonArt.footprint(f === 0 ? 'L' : 'R');
+        $('tryMap' + f).innerHTML = '';
+        soleMaps.hud[f] = soleMaps.tryout[f] = null;
+      }
+    }
+    if (state.screen === 'setup') $('tryText').textContent = tryText();
+  }
+
+  $('deviceSwitch').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-device]');
+    if (!b || b.dataset.device === state.device) return;
+    UdonAudio.unlock(); UdonAudio.tap();
+    if (state.screen !== 'title' && state.screen !== 'setup') {
+      toast('センサーの切り替えは、タイトルか したく の画面でどうぞ');
+      return;
+    }
+    setDevice(b.dataset.device, true);
+    toast(b.dataset.device === 'insole'
+      ? 'ORPHE INSOLE で遊びます。01・02 のスイッチでつないでください'
+      : 'ORPHE CORE で遊びます。01・02 のスイッチでつないでください');
+  });
 
   on('btnStart', function () { setMode('core'); goSetup(); });
   on('btnDemo', function () { setMode('demo'); goSetup(); toast('おためしモード: F・J キー（または画面の足ボタン）でふみふみ'); });
@@ -1594,7 +1980,7 @@
     applySensitivity();
     saveStore();
     renderSetup();
-    $('tryText').textContent = TRY_TEXT[state.mode];
+    $('tryText').textContent = tryText();
   });
 
   stage.querySelector('.u-tabs').addEventListener('click', function (e) {
@@ -1662,10 +2048,10 @@
   // ---------------------------------------------------------------------------
   function init() {
     $('noren').innerHTML = UdonArt.noren(['う', 'ど', 'ん', 'ふ', 'み', 'ふ', 'み'], { height: 200 });
-    $('hudFoot0').querySelector('.u-foot-icon').innerHTML = UdonArt.footprint('L');
-    $('hudFoot1').querySelector('.u-foot-icon').innerHTML = UdonArt.footprint('R');
     legImg[0] = UdonArt.toImage(UdonArt.leg({ core: COL.led[0], width: 465 }));
     legImg[1] = UdonArt.toImage(UdonArt.leg({ core: COL.led[1], width: 465 }));
+    legImgBare[0] = legImgBare[1] = UdonArt.toImage(UdonArt.leg({ width: 465 }));
+    setDevice(store.settings.device, false);
     resetScene();
     applySound();
     refreshZukanCount();
@@ -1682,12 +2068,14 @@
    *   ?screen=setup|intro|play|result|finish|zukan|history  &demo=1  &auto=1（自動でふむ）
    *   &p=0.7（play の進み具合） &course=komori &udon=tsukimi &feet=1 &style=gentle|ragged|rest
    *   &seed（図鑑ときろくにダミーデータ） &slow（演出を省略しない） &hold（できあがり画面で止める）
+   *   &device=insole（ORPHE INSOLE の見た目で。保存はしない）
    *   &still / &notrans（スクリーンショット用にアニメーション／トランジションを止める）
    */
   function debugBoot() {
     var q = new URLSearchParams(location.search);
     if (q.has('still')) stage.classList.add('u-still');
     if (q.has('notrans')) stage.classList.add('u-notrans');
+    if (q.has('device')) setDevice(q.get('device'), false);
     if (!q.has('screen') && !q.has('demo') && !q.has('auto')) return;
     state.debug = { fast: (q.has('fast') || q.has('screen')) && !q.has('slow'), udon: q.get('udon'), hold: q.has('hold') };
     if (courseById(q.get('course'))) store.settings.course = q.get('course');
@@ -1735,6 +2123,13 @@
     run.maxCombo = q.get('style') === 'ragged' ? 2 : 17;
     run.feetUsed = [true, feet === 2];
     run.feetLive = [true, feet === 2];
+    if (isInsole()) {
+      // あしうらタブの見た目確認用のダミー集計（左はかかと寄り、右は全体）
+      [[1, 3, 0, 9, 30, 57], [9, 14, 6, 15, 24, 32]].forEach(function (imp, f) {
+        if (f === 1 && feet !== 2) return;
+        press.feet[f].stats = { ms: 60000, loadedMs: 33000, impulse: imp, steps: 30, relSum: 29 };
+      });
+    }
     if (q.get('style') === 'gentle') { store.settings.sens = { mode: 'level', level: 4, threshold: 0.18 }; applySensitivity(); }
     run.done = true;
     finishRun();
@@ -1769,8 +2164,30 @@
 
   window.UdonGame = {
     pushAcc: pushAcc,
+    pushInsoleAcc: pushInsoleAcc,
+    pushPress: pushPress,
+    /** insole-connect.js から: 接続・切断・左右の割り当て直しの通知 */
+    insoleEvent: function (foot, type) {
+      if (!isInsole()) return;
+      if (type === 'remap') {
+        // どちらの足のデータかが変わった: まざらないよう、両足とも作り直す
+        detector.reset();
+        press.reset();
+        fusion.reset();
+      } else if (type === 'error') {
+        toast('ORPHE INSOLE につなげませんでした。もう一度スイッチを入れてください');
+      } else if (type === 'disconnect') {
+        detector.reset(foot);
+        if (state.mode === 'core' && state.screen === 'play' && run && !run.done && run.count > 0 && !liveFeet()[1 - foot]) {
+          setPaused(true);
+          toast('INSOLE の接続が切れました。つながり直したら「つづける」を押してください');
+        }
+      }
+    },
+    press: press,
     /** scripts.js から: 接続・切断の通知（表示の更新は届いているデータを見て行うので、ここでは切断だけ扱う） */
     coreEvent: function (foot, type) {
+      if (isInsole()) return;
       if (type === 'disconnect') {
         detector.reset(foot);
         if (state.screen === 'play' && run && !run.done && run.count > 0 && !liveFeet()[1 - foot]) {

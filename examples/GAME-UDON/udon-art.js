@@ -572,6 +572,33 @@
       (side === 'R' ? group(body, { transform: 'translate(116,0) scale(-1,1)' }) : body) + '</svg>';
   }
 
+  /**
+   * ORPHE INSOLE の足うらマップ（上から見たインソールと、6 つの圧力センサ）。side: 'L' | 'R'
+   * センサの丸には class="udon-pad" と data-ch（0〜5）が付く。ゲーム中は game.js が r と fill-opacity を書きかえる。
+   * opts.layout = センサの位置（insole-pressure.js の LAYOUT。x: 0 = 外側 … 1 = 内側、y: 0 = つま先 … 1 = かかと）
+   * opts.values = センサごとの押しぐあい 0〜1（リザルトの静止画用）
+   */
+  function insoleMap(side, opts) {
+    opts = opts || {};
+    var layout = opts.layout || [];
+    var values = opts.values || [];
+    // 左足（親指側 = 右）で描いて、右足は左右を反転する
+    var body = path('M60,8 C92,8 110,34 110,72 C110,104 98,122 96,146 C94,172 100,186 96,204 C92,220 78,226 62,226 ' +
+      'C44,226 30,218 26,200 C22,180 26,162 22,140 C18,112 10,96 10,68 C10,32 30,8 60,8 Z', opts.fill || '#FFFDF8', 9);
+    layout.forEach(function (pt, i) {
+      var v = Math.max(0, Math.min(1, values[i] || 0));
+      var cx = (10 + pt.x * 100).toFixed(1), cy = (8 + pt.y * 218).toFixed(1);
+      body += '<circle cx="' + cx + '" cy="' + cy + '" r="12" fill="rgba(35,24,21,0.1)"/>' +
+        '<circle class="udon-pad" data-ch="' + i + '" cx="' + cx + '" cy="' + cy + '" r="' + (5 + 9 * v).toFixed(1) +
+        '" fill="' + C.shu + '" fill-opacity="' + (v > 0 ? 0.25 + 0.75 * v : 0).toFixed(2) + '"/>';
+    });
+    // 圧力の中心（ゲーム中だけ動かす）
+    body += '<circle class="udon-cop" cx="60" cy="117" r="6" fill="' + INK + '" opacity="0"/>';
+    return '<svg class="udon-insolemap" viewBox="0 0 120 234" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' +
+      (side === 'R' ? '右足' : '左足') + 'の足うらの圧力">' +
+      (side === 'R' ? group(body, { transform: 'translate(120,0) scale(-1,1)' }) : body) + '</svg>';
+  }
+
   /** のれん。labels は 1 枚ごとの文字 */
   function noren(labels, opts) {
     opts = opts || {};
@@ -635,6 +662,7 @@
     dishIds: Object.keys(DISHES),
     leg: leg,
     footprint: footprint,
+    insoleMap: insoleMap,
     noren: noren,
     stamp: stamp,
     stars: stars,

@@ -284,4 +284,32 @@ const score = (r, key) => r.axes.find(a => a.key === key).score;
   assert.equal(UdonMenu.pick(analysis, { collected: done }).id, 'nabeyaki');
 }
 
+// ORPHE INSOLE のログ: 押しぐあい（press）と、つま先／かかと（fore）が付いているときだけ CSV に列が増える。
+// 点数には使わない（CORE と同じ土俵で比べられるように）
+{
+  const base = Array.from({ length: 24 }, (_, i) => ({ t: i * 520, foot: i % 2, peak: 1.1 }));
+  const withSole = base.map((s, i) => ({ ...s, press: i === 3 ? null : 0.9 + (i % 4) * 0.05, fore: i % 2 ? 0.4 : -0.6 }));
+  const plain = UdonHealth.analyze({ steps: base });
+  const sole = UdonHealth.analyze({ steps: withSole });
+  assert.equal(sole.total, plain.total, 'pressure columns do not change the score');
+  assert.deepEqual(sole.axes.map(a => a.score), plain.axes.map(a => a.score));
+
+  const plainCsv = UdonHealth.toCsv(plain).trim().split('\n');
+  assert.equal(plainCsv[0], 'no,time_sec,foot,strength_g,interval_sec,after_rest', 'the CORE CSV keeps its columns');
+  assert.equal(plainCsv[1].split(',').length, 6);
+
+  const csv = UdonHealth.toCsv(sole).trim().split('\n');
+  assert.equal(csv[0], 'no,time_sec,foot,strength_g,interval_sec,after_rest,press_rel,fore_aft');
+  assert.equal(csv.length, 25);
+  assert.deepEqual(csv[1].split(',').slice(6), ['0.90', '-0.60']);
+  assert.deepEqual(csv[2].split(',').slice(6), ['0.95', '0.40']);
+  assert.deepEqual(csv[4].split(',').slice(6), ['', '0.40'], 'a step counted by the IMU has no press value');
+  assert.ok(csv.every(line => line.split(',').length === 8));
+  assert.equal(sole.series.steps[0].press, 0.9);
+  assert.equal(sole.series.steps[3].press, null);
+  // おかしな値は無いものとして扱う
+  const odd = UdonHealth.analyze({ steps: base.map(s => ({ ...s, press: NaN, fore: 'x' })) });
+  assert.equal(UdonHealth.toCsv(odd).split('\n')[0], 'no,time_sec,foot,strength_g,interval_sec,after_rest');
+}
+
 console.log('udon-health-analysis.test.js passed');

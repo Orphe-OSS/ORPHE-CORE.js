@@ -1,6 +1,8 @@
 // store.js — settings, saved calibrations and the session history, all in localStorage.
 // Nothing leaves the browser.
 
+import { DEFAULT_RALLY_PACE } from './game.js';
+
 const KEY_SETTINGS = 'orphe.pingpong.settings.v1';
 const KEY_CALIB = 'orphe.pingpong.calibration.v1';
 const KEY_HISTORY = 'orphe.pingpong.history.v1';
@@ -13,7 +15,7 @@ export const DEFAULT_SETTINGS = {
   points: 5,
   ballSpeed: 4,          // 1..10 (4 = the original example's default pace)
   ballSize: 3,           // 1..5
-  accel: true,
+  rallyPace: DEFAULT_RALLY_PACE,   // 0..4, how fast a rally speeds up (game.js RALLY_PACES)
   items: true,
   guide: true,
   cpuLevel: 0,
@@ -23,8 +25,8 @@ export const DEFAULT_SETTINGS = {
   muted: false,
   season: 'auto',        // auto | spring | summer | autumn | winter
   players: [
-    { exercise: 'ankle', gain: 1.25, smooth: 0.4, invert: false, paddle: 3, assist: 1 },
-    { exercise: 'ankle', gain: 1.25, smooth: 0.4, invert: false, paddle: 3, assist: 1 },
+    { exercise: 'ankle', gain: 1.25, smooth: 0.4, invert: false, paddle: 3, assist: 1, character: 'daruma' },
+    { exercise: 'ankle', gain: 1.25, smooth: 0.4, invert: false, paddle: 3, assist: 1, character: 'daruma' },
   ],
 };
 
@@ -42,6 +44,11 @@ export function loadSettings() {
   const stored = read(KEY_SETTINGS);
   const saved = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
   const out = { ...DEFAULT_SETTINGS, ...saved };
+  // the first release had an on/off switch (`accel`) instead of the pace steps
+  if (!Number.isFinite(saved.rallyPace)) out.rallyPace = saved.accel === false ? 0 : DEFAULT_RALLY_PACE;
+  delete out.accel;
+  // hand-edited or stale values must not reach array lookups
+  if (![0, 1, 2].includes(out.cpuLevel)) out.cpuLevel = DEFAULT_SETTINGS.cpuLevel;
   out.players = [0, 1].map((i) => ({ ...DEFAULT_SETTINGS.players[i], ...((Array.isArray(saved.players) ? saved.players : [])[i] || {}) }));
   return out;
 }

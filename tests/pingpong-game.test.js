@@ -62,7 +62,46 @@ for (const seed of [1, 2, 3, 4, 5]) {
   assert.deepEqual(hits.map((h) => h.side), [1, 0, 1, 0], 'the receiver of the serve hits first, then they alternate');
   assert.deepEqual(hits.map((h) => h.rally), [1, 2, 3, 4]);
   assert.ok(hits.every((h) => Math.abs(h.offset) < 0.2 && Math.abs(h.rawOffset) < 0.2), 'tracked balls meet the paddle centre');
-  near(hits[3].speed / hits[0].speed, (1 + 0.045 * 4) / (1 + 0.045 * 1), 0.02, 'rally acceleration');
+  // the default pace is the third of five steps
+  const pace = G.RALLY_PACES[G.DEFAULT_RALLY_PACE];
+  assert.equal(G.DEFAULT_RALLY_PACE, 2);
+  near(hits[3].speed / hits[0].speed, (1 + pace.rate * 4) / (1 + pace.rate * 1), 0.02, 'rally acceleration at the default pace');
+}
+
+// the rally pace is a setting: off, the original gentle pace, and three faster ones, each with a ceiling
+{
+  assert.equal(G.RALLY_PACES.length, 5);
+  assert.deepEqual({ ...G.rallyPaceFor(0) }, { accelRate: 0, accelMax: 1 });
+  near(G.rallyPaceFor(1).accelRate, 0.045, 1e-9, 'step 1 is the original pace');
+  for (let i = 1; i < G.RALLY_PACES.length; i++) {
+    assert.ok(G.RALLY_PACES[i].rate > G.RALLY_PACES[i - 1].rate && G.RALLY_PACES[i].max > G.RALLY_PACES[i - 1].max, 'each step is faster than the one before');
+  }
+  assert.ok(G.RALLY_PACES[G.DEFAULT_RALLY_PACE].rate > 0.045, 'the default speeds up faster than the original');
+  assert.deepEqual({ ...G.rallyPaceFor(99) }, { ...G.rallyPaceFor(4) }, 'out-of-range settings are clamped');
+
+  // a perfectly tracked rally: the ball speeds up per return and stops at the ceiling of its pace
+  const rallySpeeds = (setting, returns) => {
+    const sim = new G.PongSim({ mode: 'vs', cpu: [null, null], items: false, seed: 7, pointsToWin: 99, ...G.rallyPaceFor(setting) });
+    sim.startMatch(0);
+    const speeds = [];
+    for (let i = 0; i < 120 * 400 && speeds.length < returns; i++) {
+      for (const side of [0, 1]) {
+        const b = sim.ball;
+        const coming = b.state === 'live' && Math.sign(b.vx) === (side === 0 ? -1 : 1);
+        sim.setInput(side, coming ? G.predictY(b.x, b.y, b.vx, b.vy, (side === 0 ? -1 : 1) * G.COURT.paddleX, sim.wall) / sim.travel(side) : 0);
+      }
+      sim.step(DT);
+      for (const ev of sim.drain()) if (ev.type === 'hit') speeds.push(ev.speed / sim.cfg.ballSpeed / (ev.smash ? 1.3 : 1));
+    }
+    return speeds;
+  };
+  const off = rallySpeeds(0, 12);
+  assert.ok(off.every((v) => Math.abs(v - 1) < 1e-9), 'pace 0 never speeds up');
+  const fast = rallySpeeds(3, 30);
+  assert.equal(fast.length, 30);
+  near(fast[4] / fast[0], (1 + G.RALLY_PACES[3].rate * 5) / (1 + G.RALLY_PACES[3].rate * 1), 0.02, 'pace 3 per-return gain');
+  near(Math.max(...fast), G.RALLY_PACES[3].max, 1e-6, 'pace 3 stops at its ceiling');
+  near(fast[29], G.RALLY_PACES[3].max, 1e-6, 'and stays there');
 }
 
 // an unattended paddle loses the point, and the player who missed serves next
@@ -88,7 +127,7 @@ for (const seed of [1, 2, 3, 4, 5]) {
 
 // a CPU that misjudges a ball misses it wherever the ball goes, also along the rails
 {
-  const sim = new G.PongSim({ mode: 'vs', pointsToWin: 99, cpu: [null, 0], items: false, accel: false, ballSpeed: G.ballSpeedFor(9), seed: 21 });
+  const sim = new G.PongSim({ mode: 'vs', pointsToWin: 99, cpu: [null, 0], items: false, ...G.rallyPaceFor(0), ballSpeed: G.ballSpeedFor(9), seed: 21 });
   sim.paddles[1].cpu.level = { ...sim.paddles[1].cpu.level, miss: 10, speed: 6, react: 0.05 };   // always misjudges, always gets where it aims
   sim.startMatch(0);
   let cpuHits = 0, cpuMisses = 0, edge = 1;

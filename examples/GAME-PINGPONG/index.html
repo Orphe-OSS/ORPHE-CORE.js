@@ -97,6 +97,7 @@
       <div class="setup">
         <div class="setup-row" data-side="0" id="setup-0">
           <span class="setup-name"><span class="panel-dot"></span>あか</span>
+          <button class="char-btn" data-char-side="0" aria-label="あかのキャラクターをえらぶ"><img alt="" width="44" height="44"><span></span></button>
           <div class="seg" role="radiogroup" aria-label="あかの運動">
             <button role="radio" data-exercise="ankle" aria-checked="true">足首</button>
             <button role="radio" data-exercise="thigh" aria-checked="false">太もも</button>
@@ -105,6 +106,7 @@
         </div>
         <div class="setup-row" data-side="1" id="setup-1">
           <span class="setup-name"><span class="panel-dot"></span>あお</span>
+          <button class="char-btn" data-char-side="1" aria-label="あおのキャラクターをえらぶ"><img alt="" width="44" height="44"><span></span></button>
           <div class="seg" role="radiogroup" aria-label="あおの運動">
             <button role="radio" data-exercise="ankle" aria-checked="true">足首</button>
             <button role="radio" data-exercise="thigh" aria-checked="false">太もも</button>
@@ -249,6 +251,8 @@
             <div class="live-row small"><span>ラケットの位置</span></div>
             <div class="live-bar paddle"><div class="live-dot" data-el="paddle"></div><span class="end-l">手前</span><span class="end-r">奥</span></div>
           </div>
+          <div class="field"><label>キャラクター</label>
+            <button class="char-btn light" data-action="character"><img alt="" width="44" height="44"><span></span><i class="bi bi-chevron-right"></i></button></div>
           <div class="field"><label>運動のしかた</label>
             <div class="seg" role="radiogroup"><button role="radio" data-exercise="ankle">足首（足の甲）</button><button role="radio" data-exercise="thigh">太もも上げ（太もも）</button></div></div>
           <div class="field"><label>感度 <output data-out="gain"></output></label>
@@ -281,7 +285,9 @@
           <input type="range" min="1" max="5" step="1" id="set-ballSize"></div>
         <div class="field"><label>相手（ひとりで練習）の強さ</label>
           <div class="seg" role="radiogroup" id="set-cpu"><button role="radio" data-cpu="0">やさしい</button><button role="radio" data-cpu="1">ふつう</button><button role="radio" data-cpu="2">つよい</button></div></div>
-        <div class="field inline"><label>ラリーが続くと球が速くなる</label><button class="switch" role="switch" id="set-accel" aria-checked="true"></button></div>
+        <div class="field"><label>ラリーが続くと球が速くなるペース</label>
+          <div class="seg" role="radiogroup" id="set-pace"><button role="radio" data-pace="0">なし</button><button role="radio" data-pace="1">ゆっくり</button><button role="radio" data-pace="2">ふつう</button><button role="radio" data-pace="3">はやい</button><button role="radio" data-pace="4">超はやい</button></div>
+          <p class="field-note">返すたびに速くなり、上限で止まります（ふつう: 最大 2.1 倍）。試合中も変えられます。</p></div>
         <div class="field inline"><label>おたのしみアイテム（みかん・だんご・竹がき）</label><button class="switch" role="switch" id="set-items" aria-checked="true"></button></div>
         <div class="field inline"><label>球のとどく場所を光で知らせる</label><button class="switch" role="switch" id="set-guide" aria-checked="true"></button></div>
       </div>
@@ -303,6 +309,15 @@
     </footer>
   </aside>
 
+  <!-- ===== character select (cards are filled by ui.js with portraits rendered from the 3D models) ===== -->
+  <div id="charselect" class="modal-layer" hidden>
+    <div class="char-sheet" role="dialog" aria-labelledby="char-title">
+      <h2 id="char-title"><span class="panel-dot"></span><span id="char-title-text">あかのキャラクター</span></h2>
+      <div class="char-grid" id="char-grid" role="radiogroup" aria-label="キャラクター"></div>
+      <button class="btn-main" id="btn-char-close">きめた</button>
+    </div>
+  </div>
+
   <!-- ===== how to play ===== -->
   <div id="help" class="modal-layer" hidden>
     <div class="help-card" role="dialog" aria-labelledby="help-title">
@@ -315,7 +330,8 @@
       </ol>
       <ul class="help-tips">
         <li>🍊 みかん … ラケットが大きくなる　🍡 だんご … 球がゆっくりに　🎍 竹がき … 一度だけ守ってくれる</li>
-        <li>すばやく動かして当てると「スマッシュ」。ラリーが続くと音楽もにぎやかになります。</li>
+        <li>すばやく動かして当てると「スマッシュ」。ラリーが続くと球が速くなり、音楽もにぎやかになります。</li>
+        <li>キャラクターは 6 体。ロビーの顔のボタンからえらべます。</li>
         <li>CORE がなくても、あか：<kbd>W</kbd> <kbd>S</kbd>、あお：<kbd>↑</kbd> <kbd>↓</kbd> で体験できます。</li>
       </ul>
       <button class="btn-main" id="btn-help-close">とじる</button>

@@ -11,7 +11,8 @@
 import * as THREE from 'three';
 import { createFx } from './fx.js';
 import { createWorld, seasonForMonth, TEAM } from './world.js';
-import { PongSim, COURT, CPU_LEVELS, ITEM_TYPES, ballSpeedFor, ballRadiusFor, paddleHalfFor, predictY } from './game.js';
+import { renderPortraits, isCharacter } from './characters.js';
+import { PongSim, COURT, CPU_LEVELS, ITEM_TYPES, ballSpeedFor, ballRadiusFor, paddleHalfFor, rallyPaceFor, predictY } from './game.js';
 import { TiltInput, Calibrator } from './input.js';
 import { analyzeSession, EXERCISES } from './analysis.js';
 import { AudioEngine } from './audio.js';
@@ -77,13 +78,28 @@ function simConfig() {
     mode: settings.mode, pointsToWin: settings.points,
     ballSpeed: ballSpeedFor(settings.ballSpeed), ballRadius: ballRadiusFor(settings.ballSize),
     paddleHalf: [paddleHalfFor(p0.paddle), paddleHalfFor(solo ? 3 : p1.paddle)],
-    accel: settings.accel, items: settings.items,
+    ...rallyPaceFor(settings.rallyPace), items: settings.items,
     assist: [ASSIST_PULL[p0.assist], solo ? 0 : ASSIST_PULL[p1.assist]],
     cpu: [null, solo ? settings.cpuLevel : null],
   };
 }
 
+/** The opponents of the solo mode: the inn's clerk, its landlady and the resident master. */
+const CPU_CHARACTERS = ['tanuki', 'neko', 'daruma'];
+
+/** Put the chosen characters at the table (in solo mode the right-hand one is the CPU's). */
+function applyCharacters() {
+  if (!world) return;   // a setting changed while the scene is still loading; boot() applies them once it exists
+  for (const side of [0, 1]) {
+    const picked = settings.players[side].character;
+    if (!isCharacter(picked)) settings.players[side].character = 'daruma';
+  }
+  world.setCharacter(0, settings.players[0].character);
+  world.setCharacter(1, settings.mode === 'solo' ? CPU_CHARACTERS[settings.cpuLevel] : settings.players[1].character);
+}
+
 function applySettings() {
+  applyCharacters();
   for (const side of [0, 1]) {
     const p = settings.players[side];
     inputs[side].settings.gain = p.gain; inputs[side].settings.invert = p.invert; inputs[side].setSmooth(p.smooth);
@@ -95,7 +111,7 @@ function applySettings() {
   // a match in progress follows the sliders live
   if (sim && sim.cfg.mode !== 'attract' && (phase === 'play' || phase === 'countdown')) {
     const cfg = simConfig();
-    Object.assign(sim.cfg, { ballSpeed: cfg.ballSpeed, accel: cfg.accel, items: cfg.items, assist: cfg.assist });
+    Object.assign(sim.cfg, { ballSpeed: cfg.ballSpeed, accelRate: cfg.accelRate, accelMax: cfg.accelMax, items: cfg.items, assist: cfg.assist });
     sim.ball.r = cfg.ballRadius;
     sim.paddles.forEach((p, side) => { if (p.cpu) return; const big = p.half > p.baseHalf; p.baseHalf = cfg.paddleHalf[side]; p.half = big ? Math.min(p.baseHalf * 1.5, COURT.halfW * 0.6) : p.baseHalf; });
     if (!settings.guide) { world.setGuide(0, null); world.setGuide(1, null); }
@@ -172,7 +188,8 @@ function botPosition(side, dt) {
 
 // ------------------------------------------------------------------ phases
 function startAttract() {
-  sim = new PongSim({ mode: 'attract', cpu: [1, 1], items: false, ballSpeed: ballSpeedFor(6), ballRadius: ballRadiusFor(3), paddleHalf: [paddleHalfFor(3), paddleHalfFor(3)] });
+  // the exhibition rally behind the lobby keeps the gentle pace, whatever the match setting is
+  sim = new PongSim({ mode: 'attract', cpu: [1, 1], items: false, ...rallyPaceFor(1), ballSpeed: ballSpeedFor(6), ballRadius: ballRadiusFor(3), paddleHalf: [paddleHalfFor(3), paddleHalfFor(3)] });
   sim.startMatch();
 }
 
@@ -182,7 +199,7 @@ function enterLobby() {
   ui.closeDrawer(); ui.showSheet(false); ui.winBanner(null); ui.banner(null); ui.countdown(null); ui.hint(null);
   ui.setMatchLock(false);
   ui.show('lobby');
-  world.setView('title'); world.clearItems(); world.resetDarumas(); world.setBoard('0', '0', false);
+  world.setView('title'); world.clearItems(); world.resetCharacters(); world.setBoard('0', '0', false);
   world.setGuide(0, null); world.setGuide(1, null); world.focusOn(null);
   audio.setScene('title'); audio.intensity = 0;
   fx.reset();
@@ -269,7 +286,7 @@ function beginMatch() {
   ui.showSheet(false); ui.winBanner(null);
   ui.setMatchLock(true);
   ui.show('hud');
-  world.setView('play'); world.clearItems(); world.resetDarumas(); world.hideBall(); world.focusOn(null);
+  world.setView('play'); world.clearItems(); world.resetCharacters(); world.hideBall(); world.focusOn(null);
   world.setBoard('0', '0', false);
   audio.setScene('play'); audio.intensity = 0;
   fx.reset();
@@ -385,14 +402,14 @@ function handleEvent(ev) {
       world.cheer(1);
       fx.flash(0.08);
       // paper confetti from both ends; from 20 on, fireworks go up outside (heard from the table)
-      for (const side of [0, 1]) { const p = world.darumaPosition(side); fx.confetti(p.x * 0.8, T + 0.5, p.z, 16 + Math.min(40, ev.rally), { vx: -Math.sign(p.x) * 1.2, vy: 2.4 }); }
+      for (const side of [0, 1]) { const p = world.characterPosition(side); fx.confetti(p.x * 0.8, T + 0.5, p.z, 16 + Math.min(40, ev.rally), { vx: -Math.sign(p.x) * 1.2, vy: 2.4 }); }
       if (ev.rally >= 20) audio.firework(0);
       break;
     }
     case 'goal':
       ui.banner('目標達成！', 2200);
       audio.milestone(30); audio.cheer(0.7);
-      for (const side of [0, 1]) { const p = world.darumaPosition(side); fx.confetti(p.x * 0.8, T + 0.5, p.z, 60, { vx: -Math.sign(p.x) * 1.2, vy: 2.8 }); }
+      for (const side of [0, 1]) { const p = world.characterPosition(side); fx.confetti(p.x * 0.8, T + 0.5, p.z, 60, { vx: -Math.sign(p.x) * 1.2, vy: 2.8 }); }
       audio.firework(0);
       break;
     case 'item-spawn':
@@ -430,7 +447,7 @@ function onPoint(ev, attract) {
   refreshEffects();
   ui.rally(0);
   audio.intensity = 0;
-  const loserPos = world.darumaPosition(ev.loser);
+  const loserPos = world.characterPosition(ev.loser);
   if (coop) {
     ui.coop(sim.totalHits, sim.coopGoal, sim.lives);
     audio.point(0, false);
@@ -439,7 +456,7 @@ function onPoint(ev, attract) {
   } else {
     ui.score(ev.score[0], ev.score[1]);
     world.setBoard(String(ev.score[0]), String(ev.score[1]));
-    const scorerPos = world.darumaPosition(ev.scorer);
+    const scorerPos = world.characterPosition(ev.scorer);
     audio.point(pan(scorerPos.x), ev.final);
     popupAt(ev.rally >= 8 ? 'ナイスラリー！' : '一点！', scorerPos.x * 0.72, scorerPos.y + 0.75, scorerPos.z, '');
     popupAt('七転び八起き', loserPos.x * 0.75, loserPos.y + 0.7, loserPos.z, 'soft');
@@ -467,10 +484,12 @@ function finishMatch(ev) {
     world.setView(winner === 0 ? 'win0' : 'win1');
     world.celebrate(winner);
     ui.winBanner('勝負あり', `${names()[winner]}の勝ち！`);
-    const p = world.darumaPosition(winner);
+    const p = world.characterPosition(winner);
     fx.confetti(p.x, p.y + 0.9, p.z, 220, { vy: 3.2, spread: 1.6 });
   }
-  setTimeout(() => { if (phase === 'finish') audio.eyePaint(); }, 700);
+  // the brush stroke belongs to the daruma, whose second eye is painted in
+  const painted = [0, 1].some((side) => (winner === side || winner === 'both') && world.characterKind(side) === 'daruma');
+  setTimeout(() => { if (phase === 'finish' && painted) audio.eyePaint(); }, 700);
   finishState = { at: clock, reportAt: clock + 5.2, nextShell: clock + 0.5, shells: winner === null ? 0 : 14, lean: winner === 0 ? 1 : winner === 1 ? -1 : 0, ev };
 }
 
@@ -678,7 +697,7 @@ function frame(nowMs) {
 
 // ------------------------------------------------------------------ boot
 async function boot() {
-  ui = createUI({ settings, actions });
+  ui = createUI({ settings, actions, cpuCharacters: CPU_CHARACTERS });
   ui.sync();
   // the scene paints kanji and digits into textures, so the fonts have to be there first
   await Promise.race([
@@ -703,6 +722,8 @@ async function boot() {
   fx.onFireworkBurst = (x) => audio.firework(pan(x * 0.3));
   window.addEventListener('resize', resize);
   resize();
+  // portraits for the character picker, rendered once from the same models
+  try { ui.setPortraits(renderPortraits(renderer)); } catch (error) { console.warn('[PINGPONG] character portraits unavailable', error); }
   // browsers only allow sound after a gesture
   const unlock = () => { audio.unlock().then(() => { audio.setSeason(world.season.key); applySettings(); }); };
   window.addEventListener('pointerdown', unlock, { once: true });
@@ -718,7 +739,7 @@ window.pingpongDebug = {
   get phase() { return phase; }, get sim() { return sim; }, get fps() { return perf.fps; }, get pixelRatio() { return pixelRatio; },
   get paused() { return paused; }, get calib() { return calibState; },
   get log() { return log; }, inputs, settings, audio, actions,
-  get world() { return world; }, get fx() { return fx; },
+  get world() { return world; }, get fx() { return fx; }, get renderer() { return renderer; },
 };
 
 boot();

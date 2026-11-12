@@ -2,6 +2,7 @@
 // panels, in-match HUD, settings drawer, help, toasts. main.js owns the state; this module
 // only reflects it and reports what the player pressed through `actions`.
 import { EXERCISES } from './analysis.js';
+import { CHARACTERS } from './characters.js';
 import { PLAYER_NAMES } from './store.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -30,7 +31,7 @@ function figureSvg(exercise) {
       <rect class="fig-core" x="118" y="103" width="30" height="12" rx="4" transform="rotate(13 133 109)"/></g></svg>`;
 }
 
-export function createUI({ settings, actions }) {
+export function createUI({ settings, actions, cpuCharacters = [] }) {
   const layers = { lobby: $('#lobby'), calib: $('#calib'), hud: $('#hud'), result: $('#result') };
   const drawer = $('#settings');
   const help = $('#help');
@@ -55,6 +56,7 @@ export function createUI({ settings, actions }) {
     syncers.push(sync);
   }
   const syncers = [];
+  syncers.push(() => refreshCharacters());
   function syncAll() { syncers.forEach((fn) => fn()); refreshLobby(); actions.changed(); }
 
   // ------------------------------------------------------------------ lobby
@@ -70,6 +72,60 @@ export function createUI({ settings, actions }) {
   $('#btn-start').addEventListener('click', () => actions.start());
   $('#btn-lobby-settings').addEventListener('click', () => actions.openSettings('game'));
   $('#btn-lobby-help').addEventListener('click', () => api.help(true));
+
+  // ------------------------------------------------------------------ character picker
+  const charSheet = $('#charselect');
+  const charGrid = $('#char-grid');
+  let portraits = null;     // portraits[kind][side] = data URL, rendered from the 3D models by main.js
+  let charSide = 0;
+  const characterName = (kind) => (CHARACTERS.find((c) => c.key === kind) || CHARACTERS[0]).name;
+  function paintCharButton(button, kind, side) {
+    const img = $('img', button);
+    const url = portraits && portraits[kind] ? portraits[kind][side] : '';
+    if (url) img.src = url;
+    img.style.visibility = url ? 'visible' : 'hidden';
+    $('span', button).textContent = characterName(kind);
+  }
+  function refreshCharacters() {
+    const solo = settings.mode === 'solo';
+    for (const button of $$('.char-btn[data-char-side]')) {
+      const side = Number(button.dataset.charSide);
+      const cpu = solo && side === 1;
+      paintCharButton(button, cpu ? cpuCharacters[settings.cpuLevel] : settings.players[side].character, side);
+      button.disabled = cpu;
+    }
+    // the drawer's buttons follow the same rule: in solo mode the right-hand character is the computer's
+    for (const side of [0, 1]) {
+      const button = $(`#tab-p${side} .char-btn`);
+      const cpu = solo && side === 1;
+      paintCharButton(button, cpu ? cpuCharacters[settings.cpuLevel] : settings.players[side].character, side);
+      button.disabled = cpu;
+    }
+    for (const card of $$('.char-card', charGrid)) card.setAttribute('aria-checked', String(card.dataset.char === settings.players[charSide].character));
+  }
+  function openCharacters(side) {
+    charSide = side;
+    $('.char-sheet', charSheet).dataset.side = String(side);
+    $('#char-title-text').textContent = `${PLAYER_NAMES[side]}のキャラクター`;
+    charGrid.replaceChildren(...CHARACTERS.map((c) => {
+      const card = document.createElement('button');
+      card.className = 'char-card'; card.setAttribute('role', 'radio'); card.dataset.char = c.key;
+      const img = document.createElement('img');
+      img.alt = ''; img.width = 150; img.height = 150;
+      if (portraits && portraits[c.key]) img.src = portraits[c.key][side]; else img.style.visibility = 'hidden';
+      const name = document.createElement('b'); name.textContent = c.name;
+      const line = document.createElement('small'); line.textContent = c.line;
+      card.append(img, name, line);
+      card.addEventListener('click', () => { settings.players[charSide].character = c.key; actions.select(); syncAll(); });
+      return card;
+    }));
+    refreshCharacters();
+    charSheet.hidden = false;
+    actions.tap();
+  }
+  for (const button of $$('.char-btn[data-char-side]')) button.addEventListener('click', () => openCharacters(Number(button.dataset.charSide)));
+  $('#btn-char-close').addEventListener('click', () => { charSheet.hidden = true; actions.tap(); });
+  charSheet.addEventListener('click', (e) => { if (e.target === charSheet) charSheet.hidden = true; });
 
   function refreshLobby() {
     const solo = settings.mode === 'solo';
@@ -96,6 +152,7 @@ export function createUI({ settings, actions }) {
     bindRange($('[data-key="smooth"]', pane), $('[data-out="smooth"]', pane), () => p.smooth, (v) => { p.smooth = v; }, (v) => `${Math.round(v * 100)}%`);
     bindRange($('[data-key="paddle"]', pane), $('[data-out="paddle"]', pane), () => p.paddle, (v) => { p.paddle = v; }, (v) => SIZE_WORDS[v - 1]);
     bindSwitch($('[data-key="invert"]', pane), () => p.invert, (v) => { p.invert = v; });
+    $('[data-action="character"]', pane).addEventListener('click', () => openCharacters(side));
     $('[data-action="zero"]', pane).addEventListener('click', () => actions.zero(side));
     $('[data-action="recalib"]', pane).addEventListener('click', () => actions.recalibrate(side));
     $('[data-action="clear"]', pane).addEventListener('click', () => actions.clearCalibration(side));
@@ -113,7 +170,7 @@ export function createUI({ settings, actions }) {
   bindSeg($('#set-cpu'), 'cpu', () => settings.cpuLevel, (v) => { settings.cpuLevel = Number(v); });
   bindRange($('#set-ballSpeed'), $('#out-ballSpeed'), () => settings.ballSpeed, (v) => { settings.ballSpeed = v; }, (v) => String(v));
   bindRange($('#set-ballSize'), $('#out-ballSize'), () => settings.ballSize, (v) => { settings.ballSize = v; }, (v) => SIZE_WORDS[v - 1]);
-  bindSwitch($('#set-accel'), () => settings.accel, (v) => { settings.accel = v; });
+  bindSeg($('#set-pace'), 'pace', () => settings.rallyPace, (v) => { settings.rallyPace = Number(v); });
   bindSwitch($('#set-items'), () => settings.items, (v) => { settings.items = v; });
   bindSwitch($('#set-guide'), () => settings.guide, (v) => { settings.guide = v; });
   bindSeg($('#set-bgm'), 'bgm', () => settings.bgm, (v) => { settings.bgm = v; });
@@ -156,6 +213,8 @@ export function createUI({ settings, actions }) {
       for (const [key, el] of Object.entries(layers)) if (key !== 'result') el.hidden = key !== name;
     },
     sync() { syncers.forEach((fn) => fn()); refreshLobby(); },
+    /** Portraits for the character picker: { kind: [dataUrlForSide0, dataUrlForSide1] }. */
+    setPortraits(map) { portraits = map; refreshCharacters(); },
     setLoading(done) { $('#loading').classList.toggle('done', done); },
     setMuted(muted) { const b = $('#btn-sound'); b.classList.toggle('off', muted); b.firstElementChild.className = muted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'; },
 

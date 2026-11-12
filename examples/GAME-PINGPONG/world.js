@@ -5,15 +5,13 @@
 // side of the table is up on screen), heights sit on top of the table at y = COURT.tableH.
 import * as THREE from 'three';
 import { COURT } from './game.js';
+import { TEAM, CUSHION_H, buildCharacter, buildCushion, isCharacter, canvasTexture, std, shadowed, rng } from './characters.js';
+
+export { TEAM };
 
 const T = COURT.tableH, HL = COURT.halfL, HW = COURT.halfW, PX = COURT.paddleX;
-const DARUMA_X = 1.86, BENCH_Y = 0.5, DARUMA_H = 0.52, DARUMA_R = 0.235;
+const PLAYER_X = 1.86, BENCH_Y = 0.5;
 const BALL_BASE_R = 0.036;
-
-export const TEAM = [
-  { key: 'aka', name: 'あか', color: 0xe2512c, rgb: [1.0, 0.42, 0.2], body: '#c22d1a', bodyDark: '#8f1c10', kanji: '福' },
-  { key: 'ao', name: 'あお', color: 0x2a6fd6, rgb: [0.25, 0.55, 1.0], body: '#23469a', bodyDark: '#162c66', kanji: '寿' },
-];
 
 export const SEASONS = {
   spring: { key: 'spring', label: '春', drift: 'petal', foliage: [0xf6b9cf, 0xf9d3e0, 0xee9dbb, 0xfbe6ee], moss: '#2f5a33', glow: 0xffb8d0 },
@@ -28,22 +26,6 @@ export function seasonForMonth(month) {
   if (month >= 6 && month <= 8) return 'summer';
   if (month >= 9 && month <= 11) return 'autumn';
   return 'winter';
-}
-
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-
-function canvasTexture(w, h, draw, { repeat = null, srgb = true } = {}) {
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  draw(canvas.getContext('2d'), w, h);
-  const tex = new THREE.CanvasTexture(canvas);
-  if (srgb) tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  if (repeat) { tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(repeat[0], repeat[1]); }
-  return tex;
 }
 
 function drawPlanks(ctx, w, h, { base, rows, seed, gap = 0.6 }) {
@@ -77,90 +59,6 @@ function softDotTexture() {
     g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
   }, { srgb: false });
-}
-
-const std = (color, roughness = 0.8, metalness = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra });
-
-function shadowed(mesh, cast = true, receive = true) { mesh.castShadow = cast; mesh.receiveShadow = receive; return mesh; }
-
-// ------------------------------------------------------------------ daruma
-function drawDaruma(ctx, w, h, team, eye) {
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, team.body); grad.addColorStop(0.75, team.body); grad.addColorStop(1, team.bodyDark);
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-  const cx = w / 2, cy = h * (1 - 0.615);
-  const gold = '#f1c453';
-  // gold brush strokes on the cheeks of the body
-  ctx.strokeStyle = gold; ctx.lineCap = 'round';
-  for (const s of [-1, 1]) {
-    for (let i = 0; i < 4; i++) {
-      ctx.lineWidth = 9 - i * 1.4;
-      ctx.beginPath();
-      ctx.moveTo(cx + s * (150 + i * 20), cy - 80 + i * 8);
-      ctx.quadraticCurveTo(cx + s * (196 + i * 24), cy + 10, cx + s * (150 + i * 20), cy + 120 - i * 10);
-      ctx.stroke();
-    }
-  }
-  // face
-  ctx.beginPath(); ctx.ellipse(cx, cy, 120, 102, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#f6e9cc'; ctx.fill();
-  ctx.lineWidth = 7; ctx.strokeStyle = gold; ctx.stroke();
-  // eyes: the viewer's right one is painted when the wish is made, the other when it comes true
-  for (const s of [-1, 1]) {
-    const ex = cx + s * 47, ey = cy - 8;
-    ctx.beginPath(); ctx.arc(ex, ey, 31, 0, Math.PI * 2);
-    ctx.fillStyle = '#fffdf6'; ctx.fill();
-    ctx.lineWidth = 5; ctx.strokeStyle = '#1a1310'; ctx.stroke();
-    const pupil = s === 1 ? 1 : eye;
-    if (pupil > 0.01) { ctx.beginPath(); ctx.arc(ex, ey + 2, 17 * pupil, 0, Math.PI * 2); ctx.fillStyle = '#15100d'; ctx.fill(); }
-    // eyebrow
-    ctx.beginPath(); ctx.lineWidth = 15; ctx.strokeStyle = '#1a1310';
-    ctx.moveTo(ex - s * 34, ey - 50); ctx.quadraticCurveTo(ex + s * 8, ey - 72, ex + s * 44, ey - 38);
-    ctx.stroke();
-  }
-  // moustache and mouth
-  ctx.lineWidth = 9; ctx.strokeStyle = '#1a1310';
-  for (const s of [-1, 1]) {
-    ctx.beginPath(); ctx.moveTo(cx + s * 6, cy + 40);
-    ctx.bezierCurveTo(cx + s * 34, cy + 30, cx + s * 62, cy + 44, cx + s * 78, cy + 66);
-    ctx.stroke();
-  }
-  ctx.beginPath(); ctx.lineWidth = 7; ctx.strokeStyle = '#c0392b';
-  ctx.moveTo(cx - 13, cy + 62); ctx.quadraticCurveTo(cx, cy + 71, cx + 13, cy + 62); ctx.stroke();
-  // belly kanji
-  ctx.fillStyle = gold; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = `900 118px "Yuji Syuku", "Hiragino Mincho ProN", "Yu Mincho", serif`;
-  ctx.fillText(team.kanji, cx, h * (1 - 0.245));
-}
-
-function buildDaruma(side) {
-  const team = TEAM[side];
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024; canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  drawDaruma(ctx, 1024, 512, team, 0);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
-  const profile = [];
-  const N = 30;
-  for (let i = 0; i <= N; i++) {
-    const t = i / N, a = t * Math.PI;
-    profile.push(new THREE.Vector2(Math.max(0.0005, DARUMA_R * Math.sin(a) ** 0.62 * (1 - 0.17 * t)), DARUMA_H * (0.5 - 0.5 * Math.cos(a))));
-  }
-  const body = shadowed(new THREE.Mesh(new THREE.LatheGeometry(profile, 56), std(0xffffff, 0.34, 0.02, { map: tex })), true, false);
-  body.rotation.y = Math.PI;                 // the lathe seam is at +z: turn the painted face to +z
-  const wobble = new THREE.Group();          // pivots at the base, like a roly-poly
-  wobble.add(body);
-  const rig = new THREE.Group();
-  rig.add(wobble);
-  rig.position.set(side === 0 ? -DARUMA_X : DARUMA_X, BENCH_Y, 0);
-  const yaw = (side === 0 ? 1 : -1) * 0.62;
-  rig.rotation.y = yaw;
-  return {
-    side, rig, wobble, body, tex, ctx, team, yaw, baseYaw: yaw, faceCamera: false,
-    z: 0, vz: 0, lean: 0, hop: 0, hopV: 0, squash: 0,
-    tilt: 0, tiltV: 0, tiltTarget: 0, tumbleT: 0, cheerT: 0, spin: 0, eye: 0, eyeTarget: 0,
-  };
 }
 
 // ------------------------------------------------------------------ kokeshi audience
@@ -347,6 +245,11 @@ export function createWorld({ season = 'autumn', makeFx }) {
     for (let i = 0; i < 2600; i++) { ctx.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '0,0,0'},${r() * 0.035})`; ctx.fillRect(r() * w, r() * h, 2 + r() * 5, 1 + r() * 2); }
     ctx.strokeStyle = 'rgba(247,243,230,0.95)'; ctx.lineWidth = 10; ctx.strokeRect(5, 5, w - 10, h - 10);
     ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+    // the middle of the table: a soft shade where the net stands and a painted line across
+    const shade = ctx.createLinearGradient(w / 2 - 34, 0, w / 2 + 34, 0);
+    shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(0.5, 'rgba(0,0,0,0.42)'); shade.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = shade; ctx.fillRect(w / 2 - 34, 0, 68, h);
+    ctx.fillStyle = 'rgba(247,243,230,0.95)'; ctx.fillRect(w / 2 - 4, 0, 8, h);
   });
   const tableSide = std(0x123e37, 0.5);
   const tableTop = shadowed(new THREE.Mesh(new THREE.BoxGeometry(HL * 2, 0.04, HW * 2), [tableSide, tableSide, std(0xffffff, 0.5, 0, { map: tableTex }), tableSide, tableSide, tableSide]));
@@ -358,20 +261,32 @@ export function createWorld({ season = 'autumn', makeFx }) {
     for (const z of [-0.55, 0.55]) { const leg = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.08, T - 0.12, 0.08), wood)); leg.position.set(x, (T - 0.12) / 2, z); scene.add(leg); }
     const bar = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 1.1), wood)); bar.position.set(x, 0.2, 0); scene.add(bar);
   }
-  // net
-  const netTex = canvasTexture(512, 64, (ctx, w, h) => {
+  // net. The play camera sits in the net's own plane and looks along it, so from there a flat
+  // mesh is edge-on and invisible: what reads is the thick white tape on top, the posts and the
+  // painted line underneath. The mesh shows from the low title and result cameras.
+  const netW = HW * 2 + 0.26;
+  const netTex = canvasTexture(512, 48, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(235,240,245,0.55)'; ctx.lineWidth = 1.2;
-    for (let x = 0; x <= w; x += 8) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-    for (let y = 0; y <= h; y += 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-    ctx.fillStyle = 'rgba(250,248,240,0.98)'; ctx.fillRect(0, 0, w, 9);
+    ctx.fillStyle = 'rgba(14,18,22,0.5)'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(238,242,246,0.9)'; ctx.lineWidth = 1.3;
+    for (let x = 0; x <= w; x += 6) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y <= h; y += 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
   });
-  const net = new THREE.Mesh(new THREE.PlaneGeometry(HW * 2 + 0.2, COURT.netH), new THREE.MeshStandardMaterial({ map: netTex, transparent: true, side: THREE.DoubleSide, roughness: 0.9, depthWrite: false }));
-  net.rotation.y = Math.PI / 2; net.position.set(0, T + COURT.netH / 2, 0); net.renderOrder = 2;
+  const net = new THREE.Mesh(new THREE.PlaneGeometry(netW, COURT.netH - 0.02), new THREE.MeshStandardMaterial({ map: netTex, transparent: true, side: THREE.DoubleSide, roughness: 0.9, depthWrite: false }));
+  net.rotation.y = Math.PI / 2; net.position.set(0, T + (COURT.netH - 0.02) / 2, 0); net.renderOrder = 2;
   scene.add(net);
+  const tapeMat = std(0x9a9890, 0.8);   // sits in the hot spot of the lamp over the table: a mid grey already reads as white tape
+  const tape = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.026, netW), tapeMat), true, false);
+  tape.position.set(0, T + COURT.netH - 0.013, 0); scene.add(tape);
   const netShadow = new THREE.Mesh(new THREE.BoxGeometry(0.008, COURT.netH * 0.7, HW * 2), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
   netShadow.position.set(0, T + COURT.netH * 0.4, 0); netShadow.castShadow = true; scene.add(netShadow);
-  for (const z of [-HW - 0.1, HW + 0.1]) { const post = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, COURT.netH + 0.03, 8), std(0x20242a, 0.4, 0.6))); post.position.set(0, T + COURT.netH / 2, z); scene.add(post); }
+  const metal = std(0x20242a, 0.4, 0.6);
+  for (const z of [-HW - 0.13, HW + 0.13]) {
+    const post = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, COURT.netH + 0.05, 10), metal));
+    post.position.set(0, T + COURT.netH / 2, z); scene.add(post);
+    const clamp = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.06, 0.1), metal));
+    clamp.position.set(0, T - 0.012, z - Math.sign(z) * 0.035); scene.add(clamp);
+  }
 
   // bamboo rails: the walls of the court
   const bambooMat = std(0xa9b765, 0.42);
@@ -387,7 +302,7 @@ export function createWorld({ season = 'autumn', makeFx }) {
     rails.push({ g, kick: 0, far: s === 1 });
   }
 
-  // ---------------------------------------------------------------- benches with red felt, the two daruma
+  // ---------------------------------------------------------------- benches with red felt, the two players
   const felt = std(0x8e1d1a, 0.98);
   function bench(x, z, sx, sz, y) {
     const g = new THREE.Group();
@@ -397,10 +312,34 @@ export function createWorld({ season = 'autumn', makeFx }) {
     g.position.set(x, 0, z);
     scene.add(g);
   }
-  bench(-DARUMA_X, 0, 0.52, HW * 2 + 0.24, BENCH_Y);
-  bench(DARUMA_X, 0, 0.52, HW * 2 + 0.24, BENCH_Y);
-  const darumas = [buildDaruma(0), buildDaruma(1)];
-  for (const d of darumas) scene.add(d.rig);
+  bench(-PLAYER_X, 0, 0.52, HW * 2 + 0.24, BENCH_Y);
+  bench(PLAYER_X, 0, 0.52, HW * 2 + 0.24, BENCH_Y);
+  // the two players: a cushion on the bench and, on it, whichever character was picked
+  const players = [0, 1].map((side) => {
+    const rig = new THREE.Group();
+    const wobble = new THREE.Group();      // pivots at the base, like a roly-poly
+    wobble.position.y = CUSHION_H;
+    rig.add(buildCushion(TEAM[side]), wobble);
+    rig.position.set(side === 0 ? -PLAYER_X : PLAYER_X, BENCH_Y, 0);
+    const yaw = (side === 0 ? 1 : -1) * 0.62;
+    rig.rotation.y = yaw;
+    scene.add(rig);
+    return {
+      side, rig, wobble, model: null, yaw, baseYaw: yaw, faceCamera: false,
+      z: 0, lean: 0, hop: 0, hopV: 0, kick: 0, tilt: 0, tiltV: 0, tiltTarget: 0, tumbleT: 0, cheerT: 0, spin: 0,
+    };
+  });
+  function setCharacter(side, wanted) {
+    const p = players[side];
+    const kind = isCharacter(wanted) ? wanted : 'daruma';   // same fallback as buildCharacter, so an unknown key is not rebuilt on every call
+    if (p.model && p.model.kind === kind) return;
+    if (p.model) { p.wobble.remove(p.model.root); p.model.dispose(); }
+    p.model = buildCharacter(kind, side);
+    p.wobble.add(p.model.root);
+    // the slot may be in the middle of the winner's celebration: the newcomer joins in
+    if (p.faceCamera) p.model.celebrate();
+  }
+  setCharacter(0, 'daruma'); setCharacter(1, 'daruma');
 
   // ---------------------------------------------------------------- rackets
   const rackets = [0, 1].map((side) => {
@@ -745,7 +684,9 @@ export function createWorld({ season = 'autumn', makeFx }) {
 
   // ---------------------------------------------------------------- per-frame animation
   const v3 = new THREE.Vector3();
-  function updateDaruma(d, dt, t, targetZ) {
+  const animState = { kick: 0, cheer: false, win: false };
+  function updateCharacter(d, dt, t, targetZ) {
+    const model = d.model;
     // follow the racket along the bench
     const prev = d.z;
     d.z += (targetZ - d.z) * (1 - Math.exp(-dt * 9));
@@ -755,28 +696,27 @@ export function createWorld({ season = 'autumn', makeFx }) {
     d.hopV += (-d.hop * 260 - d.hopV * 14) * dt;
     d.hop += d.hopV * dt;
     if (d.cheerT > 0) { d.cheerT -= dt; if (d.hop < 0.004 && d.hopV < 0.2) d.hopV = 1.9; }
+    d.kick *= Math.exp(-dt * 3.5);
     // tumble: fall over, then rock back up (seven falls, eight rises)
     if (d.tumbleT > 0) { d.tumbleT -= dt; d.tiltTarget = d.tumbleT > 0.45 ? 1.45 : 0; }
     d.tiltV += ((d.tiltTarget - d.tilt) * 75 - d.tiltV * 4.2) * dt;
     d.tilt += d.tiltV * dt;
     d.spin *= Math.exp(-dt * 2.2);
     d.rig.position.z = d.z;
-    d.rig.position.y = BENCH_Y + Math.max(0, d.hop);
     // the winner turns to the camera
     const wantYaw = d.faceCamera ? Math.atan2(camera.position.x - d.rig.position.x, camera.position.z - d.rig.position.z) : d.baseYaw;
     d.yaw += (wantYaw - d.yaw) * (1 - Math.exp(-dt * 3));
     d.rig.rotation.y = d.yaw + d.spin;
+    // the hop lifts and squashes the character's own "hopper" (the whole model, or just the rabbit on its tray)
     const breathe = 1 + Math.sin(t * 2.1 + d.side * 1.7) * 0.012;
     const squash = THREE.MathUtils.clamp(-d.hop * 6, -0.16, 0.3);
-    d.wobble.scale.set(1 + squash * 0.6, breathe * (1 - squash), 1 + squash * 0.6);
+    model.hopper.position.y = model.hopperBase + Math.max(0, d.hop) * model.hopScale;
+    model.hopper.scale.set(1 + squash * 0.6, breathe * (1 - squash), 1 + squash * 0.6);
     // lean with the slide (around the axis pointing along the bench's width) and tumble backwards
     d.wobble.rotation.set(-0.16 - d.tilt * 0.9 + Math.sin(t * 1.3 + d.side) * 0.02, 0, 0);
     d.wobble.rotateOnWorldAxis(v3.set(1, 0, 0), d.lean);
-    if (Math.abs(d.eye - d.eyeTarget) > 0.004) {
-      d.eye += Math.sign(d.eyeTarget - d.eye) * Math.min(Math.abs(d.eyeTarget - d.eye), dt * 1.6);
-      drawDaruma(d.ctx, 1024, 512, d.team, d.eye);
-      d.tex.needsUpdate = true;
-    }
+    animState.kick = d.kick; animState.cheer = d.cheerT > 0; animState.win = d.faceCamera;
+    model.animate(dt, t, animState);
   }
 
   let shishiT = 4;
@@ -878,7 +818,7 @@ export function createWorld({ season = 'autumn', makeFx }) {
       const big = p.bigUntil > 0;
       r.rim.visible = big || r.glow > 0.05;
       r.strip.material.opacity = 0.34 + r.glow * 0.5 + (big ? 0.2 : 0);
-      updateDaruma(darumas[r.side], dt, t, -p.y * 0.9);
+      updateCharacter(players[r.side], dt, t, -p.y * 0.9);
       guards[r.side].on = p.guard;
     }
     update(dt, t, sim);
@@ -899,25 +839,29 @@ export function createWorld({ season = 'autumn', makeFx }) {
       const r = rackets[side];
       r.swingV = 9 + power * 6 + (smash ? 8 : 0);
       r.glow = 1;
-      darumas[side].hopV = Math.max(darumas[side].hopV, 0.9 + power * 0.7 + (smash ? 0.8 : 0));
+      players[side].hopV = Math.max(players[side].hopV, 0.9 + power * 0.7 + (smash ? 0.8 : 0));
+      players[side].kick = 1;
     },
     railHit(far) { const r = rails.find((q) => q.far === far); if (r) r.kick = 1; },
     point(scorer, loser) {
-      if (scorer !== null) { darumas[scorer].cheerT = 1.3; darumas[scorer].spin += scorer === 0 ? 5 : -5; }
-      if (loser !== null) darumas[loser].tumbleT = 1.25;
+      if (scorer !== null) { players[scorer].cheerT = 1.3; players[scorer].spin += scorer === 0 ? 5 : -5; }
+      if (loser !== null) players[loser].tumbleT = 1.25;
       api.cheer(1);
     },
     cheer(strength = 1) { for (const k of kokeshi) if (Math.random() < 0.55 + strength * 0.45) k.delay = 0.02 + Math.random() * 0.5; },
-    /** The winner gets the second eye painted in. side: 0 | 1 | 'both' */
+    /** The winner turns to the camera and celebrates in its own way (the daruma gets its second eye). side: 0 | 1 | 'both' */
     celebrate(side) {
-      for (const d of darumas) if (side === 'both' || d.side === side) { d.eyeTarget = 1; d.cheerT = 6; d.faceCamera = true; }
+      for (const d of players) if (side === 'both' || d.side === side) { d.cheerT = 6; d.faceCamera = true; d.model.celebrate(); }
     },
-    resetDarumas() {
-      for (const d of darumas) {
-        d.eyeTarget = 0; d.eye = 0; d.cheerT = 0; d.tumbleT = 0; d.tiltTarget = 0; d.spin = 0; d.faceCamera = false;
-        drawDaruma(d.ctx, 1024, 512, d.team, 0); d.tex.needsUpdate = true;
+    resetCharacters() {
+      for (const d of players) {
+        d.cheerT = 0; d.tumbleT = 0; d.tiltTarget = 0; d.spin = 0; d.faceCamera = false; d.kick = 0;
+        d.model.reset();
       }
     },
+    /** Swap the character of one side (key of CHARACTERS in characters.js). */
+    setCharacter,
+    characterKind(side) { return players[side].model.kind; },
     setBoard(left, right, flip = true) {
       [left, right].forEach((text, i) => {
         const card = cards[i];
@@ -938,7 +882,7 @@ export function createWorld({ season = 'autumn', makeFx }) {
     hideBall() { ball.visible = false; ballGlow.visible = false; ballShadow.visible = false; ballLight.intensity = 0; fx.updateTrail(ball.position, false, 0, 0); },
     /** World position of a racket, for particles and popups. */
     racketPosition(side) { return rackets[side].group.position; },
-    darumaPosition(side) { return darumas[side].rig.position; },
+    characterPosition(side) { return players[side].rig.position; },
   };
   return api;
 }

@@ -36,8 +36,19 @@ export const ITEM_TYPES = {
 /** Rally lengths that get a celebration. */
 export const MILESTONES = [5, 10, 15, 20, 30, 40, 50, 75, 100];
 
-const RALLY_ACCEL = 0.045;       // speed gain per return...
-const RALLY_ACCEL_HITS = 14;     // ...for this many returns
+/**
+ * How quickly a rally speeds up, by the 0..4 "rally pace" setting. `rate` is the gain per
+ * return as a share of the starting speed, `max` the ceiling the ball stops at. Step 1 is
+ * the pace of the first release; play-testing found it slow to build, so the default is step 2.
+ */
+export const RALLY_PACES = [
+  { key: 'off', label: 'なし', rate: 0, max: 1 },
+  { key: 'gentle', label: 'ゆっくり', rate: 0.045, max: 1.63 },
+  { key: 'normal', label: 'ふつう', rate: 0.08, max: 2.1 },
+  { key: 'fast', label: 'はやい', rate: 0.12, max: 2.6 },
+  { key: 'fastest', label: '超はやい', rate: 0.17, max: 3.0 },
+];
+export const DEFAULT_RALLY_PACE = 2;
 const SMASH_BOOST = 1.3;
 const SMASH_PADDLE_SPEED = 1.5;  // m/s across the table at contact
 const MAX_ANGLE = (50 * Math.PI) / 180;
@@ -84,6 +95,12 @@ export function ballRadiusFor(setting) { return 0.028 + 0.008 * (clamp(setting, 
 /** Paddle half length (m) for the 1..5 size setting. */
 export function paddleHalfFor(setting) { return 0.11 + 0.04 * (clamp(setting, 1, 5) - 1); }
 
+/** Simulation config fields for a rally pace setting (see RALLY_PACES); out-of-range values are clamped. */
+export function rallyPaceFor(setting) {
+  const index = Number.isFinite(setting) ? clamp(Math.round(setting), 0, RALLY_PACES.length - 1) : DEFAULT_RALLY_PACE;
+  return { accelRate: RALLY_PACES[index].rate, accelMax: RALLY_PACES[index].max };
+}
+
 /** Rally goal of the co-op mode for a "points" setting. */
 export function coopGoalFor(points) { return points * 6; }
 
@@ -95,7 +112,8 @@ export class PongSim {
    * @param {number} cfg.ballSpeed - m/s at the start of a rally
    * @param {number} cfg.ballRadius
    * @param {number[]} cfg.paddleHalf - per side
-   * @param {boolean} cfg.accel - speed up during a rally
+   * @param {number} cfg.accelRate - speed gain per return in a rally, as a share of ballSpeed (see rallyPaceFor)
+   * @param {number} cfg.accelMax - ceiling of that speed-up, as a multiple of ballSpeed
    * @param {boolean} cfg.items
    * @param {number[]} cfg.assist - per side 0..1, how strongly the paddle is pulled to the ball
    * @param {(number|null)[]} cfg.cpu - per side CPU level index, or null for a human
@@ -104,7 +122,7 @@ export class PongSim {
   constructor(cfg = {}) {
     this.cfg = {
       mode: 'vs', pointsToWin: 5, ballSpeed: ballSpeedFor(4), ballRadius: ballRadiusFor(2),
-      paddleHalf: [paddleHalfFor(3), paddleHalfFor(3)], accel: true, items: true,
+      paddleHalf: [paddleHalfFor(3), paddleHalfFor(3)], ...rallyPaceFor(DEFAULT_RALLY_PACE), items: true,
       assist: [0, 0], cpu: [null, null], coopLives: 3, seed: (Math.random() * 2 ** 32) >>> 0,
       ...cfg,
     };
@@ -181,7 +199,8 @@ export class PongSim {
 
   _baseSpeed() {
     let s = this.cfg.ballSpeed;
-    if (this.cfg.accel) s *= 1 + RALLY_ACCEL * Math.min(this.rally, RALLY_ACCEL_HITS);
+    // (?? so a config that names only one of the two fields cannot turn the speed into NaN)
+    s *= Math.min(this.cfg.accelMax ?? 1, 1 + (this.cfg.accelRate ?? 0) * this.rally);
     if (this.t < this.slowUntil) s *= SLOW_FACTOR;
     return s;
   }

@@ -31,6 +31,10 @@ bles.forEach(function (ble, index) {
             });
         }
     };
+    // ジャイロは、生データのきろく（画面上の ● ボタン）にだけ使います。ふみの判定には使いません
+    ble.gotConvertedGyro = function (gyro) {
+        UdonGame.pushGyro(index, gyro);
+    };
     ble.onConnect = function () {
         UdonGame.coreEvent(index, 'connect');
     };

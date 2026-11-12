@@ -197,10 +197,40 @@ SDK を読み込めなかったとき（オフラインなど）は INSOLE の�
 > **これは遊びながら体の動きをふり返るための目安で、医療的な診断や評価ではありません。**
 > 点数の換算カーブ（`health-analysis.js` の `CURVES`）は経験的に決めた値です。
 
+## 生データのきろく（開発・解析用）
+
+画面上の **●** ボタンを ON にすると（赤くなります）、ふみふみ中にセンサーから届いた値を 1 サンプル 1 行で残し、
+**ふみふみが終わったとき（とちゅうでやめたときも）に CSV を自動で保存**します。ON / OFF は次に開いたときも覚えています。
+きろくで何か問題が起きても、ふみの判定や画面の進行には影響しないようにしてあります（そのきろくだけをあきらめます）。
+既定は OFF です。保存し直したいときは、リザルトの「ふみふみログ」にある **生データを保存** を押します。
+
+- ファイル名: `fumifumi-raw-年月日-時分秒-insole.csv`（CORE のときは `-core.csv`）。ブラウザのダウンロード先に入ります。
+- きろくする範囲: カウントダウン（立っているだけの数秒）から、ふみふみの終わりまで。
+- 大きさの目安: INSOLE 2 枚（200Hz）で 1 分あたり約 3MB。60 万行（約 25 分）で打ち切ります。
+- Chrome は、続けて何度も自動保存すると「複数のファイルのダウンロード」を許可するか聞いてきます。許可してください。
+- データはこの端末の中だけで扱います。どこにも送りません。
+
+| 列 | 内容 |
+| --- | --- |
+| `t_ms` | きろく開始からの時間 [ms]（ブラウザが受け取った時刻。BLE の 1 パケットぶんは同じ値） |
+| `screen` / `foot` | `intro`（カウントダウン）・`play`・`pause`・`boil`（終わりの 1 ふみと同じパケットで届いた残り）／ `L`・`R` |
+| `ax_g` `ay_g` `az_g` | 加速度 [G] |
+| `gx_dps` `gy_dps` `gz_dps` | ジャイロ [deg/s]（きろく用。ふみの判定には使っていません） |
+| `p1`〜`p6` | INSOLE の圧力の生値（公式のセンサ番号順。CORE では空） |
+| `imu_env_g` `imu_thr_g` | ゲームが見ていた動きの大きさと、そのときのしきい値 [G] |
+| `press_sum` `press_floor` `press_thr` `press_load` | 圧力の「床からの上がり幅」の合計、無負荷とみなしている合計値、1 ふみに必要な立ち上がり、画面の足の押しぐあい（0〜1） |
+| `serial` `pkt` `sensor_ms` | SDK が付けたパケット連番・パケット内の順番・センサー側の時刻（通信の欠けを調べる用） |
+| `event` | `step:press` / `step:imu`（数えたふみ）、`imu:ignored`（圧力で数えているので見送った加速度のふみ）、`press:merged`、`detect:…`（カウントダウン中に見つけたふみ）、目印の行（`start` / `play` / `phase:roll` / `pause:manual` / `resume` / `end:finish` など） |
+| `count` `mult` | ふみを数えた行だけ: その時点のふみ数と、コンボの倍率 |
+
+ファイルの先頭には `# 名前: 値` の行で、つかったセンサー・感度・コース・つないだ機器のようす（電池、左右、実測 Hz、
+落ちたパケット数）・行数などが入ります（pandas なら `read_csv(path, comment='#')` で読み飛ばせます）。
+
 ## 使うデータ
 
 - ORPHE CORE: 加速度 (`gotConvertedAcc`, 実 G スケール)。通知タイプは `SENSOR_VALUES`
 - ORPHE INSOLE: 加速度 (`gotConvertedAcc`) と 6ch の圧力 (`gotPress`)。ストリーミングモード 3
+- どちらも、ジャイロ (`gotConvertedGyro`) は生データのきろくにだけ使います
 
 ## 必要なORPHE CORE数
 
@@ -215,6 +245,7 @@ SDK を読み込めなかったとき（オフラインなど）は INSOLE の�
 | `insole-connect.js` | INSOLE の接続（SDK を直接使うスイッチ・左右の割り当て）と、加速度・圧力をゲームへ渡す橋渡し |
 | `step-detector.js` | 足踏みの検出と感度（純ロジック） |
 | `insole-pressure.js` | INSOLE の圧力 → ふみ・押しぐあい・圧力の中心・足うらの集計、加速度のふみとのまとめ方（純ロジック） |
+| `raw-recorder.js` | 生データのきろく（1 サンプル 1 行の CSV。純ロジック） |
 | `health-analysis.js` | ふみふみログの解析・スコア・CSV（純ロジック） |
 | `udon-menu.js` | うどん 12 種と出し分け（純ロジック） |
 | `combo.js` | リズムのコンボの規則（純ロジック） |
@@ -235,6 +266,7 @@ node tests/udon-combo.test.js             # コンボの規則
 node tests/udon-core-bridge.test.js       # CORE → ゲームの橋渡し、index.html との整合
 node tests/udon-insole-pressure.test.js   # INSOLE の圧力: 最初からの圧・感度・単位のちがい・飛び値・パケット落ち・加速度とのまとめ方
 node tests/udon-insole-bridge.test.js     # INSOLE → ゲームの橋渡し、左右の割り当て、切断と再接続、SDK の読み込み方
+node tests/udon-raw-recorder.test.js      # 生データのきろく: 列がずれない・欠けた値は空・読み戻すと元の値・行数の上限
 ```
 
 いずれも `npm test` に含まれます。
@@ -246,6 +278,7 @@ node tests/udon-insole-bridge.test.js     # INSOLE → ゲームの橋渡し、�
 - `screen=setup|intro|play|finish|result|zukan|history`、`p=0.7`（play の進み具合）、`auto=1`（自動でふむ）
 - `course=komori|nami|oomori|tokumori`、`feet=1`、`style=gentle|ragged|rest`、`udon=<id>`、`seed`（図鑑ときろくにダミーデータ）
 - `device=insole`（ORPHE INSOLE の見た目で。おためしモードでは足うらの圧力も合成します）
+- `record`（生データのきろくを ON にして開く。設定には保存しません）
 
 ## 想定読者
 
@@ -257,9 +290,11 @@ node tests/udon-insole-bridge.test.js     # INSOLE → ゲームの橋渡し、�
 - **一部確認済み** — オーナーが実機（CORE 2 台）で通しプレイを確認（2026-11-12）。そのとき見つかった
   「速くバタバタふむと数えられない」は検出器を直して合成波形のテストを追加しましたが、修正後の実機確認はまだです。
   やさしい感度（とてもやさしい・ふわふわ）での実際の足踏み、CORE 2.0（8 bit）での動作も未確認です。
-- **ORPHE INSOLE は実機で未確認** — 圧力の処理は、上の実機ログ（製品版 INSOLE・2026-07 収録）をページに流して確かめましたが、
-  このページから INSOLE に Bluetooth でつなぐところ（スイッチ・左右の判定・自動再接続）は、SDK のコードを読んだうえでの実装と、
-  スタブを使ったテストだけです。INSOLE 1.5（INS2。値が mV×10 で届く）も未確認です。
+- **ORPHE INSOLE も一部確認済み** — オーナーが実機の INSOLE で通しプレイを確認（2026-11-13、特に不満なし）。
+  このときは生データをきろくしていなかったため、数え方が合っていたかをデータでは確かめていません。
+  左右の自動判定、自動再接続、INSOLE 1.5（INS2。値が mV×10 で届く）を個別に確かめたかどうかは分かっていません。
+- **生データのきろくは実機で未確認** — 2026-07 の実機ログをページに流してきろくし、保存された CSV が流した値と
+  1 行ずつ一致すること（6912 行）と、CORE の経路をまねたデータで 1 サンプル 1 行になることを確かめました。
 
 ## 関連example
 

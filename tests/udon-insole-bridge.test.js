@@ -55,6 +55,7 @@ function boot({ sdk = true, bluetooth = true } = {}) {
   context.UdonGame = {
     pushInsoleAcc(foot, acc) { calls.push(['acc', foot, acc]); },
     pushPress(foot, values) { calls.push(['press', foot, values]); },
+    pushInsoleGyro(foot, gyro) { calls.push(['gyro', foot, gyro]); },
     insoleEvent(foot, type) { calls.push(['event', foot, type]); },
   };
   if (sdk) context.OrpheInsole = FakeInsole;
@@ -122,6 +123,23 @@ function boot({ sdk = true, bluetooth = true } = {}) {
     assert.equal(calls.filter(c => c[0] !== 'event').length, 2, 'empty samples are dropped');
     instances[0].gotBLEFrequency(187);
     assert.equal(api.status()[0].hz, 187);
+
+    // ジャイロは、生データのきろく用にそのまま渡す
+    const gyro = { x: 1, y: -2, z: 3 };
+    instances[0].gotConvertedGyro(gyro);
+    assert.deepEqual(calls.at(-1), ['gyro', 0, gyro]);
+    instances[0].gotConvertedGyro(null);
+    assert.equal(calls.filter(c => c[0] === 'gyro').length, 1);
+
+    // きろくの先頭に書く「つないだ INSOLE のようす」: 左右・実測 Hz・落ちたパケット数・電池など
+    instances[0].lostData(120, 117);
+    instances[0].lostData(130, 128);
+    instances[0].firmware_version = '1.0.1';
+    instances[0].generation = 1;
+    assert.equal(api.describe(0),
+      'on foot=L side=L hz=187 lost_packets=2 generation=1 firmware=1.0.1 battery=2 mount_position=0 range_acc=n/a range_gyro=n/a');
+    assert.equal(api.describe(1), 'off');
+    assert.equal(api.describe(7), 'off');
   }
 
   // 3) 左右は INSOLE が知っている: 01 に右のインソールをつないでも、右足（1）として届く
@@ -214,6 +232,7 @@ function boot({ sdk = true, bluetooth = true } = {}) {
     const forwarded = () => calls.filter(c => c[0] !== 'event').length;
     const n = forwarded();
     instances[0].gotConvertedAcc({ x: 0, y: 0, z: 1 });
+    instances[0].gotConvertedGyro({ x: 0, y: 0, z: 0 });
     instances[0].gotPress({ values: [220, 222, 220, 256, 222, 221] });
     assert.equal(forwarded(), n, 'late packets after switching off are dropped');
     // もう一度つなげる

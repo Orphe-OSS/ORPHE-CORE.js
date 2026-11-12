@@ -32,6 +32,10 @@
             <div id="insole_placeholder1" class="u-dock-slot u-dock-insole"></div>
             <div id="insole_placeholder2" class="u-dock-slot u-dock-insole"></div>
         </div>
+        <button type="button" class="u-iconbtn u-recbtn" id="btnRecord" aria-pressed="false"
+            title="生データのきろく ON / OFF（ふみふみが終わると、センサーの値を CSV で保存します）">
+            <i class="bi bi-record-circle"></i>
+        </button>
         <button type="button" class="u-iconbtn" id="btnSound" aria-pressed="true" title="おと ON / OFF">
             <i class="bi bi-volume-up-fill"></i>
         </button>
@@ -236,7 +240,8 @@
                         <ul class="u-axislist" id="axisList"></ul>
                         <div class="u-log-actions">
                             <button type="button" class="u-btn u-btn--small" id="btnPrint"><i class="bi bi-printer"></i> 印刷する</button>
-                            <button type="button" class="u-btn u-btn--small" id="btnCsv"><i class="bi bi-download"></i> ログを CSV で保存</button>
+                            <button type="button" class="u-btn u-btn--small" id="btnCsv" title="1 ふみごとのログを CSV で保存"><i class="bi bi-download"></i> ログを保存</button>
+                            <button type="button" class="u-btn u-btn--small" id="btnRawCsv" title="センサーの生データを CSV でもう一度保存" hidden><i class="bi bi-record-circle"></i> 生データを保存</button>
                             <button type="button" class="u-btn u-btn--small" id="btnHistory2"><i class="bi bi-graph-up"></i> これまでのきろく</button>
                         </div>
                     </div>
@@ -298,6 +303,7 @@
 
     <script src="step-detector.js" defer></script>
     <script src="insole-pressure.js" defer></script>
+    <script src="raw-recorder.js" defer></script>
     <script src="health-analysis.js" defer></script>
     <script src="udon-menu.js" defer></script>
     <script src="combo.js" defer></script>

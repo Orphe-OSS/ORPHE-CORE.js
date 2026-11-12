@@ -7,6 +7,7 @@
  *   OrpheInsole（ORPHE-INSOLE.js）
  *     gotConvertedAcc → UdonGame.pushInsoleAcc(foot, acc)   … 足の動き（CORE を足うらに付けたのと同じ扱い）
  *     gotPress        → UdonGame.pushPress(foot, values)    … 6ch の圧力（足うらの押しぐあい）
+ *     gotConvertedGyro → UdonGame.pushInsoleGyro(foot, gyro) … 生データのきろく用（ふみの判定には使わない）
  *
  * 公式の接続 UI（InsoleToolkit.js）は、CoreToolkit.js と同じページには読み込めません
  * （グローバル変数 bles / cores と、スイッチの id がぶつかる）。そのため SDK を直接使う小さな
@@ -29,7 +30,7 @@
   var bluetooth = typeof navigator !== 'undefined' && !!navigator.bluetooth;
   var insoles = available ? [new OrpheInsole(0), new OrpheInsole(1)] : [];
   var slots = [0, 1].map(function (i) {
-    return { index: i, state: 'off', side: null, foot: i, hz: 0, input: null, badge: null, note: null };
+    return { index: i, state: 'off', side: null, foot: i, hz: 0, lost: 0, input: null, badge: null, note: null };
   });
 
   function game() { return window.UdonGame; }
@@ -72,7 +73,7 @@
 
   function setState(index, state) {
     slots[index].state = state;
-    if (state === 'off') slots[index].hz = 0;
+    if (state === 'off') { slots[index].hz = 0; slots[index].lost = 0; }
     render();
   }
 
@@ -156,10 +157,16 @@
       if (s.side === null && sideOf(index) !== null) remap();
       if (acc && game()) game().pushInsoleAcc(s.foot, acc);
     };
+    insole.gotConvertedGyro = function (gyro) {
+      if (s.state === 'off') return;
+      if (gyro && game()) game().pushInsoleGyro(s.foot, gyro);
+    };
     insole.gotPress = function (press) {
       if (s.state === 'off') return;
       if (press && press.values && game()) game().pushPress(s.foot, press.values);
     };
+    // 届かなかったパケットの数（生データのきろくの先頭に書く。通信の落ち方の目安）
+    insole.lostData = function () { s.lost++; };
     insole.gotBLEFrequency = function (hz) { s.hz = hz; };
 
     insole.onDisconnect = function () {
@@ -199,6 +206,19 @@
     /** 表示用: スイッチごとの状態。foot = ゲームに渡している足（0 = 左, 1 = 右） */
     status: function () {
       return slots.map(function (s) { return { state: s.state, side: s.side, foot: s.foot, hz: s.hz }; });
+    },
+    /** 生データのきろく用: そのスイッチにつないだ INSOLE のようす（1 行の文字列） */
+    describe: function (index) {
+      var s = slots[index], insole = insoles[index];
+      if (!s || !insole || s.state === 'off') return 'off';
+      var info = insole.device_information || {};
+      var val = function (v) { return (v === null || v === undefined || v === '') ? 'n/a' : String(v); };
+      return [
+        s.state, 'foot=' + (s.foot === 0 ? 'L' : 'R'), 'side=' + (s.side === null ? 'unknown' : (s.side === 0 ? 'L' : 'R')),
+        'hz=' + val(s.hz), 'lost_packets=' + s.lost, 'generation=' + val(insole.generation),
+        'firmware=' + val(insole.firmware_version), 'battery=' + val(info.battery), 'mount_position=' + val(info.mount_position),
+        'range_acc=' + val(info.range && info.range.acc), 'range_gyro=' + val(info.range && info.range.gyro)
+      ].join(' ');
     }
   };
 })();

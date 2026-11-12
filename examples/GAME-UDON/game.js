@@ -49,7 +49,7 @@
   // ---------------------------------------------------------------------------
   function loadStore() {
     var base = {
-      settings: { course: 'nami', sens: { mode: 'level', level: 2, threshold: 0.6 }, sound: true, device: 'core' },
+      settings: { course: 'nami', sens: { mode: 'level', level: 2, threshold: 0.6 }, sound: true, device: 'core', record: false },
       collection: {},
       history: []
     };
@@ -67,6 +67,7 @@
           }
           base.settings.sound = raw.settings.sound !== false;
           base.settings.device = raw.settings.device === 'insole' ? 'insole' : 'core';
+          base.settings.record = raw.settings.record === true;
         }
         // 保存データはそのまま画面（innerHTML）に出すので、知っている項目だけを数値・既知の id に直して取り込む
         var num = function (v) { v = Number(v); return isFinite(v) ? Math.max(0, Math.round(v)) : 0; };
@@ -154,8 +155,17 @@
     coreSeen[foot] = true;
     if (isInsole()) return;              // INSOLE をえらんでいる間は、CORE のデータは使わない
     if (state.mode === 'demo') return;   // おためし中は、キーボード／タップの合成データだけを使う
+    recBegin(foot);
     detector.push(foot, acc.x, acc.y, acc.z, performance.now(), acc.timestamp);
     afterSample(foot);
+    recAcc(foot, acc);
+  }
+
+  /** scripts.js の gotConvertedGyro から呼ばれる（加速度のすぐあとに届く）。生データのきろくにだけ使う */
+  function pushGyro(foot, gyro) {
+    if (isInsole() || state.mode === 'demo') return;
+    recGyro(foot, gyro);
+    recFlush(foot, null);
   }
 
   /**
@@ -165,15 +175,24 @@
   function pushInsoleAcc(foot, acc) {
     if (!acc || !isInsole() || state.mode === 'demo') return;
     if (!isFinite(acc.x) || !isFinite(acc.y) || !isFinite(acc.z)) return;
+    recBegin(foot);
     detector.push(foot, acc.x, acc.y, acc.z, performance.now());
     afterSample(foot);
+    recAcc(foot, acc);
   }
 
-  /** insole-connect.js の gotPress から呼ばれる。values は 6ch の生値 */
+  /** insole-connect.js の gotConvertedGyro から呼ばれる。生データのきろくにだけ使う */
+  function pushInsoleGyro(foot, gyro) {
+    if (!isInsole() || state.mode === 'demo') return;
+    recGyro(foot, gyro);
+  }
+
+  /** insole-connect.js の gotPress から呼ばれる。values は 6ch の生値。INSOLE では、これが 1 サンプルの最後に届く */
   function pushPress(foot, values) {
     if (!isInsole() || state.mode === 'demo') return;
     press.record = recording();
     press.push(foot, values, performance.now());
+    recFlush(foot, values);
   }
 
   /** リザルト用の集計をためてよいか（ふみふみ中で、止めていない） */
@@ -186,14 +205,201 @@
   var fusion = new UdonInsolePressure.Fusion(press);
 
   function handleImuStep(step) {
-    if (isInsole() && !fusion.acceptImu(step, performance.now())) return;
+    if (isInsole() && !fusion.acceptImu(step, performance.now())) { recNote(step.foot, 'imu:ignored'); return; }
     handleStep(step);
   }
 
   function handlePressStep(step) {
-    if (!fusion.acceptPress(step, performance.now())) return;
+    if (!fusion.acceptPress(step, performance.now())) { recNote(step.foot, 'press:merged'); return; }
     if (state.calib) state.calib.pressSteps++;
     handleStep(step);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 生データのきろく（開発・解析用。画面上の ● ボタンで ON / OFF。書式は raw-recorder.js）
+  //
+  // センサーの 1 サンプルは、いくつかのコールバックに分かれて届く（CORE: 加速度 → ジャイロ、
+  // INSOLE: 加速度 → ジャイロ → 圧力）。足ごとにためておき、最後の 1 つが届いたところで 1 行にする。
+  // その間に起きたこと（ふみを数えた・見送った）も、同じ行に書く
+  // ---------------------------------------------------------------------------
+  var rec = new UdonRawRecorder();
+  // 行の組み立て（raw-recorder.js の Assembler）に、ゲームがそのとき見ていた値を渡す
+  var recAsm = new UdonRawRecorder.Assembler(rec, function (foot, values) {
+    var out = { screen: recScreen() };
+    if (foot < 0) return out;
+    out.env = detector.level(foot);
+    out.thr = detector.effectiveThreshold(foot);
+    if (isInsole() && values) {
+      var sole = press.feet[foot];
+      out.sum = sole.sum; out.floor = sole.floorTotal; out.pthr = press.threshold(foot); out.load = sole.load;
+    }
+    return out;
+  });
+  var recEnding = null;   // 終わりかけのきろく { reason, extra, run }。ファイルにする処理は、あとで行う
+  var recErrors = 0;
+
+  /** きろくで何か起きても、ふみの判定や画面には影響させない。そのきろくはあきらめる */
+  function recFail(error) {
+    if (recErrors++ < 3) console.warn('[うどんふみふみ] 生データのきろくで問題が起きました（ゲームには影響しません）', error);
+    try { rec.stop(performance.now(), { ended: 'error' }); rec.clear(); } catch (e) { /* あきらめる */ }
+    recEnding = null;
+    try { recAsm.reset(); renderRecord(); } catch (e) { /* あきらめる */ }
+  }
+
+  function recScreen() { return state.paused ? 'pause' : state.screen; }
+
+  /** 新しいサンプルの処理を始める前に呼ぶ */
+  function recBegin(foot) {
+    if (!rec.active) return;
+    try { recAsm.begin(foot, performance.now()); } catch (e) { recFail(e); }
+  }
+
+  function recAcc(foot, acc) { if (rec.active) recAsm.acc(foot, acc); }
+  function recGyro(foot, gyro) { if (rec.active) recAsm.gyro(foot, gyro); }
+  function recNote(foot, text, count, mult) { if (rec.active) recAsm.note(foot, text, count, mult); }
+
+  /** そのサンプルの最後のコールバックで呼ぶ（values = INSOLE の圧力。なければ null） */
+  function recFlush(foot, values) {
+    if (!rec.active) return;
+    try { recAsm.flush(foot, values, performance.now()); } catch (e) { recFail(e); }
+  }
+
+  /** センサーの値を持たない目印の行（開始・一時停止・区間の切り替わり・接続切れなど） */
+  function recMark(text) {
+    if (!rec.active) return;
+    try { recAsm.mark(text, performance.now(), recScreen()); } catch (e) { recFail(e); }
+  }
+
+  function recMeta() {
+    var s = store.settings.sens;
+    var course = courseById(store.settings.course) || COURSES[1];
+    var meta = {
+      app: 'GAME-UDON',
+      started_at: new Date().toISOString(),
+      device: state.device,
+      input: state.mode === 'demo' ? 'demo (synthetic, keyboard / tap)' : 'sensor',
+      course: course.id + ' target ' + course.steps,
+      sensitivity: (s.mode === 'auto' ? 'auto' : 'level ' + s.level) + ' / imu threshold ' + detector.getThreshold() +
+        ' G / pressure level ' + press.getLevel()
+    };
+    recLinks(meta, '');
+    meta.user_agent = navigator.userAgent;
+    return meta;
+  }
+
+  /** つないでいるセンサーのようす（電池・左右・実測 Hz・落ちたパケット数など）。開始時と終了時に書く */
+  function recLinks(meta, suffix) {
+    for (var i = 0; i < 2; i++) {
+      var text = 'n/a';
+      try {
+        if (isInsole()) {
+          if (window.UdonInsole) text = window.UdonInsole.describe(i);
+        } else if (window.bles && window.bles[i]) {
+          var info = window.bles[i].device_information;
+          text = info
+            ? 'battery=' + info.battery + ' lr=' + info.lr + ' range_acc=' + (info.range ? info.range.acc : 'n/a') +
+              ' range_gyro=' + (info.range ? info.range.gyro : 'n/a')
+            : 'no device information';
+        }
+      } catch (e) { text = 'n/a'; }
+      meta[state.device + '_0' + (i + 1) + suffix] = text;
+    }
+  }
+
+  function recStart(how) {
+    if (!store.settings.record) return;
+    if (recEnding) recFinish();   // 前のきろくの後始末がまだなら、先に済ませる
+    if (rec.active) return;
+    try {
+      recAsm.reset();
+      rec.start(recMeta(), performance.now());
+      recMark(how || 'start');
+    } catch (e) { recFail(e); }
+    renderRecord();
+  }
+
+  /**
+   * きろくを終える（ふみふみが終わった・途中でやめた・トグルを切った）。
+   * ここでは「終わる」と決めるだけ。CSV にして保存する重い処理は recFinish() が、いまの処理が済んでから行う
+   * （最後の 1 ふみはセンサーの処理の途中で決まるので、その行を書き終えてから締める。保存で何か起きても画面は進む）。
+   * @param {string} reason finish | quit | title | retry | off
+   * @param {object|null} liveRun いま進めているふみふみ（先頭にふみ数などを書く）。なければ null
+   */
+  function recStop(reason, liveRun) {
+    if (!rec.active || recEnding) return;
+    var extra = { ended: reason };
+    if (liveRun) {
+      extra.counted_steps = liveRun.count;
+      extra.progress = Math.round(liveRun.points * 10) / 10 + ' / ' + liveRun.target;
+      extra.max_combo = liveRun.maxCombo;
+    }
+    recEnding = { reason: reason, extra: extra, run: liveRun || null };
+    setTimeout(recFinish, 0);
+  }
+
+  function recFinish() {
+    var end = recEnding;
+    if (!end) return;
+    recEnding = null;
+    try {
+      var now = performance.now();
+      recAsm.drain(now);
+      rec.mark(now, recScreen(), 'end:' + end.reason);
+      recLinks(end.extra, '_end');
+      var sum = rec.stop(now, end.extra);
+      if (sum.samples[0] + sum.samples[1] >= 100) {
+        var file = {
+          name: UdonRawRecorder.fileName(new Date(), state.device),
+          blob: new Blob([rec.toCsv()], { type: 'text/csv' }), rows: sum.rows
+        };
+        state.rawFile = file;
+        if (end.run) end.run.rawFile = file;
+        saveRawFile();
+      } else {
+        // センサーの値がほとんど無いきろく（すぐにやめた・つながっていなかった）は保存しない
+        toast('きろくが短すぎたので、生データは保存しませんでした');
+      }
+      rec.clear();
+    } catch (e) { recFail(e); }
+    renderRecord();
+  }
+
+  function saveRawFile() {
+    var f = state.rawFile;
+    if (!f) return;
+    var url = URL.createObjectURL(f.blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 10000);
+    toast('生データを保存しました（' + f.rows + ' 行）');
+  }
+
+  function renderRecord() {
+    var on = !!store.settings.record;
+    $('btnRecord').setAttribute('aria-pressed', on);
+    document.body.dataset.rec = (rec.active && !recEnding) ? 'on' : (on ? 'armed' : 'off');
+  }
+
+  /** いま進めているふみふみ（きろくの先頭に、ふみ数などを書くため）。カウントダウン中やリザルトでは null */
+  function currentRun() {
+    return (run && !run.done && state.screen === 'play') ? run : null;
+  }
+
+  function setRecord(on) {
+    store.settings.record = !!on;
+    saveStore();
+    if (on) {
+      // ふみふみの途中で ON にしたら、そこからきろくする
+      if (state.screen === 'intro' || state.screen === 'play') recStart('start:mid');
+      toast('生データをきろくします。ふみふみが終わると、CSV を自動で保存します');
+    } else {
+      if (rec.active) recStop('off', currentRun());
+      else toast('生データのきろくをやめました');
+    }
+    renderRecord();
   }
 
   /** 1 サンプルごとの記録（実機・おためし共通） */
@@ -247,9 +453,12 @@
         p += list[i].amp * Math.sin(Math.PI * age / list[i].w);
       }
       var n = function () { return (Math.random() - 0.5) * 0.012; };
-      detector.push(foot, 0.25 * p + n(), n(), 1 + 0.95 * p + n(), now);
+      var acc = { x: 0.25 * p + n(), y: n(), z: 1 + 0.95 * p + n() };
+      recBegin(foot);
+      detector.push(foot, acc.x, acc.y, acc.z, now);
       afterSample(foot);
-      if (isInsole()) demoPress(foot, now);
+      recAcc(foot, acc);
+      recFlush(foot, isInsole() ? demoPress(foot, now) : null);
     }
   }
 
@@ -270,6 +479,7 @@
     }
     press.record = recording();
     press.push(foot, v, now);
+    return v;
   }
 
   function setMode(mode) {
@@ -308,6 +518,8 @@
   // ---------------------------------------------------------------------------
   function handleStep(step) {
     flashFoot(step.foot);
+    // ふみふみ中以外（カウントダウン中など）に見つけたふみも、きろくには残す
+    if (state.screen !== 'play') recNote(step.foot, 'detect:' + (step.source || 'imu'));
     if (state.screen === 'setup') {
       state.tryCount++;
       $('tryCount').textContent = state.tryCount;
@@ -335,9 +547,9 @@
     var now = performance.now();
     if (run.count === 0) { run.clockStart = now; run.clock = 0; }
     run.clock = now - run.clockStart - run.pausedMs;
-    var rec = { t: run.clock, foot: step.foot, ref: step, rest: run.restNext };
+    var entry = { t: run.clock, foot: step.foot, ref: step, rest: run.restNext };
     run.restNext = false;
-    run.steps.push(rec);
+    run.steps.push(entry);
     run.count++;
     run.lastStepAt = now;
     run.feetUsed[step.foot] = true;
@@ -360,6 +572,7 @@
     }
     run.level = level;
     run.points = Math.min(run.target, run.points + mult);
+    recNote(step.foot, 'step:' + (step.source || 'imu'), run.count, mult);
 
     var p = run.points / run.target;
     var prevPhase = run.phase;
@@ -404,6 +617,7 @@
       li[i].classList.toggle('is-now', k === phase);
       li[i].classList.toggle('is-done', (phase === 'roll' && k === 'knead') || (phase === 'cut' && k !== 'cut'));
     }
+    recMark('phase:' + phase);
     if (phase === 'roll') { callout('もちもち！ つぎは のばすよ'); UdonAudio.fold(); scene.pin.x = DOUGH_X - 200; scene.pin.tx = scene.pin.x; }
     if (phase === 'cut') { callout('のびた！ トントン きるよ'); UdonAudio.fold(); scene.cut.n = 0; }
     if (phase !== 'knead') burst(DOUGH_X, BOARD_Y - 150, 10);
@@ -448,6 +662,7 @@
   function goTitle() {
     clearTimeout(state.finishTimer);
     cancelCalibration();
+    recStop('title', currentRun());   // とちゅうでやめたときのきろくも残す（数えられなかった原因を調べるのに、いちばん役に立つ）
     setMode('core');
     press.record = false;
     run = null;
@@ -481,7 +696,9 @@
     state.lastCount = -1;
     $('countdown').textContent = '';
     resetScene();
+    recStop('retry', null);
     showScreen('intro');
+    recStart();   // カウントダウン中（立っているだけの数秒）から残す
   }
 
   function startPlay() {
@@ -504,6 +721,8 @@
     resetScene();
     enterPhaseQuiet('knead');
     showScreen('play');
+    recStart();
+    recMark('play');
     UdonAudio.play('pipi');
   }
 
@@ -525,6 +744,7 @@
     state.paused = on;
     $('pausedLayer').hidden = !on;
     var now = performance.now();
+    recMark(on ? (manual ? 'pause:manual' : 'pause:auto') : 'resume');
     if (on) {
       run.pauseStart = now;
       if (manual) run.pauses++;
@@ -541,6 +761,7 @@
   /** ゆであがり → できあがり */
   function beginBoil() {
     run.done = true;
+    recStop(run.points >= run.target - 1e-9 ? 'finish' : 'quit', run);
     hideAssist();
     scene.boil.t = 0;
     showScreen('boil');
@@ -567,7 +788,8 @@
       analysis: analysis, pick: pick, course: run.course, sens: sensLabel(), at: new Date(), maxCombo: run.maxCombo,
       device: state.device,
       // INSOLE: 足うらのどこに体重がのっていたか（左・右）
-      sole: isInsole() ? [press.summary(0), press.summary(1)] : null
+      sole: isInsole() ? [press.summary(0), press.summary(1)] : null,
+      raw: run.rawFile || null
     };
 
     // 図鑑ときろく
@@ -772,6 +994,7 @@
     var sole = soleHtml(r.sole);
     $('tabSole').hidden = !sole;
     $('soleReport').innerHTML = sole;
+    $('btnRawCsv').hidden = !r.raw;
     selectTab('score');
     refreshZukanCount();
   }
@@ -1856,6 +2079,7 @@
     saveStore();
     hideAssist();
     press.clearMissed();
+    recMark('sensitivity:' + detector.getThreshold() + 'G level' + press.getLevel());
     if (run) { run.lastStepAt = performance.now(); run.idle = newIdle(); }
     toast('感度を「' + label + '」に上げました');
   }
@@ -1947,6 +2171,8 @@
   on('btnHistory2', function () { openSheet('history'); });
   on('btnSheetClose', closeSheet);
   on('btnCsv', downloadCsv);
+  on('btnRawCsv', function () { if (state.result && state.result.raw) { state.rawFile = state.result.raw; saveRawFile(); } });
+  on('btnRecord', function () { setRecord(!store.settings.record); });
 
   $('sheet').addEventListener('click', function (e) {
     if (e.target === $('sheet')) closeSheet();
@@ -2052,6 +2278,7 @@
     legImg[1] = UdonArt.toImage(UdonArt.leg({ core: COL.led[1], width: 465 }));
     legImgBare[0] = legImgBare[1] = UdonArt.toImage(UdonArt.leg({ width: 465 }));
     setDevice(store.settings.device, false);
+    renderRecord();
     resetScene();
     applySound();
     refreshZukanCount();
@@ -2068,7 +2295,7 @@
    *   ?screen=setup|intro|play|result|finish|zukan|history  &demo=1  &auto=1（自動でふむ）
    *   &p=0.7（play の進み具合） &course=komori &udon=tsukimi &feet=1 &style=gentle|ragged|rest
    *   &seed（図鑑ときろくにダミーデータ） &slow（演出を省略しない） &hold（できあがり画面で止める）
-   *   &device=insole（ORPHE INSOLE の見た目で。保存はしない）
+   *   &device=insole（ORPHE INSOLE の見た目で。保存はしない） &record（生データのきろくを ON に。保存はしない）
    *   &still / &notrans（スクリーンショット用にアニメーション／トランジションを止める）
    */
   function debugBoot() {
@@ -2076,6 +2303,7 @@
     if (q.has('still')) stage.classList.add('u-still');
     if (q.has('notrans')) stage.classList.add('u-notrans');
     if (q.has('device')) setDevice(q.get('device'), false);
+    if (q.has('record')) { store.settings.record = true; renderRecord(); }
     if (!q.has('screen') && !q.has('demo') && !q.has('auto')) return;
     state.debug = { fast: (q.has('fast') || q.has('screen')) && !q.has('slow'), udon: q.get('udon'), hold: q.has('hold') };
     if (courseById(q.get('course'))) store.settings.course = q.get('course');
@@ -2164,11 +2392,14 @@
 
   window.UdonGame = {
     pushAcc: pushAcc,
+    pushGyro: pushGyro,
     pushInsoleAcc: pushInsoleAcc,
+    pushInsoleGyro: pushInsoleGyro,
     pushPress: pushPress,
     /** insole-connect.js から: 接続・切断・左右の割り当て直しの通知 */
     insoleEvent: function (foot, type) {
       if (!isInsole()) return;
+      recMark('insole:' + type + ':' + (foot === 0 ? 'L' : 'R'));
       if (type === 'remap') {
         // どちらの足のデータかが変わった: まざらないよう、両足とも作り直す
         detector.reset();
@@ -2188,6 +2419,7 @@
     /** scripts.js から: 接続・切断の通知（表示の更新は届いているデータを見て行うので、ここでは切断だけ扱う） */
     coreEvent: function (foot, type) {
       if (isInsole()) return;
+      if (type === 'disconnect') recMark('core:disconnect:' + (foot === 0 ? 'L' : 'R'));
       if (type === 'disconnect') {
         detector.reset(foot);
         if (state.screen === 'play' && run && !run.done && run.count > 0 && !liveFeet()[1 - foot]) {

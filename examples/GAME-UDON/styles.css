@@ -87,6 +87,11 @@ body[data-cores="0"] .u-dock { animation: u-dock-want 1.8s ease-in-out infinite;
 .u-dock-slot .text-muted { color: #D8D1CB !important; cursor: pointer; }
 .u-dock-slot .modal { color: var(--ink); }
 
+/* 生データのきろく: ON で赤くなり、きろく中は点滅する */
+.u-recbtn[aria-pressed="true"] { color: #FF6A5C; border-color: #FF6A5C; }
+body[data-rec="on"] .u-recbtn i { animation: u-rec 1.1s ease-in-out infinite; }
+@keyframes u-rec { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
 /* つかうセンサーの切り替え（CORE / INSOLE）。えらんでいない側の接続スイッチはしまっておく */
 .u-device { display: inline-flex; padding: 3px; border-radius: 999px; background: #3B3938; }
 .u-device button {
@@ -878,7 +883,8 @@ body:not([data-device="insole"]) .u-dock-insole { display: none; }
 .u-axislist small { font-weight: 700; color: var(--muted); white-space: nowrap; font-size: 0.86em; }
 .u-axislist li.is-none { opacity: 0.6; }
 
-.u-log-actions { display: flex; gap: 0.8em; justify-content: flex-end; padding-bottom: 0.4em; }
+.u-log-actions { display: flex; gap: 0.6em; justify-content: flex-end; padding-bottom: 0.4em; }
+.u-log-actions .u-btn { white-space: nowrap; }
 
 /* リザルト「あしうら」（INSOLE のときだけ） */
 .u-sole { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.7em; }

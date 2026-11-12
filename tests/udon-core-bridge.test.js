@@ -13,6 +13,7 @@ const source = fs.readFileSync(path.join(dir, 'scripts.js'), 'utf8');
 const toolkits = [];
 const guards = [];
 const pushed = [];
+const gyros = [];
 const events = [];
 let beginCalls = 0;
 
@@ -29,6 +30,7 @@ const context = {
   guardCoreToolkitBluetooth(options) { guards.push(options); },
   UdonGame: {
     pushAcc(foot, acc) { pushed.push({ foot, acc }); },
+    pushGyro(foot, gyro) { gyros.push({ foot, gyro }); },
     coreEvent(foot, type) { events.push(`${foot}:${type}`); },
   },
   isFinite,
@@ -73,6 +75,13 @@ bles[1].acc = null;
 bles[1].gotConvertedAcc({ x: NaN, y: 0, z: 0 });
 bles[1].gotConvertedAcc(undefined);
 assert.equal(pushed.length, 3);
+
+// ジャイロは、生データのきろく用にそのまま渡す（ふみの判定には使わない。加速度の受け渡しは変わらない）
+const before = pushed.length;
+const gyro = { x: 1.5, y: -20, z: 300, timestamp: 1234 };
+bles[1].gotConvertedGyro(gyro);
+assert.deepEqual(gyros, [{ foot: 1, gyro }]);
+assert.equal(pushed.length, before);
 
 // index.html: 橋渡しの前にゲーム本体と検出器が読み込まれること（すべて defer で、書かれた順に実行される）
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');

@@ -62,6 +62,7 @@ export function createUI({ audio, courseLen, hurdleDistances, maxRivals, handler
   const $card = $('result-card'), $banner = $('finish-banner');
   const hudRoot = $('hud-root'), hudTemplate = $('hud-template');
   let mode = 'solo';
+  let device = 'core';
   let rules = { jump: 'coast', stamina: 'pace' };
 
   // ------------------------------------------------------------ HUD panes (one per human runner)
@@ -185,9 +186,18 @@ export function createUI({ audio, courseLen, hurdleDistances, maxRivals, handler
     const chip = (id, b, label) => { const c = $(id); c.firstElementChild.textContent = b; c.lastElementChild.textContent = label; };
     chip('foot-chip-0', vs ? '1' : 'L', vs ? 'PLAYER 1' : '左足');
     chip('foot-chip-1', vs ? '2' : 'R', vs ? 'PLAYER 2' : '右足');
+    const insole = device === 'insole';
+    setText($('dock-title'), insole ? 'ORPHE INSOLE' : 'ORPHE CORE');
+    setText(document.querySelector('.howto-col .howto-head'), insole ? 'ORPHE INSOLE' : 'ORPHE CORE');
+    setText(document.querySelector('.mode-btn[data-mode="solo"] small'), insole ? 'INSOLE を両足に' : 'CORE 2個を両足に');
+    setText(document.querySelector('.mode-btn[data-mode="vs"] small'), insole ? 'INSOLE を1枚ずつ' : 'CORE 1個ずつ・足の甲に');
+    document.querySelectorAll('#device-switch button').forEach((b) => { const on = b.dataset.device === device; b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    $('insole-config').hidden = !insole;
+    setText($('howto-vs'), '');
+    $('howto-vs').innerHTML = `<i class="bi bi-people-fill"></i> PLAYER 1 = ${insole ? 'INSOLE' : 'CORE'} 01　PLAYER 2 = ${insole ? 'INSOLE' : 'CORE'} 02`;
     setText($('dock-hint'), vs
-      ? '1人1個ずつ、足の甲にCOREを着けます。01がPLAYER 1（左画面）、02がPLAYER 2（右画面）。'
-      : 'スイッチをONにしてCOREを選択。キーボードだけでも遊べます。');
+      ? (insole ? '1人1枚ずつINSOLEを入れます。01がPLAYER 1（左画面）、02がPLAYER 2（右画面）。' : '1人1個ずつ、足の甲にCOREを着けます。01がPLAYER 1（左画面）、02がPLAYER 2（右画面）。')
+      : (insole ? 'スイッチをONにしてINSOLEを選択。足踏みで加速、つま先上げでジャンプ。' : 'スイッチをONにしてCOREを選択。キーボードだけでも遊べます。'));
     $('rule-jump').value = rules.jump;
     $('rule-stamina').value = rules.stamina;
     setText($('rule-note'), rules.stamina === 'pace'
@@ -195,6 +205,8 @@ export function createUI({ audio, courseLen, hurdleDistances, maxRivals, handler
       : '従来：加速している間だけスタミナが減り、止めると回復します。8%を切ると加速できません。');
   }
   document.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', () => handlers.onMode(b.dataset.mode)));
+  document.querySelectorAll('#device-switch button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.device !== device) handlers.onDevice(b.dataset.device); }));
+  $('insole-toe').addEventListener('change', (e) => handlers.onInsoleToe(e.target.value));
   const onRule = () => handlers.onRules({ jump: $('rule-jump').value, stamina: $('rule-stamina').value });
   $('rule-jump').addEventListener('change', onRule);
   $('rule-stamina').addEventListener('change', onRule);
@@ -491,6 +503,12 @@ export function createUI({ audio, courseLen, hurdleDistances, maxRivals, handler
     setRecState,
     huds, setScreen, countdown, countdownGo, showFinish, showFinishVs, updateBoard, pollSensors, setDrawer,
     setMode(m) { mode = m; renderCopy(); },
+    /** type: 'core' | 'insole'. failed: INSOLE was chosen but its scripts did not load. */
+    setDevice(type, failed) {
+      device = type; renderCopy();
+      if (failed) { const n = $('ble-support-message'); n.textContent = 'ORPHE INSOLE のライブラリを読み込めませんでした（ネットワークを確認してください）。ORPHE CORE で動作しています。'; n.style.display = 'block'; }
+    },
+    setInsoleToe(mode2, state) { $('insole-toe').value = mode2; setText($('insole-toe-state'), state); },
     setRules(r) { rules = { ...r }; renderCopy(); },
     setCinema(on) { stage.classList.toggle('cinema', on); },
     setBest(time) { setText($('best-time'), time ? time.toFixed(2) : '--.--'); },

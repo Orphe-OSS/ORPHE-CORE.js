@@ -171,6 +171,12 @@ kbd {
 #stage[data-screen="finish"] .dock { top: auto; bottom: 1.4em; }
 #stage[data-screen="finish"] .dock .dock-hint, #stage[data-screen="finish"] .dock .dock-check { display: none; }
 .dock-head { display: flex; align-items: baseline; gap: 0.7em; margin-bottom: 0.7em; }
+.dock-title { white-space: nowrap; }
+.dock-head .dock-sub { display: none; }   /* the CORE / INSOLE switch takes its place */
+.device-switch { flex-shrink: 0; margin-left: auto; display: inline-flex; border: 1px solid var(--line); border-radius: 2em; overflow: hidden; align-self: center; }
+.device-switch button { padding: 0.28em 0.8em 0.2em; border: 0; background: none; color: var(--mute); font-family: var(--display); font-size: 0.95em; letter-spacing: 0.12em; cursor: pointer; transition: all 0.15s; }
+.device-switch button:hover { color: var(--ink); }
+.device-switch button.on { background: var(--cyan); color: #04121a; }
 .dock-title { font-family: var(--display); font-size: 1.55em; letter-spacing: 0.14em; }
 .dock-sub { font-size: 0.78em; color: var(--mute); letter-spacing: 0.1em; }
 .dock-row {

@@ -30,6 +30,7 @@ const STREAMS = {
   pronation: ['t', 'dev', 'x', 'y', 'z'],
   impact: ['t', 'dev', 'value'],
   footAngle: ['t', 'dev', 'value'],
+  press: ['t', 'dev', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'ts_ms', 'serial', 'pkt'],   // ORPHE INSOLE only
   steps: ['t', 'dev', 'value'],
   lost: ['t', 'dev', 'serial', 'serial_prev'],
   packets: ['t', 'dev', 'uuid', 'hex'],
@@ -97,6 +98,7 @@ export function createTelemetry() {
   let lastSaved = null;      // most recent finished session (kept in memory for instant export)
   let stats = null;          // per-device race statistics, { 0: {...}, 1: {...} }
   let statsStart = 0;
+  let pitchOf = (dev, e) => e.pitch;   // INSOLE replaces this with its toe-up mapping
   const listeners = new Set();
   const notify = () => listeners.forEach((fn) => { try { fn(); } catch { /* ignore */ } });
 
@@ -168,7 +170,8 @@ export function createTelemetry() {
           s.eulerN++;
           // toe-up episodes: how far below the jump threshold the pitch goes
           const th = -(window.pitchThresholdJump ?? 0.15);
-          if (e.pitch < th) { if (!s.toeUp) { s.toeUp = true; s.toeMin = e.pitch; } else if (e.pitch < s.toeMin) s.toeMin = e.pitch; }
+          const pitch = pitchOf(dev, e);
+          if (pitch < th) { if (!s.toeUp) { s.toeUp = true; s.toeMin = pitch; } else if (pitch < s.toeMin) s.toeMin = pitch; }
           else if (s.toeUp) { s.toeUp = false; s.toeMins.push(s.toeMin); }
         }
         if (session) push('euler', [rel(), dev, round(e.pitch, 4), round(e.roll, 4), round(e.yaw, 4)]);
@@ -180,6 +183,7 @@ export function createTelemetry() {
       tap(ble, 'gotPronation', (dev, p) => { if (session) push('pronation', [rel(), dev, round(p.x, 4), round(p.y, 4), round(p.z, 4)]); });
       tap(ble, 'gotLandingImpact', (dev, v) => { if (session) push('impact', [rel(), dev, round(v.value, 4)]); });
       tap(ble, 'gotFootAngle', (dev, v) => { if (session) push('footAngle', [rel(), dev, round(v.value, 4)]); });
+      tap(ble, 'gotPress', (dev, p) => { if (session) push('press', [rel(), dev, ...Array.from({ length: 6 }, (_, i) => p.values?.[i] ?? null), ...src(p)]); });
       tap(ble, 'gotStepsNumber', (dev, v) => { if (session) push('steps', [rel(), dev, v.value]); });
       tap(ble, 'lostData', (dev, serial, prev) => {
         if (stats?.[dev]) stats[dev].lost++;
@@ -264,6 +268,7 @@ export function createTelemetry() {
 
   return {
     attach, beginStats, sensorStats, start, stop, event, frame, count, clear,
+    setPitchMapper(fn) { pitchOf = fn; },
     get recording() { return recording; },
     get active() { return !!session; },
     get last() { return lastSaved; },

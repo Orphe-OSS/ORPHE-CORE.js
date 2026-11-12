@@ -280,7 +280,12 @@
 
     <!-- ===== ORPHE CORE connection dock (CoreToolkit UI lives here) ===== -->
     <aside id="core-dock" class="dock">
-      <div class="dock-head"><span class="dock-title">ORPHE CORE</span><span class="dock-sub">接続 / CONNECT</span></div>
+      <div class="dock-head">
+        <span class="dock-title" id="dock-title">ORPHE CORE</span><span class="dock-sub">接続 / CONNECT</span>
+        <span class="device-switch" id="device-switch" role="radiogroup" aria-label="センサーの種類 / Sensor type">
+          <button type="button" data-device="core" role="radio">CORE</button><button type="button" data-device="insole" role="radio">INSOLE</button>
+        </span>
+      </div>
       <div class="dock-row" id="dock-row-0">
         <span class="foot-chip" id="foot-chip-0"><b>L</b><span>左足</span></span>
         <div id="toolkit_placeholder1" class="toolkit-slot"></div>
@@ -394,6 +399,22 @@
           <p class="en">• Stamp feet (Accel &gt; 1.1G) → Accelerate forward</p>
           <p class="en">• Lift toe up (Pitch &lt; -0.15 rad) → Jump</p>
           <p class="en">• Jump and stamina rules can be switched under "Rules" below</p>
+        </div>
+
+        <div id="insole-config" hidden>
+          <h4>👟 ORPHE INSOLE</h4>
+          <div class="config-item">
+            <label for="insole-toe">つま先上げの向き / Toe-up direction</label>
+            <div class="config-control">
+              <select id="insole-toe">
+                <option value="auto">自動（重力から判定）</option>
+                <option value="normal">標準</option>
+                <option value="invert">反転</option>
+              </select>
+              <span id="insole-toe-state">—</span>
+            </div>
+          </div>
+          <p class="drawer-note">つま先を上げたとき、上のモニターの Pitch がマイナス（左）に振れてオレンジになれば正しい向きです。逆に振れる場合は「反転」にしてください。加速・ジャンプの閾値は CORE と共通です。</p>
         </div>
 
         <h4>🏃 ルール / Rules</h4>

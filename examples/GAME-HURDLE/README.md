@@ -45,6 +45,16 @@ ORPHE COREを足に装着して走る動きで進み、ハードルを越えて�
 - 数値は `main.js` 冒頭の定数で調整できます（`JUMP_SPEED_LOSS`、`CRUISE_SPEED`、`STAMINA_BURN_AT_MAX`、`EXHAUSTED_SPEED`、`EXHAUSTED_RECOVER_LEVEL` など）。
 - ゴール後、名前を入れて「ランキング登録」を押すと、このブラウザのランキングに記録されます。
 
+### ORPHE INSOLE で遊ぶ
+
+接続パネル右上の **CORE / INSOLE** スイッチで、センサーを ORPHE INSOLE に切り替えられます（ページを再読み込みして切り替わり、選択はブラウザに保存されます）。
+
+- 操作は CORE と同じです：足踏みで加速、つま先を上げてジャンプ。閾値とクールダウンも共通です。
+- INSOLE は IMU に加えて圧力6chを持ちます。ゲームの判定には IMU だけを使い、圧力は生データ記録に残します。
+- INSOLE のセンサ座標系は X=右・Y=つま先・Z=上なので、つま先上げは `euler.roll` に出ます（CORE は `pitch` のマイナス）。`insole.js` がこれを CORE と同じ向きに直します。向きが逆の個体に備えて、静止時の重力方向から自動判定し、設定ドロワーの「つま先上げの向き」で手動でも反転できます。
+- INSOLE の SDK と接続UI（[ORPHE-INSOLE.js](https://github.com/Orphe-OSS/ORPHE-INSOLE.js) v1.4.0 の `ORPHE-INSOLE.js` / `InsoleToolkit.js`）は、INSOLE を選んだときだけ jsDelivr から読み込みます。CORE を選んでいる間は読み込みません。
+- 実機なしで試すには `?device=insole&insoleSim=1` を付けると、SDK 付属のシミュレータで接続UIとデータの流れを確認できます。
+
 ### ゴール後の分析（スコア・レーダーチャート）
 
 ゴールすると、結果カードに **総合スコア（0〜100）と評価（S〜D）、6軸のレーダーチャート** が出ます。「詳しい分析」で、強み・課題・次の一歩のコメント、スタッツ表、ハードルごとの区間タイムを表示します。VS では2人分を重ねて比較できます。
@@ -101,6 +111,7 @@ CORE を接続していると、ピッチ（歩/分）、歩数、左右バラ�
 | `audio.js` | Web Audioによる音響（適応型BGM、観客、足音・呼吸・号砲などの効果音） |
 | `ui.js` | HUD、カウントダウン、リザルト、分析画面、ランキング、設定ドロワー |
 | `analysis.js` | 走行トレースから6軸スコア・評価・コメント・スタッツを計算（DOM 非依存） |
+| `insole.js` | ORPHE INSOLE 対応（SDK の読み込み、接続UIの差し替え、CORE と同じ入力への変換） |
 | `telemetry.js` | センサーコールバックへのタップ、走行中のセンサー統計、生データ記録（IndexedDB）と JSON / CSV 書き出し |
 | `style.css` | スタイル |
 

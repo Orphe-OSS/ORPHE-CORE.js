@@ -20,6 +20,7 @@ import { AudioEngine } from './audio.js';
 import { createUI } from './ui.js';
 import { createTelemetry } from './telemetry.js';
 import { analyzeRun } from './analysis.js';
+import { DEVICE, loadInsoleSdk, setupInsole } from './insole.js';
 
 window.THREE = THREE;
 
@@ -162,6 +163,9 @@ function resetPlayer(p) {
 // Presentation modules
 const audio = new AudioEngine();
 const telemetry = createTelemetry();
+// The two sensor units in play: ORPHE CORE (window.bles) by default, ORPHE INSOLE when selected in the dock.
+let sensors = [];
+let insole = null;
 const RIVAL_LANES = [2, 3, 4, 6, 7, 8, 9];
 let ui = null;
 let world = null;
@@ -631,9 +635,10 @@ function setupRace() {
 const r2 = (v) => (v == null ? null : +v.toFixed(2));
 /** Everything needed to interpret a recording later. */
 function sessionMeta() {
-  const bles = window.bles || [];
+  const bles = sensors;
   const meta = {
-    app: 'GAME-HURDLE', mode, rules: { ...RULES }, lanes: active.map((p) => p.lane),
+    app: 'GAME-HURDLE', deviceType: insole ? 'insole' : 'core', insoleToe: insole ? insole.toeState() : null,
+    mode, rules: { ...RULES }, lanes: active.map((p) => p.lane),
     thresholds: { accG: window.accThresholdAccel, jumpPitchRad: window.pitchThresholdJump },
     constants: { COURSE_LEN_M, FIRST_HURDLE_M, HURDLE_SPACING_M, MAX_SPEED, ACCEL_RATE, FRICTION, JUMP_V0, GRAVITY, JUMP_SPEED_LOSS, CRUISE_SPEED, STAMINA_BURN_AT_MAX, EXHAUSTED_SPEED, EXHAUSTED_RECOVER_LEVEL },
     devices: [0, 1].map((i) => ({ id: i, player: mode === 'vs' ? i : 0, name: bles[i]?.bluetoothDevice?.name ?? null, info: bles[i]?.device_information ?? null })),
@@ -1292,6 +1297,12 @@ async function boot() {
   ]);
   const [logo] = await Promise.all([loadLogo(), fontReady]);
 
+  // INSOLE swaps the connection UI before the rest of the UI looks at it
+  if (DEVICE === 'insole') {
+    try { await loadInsoleSdk(); insole = setupInsole(); } catch (error) { console.error('[HURDLE] ORPHE INSOLE support could not be loaded; staying on ORPHE CORE.', error); insole = null; }
+  }
+  sensors = insole ? insole.devices : (window.bles || []);
+
   ui = createUI({
     audio,
     courseLen: COURSE_LEN_M,
@@ -1302,6 +1313,14 @@ async function boot() {
       onMode: setMode,
       onRules: setRules,
       onRecord(on) { telemetry.setRecording(on); },
+      // CORE <-> INSOLE needs a different set of scripts, so switching reloads the page
+      onDevice(next) {
+        try { localStorage.setItem('hurdle.device', next === 'insole' ? 'insole' : 'core'); } catch { /* ignore */ }
+        const url = new URL(window.location.href);
+        url.searchParams.delete('device');
+        window.location.replace(url.toString());
+      },
+      onInsoleToe(m) { if (insole) { insole.setToeMode(m); ui.setInsoleToe(insole.toeMode, insole.toeState()); } },
       onExport(kind) {
         if (kind === 'json') telemetry.exportJson();
         else if (kind === 'csv') telemetry.exportCsv();
@@ -1319,7 +1338,13 @@ async function boot() {
   });
   ui.setRules(RULES);
   // sensor taps for the analysis and the optional raw recording (they chain onto the existing callbacks)
-  telemetry.attach(window.bles);
+  ui.setDevice(insole ? 'insole' : 'core', DEVICE === 'insole' && !insole);
+  if (insole) {
+    telemetry.setPitchMapper(insole.gamePitch);
+    ui.setInsoleToe(insole.toeMode, insole.toeState());
+    setInterval(() => ui.setInsoleToe(insole.toeMode, insole.toeState()), 500);
+  }
+  telemetry.attach(sensors);
   const refreshRec = async () => ui.setRecState({ recording: telemetry.recording, active: telemetry.active, count: await telemetry.count(), hasLast: !!telemetry.last });
   telemetry.onChange(refreshRec);
   refreshRec();
@@ -1414,8 +1439,8 @@ window.hurdleDebug = {
   get fx() { return fx; }, get world() { return world; },
   /** Paste `hurdleDebug.sensors()` in the console to see whether CORE data is reaching the game. */
   sensors() {
-    const out = (window.bles || []).map((b, i) => ({
-      core: i, connected: !!b?.bluetoothDevice?.gatt?.connected, name: b?.bluetoothDevice?.name ?? null,
+    const out = sensors.map((b, i) => ({
+      type: insole ? 'insole' : 'core', id: i, connected: !!(b?.isConnected ? b.isConnected() : b?.bluetoothDevice?.gatt?.connected), name: b?.bluetoothDevice?.name ?? null,
       rawMonitorMode: !!b?.isGotDataOverridden?.(), tapped: !!b?.__hurdleTapped,
       acc: window.devices?.[i]?.acc, pitch: window.devices?.[i]?.eulers?.pitch,
     }));
@@ -1423,7 +1448,7 @@ window.hurdleDebug = {
     return out;
   },
 };
-console.log('[HURDLE] build 2026-11-12c (raw packets tapped at onRead)');
+console.log(`[HURDLE] build 2026-11-12d (sensor: ${DEVICE})`);
 
 boot().catch((error) => {
   console.error('[HURDLE] failed to start:', error);

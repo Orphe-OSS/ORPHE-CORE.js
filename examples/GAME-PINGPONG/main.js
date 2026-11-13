@@ -18,7 +18,7 @@ import { analyzeSession, EXERCISES } from './analysis.js';
 import { AudioEngine } from './audio.js';
 import { createUI } from './ui.js';
 import { renderReport, buildCsv } from './report.js';
-import { loadSettings, saveSettings, loadCalibration, saveCalibration, loadHistory, addHistory, clearHistory, ASSIST_PULL, PLAYER_NAMES } from './store.js';
+import { loadSettings, saveSettings, saveCalibration, loadHistory, addHistory, clearHistory, ASSIST_PULL, PLAYER_NAMES } from './store.js';
 
 const query = new URLSearchParams(location.search);
 const settings = loadSettings();
@@ -122,8 +122,9 @@ function applySettings() {
 const bridge = window.pingpongBridge;
 bridge.onQuat = (id, quat) => inputs[id].feedQuat(quat, performance.now());
 bridge.onReady = (id) => {
-  const saved = loadCalibration(id);
-  if (saved && saved.exercise === inputs[id].exercise) inputs[id].importCalibration(saved);
+  // No stored calibration is applied: the sensor is strapped on anew every time, and the axis and
+  // range are learned from the movement during play (input.js AUTO). A measured calibration from
+  // the settings ("可動域をはかり直す") holds for this page load only.
   ui.toast(`${PLAYER_NAMES[id]}の ORPHE CORE がつながりました`);
   audio.ui('done');
 };
@@ -294,7 +295,7 @@ function beginMatch() {
   const now = performance.now();
   const anyCore = humans().some((side) => inputs[side].isLive(now));
   const ex = EXERCISES[inputs[0].exercise];
-  ui.hint(demo ? 'デモ: コンピューターが かわりに動かしています' : anyCore ? `${ex.upHint.replace('を', 'を ')}と ラケットが奥へ、${ex.downHint.replace('を', 'を ')}と 手前へ` : settings.mode === 'solo' ? 'W / S キーで ラケットを動かします' : 'あか: W / S キー　　あお: ↑ / ↓ キー', 7000);
+  ui.hint(demo ? 'デモ: コンピューターが かわりに動かしています' : anyCore ? `はじめに 大きく上げ下げしてみましょう。${ex.upHint.replace('を', 'を ')}と ラケットが奥へ動きます` : settings.mode === 'solo' ? 'W / S キーで ラケットを動かします' : 'あか: W / S キー　　あお: ↑ / ↓ キー', 7000);
 }
 
 function updateCountdown(dt) {
@@ -527,7 +528,7 @@ function showReport(ev) {
 function playerReport(side, at, durationSec) {
   const input = inputs[side];
   const source = logSource(side);
-  const calib = input.calibrated && source === 'core' ? { up: input.range.up, down: input.range.down } : null;
+  const calib = (input.calibrated || input.autoFitted) && source === 'core' ? { up: input.range.up, down: input.range.down } : null;
   const result = analyzeSession({ fs: LOG_HZ, exercise: input.exercise, calib, angle: log.angle[side], pos: log.pos[side], hits: log.hits[side], misses: log.misses[side], incomings: log.incomings[side] });
   const history = loadHistory(side, input.exercise).filter((e) => e.source === source);
   const previous = history.length ? history[history.length - 1] : null;
@@ -559,7 +560,8 @@ const actions = {
     inputs[side].setExercise(settings.players[side].exercise);
     saveCalibration(side, null);
   },
-  start() { audio.unlock().then(() => audio.ui('start')); enterCalibration(humans(), 'match'); },
+  // straight into the match: there is no time for a calibration round in a recreation session
+  start() { audio.unlock().then(() => audio.ui('start')); beginMatch(); },
   openSettings(tab) {
     ui.openDrawer(tab);
     if (phase === 'play' || phase === 'countdown') paused = true;

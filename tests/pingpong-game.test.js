@@ -286,6 +286,39 @@ assert.deepEqual(Array.from(I.gravityFromQuat({ w: 1, x: 0, y: 0, z: 0 })), [0, 
   near(Math.abs(remounted.deg), 10, 0.5, 'the remounted sensor still controls the paddle');
 }
 
+// no calibration step: the axis and the range are learned from the movement itself while playing
+for (const [label, mountAxis, mountDeg, jointAxis] of [['mount A', [0.3, 0.2, 1], 115, [1, 0.25, 0]], ['mount B', [1, 0.4, 0.2], 250, [-0.2, 1, 0.1]], ['mount C', [0, 0, 1], 0, [0, -1, 0]]]) {
+  const mount = quat(mountAxis, mountDeg);
+  const pose = (deg) => mul(quat(jointAxis, deg), mount);
+  const input = new I.TiltInput(0);
+  input.settings.gain = 1;
+  let now = 0;
+  const run = (seconds, degAt) => { const n = Math.round(seconds * 100); for (let i = 0; i < n; i++) { now += 10; input.feedQuat(pose(degAt(i / 100)), now); } };
+  run(1, () => 0);                                             // sitting still: the resting pose
+  assert.equal(input.autoFitted, false, `${label}: nothing is learned from standing still`);
+  run(20, (t) => 13 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));   // raising 0..26 deg and back, like toe raises
+  assert.equal(input.autoFitted, true, `${label}: the movement was picked up`);
+  near(input.range.up + input.range.down, 26, 4, `${label}: learned range`);
+  run(1.5, () => 26);
+  assert.ok(input.position() > 0.85, `${label}: raising moves the paddle to the far end (${input.position()})`);
+  run(1.5, () => 0);
+  assert.ok(input.position() < -0.85, `${label}: the resting pose is the near end (${input.position()})`);
+  run(1.5, () => 13);
+  near(input.position(), 0, 0.2, `${label}: half way is the middle`);
+  // the range follows the player: smaller movements later on are stretched over the table again
+  run(60, (t) => 7 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));
+  near(input.range.up + input.range.down, 14, 4, `${label}: the range shrinks to what the player uses`);
+}
+// a measured calibration is not overridden by the automatic one
+{
+  const input = new I.TiltInput(0);
+  assert.ok(input.importCalibration({ axis: [0, -1, 0], up: 20, down: 20, exercise: 'ankle' }));
+  let now = 0;
+  for (let i = 0; i < 2000; i++) { now += 10; input.feedQuat(quat([0, 1, 0], 8 * Math.sin(i / 40)), now); }
+  assert.equal(input.autoFitted, false);
+  assert.deepEqual({ ...input.range }, { up: 20, down: 20 });
+}
+
 // too small a movement is rejected instead of producing a twitchy paddle
 {
   const input = new I.TiltInput(0);

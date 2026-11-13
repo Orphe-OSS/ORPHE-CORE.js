@@ -52,6 +52,32 @@ export function signedTilt(g, g0, axis) {
   return Math.atan2(dot(cross(p0, p), axis) / (n * n0), dot(p0, p) / (n * n0));
 }
 
+/** Eigenvectors of a symmetric 3x3 matrix (cyclic Jacobi). Returns [{ value, vector }] sorted by value, largest first. */
+export function eigenSym3(m) {
+  const a = [m[0].slice(), m[1].slice(), m[2].slice()];
+  const v = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  for (let sweep = 0; sweep < 12; sweep++) {
+    for (const [p, q] of [[0, 1], [0, 2], [1, 2]]) {
+      if (Math.abs(a[p][q]) < 1e-14) continue;
+      const theta = (a[q][q] - a[p][p]) / (2 * a[p][q]);
+      const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1));
+      const c = 1 / Math.sqrt(t * t + 1), sn = t * c;
+      for (let k = 0; k < 3; k++) { const x = a[k][p], y = a[k][q]; a[k][p] = c * x - sn * y; a[k][q] = sn * x + c * y; }
+      for (let k = 0; k < 3; k++) { const x = a[p][k], y = a[q][k]; a[p][k] = c * x - sn * y; a[q][k] = sn * x + c * y; }
+      for (let k = 0; k < 3; k++) { const x = v[k][p], y = v[k][q]; v[k][p] = c * x - sn * y; v[k][q] = sn * x + c * y; }
+    }
+  }
+  return [0, 1, 2].map((i) => ({ value: a[i][i], vector: [v[0][i], v[1][i], v[2][i]] })).sort((x, y) => y.value - x.value);
+}
+
+/**
+ * Learning the control from play, without a calibration step: gravity samples of the
+ * last AUTO.windowSec seconds lie on an arc; the normal of the plane through them is
+ * the axis of the movement, and the 4th..96th percentile of the tilt along it is the
+ * range in use. Refitted twice a second, so the range follows a player who tires.
+ */
+export const AUTO = { windowSec: 45, sampleMs: 100, fitMs: 500, minSamples: 20, minSpreadDeg: 2.5, lockSpanDeg: 12 };
+
 /** 1€ filter (Casiez et al. 2012): heavy smoothing at rest, little lag in fast movements. */
 export class OneEuro {
   constructor(minCutoff = 2, beta = 0.04, dCutoff = 1.5) {
@@ -95,6 +121,9 @@ export class TiltInput {
     this._zero = { sum: [0, 0, 0], n: 0 };
     this._rate = { count: 0, since: null };
     this._virtualAt = -1e9;
+    /** True once the axis and range have been learned from the player's own movement (see AUTO). */
+    this.autoFitted = false;
+    this._auto = { buf: [], lastPush: -1e9, lastFit: -1e9, rest: null, signLocked: false };
     /** Set when a stored calibration had to be dropped because it does not fit today's mounting. */
     this.staleCalibration = false;
   }
@@ -137,11 +166,59 @@ export class TiltInput {
     this.lastSampleAt = -1e9;
     this.filter.reset();
     this.rawDeg = 0; this.deg = 0; this.vel = 0;
+    this._resetAuto();
+  }
+
+  _resetAuto() {
+    this.autoFitted = false;
+    this._auto = { buf: [], lastPush: -1e9, lastFit: -1e9, rest: null, signLocked: false };
+  }
+
+  /** Collect gravity samples and refit axis and range (only while no measured calibration is in use). */
+  _autoFeed(now) {
+    const A = this._auto;
+    if (!A.rest) A.rest = this.g0.slice();   // the pose the player sat in when the stream started
+    if (now - A.lastPush < AUTO.sampleMs) return;
+    A.lastPush = now;
+    A.buf.push(this.g);
+    const cap = Math.round((AUTO.windowSec * 1000) / AUTO.sampleMs);
+    if (A.buf.length > cap) A.buf.shift();
+    if (A.buf.length < AUTO.minSamples || now - A.lastFit < AUTO.fitMs) return;
+    A.lastFit = now;
+    const n = A.buf.length;
+    const m = [0, 0, 0];
+    for (const g of A.buf) { m[0] += g[0] / n; m[1] += g[1] / n; m[2] += g[2] / n; }
+    const c = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (const g of A.buf) { const d = [g[0] - m[0], g[1] - m[1], g[2] - m[2]]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) c[i][j] += (d[i] * d[j]) / n; }
+    const eig = eigenSym3(c);
+    if (Math.sqrt(Math.max(0, eig[0].value)) * RAD2DEG < AUTO.minSpreadDeg) return;   // not moving (yet)
+    let axis = unit(eig[2].vector);
+    if (dot(axis, this.axis) < 0) axis = [-axis[0], -axis[1], -axis[2]];
+    const rest = signedTilt(A.rest, A.rest, axis) === null ? unit(m) : A.rest;
+    const tilts = [];
+    for (const g of A.buf) { const t = signedTilt(g, rest, axis); if (t !== null) tilts.push(t * RAD2DEG); }
+    if (tilts.length < AUTO.minSamples) return;
+    tilts.sort((x, y) => x - y);
+    const pick = (f) => tilts[Math.round(f * (tilts.length - 1))];
+    let lo = pick(0.04), hi = pick(0.96);
+    // which way is "up"? Seated, the resting foot or thigh is at the bottom of its travel,
+    // so the larger excursion from the resting pose is the raise. Decided once, then kept.
+    if (!A.signLocked && hi - lo >= AUTO.lockSpanDeg) {
+      if (-lo > hi) { axis = [-axis[0], -axis[1], -axis[2]]; [lo, hi] = [-hi, -lo]; }
+      A.signLocked = true;
+    }
+    const k = this.autoFitted ? 0.5 : 1;
+    const grow = (cur, next) => cur + (next > cur ? 0.5 : 0.08) * (next - cur);   // widen quickly, narrow slowly
+    this.axis = unit([this.axis[0] + k * (axis[0] - this.axis[0]), this.axis[1] + k * (axis[1] - this.axis[1]), this.axis[2] + k * (axis[2] - this.axis[2])]);
+    this.g0 = rest.slice();
+    this.range = this.autoFitted ? { up: grow(this.range.up, hi), down: grow(this.range.down, -lo) } : { up: hi, down: -lo };
+    this.autoFitted = true;
   }
 
   /** Make the current pose the resting pose. */
   setZero() {
     if (this.g) this.g0 = this.g.slice();
+    this._resetAuto();
     this._fixAxis();
     this.filter.reset();
     this.rawDeg = 0; this.deg = 0; this.vel = 0;
@@ -175,6 +252,7 @@ export class TiltInput {
       this._fixAxis();
     }
 
+    if (!this.calibrated) this._autoFeed(now);
     const tilt = signedTilt(this.g, this.g0, this.axis);
     if (tilt === null) return;
     this.rawDeg = tilt * RAD2DEG;
@@ -232,6 +310,7 @@ export class TiltInput {
     this.calibrated = false;
     this.axis = DEFAULT_AXIS.slice();
     this.range = { ...DEFAULT_RANGE[this.exercise] };
+    this._resetAuto();
     this._fixAxis();
   }
 }

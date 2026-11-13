@@ -6,16 +6,17 @@ A DDR (Dance Dance Revolution) style rhythm game that can be played with both ke
 
 ## 🎮 Overview
 
-This is a vertical scrolling rhythm game where arrows fall from the top of the screen. Players must press the corresponding arrow key or perform the correct step motion with ORPHE CORE when the arrows reach the judgment line at the bottom.
+This is a vertical scrolling rhythm game with four arrow lanes (← ↓ ↑ →). Arrows scroll toward the step zone, a row of arrow outlines. Press the corresponding arrow key, or step in that direction with ORPHE CORE, when a scrolling arrow exactly covers its outline. Either foot can be used; only the direction matters.
 
 ## ✨ Features
 
 - **Dual Input Support**: Play with keyboard or ORPHE CORE sensors
 - **Multiple Difficulty Levels**: Easy, Medium, and Hard charts
-- **Real-time Scoring**: Perfect, Good, OK, and Miss judgments
+- **Real-time Scoring**: PERFECT, GREAT, GOOD and MISS judgments
 - **Combo System**: Build combos for bonus points
 - **Customizable Settings**: Adjust note speed, timing windows, and volume
-- **Beautiful Visual Effects**: Animated backgrounds and hit effects
+- **Remaining-time Bar**: A bar along the top of the field shrinks as the song progresses
+- **Step Sounds**: A short click on PERFECT-level hits, quieter on GREAT, nearly silent on GOOD, silent on MISS and on inputs with no note
 - **ORPHE CORE Integration**: Uses gait direction detection for step-based gameplay
 
 ## 📁 Project Structure
@@ -50,7 +51,10 @@ GAME-DDR/
 
 ### ORPHE CORE Controls
 
-Connect ORPHE CORE sensors and perform steps in the following directions:
+Connect ORPHE CORE sensors and perform steps in the following directions.
+`gait.direction` is reported relative to the foot (0: none, 1: forward, 2: backward,
+3: inside, 4: outside), so the on-screen left/right depends on which foot wears the
+device (read from the device's left/right setting, `device_information.lr`):
 
 - **Forward Step**: Up lane
 - **Backward Step**: Down lane
@@ -59,27 +63,36 @@ Connect ORPHE CORE sensors and perform steps in the following directions:
 
 Left/right steps are judged from the CORE's LEFT/RIGHT setting (CoreToolkit settings), so set it to the foot the CORE is worn on.
 
+Tip: small steps work better than wide ones; the sensor detects them more reliably.
+
+Inputs with no note nearby are not a MISS: the sensor also reports the step that brings
+the foot back to the centre, and that step only lights up its outline faintly. A note
+that passes without a hit is a MISS.
+
 ### Gameplay
 
-1. Select a chart difficulty from the dropdown menu
+1. Select a difficulty (Easy / Normal / Hard) next to the START button
 2. Adjust game settings (note speed, judge window, volume)
 3. Connect ORPHE CORE devices (optional)
 4. Click "START GAME"
 5. Wait for the countdown (3, 2, 1, START!)
-6. Press keys or step when arrows reach the white judgment line
+6. Press keys or step when a scrolling arrow covers its outline in the step zone
 7. Build combos for bonus points
 8. Complete the song to see your final score
+9. Click "RESTART" to play again; it starts right away with a countdown
 
 ## 📊 Scoring System
 
 ### Judgment Types
 
-| Judgment | Timing Window | Points | Description |
-|----------|---------------|--------|-------------|
-| **PERFECT** | ±50ms | 100 | Excellent timing! |
-| **GOOD** | ±100ms | 50 | Good timing |
-| **OK** | ±150ms | 25 | Just barely |
-| **MISS** | Outside window | 0 | No points, combo broken |
+The windows are fractions of the **Judge Window** setting (100ms in this table; Easy defaults to 150ms):
+
+| Judgment | Timing Window (default) | Points | Sound |
+|----------|-------------------------|--------|-------|
+| **PERFECT** | ±40% (±40ms) | 100 | Small click |
+| **GREAT** | ±70% (±70ms) | 60 | Quieter click |
+| **GOOD** | ±100% (±100ms) | 30 | Almost silent |
+| **MISS** | Note passed without a hit | 0 | Silent; combo broken |
 
 ### Combo Bonus
 
@@ -101,6 +114,7 @@ Controls how fast notes fall. Higher values make the game more challenging.
 
 ### Judge Window (50-200ms)
 Controls the strictness of timing judgments. Lower values require more precise timing.
+Choosing a difficulty sets its default: Easy ±150ms, Normal ±120ms, Hard ±100ms.
 
 ### Volume (0-100%)
 Adjusts the music volume.
@@ -268,23 +282,13 @@ ble.gotGait = function(_gait) {
 
 ### Changing Colors
 
-Edit `game/render.js` to customize colors:
-
-```javascript
-this.arrowColors = ['#FF4444', '#44FF44', '#4444FF', '#FFAA00'];
-```
+Edit `LANE_COLORS` / `PALETTE` in `game/render.js` (notes and field) and
+`JUDGMENT_COLORS` in `game/player.js` (judgments; keep `style.css` in sync).
 
 ### Adjusting Difficulty
 
-Modify timing windows in `game/player.js`:
-
-```javascript
-this.judgeWindow = {
-    perfect: 0.05,  // 50ms
-    good: 0.1,      // 100ms
-    ok: 0.15        // 150ms
-};
-```
+Use the **Judge Window** slider, or change the `windowFraction` of each level in
+`JUDGMENTS` in `game/player.js`.
 
 ## 📦 Dependencies
 

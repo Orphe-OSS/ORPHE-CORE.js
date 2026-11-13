@@ -140,9 +140,11 @@ USER INPUT
                   └─> handleOrpheInput(_gait.direction, this.device_information)
                          │   (gotGait fires once per new step; no de-dup needed)
                          │
-                         └─> directionToLane(direction, lr) → lane
+                         └─> handleOrpheInput(direction, deviceIndex)
                                 │
-                                └─> handleGameInput(lane)
+                                └─> directionToLane(direction, lr) → lane
+                                       │
+                                       └─> handleGameInput(lane)
 
 GAME INPUT HANDLER
     │
@@ -248,18 +250,15 @@ GAME INPUT HANDLER
                       │
                       └─> Receive _gait object
                              │
-                             ├─> Extract direction (0, 2, 4, 6)
+                             ├─> Extract direction (1: forward, 2: backward,
+                             │                      3: inside, 4: outside)
                              │
-                             ├─> Check for direction change
+                             ├─> Map to lane (inside/outside depend on the foot)
                              │      │
-                             │      └─> Prevent duplicate triggers
-                             │
-                             ├─> Map to lane
-                             │      │
-                             │      ├─> 0 → Lane 0 (←)
-                             │      ├─> 2 → Lane 2 (↑)
-                             │      ├─> 4 → Lane 1 (↓)
-                             │      └─> 6 → Lane 3 (→)
+                             │      ├─> 1 → Lane 2 (↑)
+                             │      ├─> 2 → Lane 1 (↓)
+                             │      ├─> 3 → Lane 3 (→) left foot / Lane 0 (←) right foot
+                             │      └─> 4 → Lane 0 (←) left foot / Lane 3 (→) right foot
                              │
                              └─> Trigger input handler
 ```

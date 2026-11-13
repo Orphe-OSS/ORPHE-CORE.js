@@ -482,13 +482,13 @@
       "path": "examples/GAME-PINGPONG/",
       "type": "web-app",
       "status": "public",
-      "audience": ["game-player", "fitness"],
-      "value": "3D hot-spring ping pong played with ankle flexion or thigh raises: range-of-motion calibration, versus / co-op / solo modes and a post-match movement report with a radar chart.",
-      "topics": ["game", "two-player", "fitness", "calibration", "analysis", "3d"],
-      "data": ["quat", "euler"],
+      "audience": ["game-player"],
+      "value": "Simple competitive game concept using ORPHE input.",
+      "topics": ["game", "two-player"],
+      "data": ["euler", "convertedAcc"],
       "devices": 2,
       "validation": ["existing-public-link", "thumbnail-exists", "needs-device-verification"],
-      "issues": ["The three.js remaster has been exercised with synthetic quaternions only; it still needs a play test with real CORE devices (see docs/ai/device-test-plan.md 4-C)."],
+      "issues": ["test.html has a broken local SDK path; fix is proposed in PR #40"],
       "category": "playable-app",
       "difficulty": "beginner",
       "featured": true,
@@ -497,6 +497,32 @@
       "links": {
         "demo": "examples/GAME-PINGPONG/index.html",
         "source": "examples/GAME-PINGPONG/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "featured"
+    },
+    {
+      "id": "game-super-pingpong",
+      "title": "Super Ping Pong",
+      "path": "examples/GAME-SUPER-PINGPONG/",
+      "type": "web-app",
+      "status": "public",
+      "audience": ["game-player", "fitness"],
+      "value": "3D hot-spring ping pong played with ankle flexion or thigh raises: the control adapts to each player during play, six selectable characters, versus / co-op / solo modes and a post-match movement report with a radar chart.",
+      "topics": ["game", "two-player", "fitness", "calibration", "analysis", "3d"],
+      "data": ["quat", "euler"],
+      "devices": 2,
+      "validation": ["thumbnail-exists", "owner-real-device-check"],
+      "category": "playable-app",
+      "difficulty": "advanced",
+      "featured": true,
+      "thumbnail": "examples/_thumbnails/super-pingpong.png",
+      "sort_order": 235,
+      "links": {
+        "demo": "examples/GAME-SUPER-PINGPONG/index.html",
+        "source": "examples/GAME-SUPER-PINGPONG/"
       },
       "requires_device": true,
       "device_count": 2,
@@ -1384,6 +1410,10 @@
       {
         "file": "examples/FOOT ANGLE/index.html",
         "title": "ORPHE CORE JS"
+      },
+      {
+        "file": "examples/GAME-PINGPONG/index.html",
+        "title": "ping pong game"
       },
       {
         "file": "examples/GAME-RHYTHM/index.html",

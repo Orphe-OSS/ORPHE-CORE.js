@@ -141,18 +141,18 @@ URL: `/examples/FOOT ANGLE/` (※ディレクトリ名にスペースがある�
 
 > **トラブルシュート**: もし `=== 4` でも動かない場合、SDK の onConnect 発火タイミングが想定と異なる可能性。Console で `connectedDevices` の値を観察 (各 onConnect 発火点に `console.log(connectedDevices)` を追加) して実際の最大値を確認。
 
-### 4-C. GAME-PINGPONG リマスター版「湯けむりピンポン」 `/examples/GAME-PINGPONG/`
+### 4-C. SUPER PINGPONG「湯けむりピンポン」 `/examples/GAME-SUPER-PINGPONG/`
 
-three.js で作り直した版。CoreToolkit の接続処理 (`SENSOR_VALUES`、CORE 2 台) は 4-A と同じだが、
+GAME-PINGPONG をもとに three.js で作った別 example。CoreToolkit の接続処理 (`SENSOR_VALUES`、CORE 2 台) は 4-A と同じだが、
 データの使い方が変わった: `gotQuat` のクォータニオンから「センサーから見た重力の向き」を求め、
 じゅんび運動 (可動域キャリブレーション) で見つけた軸まわりの傾き角でラケットを動かす。
 合成クォータニオンでの自動確認は済み、**実機での確認はまだ**。
 
 1. CoreToolkit のスイッチ 01 / 02 を ON → 上部のチップが「受信中 ◯◯Hz」になる
-2. 「はじめる」→ じゅんび運動 (じっとする → 上げる → 下げる) → 自動で試合開始
+2. 「はじめる」→ すぐ試合開始。動かしているうちに可動域が学習される (じゅんび運動は設定の「可動域をはかり直す」から)
 3. 足の甲に着けて つま先を上げ下げ / 太ももに着けて 太もも上げ でラケットが動く
 
-### チェックリスト (PINGPONG リマスター)
+### チェックリスト (SUPER PINGPONG)
 
 - [ ] 2 台とも接続でき、チップに受信レート (50〜200 Hz 程度) が出る
 - [ ] ロビーの あか / あお の行が「ORPHE CORE ✓」になる

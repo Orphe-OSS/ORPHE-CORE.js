@@ -583,7 +583,7 @@ function downloadCsv() {
   const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
   const blob = new Blob(['﻿', buildCsv(lastMatch.match, lastMatch.players, lastMatch.frames)], { type: 'text/csv' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `pingpong-${stamp}.csv`;
+  a.href = URL.createObjectURL(blob); a.download = `super-pingpong-${stamp}.csv`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   ui.toast('記録を CSV で保存しました');

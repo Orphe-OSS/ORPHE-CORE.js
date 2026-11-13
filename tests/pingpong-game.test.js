@@ -2,9 +2,9 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { loadExampleModule } = require('./helpers/load-example-module');
 
-// GAME-PINGPONG keeps its rules (game.js) and its sensor maths (input.js) free of
+// GAME-SUPER-PINGPONG keeps its rules (game.js) and its sensor maths (input.js) free of
 // DOM and three.js so they can be exercised here.
-const dir = path.resolve(__dirname, '../examples/GAME-PINGPONG');
+const dir = path.resolve(__dirname, '../examples/GAME-SUPER-PINGPONG');
 const G = loadExampleModule(path.join(dir, 'game.js'));
 const I = loadExampleModule(path.join(dir, 'input.js'));
 const DT = 1 / 120;

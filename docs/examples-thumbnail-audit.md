@@ -34,7 +34,7 @@
 | `sprint-100m-vs.png` | candidate | `examples/GAME-SPRINT-100M-VS/` (hidden public-candidate) |
 | `hurdle-400m-vs.png` | candidate | `examples/GAME-HURDLE-400M-VS/` (hidden public-candidate) |
 | `move-your-feet.png` | 66 KB | `examples/MOVEYOURFEET/` (public) |
-| `pingpong.png` | 610 KB | `examples/GAME-PINGPONG/` (public) |
+| `pingpong.png` | 59 KB | `examples/GAME-PINGPONG/` (public) |
 | `udon.png` | 84 KB | `examples/GAME-UDON/` (public) |
 
 すべてゲーム系。`_thumbnails/` 集約には現状ファイル名と example ディレクトリ名の**規約はなく**、暗黙的なマッピング (`hurdle-110m.png` → `GAME-HURDLE`) になっている。catalog の各 entry に `thumbnail` フィールドを足してマッピングを明示するのが先決 (Codex 担当の schema 拡張側で要相談)。

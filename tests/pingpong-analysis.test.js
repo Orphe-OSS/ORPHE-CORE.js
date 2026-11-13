@@ -2,10 +2,10 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { loadExampleModule } = require('./helpers/load-example-module');
 
-// GAME-PINGPONG turns the tilt log of a match into six 0-100 scores (range of
+// GAME-SUPER-PINGPONG turns the tilt log of a match into six 0-100 scores (range of
 // motion, activity, smoothness, accuracy, reaction, endurance). These tests pin
 // the signal processing behind each of them with synthetic movements.
-const A = loadExampleModule(path.resolve(__dirname, '../examples/GAME-PINGPONG/analysis.js'));
+const A = loadExampleModule(path.resolve(__dirname, '../examples/GAME-SUPER-PINGPONG/analysis.js'));
 const FS = 50;
 
 function sine({ seconds, hz, amp, offset = 0, noise = 0, decayTo = 1 }) {

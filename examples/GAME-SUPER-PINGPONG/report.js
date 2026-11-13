@@ -254,7 +254,7 @@ export function renderReport(match, players) {
 /** CSV of the whole match: a commented summary, then one row per logged sample. */
 export function buildCsv(match, players, frames) {
   const lines = [];
-  lines.push('# 湯けむりピンポン (ORPHE CORE GAME-PINGPONG) session log');
+  lines.push('# SUPER PINGPONG (ORPHE CORE GAME-SUPER-PINGPONG) session log');
   lines.push(`# date,${new Date(match.at).toISOString()}`);
   lines.push(`# mode,${match.mode},score,${match.score.join('-')},best_rally,${match.bestRally},total_hits,${match.totalHits},duration_s,${match.durationSec.toFixed(1)}`);
   for (const p of players) {

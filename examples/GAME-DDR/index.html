@@ -13,7 +13,7 @@
 <body>
     <div class="container-fluid">
         <header>
-            <h1>🎵 ORPHE DDR GAME 🎵</h1>
+            <h1>ORPHE DDR GAME</h1>
             <p class="description">ORPHE COREを使ったDDR風リズムゲームです。矢印のタイミングに合わせてステップしましょう！</p>
             <p class="description-en">A DDR-style rhythm game using ORPHE CORE. Step to the beat of falling arrows!</p>
         </header>
@@ -29,8 +29,14 @@
 
         <!-- Game Controls (moved here) -->
         <div id="controls" style="margin: 20px 0;">
+            <label class="chart-label" for="chartSelect">難易度 / Difficulty</label>
+            <select id="chartSelect" class="chart-select">
+                <option value="sample">Easy</option>
+                <option value="medium">Normal</option>
+                <option value="hard">Hard</option>
+            </select>
             <button id="startBtn" class="game-btn">START GAME</button>
-            <button id="quitBtn" class="game-btn" style="display:none; background-color: #FF4444;">QUIT GAME</button>
+            <button id="quitBtn" class="game-btn game-btn-quit" style="display:none;">QUIT GAME</button>
             <button id="restartBtn" class="game-btn" style="display:none;">RESTART</button>
         </div>
 
@@ -42,36 +48,37 @@
         <!-- Score Display -->
         <div id="score-panel">
             <div class="score-item">
-                <span class="label">SCORE:</span>
+                <span class="label">SCORE</span>
                 <span id="score" class="value">0</span>
             </div>
             <div class="score-item">
-                <span class="label">COMBO:</span>
+                <span class="label">COMBO</span>
                 <span id="combo" class="value">0</span>
             </div>
             <div class="score-item">
-                <span class="label">PERFECT:</span>
+                <span class="label judgment-perfect">PERFECT</span>
                 <span id="perfect" class="value">0</span>
             </div>
             <div class="score-item">
-                <span class="label">GOOD:</span>
+                <span class="label judgment-great">GREAT</span>
+                <span id="great" class="value">0</span>
+            </div>
+            <div class="score-item">
+                <span class="label judgment-good">GOOD</span>
                 <span id="good" class="value">0</span>
             </div>
             <div class="score-item">
-                <span class="label">MISS:</span>
+                <span class="label judgment-miss">MISS</span>
                 <span id="miss" class="value">0</span>
             </div>
         </div>
 
-        <!-- Chart Selection and Settings (moved down) -->
-        <div id="controls" style=\"margin: 20px 0;\">\n            <select id=\"chartSelect\" class=\"chart-select\">\n                <option value=\"sample\">Sample Chart (Easy)</option>\n                <option value=\"medium\">Medium Chart</option>\n                <option value=\"hard\">Hard Chart</option>\n            </select>\n        </div>
-
         <!-- Instructions -->
         <div id="instructions">
-            <h3>🎮 操作方法 / Controls</h3>
+            <h3>操作方法 / Controls</h3>
             <div class="control-methods">
                 <div class="control-method">
-                    <h4>⌨️ キーボード / Keyboard</h4>
+                    <h4>キーボード / Keyboard</h4>
                     <ul>
                         <li><kbd>←</kbd> 左 / Left</li>
                         <li><kbd>↑</kbd> 上 / Up</li>
@@ -80,22 +87,24 @@
                     </ul>
                 </div>
                 <div class="control-method">
-                    <h4>👟 ORPHE CORE</h4>
+                    <h4>ORPHE CORE</h4>
                     <ul>
-                        <li>左ステップ: direction = 0</li>
-                        <li>前ステップ: direction = 2</li>
-                        <li>後ステップ: direction = 4</li>
-                        <li>右ステップ: direction = 6</li>
+                        <li>前へステップ: ↑</li>
+                        <li>後ろへステップ: ↓</li>
+                        <li>左へステップ: ←</li>
+                        <li>右へステップ: →</li>
+                        <li>左右は CORE の LEFT/RIGHT 設定で判定します</li>
+                        <li>コツ: 足を大きく広げず、小さくステップすると判定されやすくなります</li>
                     </ul>
                 </div>
             </div>
-            <p class="note">※ 白いラインに矢印が重なるタイミングで入力してください</p>
-            <p class="note-en">* Press when the arrow overlaps the white line</p>
+            <p class="note">※ 流れてくる矢印が、判定位置の枠にぴったり重なるタイミングで入力してください。ノーツがないときの入力はミスにならず、枠が薄く光るだけです</p>
+            <p class="note-en">* Step when the arrow exactly covers its outline in the step zone. Inputs with no note nearby are not a miss.</p>
         </div>
 
         <!-- Game Settings -->
         <div id="settings-panel">
-            <h3>⚙️ ゲーム設定 / Game Settings</h3>
+            <h3>ゲーム設定 / Game Settings</h3>
             
             <div class="setting-item">
                 <label for="noteSpeed">ノート速度 / Note Speed:</label>
@@ -105,8 +114,8 @@
 
             <div class="setting-item">
                 <label for="judgeWindow">判定の厳しさ / Judge Window:</label>
-                <input type="range" id="judgeWindow" min="50" max="200" value="100" step="10">
-                <span id="judgeWindowValue">100ms</span>
+                <input type="range" id="judgeWindow" min="50" max="200" value="150" step="10">
+                <span id="judgeWindowValue">150ms</span>
             </div>
 
             <div class="setting-item">
@@ -114,6 +123,7 @@
                 <input type="range" id="volume" min="0" max="100" value="70" step="5">
                 <span id="volumeValue">70%</span>
             </div>
+
         </div>
     </div>
 

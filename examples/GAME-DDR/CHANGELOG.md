@@ -74,29 +74,25 @@ examples/GAME-DDR/
 **Implementation Strategy**:
 
 ```javascript
-// Direction mapping (from p5.js example reference)
+// Direction mapping (gait.direction is relative to the foot)
 ORPHE Direction → Game Lane
-0 (left step)   → Lane 0 (←)
-2 (forward)     → Lane 2 (↑)
-4 (backward)    → Lane 1 (↓)
-6 (right step)  → Lane 3 (→)
+1 (forward)     → Lane 2 (↑)
+2 (backward)    → Lane 1 (↓)
+3 (inside)      → Lane 3 (→) on the left foot, Lane 0 (←) on the right foot
+4 (outside)     → Lane 0 (←) on the left foot, Lane 3 (→) on the right foot
 ```
+
 
 **Key Features**:
 - Dual device support (both feet)
-- Direction change detection to prevent duplicate triggers
 - Result flag to block input during judgment display (200ms)
-- Last direction tracking per device
 - Automatic enabling when devices connect
 
 **Code Reference** (main.js):
 ```javascript
-ble.gotGait = function(_gait) {
-    const direction = _gait.direction;
-    if (direction !== orpheData.lastDirection[id]) {
-        orpheData.lastDirection[id] = direction;
-        handleOrpheInput(direction);
-    }
+ble.gotGait = function(gait) {
+    // gotGait fires once per new step, so no extra duplicate filtering is needed
+    handleOrpheInput(gait.direction, i);   // i = device index
 };
 ```
 
@@ -190,7 +186,7 @@ ble.gotGait = function(_gait) {
 
 | Aspect | GAME-PINGPONG | GAME-DDR |
 |--------|---------------|----------|
-| Input | Euler angles (pitch) | Gait direction (0,2,4,6) |
+| Input | Euler angles (pitch) | Gait direction (1-4: forward/backward/inside/outside) |
 | Display | 2D paddle movement | Falling notes |
 | Timing | Real-time ball physics | Beat-synchronized notes |
 | Score | Goals (first to 3) | Cumulative points + combo |

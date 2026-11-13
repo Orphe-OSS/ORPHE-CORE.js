@@ -380,8 +380,9 @@ function changeNotify(no, dom) {
 async function changeAccRange(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.range.acc = parseInt(dom.value);
-    obj.lr = 0xFF;
-    bles[no].setDeviceInformation(obj);
+    // lr = 0xFF は「LR 設定を変更しない」の意味。送信用のコピーにだけ設定する
+    // （obj は bles[no].device_information と同じオブジェクトなので、直接書き換えると lr が 255 になる）
+    bles[no].setDeviceInformation({ ...obj, lr: 0xFF });
 }
 
 /**
@@ -392,8 +393,9 @@ async function changeAccRange(no, dom) {
 async function changeGryoRange(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.range.gyro = parseInt(dom.value);
-    obj.lr = 0xFF;
-    bles[no].setDeviceInformation(obj);
+    // lr = 0xFF は「LR 設定を変更しない」の意味。送信用のコピーにだけ設定する
+    // （obj は bles[no].device_information と同じオブジェクトなので、直接書き換えると lr が 255 になる）
+    bles[no].setDeviceInformation({ ...obj, lr: 0xFF });
 }
 /**
  * CoreToolkitからLEDの明るさが変更された場合に呼び出される関数
@@ -403,8 +405,9 @@ async function changeGryoRange(no, dom) {
 async function changeLEDBrightness(no, dom) {
     var obj = await bles[no].getDeviceInformation();
     obj.led_brightness = parseInt(dom.value);
-    obj.lr = 0xFF;
-    bles[no].setDeviceInformation(obj);
+    // lr = 0xFF は「LR 設定を変更しない」の意味。送信用のコピーにだけ設定する
+    // （obj は bles[no].device_information と同じオブジェクトなので、直接書き換えると lr が 255 になる）
+    bles[no].setDeviceInformation({ ...obj, lr: 0xFF });
 }
 
 /**

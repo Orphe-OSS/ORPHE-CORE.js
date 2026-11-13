@@ -3,59 +3,322 @@
 
 <head>
     <meta charset="utf-8">
-    <title>おいしいうどんを作ろう！</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>うどんふみふみ｜おいしいうどんを作ろう！</title>
+    <meta name="description" content="ORPHE CORE（または ORPHE INSOLE）をつけて足踏みすると、うどんがこね上がるゲーム。ふみかたで 12 種類のうどんができあがり、足踏みのリズムや左右バランスをレーダーチャートでふり返れます。">
+    <link rel="icon" href="udon.png">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 <script src="../../js/site-analytics.js"></script>
 </head>
 
 <body>
-    <img id="rogo" src="rogo.png" widht="500px" height="25px">
-    <div>
-        <h1>おいしいうどんを作ろう！</h1>
-        <h2>Let's make delicious udon!</h2>
+    <header class="u-topbar">
+        <img id="rogo" src="rogo.png" alt="ORPHE" height="25">
+        <span class="u-topbar-name">うどんふみふみ</span>
+        <div class="u-dock" aria-label="センサーの接続">
+            <div class="u-device" id="deviceSwitch" role="radiogroup" aria-label="つかうセンサー">
+                <button type="button" role="radio" aria-checked="true" class="is-on" data-device="core">CORE</button>
+                <button type="button" role="radio" aria-checked="false" data-device="insole">INSOLE</button>
+            </div>
+            <span class="u-dock-label"><span id="dockLabel">CORE をつなぐ</span><i class="bi bi-arrow-right-short"></i></span>
+            <div id="toolkit_placeholder1" class="u-dock-slot u-dock-core"></div>
+            <div id="toolkit_placeholder2" class="u-dock-slot u-dock-core"></div>
+            <div id="insole_placeholder1" class="u-dock-slot u-dock-insole"></div>
+            <div id="insole_placeholder2" class="u-dock-slot u-dock-insole"></div>
+        </div>
+        <button type="button" class="u-iconbtn u-recbtn" id="btnRecord" aria-pressed="false"
+            title="生データのきろく ON / OFF（ふみふみが終わると、センサーの値を CSV で保存します）">
+            <i class="bi bi-record-circle"></i>
+        </button>
+        <button type="button" class="u-iconbtn" id="btnSound" aria-pressed="true" title="おと ON / OFF">
+            <i class="bi bi-volume-up-fill"></i>
+        </button>
+        <button type="button" class="u-iconbtn" id="btnFullscreen" title="全画面">
+            <i class="bi bi-arrows-fullscreen"></i>
+        </button>
+    </header>
 
-        <div id="toolkit_placeholder1" class="my-4"></div>
-        <div id="toolkit_placeholder2" class="my-4"></div>
-        <div id="ble-support-message" class="alert alert-warning mx-4" style="display:none;">
-            Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+    <div id="ble-support-message" class="alert alert-warning mx-4" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+    </div>
+
+    <main id="stage" class="u-stage" data-screen="title" data-mode="core">
+        <canvas id="stageCanvas" aria-hidden="true"></canvas>
+
+        <!-- ① タイトル -->
+        <section class="u-screen u-title" data-screen="title">
+            <div class="u-noren" id="noren"></div>
+            <div class="u-title-body">
+                <p class="u-kicker" id="titleKicker">ORPHE CORE で足踏み</p>
+                <h1>おいしいうどんを作ろう！</h1>
+                <h2>Let's make delicious udon!</h2>
+
+                <div class="u-corechips" aria-live="polite">
+                    <span class="u-chip" id="chipCore0"><i class="u-led"></i><span>CORE 01</span><b>未接続</b></span>
+                    <span class="u-chip" id="chipCore1"><i class="u-led"></i><span>CORE 02</span><b>未接続</b></span>
+                </div>
+                <p class="u-title-guide" id="titleGuide">画面上の <b>01</b>・<b>02</b> のスイッチで ORPHE CORE をつないでください（1 台でも遊べます）</p>
+
+                <div class="u-title-actions">
+                    <button type="button" class="u-btn u-btn--primary" id="btnStart" disabled>
+                        <span>はじめる</span><small>START</small>
+                    </button>
+                    <button type="button" class="u-btn u-btn--ghost" id="btnDemo">
+                        <span id="btnDemoLabel">CORE なしでおためし</span><small>キーボード F・J / タップ</small>
+                    </button>
+                </div>
+                <div class="u-title-sub">
+                    <button type="button" class="u-link" id="btnZukan"><i class="bi bi-journal-bookmark-fill"></i> うどん図鑑 <b id="zukanCount">0/12</b></button>
+                    <button type="button" class="u-link" id="btnHistory"><i class="bi bi-graph-up"></i> ふみふみのきろく</button>
+                </div>
+            </div>
+            <p class="u-safety">足もとに気をつけて。いすや手すりにつかまって、無理のないペースでどうぞ。</p>
+        </section>
+
+        <!-- ② したく（コースと感度） -->
+        <section class="u-screen u-setup" data-screen="setup">
+            <header class="u-setup-head">
+                <button type="button" class="u-back" id="btnSetupBack"><i class="bi bi-chevron-left"></i> もどる</button>
+                <h3>したく<small>コースとふみ心地をえらぶ</small></h3>
+            </header>
+            <div class="u-setup-grid">
+                <div class="u-panel">
+                    <h4><span class="u-num">1</span>どれくらい ふむ？</h4>
+                    <div class="u-courses" id="courseList" role="radiogroup" aria-label="コース"></div>
+                    <p class="u-course-note"><i class="bi bi-music-note-beamed"></i> おなじリズムでふみつづけると、コンボで早く進みます</p>
+                </div>
+                <div class="u-panel">
+                    <h4><span class="u-num">2</span>ふみ心地（感度）</h4>
+                    <div class="u-levels" id="levelList" role="radiogroup" aria-label="感度"></div>
+                    <p class="u-level-hint" id="levelHint"></p>
+                    <div class="u-try">
+                        <div class="u-try-meters">
+                            <div class="u-trymap" id="tryMap0"></div>
+                            <div class="u-meter" id="tryMeter0"><i class="u-meter-fill"></i><i class="u-meter-line"></i><span>01</span></div>
+                            <div class="u-meter" id="tryMeter1"><i class="u-meter-fill"></i><i class="u-meter-line"></i><span>02</span></div>
+                            <div class="u-trymap" id="tryMap1"></div>
+                        </div>
+                        <div class="u-try-text">
+                            <b>ためしふみ</b>
+                            <span id="tryText">足踏みしてみましょう。メーターが線をこえると「ふみ」になります。</span>
+                            <span class="u-try-count">いまの ふみ <b id="tryCount">0</b></span>
+                        </div>
+                        <button type="button" class="u-btn u-btn--small" id="btnCalibrate">
+                            <i class="bi bi-magic"></i> じどうで合わせる
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <footer class="u-setup-foot">
+                <button type="button" class="u-btn u-btn--primary" id="btnGo"><span>うどんづくり 開始</span><small>START</small></button>
+            </footer>
+        </section>
+
+        <!-- ③ 導入 -->
+        <section class="u-screen u-intro" data-screen="intro">
+            <div class="u-intro-copy">
+                <p class="u-intro-ja">うどん作りは職人技!!</p>
+                <p class="u-intro-en">Making udon is a true craft!</p>
+                <p class="u-intro-ja2">じぶんのペースで ふみふみして<br>生地をもちもちにしよう！</p>
+                <p class="u-intro-en">Knead at your own pace to make the dough chewy!</p>
+                <p class="u-intro-tip"><i class="bi bi-music-note-beamed"></i> おなじリズムでふみつづけると<br>コンボで早く進むよ</p>
+            </div>
+            <div class="u-count" id="countdown" aria-live="assertive"></div>
+        </section>
+
+        <!-- ④ ふみふみ中 -->
+        <section class="u-screen u-play" data-screen="play">
+            <div class="u-hud-gauge">
+                <div class="u-gauge-row">
+                    <span class="u-gauge-label">もちもち度</span>
+                    <div class="u-gauge"><i id="gaugeFill"></i><em class="u-gauge-mark" style="left:60%"></em><em class="u-gauge-mark" style="left:80%"></em></div>
+                    <span class="u-gauge-pct" id="gaugePct">0%</span>
+                </div>
+                <ol class="u-phases" id="phaseList">
+                    <li data-phase="knead"><b>こねる</b></li>
+                    <li data-phase="roll"><b>のばす</b></li>
+                    <li data-phase="cut"><b>きる</b></li>
+                </ol>
+                <div class="u-combo" id="combo" data-level="0" title="おなじリズムでふみつづけると、コンボで早く進みます">
+                    <span class="u-combo-label">リズム</span>
+                    <div class="u-combo-bar"><i id="comboFill"></i><em style="left:21.4%"></em><em style="left:50%"></em></div>
+                    <b class="u-combo-mult" id="comboMult">×1</b>
+                </div>
+            </div>
+            <div class="u-hud-time">
+                <span id="hudTime">0s</span>
+                <small>ふみ <b id="hudSteps">0</b></small>
+            </div>
+            <div class="u-callout" id="callout" aria-live="polite"></div>
+            <div class="u-hint" id="playHint">
+                <p>ふみふみしてください</p>
+                <small>Please knead it</small>
+            </div>
+            <div class="u-assist" id="assist" hidden>
+                <span>ふみが届きにくいようです</span>
+                <button type="button" class="u-btn u-btn--small" id="btnAssist">感度を上げる<b id="assistCount"></b></button>
+                <button type="button" class="u-link" id="btnAssistKeep">このまま</button>
+            </div>
+            <div class="u-foot u-foot--l" id="hudFoot0"><div class="u-foot-icon"></div><span>01</span><i class="u-foot-meter"><b></b></i></div>
+            <div class="u-foot u-foot--r" id="hudFoot1"><div class="u-foot-icon"></div><span>02</span><i class="u-foot-meter"><b></b></i></div>
+            <button type="button" class="u-pause" id="btnPause"><i class="bi bi-cup-hot-fill"></i> ひとやすみ</button>
+            <div class="u-pads" id="pads">
+                <button type="button" class="u-pad" data-foot="0"><b>F</b><span>ひだり</span></button>
+                <button type="button" class="u-pad" data-foot="1"><b>J</b><span>みぎ</span></button>
+            </div>
+            <div class="u-paused" id="pausedLayer" hidden>
+                <div class="u-paused-box">
+                    <p>ひとやすみ中</p>
+                    <small>お茶でもどうぞ。じゅんびができたら再開しましょう。</small>
+                    <div>
+                        <button type="button" class="u-btn u-btn--primary" id="btnResume"><span>つづける</span></button>
+                        <button type="button" class="u-btn u-btn--ghost" id="btnQuit"><span>ここまでにする</span></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ⑤ できあがり -->
+        <section class="u-screen u-finish" data-screen="finish">
+            <div class="u-rays" aria-hidden="true"></div>
+            <p class="u-finish-label">できあがり！</p>
+            <div class="u-finish-dish" id="finishDish"></div>
+            <div class="u-finish-name">
+                <span class="u-new" id="finishNew" hidden>NEW</span>
+                <b id="finishName"></b>
+                <small id="finishTrait"></small>
+            </div>
+        </section>
+
+        <!-- ⑥ リザルト -->
+        <section class="u-screen u-result" data-screen="result">
+            <div class="u-paper">
+                <aside class="u-served">
+                    <p class="u-served-kicker">本日の一杯</p>
+                    <div class="u-served-dish" id="resultDish"></div>
+                    <h3 id="resultName"></h3>
+                    <div class="u-served-meta"><span id="resultStars"></span><em id="resultTrait"></em></div>
+                    <p class="u-served-reason" id="resultReason"></p>
+                    <p class="u-served-date" id="resultDate"></p>
+                    <div class="u-served-actions">
+                        <button type="button" class="u-btn u-btn--primary" id="btnRetry"><span>もういちど</span><small>RETRY</small></button>
+                        <button type="button" class="u-btn u-btn--ghost" id="btnResultSetup"><span>コース・感度をかえる</span></button>
+                    </div>
+                </aside>
+                <div class="u-report">
+                    <nav class="u-tabs" role="tablist">
+                        <button type="button" role="tab" class="is-on" data-tab="score">ふみふみ診断</button>
+                        <button type="button" role="tab" data-tab="log">ふみふみログ</button>
+                        <button type="button" role="tab" data-tab="sole" id="tabSole" hidden>あしうら</button>
+                        <button type="button" role="tab" data-tab="zukan">うどん図鑑</button>
+                    </nav>
+
+                    <div class="u-tabpane is-on" data-pane="score">
+                        <div class="u-score-row">
+                            <div class="u-scorebox">
+                                <span class="u-scorebox-label">ふみふみ技</span>
+                                <div class="u-scorebox-num"><b id="scoreNum">0</b><i>点</i></div>
+                                <div class="u-rank"><span id="rankStamp"></span><div><b id="rankEn"></b><small id="rankJa"></small></div></div>
+                            </div>
+                            <div class="u-radar" id="radar"></div>
+                        </div>
+                        <ul class="u-stats" id="statTiles"></ul>
+                        <div class="u-advice">
+                            <p><i class="bi bi-hand-thumbs-up-fill"></i><span id="advicePraise"></span></p>
+                            <p><i class="bi bi-lightbulb-fill"></i><span id="adviceTip"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="u-tabpane" data-pane="log">
+                        <div class="u-chart" id="timeline"></div>
+                        <ul class="u-axislist" id="axisList"></ul>
+                        <div class="u-log-actions">
+                            <button type="button" class="u-btn u-btn--small" id="btnPrint"><i class="bi bi-printer"></i> 印刷する</button>
+                            <button type="button" class="u-btn u-btn--small" id="btnCsv" title="1 ふみごとのログを CSV で保存"><i class="bi bi-download"></i> ログを保存</button>
+                            <button type="button" class="u-btn u-btn--small" id="btnRawCsv" title="センサーの生データを CSV でもう一度保存" hidden><i class="bi bi-record-circle"></i> 生データを保存</button>
+                            <button type="button" class="u-btn u-btn--small" id="btnHistory2"><i class="bi bi-graph-up"></i> これまでのきろく</button>
+                        </div>
+                    </div>
+
+                    <div class="u-tabpane" data-pane="sole">
+                        <div class="u-sole" id="soleReport"></div>
+                    </div>
+
+                    <div class="u-tabpane" data-pane="zukan">
+                        <div class="u-zukan" id="zukanInline"></div>
+                    </div>
+
+                    <p class="u-disclaimer">※ 遊びながら体の動きをふり返るための目安です。医療的な診断ではありません。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 図鑑・きろく -->
+        <div class="u-sheet" id="sheet" hidden>
+            <div class="u-sheet-box" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+                <header><h3 id="sheetTitle"></h3><button type="button" class="u-iconbtn u-iconbtn--dark" id="btnSheetClose" aria-label="とじる"><i class="bi bi-x-lg"></i></button></header>
+                <div class="u-sheet-body" id="sheetBody"></div>
+            </div>
         </div>
 
-        <div id="p5Canvas"></div> <!-- p5.jsのキャンバスがここに挿入されます -->
+        <div class="u-flash" id="flash" aria-hidden="true"></div>
+        <div class="u-toastmsg" id="toast" role="status" hidden></div>
+    </main>
 
+    <section class="u-howto">
+        <h2>遊び方 <small>How to play</small></h2>
+        <ol>
+            <li>
+                <b>つける</b>
+                <p id="setumei">ORPHE CORE を足の甲につけ、画面上の 01・02 のスイッチで接続します。ORPHE INSOLE で遊ぶときは、画面上の切り替えで INSOLE をえらんでから接続します。</p>
+                <p class="en">Attach ORPHE CORE to your instep and connect with the 01 / 02 switches. To play with ORPHE INSOLE, choose INSOLE in the top bar first.</p>
+            </li>
+            <li>
+                <b>ふむ</b>
+                <p>ORPHE CORE で足踏みして、うどんをこねて、のばして、きりましょう。おなじリズムでふみつづけるとコンボで早く進みます。感度を上げれば、座ったままのやさしい足踏みでも少しずつ進みます。ORPHE INSOLE なら、足うらの圧力に合わせて画面の足が生地をふみます。</p>
+                <p class="en">Step to knead, roll and cut the udon. Keep an even rhythm to build a combo and go faster. Raise the sensitivity and even gentle, seated steps make progress. With ORPHE INSOLE, the feet on screen press the dough as your soles do.</p>
+            </li>
+            <li>
+                <b>ふりかえる</b>
+                <p>ふみかたに合わせて 12 種類のうどんができあがり。リズムや左右バランスをレーダーチャートで確認できます。</p>
+                <p class="en">Your stepping style decides which of the 12 bowls you get, with a radar chart of rhythm, balance and more.</p>
+            </li>
+        </ol>
+    </section>
 
-        <p id="setumei">ORPHE COREで足踏みして、うどんを薄くのばそう！！！！！</title>
-        </p>
-        <p id="en"> Step on the ORPHE CORE and stretch the udon out thinly!</p>
-
-
-        <img src="setumei.png" style="max-width: 600px; max-height: 100%;" id="setumei">
-        <p id="en"> Gameplay: Step on the ground and watch the udon on the screen stretch out. Compete to see how
-            quickly and thinly you can make it!</p>
-
-
-        <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous" type="text/javascript"></script>
-        <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/quaternion.js" crossorigin="anonymous"
-            type="text/javascript"></script>
+    <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/quaternion.js" crossorigin="anonymous"
+        type="text/javascript"></script>
   <script src="../../js/BleSharedBridge.js"></script>
   <script src="../../js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
-            integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
-            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
+        integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
+        crossorigin="anonymous"></script>
 
+    <script src="step-detector.js" defer></script>
+    <script src="insole-pressure.js" defer></script>
+    <script src="raw-recorder.js" defer></script>
+    <script src="health-analysis.js" defer></script>
+    <script src="udon-menu.js" defer></script>
+    <script src="combo.js" defer></script>
+    <script src="udon-art.js" defer></script>
+    <script src="charts.js" defer></script>
+    <script src="audio.js" defer></script>
+    <script src="game.js" defer></script>
+    <script src="scripts.js" defer></script>
 
-        <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-CORE.js@v1.4.2/js/quaternion.js" crossorigin="anonymous"
-            type="text/javascript"></script>
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
-
-
-        <script src="scripts.js" defer></script>
-        <script src="sketch.js" class="script-center" class="center-content" defer></script>
+    <!-- ORPHE INSOLE（画面上の切り替えで INSOLE をえらんだときに使う）。
+         CORE の接続（scripts.js まで）が済んでから読み込む。読み込めなくても CORE では遊べる -->
+    <script src="https://cdn.jsdelivr.net/gh/Orphe-OSS/ORPHE-INSOLE.js@v1.4.0/dist/orphe-insole.min.js"
+        integrity="sha384-/uXZ0jYjkF8KPLPkdkw+ui5WFCPwUBXR/L4uneXreB7eZHxPMZm5Qfjzv/NXBwsB"
+        crossorigin="anonymous" defer></script>
+    <script src="insole-connect.js" defer></script>
 
 </body>
 

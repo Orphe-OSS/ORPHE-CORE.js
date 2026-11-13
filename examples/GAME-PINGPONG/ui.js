@@ -176,6 +176,7 @@ export function createUI({ settings, actions, cpuCharacters = [] }) {
   bindSeg($('#set-bgm'), 'bgm', () => settings.bgm, (v) => { settings.bgm = v; });
   bindRange($('#set-bgmVolume'), $('#out-bgmVolume'), () => settings.bgmVolume, (v) => { settings.bgmVolume = v; }, (v) => `${Math.round(v * 100)}%`);
   bindRange($('#set-sfxVolume'), $('#out-sfxVolume'), () => settings.sfxVolume, (v) => { settings.sfxVolume = v; }, (v) => `${Math.round(v * 100)}%`);
+  bindSwitch($('#set-record'), () => settings.record, (v) => { settings.record = v; });
   bindSeg($('#set-season'), 'season', () => settings.season, (v) => { settings.season = v; });
   $('#btn-clear-history').addEventListener('click', () => actions.clearHistory());
   $('#btn-settings').addEventListener('click', () => (drawer.hidden ? actions.openSettings() : actions.closeSettings()));

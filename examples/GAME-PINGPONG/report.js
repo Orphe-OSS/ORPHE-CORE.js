@@ -26,7 +26,7 @@ const fmtClock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)
 /** The numbers behind a score, in plain words. */
 export function detailFor(key, r) {
   const ex = EXERCISES[r.exercise];
-  if (r.scores[key] === null) return 'この試合では測れませんでした';
+  if (r.scores[key] === null) return (key === 'rom' || key === 'activity') && r.flags && r.flags.implausibleRange ? `角度が大きすぎるため採点していません（${r.rom.usedTotal.toFixed(0)}°）` : 'この試合では測れませんでした';
   switch (key) {
     case 'rom': return `${r.rom.usedTotal.toFixed(0)}°（${ex.up}${r.rom.usedUp.toFixed(0)}°${r.rom.usedDown >= 1.5 ? `・${ex.down}${r.rom.usedDown.toFixed(0)}°` : ''}）／めやす ${r.rom.target}°`;
     case 'activity': return `${r.activity.reps}回・毎分${r.activity.repsPerMin.toFixed(1)}回・合計 ${Math.round(r.activity.travelDeg)}°`;
@@ -156,6 +156,7 @@ function playerCard(player) {
 
   const head = h('div', { class: 'pcard-head' }, [h('span', { class: 'panel-dot' }), h('span', { text: player.name }), h('small', { text: `${ex.label}（${ex.place}）` })]);
   if (player.source !== 'core') head.append(h('span', { class: 'note', text: player.source === 'mixed' ? '途中で操作が切りかわったため参考値' : 'キーボード操作のため参考値' }));
+  if (result.flags && result.flags.implausibleRange) head.append(h('span', { class: 'note', text: 'センサーの着け方を確認してください' }));
   card.append(head);
 
   // hero: the one number this card leads with
@@ -172,6 +173,7 @@ function playerCard(player) {
     const d = result.total - previous.total;
     heroText.append(h('span', { class: `delta ${d > 0 ? 'up' : d < 0 ? 'down' : ''}`, text: d === 0 ? '前回と同じ' : `前回より ${d > 0 ? '▲ +' : '▼ '}${d}` }));
   } else heroText.append(h('span', { class: 'delta', text: 'はじめての記録' }));
+  if (result.engagement < 0.999) heroText.append(h('span', { class: 'delta down', title: '返球できた割合に応じて総合点を調整しています', text: `返球率による調整 ×${result.engagement.toFixed(2)}` }));
   const totals = history.map((e) => e.total).concat(result.total).slice(-8);
   if (totals.length > 1) heroText.append(h('div', { class: 'spark' }, [sparkline(totals), h('span', { text: `これまで ${history.length + 1} 回` })]));
   const hero = h('div', { class: 'hero' }, [

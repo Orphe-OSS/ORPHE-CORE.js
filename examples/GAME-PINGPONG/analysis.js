@@ -27,8 +27,8 @@ export const METRIC_INFO = {
  * the textbook joint limits (ankle: 20° dorsiflexion + 45° plantarflexion).
  */
 export const EXERCISES = {
-  ankle: { key: 'ankle', label: '足首の曲げ伸ばし', short: '足首', place: '足の甲', targetRom: 40, up: '背屈', down: '底屈', upHint: 'つま先を上げる', downHint: 'つま先を下げる' },
-  thigh: { key: 'thigh', label: '太もも上げ', short: '太もも', place: '太もも', targetRom: 30, up: '上げ', down: '下げ', upHint: '太ももを上げる', downHint: '太ももを下ろす' },
+  ankle: { key: 'ankle', label: '足首の曲げ伸ばし', short: '足首', place: '足の甲', targetRom: 40, maxRom: 70, up: '背屈', down: '底屈', upHint: 'つま先を上げる', downHint: 'つま先を下げる' },
+  thigh: { key: 'thigh', label: '太もも上げ', short: '太もも', place: '太もも', targetRom: 30, maxRom: 85, up: '上げ', down: '下げ', upHint: '太ももを上げる', downHint: '太ももを下ろす' },
 };
 
 /**
@@ -265,7 +265,10 @@ export function analyzeSession(log) {
   let peakUp = 0, peakDown = 0;
   for (let i = 0; i < n; i++) { if (angle[i] > peakUp) peakUp = angle[i]; if (-angle[i] > peakDown) peakDown = -angle[i]; }
   const rom = { usedUp, usedDown, usedTotal, calibTotal, target: exercise.targetRom, peakUp, peakDown };
-  if (rated) {
+  // A range no joint can do means the sensor slipped or the axis was misread: such a log
+  // says nothing about range or amount of movement, so neither is rated.
+  const flags = { implausibleRange: usedTotal > exercise.maxRom };
+  if (rated && !flags.implausibleRange) {
     const vsTarget = clamp01(usedTotal / exercise.targetRom);
     const vsOwn = calibTotal > 0 ? clamp01(usedTotal / calibTotal) : vsTarget;
     scores.rom = Math.round(100 * (0.6 * vsTarget + 0.4 * vsOwn));
@@ -280,7 +283,7 @@ export function analyzeSession(log) {
     repsPerMin: minutes > 0 ? reps / minutes : 0,
     travelPerMin: minutes > 0 ? travelDeg / minutes : 0,
   };
-  if (rated) {
+  if (rated && !flags.implausibleRange) {
     const targetTravel = TARGET_REPS_PER_MIN * exercise.targetRom;
     scores.activity = Math.round(100 * (0.5 * clamp01(activity.repsPerMin / TARGET_REPS_PER_MIN) + 0.5 * clamp01(activity.travelPerMin / targetTravel)));
   }
@@ -327,8 +330,11 @@ export function analyzeSession(log) {
     }
   }
 
-  const total = totalScore(scores);
-  return { durationSec, exercise: exercise.key, rom, activity, smooth, accuracy, reaction, endurance, scores, total, rank: rankFor(total) };
+  // Movement only counts in full when it is aimed at the ball: with three or more balls
+  // played, the total is scaled between 50% (none returned) and 100% (all returned).
+  const engagement = trials >= 3 ? 0.5 + 0.5 * accuracy.hitRate : 1;
+  const total = Math.round(totalScore(scores) * engagement);
+  return { flags, engagement, durationSec, exercise: exercise.key, rom, activity, smooth, accuracy, reaction, endurance, scores, total, rank: rankFor(total) };
 }
 
 const TIPS = {

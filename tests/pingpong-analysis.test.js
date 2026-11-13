@@ -151,6 +151,26 @@ function session(overrides = {}) {
   assert.equal(long.durationSec, 3600);
 }
 
+// --- implausible angles and aimless movement ---------------------------------
+{
+  // 90 degrees of "ankle" movement is not an ankle: the sensor is loose or the axis is wrong
+  const wild = A.analyzeSession(session({ angle: sine({ seconds: 90, hz: 0.35, amp: 45 }) }));
+  assert.equal(wild.flags.implausibleRange, true);
+  assert.equal(wild.scores.rom, null, 'an impossible range is not rated');
+  assert.equal(wild.scores.activity, null, 'nor is the activity measured with it');
+  assert.equal(A.analyzeSession(session()).flags.implausibleRange, false);
+
+  // moving a lot without returning a single ball must not look like a good session
+  const hitting = A.analyzeSession(session());
+  const flailing = A.analyzeSession(session({ hits: [], misses: [{ t: 10 }, { t: 30 }, { t: 50 }] }));
+  assert.ok(flailing.total <= 45, `no returns keeps the total low, got ${flailing.total}`);
+  assert.ok(flailing.total < hitting.total * 0.6);
+  near(flailing.engagement, 0.5, 1e-9, 'engagement factor with no returns');
+  near(hitting.engagement, 0.5 + 0.5 * (12 / 13), 1e-9, 'engagement factor follows the return rate');
+  // too few balls to judge: the factor stays out of it
+  assert.equal(A.analyzeSession(session({ hits: [], misses: [{ t: 10 }] })).engagement, 1);
+}
+
 // --- total and rank ---------------------------------------------------------
 {
   assert.equal(A.totalScore({ rom: 80, activity: 80, smooth: 80, accuracy: 80, reaction: 80, endurance: 80 }), 80);

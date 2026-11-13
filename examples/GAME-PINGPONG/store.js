@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS = {
   bgmVolume: 0.7,
   sfxVolume: 0.8,
   muted: false,
+  record: false,         // save the raw sensor data of every match as CSV
   season: 'auto',        // auto | spring | summer | autumn | winter
   players: [
     { exercise: 'ankle', gain: 1.25, smooth: 0.4, invert: false, paddle: 3, assist: 1, character: 'daruma' },

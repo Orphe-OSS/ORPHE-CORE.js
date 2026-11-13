@@ -120,7 +120,43 @@ function applySettings() {
 
 // ------------------------------------------------------------------ ORPHE CORE bridge (see index.html)
 const bridge = window.pingpongBridge;
-bridge.onQuat = (id, quat) => inputs[id].feedQuat(quat, performance.now());
+bridge.onQuat = (id, quat) => {
+  const now = performance.now();
+  const input = inputs[id];
+  input.feedQuat(quat, now);
+  if (raw) raw.rows.push(`${((now - raw.t0) / 1000).toFixed(3)},${id},${quat.w.toFixed(5)},${quat.x.toFixed(5)},${quat.y.toFixed(5)},${quat.z.toFixed(5)},${input.rawDeg.toFixed(2)},${input.deg.toFixed(2)},${input.position().toFixed(3)},${input.range.up.toFixed(1)},${input.range.down.toFixed(1)},${input.axis.map((v) => v.toFixed(3)).join(' ')},${input.calibrated ? 'measured' : input.autoFitted ? 'auto' : 'default'},`);
+};
+
+// ------------------------------------------------------------------ raw recording (settings.record)
+// One row per sensor sample with the game's own values next to it, plus the match events, saved
+// automatically when the match ends or is abandoned: nobody has to remember to press a button.
+let raw = null;
+function startRaw() {
+  raw = settings.record ? { t0: performance.now(), at: Date.now(), rows: [] } : null;
+}
+function rawEvent(label) { if (raw) raw.rows.push(`${((performance.now() - raw.t0) / 1000).toFixed(3)},,,,,,,,,,,,,${label}`); }
+function saveRaw(outcome) {
+  const rec = raw;
+  raw = null;
+  if (!rec || rec.rows.length < 50) return;
+  const d = new Date(rec.at);
+  const two = (v) => String(v).padStart(2, '0');
+  const head = [
+    '# SUPER PINGPONG raw log (ORPHE CORE)',
+    `# date,${d.toISOString()},outcome,${outcome}`,
+    `# mode,${settings.mode},points,${settings.points},ball_speed,${settings.ballSpeed},rally_pace,${settings.rallyPace},items,${settings.items},guide,${settings.guide}`,
+    ...[0, 1].map((side) => { const p = settings.players[side], i = inputs[side]; return `# player,${side},exercise,${i.exercise},gain,${p.gain},smooth,${p.smooth},invert,${p.invert},paddle,${p.paddle},assist,${p.assist},sensor_hz,${i.hz.toFixed(0)},human,${isHuman(side)}`; }),
+    `# user_agent,${navigator.userAgent.replace(/,/g, ';')}`,
+    'time_s,player,quat_w,quat_x,quat_y,quat_z,tilt_raw_deg,tilt_deg,paddle,range_up_deg,range_down_deg,axis,control,event',
+  ];
+  const blob = new Blob(['\ufeff', head.concat(rec.rows).join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `super-pingpong-raw-${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  ui.toast('生データを保存しました');
+}
 bridge.onReady = (id) => {
   // No stored calibration is applied: the sensor is strapped on anew every time, and the axis and
   // range are learned from the movement during play (input.js AUTO). A measured calibration from
@@ -195,6 +231,7 @@ function startAttract() {
 }
 
 function enterLobby() {
+  saveRaw('abandoned');   // a match left half-way is still worth looking at
   phase = 'lobby';
   paused = false; timeScale = 1; finishState = null; calibState = null; countdown = null;
   ui.closeDrawer(); ui.showSheet(false); ui.winBanner(null); ui.banner(null); ui.countdown(null); ui.hint(null);
@@ -280,6 +317,8 @@ function beginMatch() {
   phase = 'countdown';
   paused = false; timeScale = 1; resumeRamp = 1; finishState = null;
   sim = new PongSim(simConfig());
+  saveRaw('restarted');
+  startRaw();
   log = newLog();
   bots.forEach((b) => { b.target = 0; b.pos = 0; b.reactAt = 0; });
   const exercises = [0, 1].map((side) => (isHuman(side) ? inputs[side].exercise : null));
@@ -333,6 +372,7 @@ function refreshEffects() {
 
 function handleEvent(ev) {
   const attract = sim.cfg.mode === 'attract';
+  if (!attract && raw && ['serve', 'hit', 'miss', 'point', 'item-get', 'guard'].includes(ev.type)) rawEvent(`${ev.type}:${ev.side ?? ev.server ?? ev.scorer ?? ''}${ev.smash ? ':smash' : ''}${ev.type === 'hit' ? `:${ev.rawOffset.toFixed(2)}` : ''}`);
   switch (ev.type) {
     case 'serve-ready':
       world.setGuide(0, null); world.setGuide(1, null);
@@ -502,6 +542,7 @@ function updateFinish() {
 }
 
 function showReport(ev) {
+  saveRaw(`finished ${ev.score.join('-')}`);
   phase = 'result';
   ui.setMatchLock(false);
   const at = Date.now();

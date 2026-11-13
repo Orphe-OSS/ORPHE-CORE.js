@@ -299,6 +299,8 @@
         <div class="field"><label>庭の季節</label>
           <div class="seg" role="radiogroup" id="set-season"><button role="radio" data-season="auto">こよみ通り</button><button role="radio" data-season="spring">春</button><button role="radio" data-season="summer">夏</button><button role="radio" data-season="autumn">秋</button><button role="radio" data-season="winter">冬</button></div>
           <p class="field-note">季節の変更は、ページを読み込み直すと反映されます。</p></div>
+        <div class="field inline"><label>生データを記録する（試合ごとに CSV を自動保存）</label><button class="switch" role="switch" id="set-record" aria-checked="false"></button></div>
+        <p class="field-note" style="margin-top:-10px">センサーの生の値と、ゲームが計算した角度・ラケット位置を 1 サンプル 1 行で保存します。あとで動きを確かめたいときに。</p>
         <div class="field"><label>記録</label>
           <div class="buttons"><button class="btn-sub small" id="btn-clear-history"><i class="bi bi-trash3"></i> これまでの記録を消す</button></div></div>
       </div>

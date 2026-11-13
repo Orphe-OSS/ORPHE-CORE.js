@@ -416,22 +416,43 @@ function readLocalRanking() {
 
 function writeLocalRanking(list) {
   try {
-    const trimmed = (Array.isArray(list) ? list : [])
+    // keep the best RANKING_DISPLAY_LIMIT of every board, so one rule set cannot push another out
+    const valid = (Array.isArray(list) ? list : [])
       .filter(r => r && typeof r.time === 'number' && Number.isFinite(r.time))
-      .sort((a, b) => a.time - b.time)
-      .slice(0, RANKING_DISPLAY_LIMIT);
+      .sort((a, b) => a.time - b.time);
+    const kept = new Map();
+    const trimmed = valid.filter((r) => {
+      const board = r.rules || CLASSIC_BOARD;
+      kept.set(board, (kept.get(board) || 0) + 1);
+      return kept.get(board) <= RANKING_DISPLAY_LIMIT;
+    });
     localStorage.setItem(LOCAL_RANKING_KEY, JSON.stringify(trimmed));
   } catch (e) {
     console.error('[HURDLE] Failed to persist local rankings:', e);
   }
 }
 
-// Snapshot (legend) + localStorage (you), fastest first.
+// One board per rule set: the jump and stamina rules change what a time is worth (flat out is
+// about 9.7 s under the original rules and 11.5 s under the new ones), so times are only ranked
+// against times run under the same pair. Entries without a `rules` field, i.e. the frozen
+// snapshot and everything saved before the rules could be switched, were run under the
+// original rules and stay on that board.
+const CLASSIC_BOARD = 'classic.classic';
+const rankingBoard = () => `${RULES.jump}.${RULES.stamina}`;
+const onBoard = (r, board) => (r.rules || CLASSIC_BOARD) === board;
+function rankingBoardLabel() {
+  if (rankingBoard() === CLASSIC_BOARD) return '従来ルール / CLASSIC RULES';
+  return `ジャンプ：${RULES.jump === 'coast' ? '新' : '従来'}　スタミナ：${RULES.stamina === 'pace' ? '新（ペース配分）' : '従来'}`;
+}
+
+// Snapshot (legend) + localStorage (you) for the current rule set, fastest first.
 async function mergedRanking() {
+  const board = rankingBoard();
   const frozenRaw = await (window.frozenRankingReady || Promise.resolve([]));
   const frozen = (Array.isArray(frozenRaw) ? frozenRaw : []).map(r => ({ ...r, source: 'legend' }));
   const local = readLocalRanking().map(r => ({ ...r, source: 'local' }));
   return [...frozen, ...local]
+    .filter(r => onBoard(r, board))
     .filter(r => typeof r.time === 'number' && Number.isFinite(r.time))
     .sort((a, b) => a.time - b.time)
     .slice(0, RANKING_DISPLAY_LIMIT);
@@ -442,6 +463,8 @@ async function loadRankingData() {
   const rankingList = document.getElementById('ranking-list');
   if (!rankingList) return;
 
+  const label = document.getElementById('ranking-board');
+  if (label) label.textContent = rankingBoardLabel();
   // Show loading message while the snapshot fetch settles
   rankingList.innerHTML = '<div class="loading-message">読み込み中... / Loading...</div>';
 
@@ -527,6 +550,7 @@ function saveScoreToRanking(name, timeSeconds, hurdleHits) {
     time: timeSeconds,
     hurdles: typeof hurdleHits === 'number' ? hurdleHits : 0,
     date: new Date().toISOString(),
+    rules: rankingBoard(),
   });
   writeLocalRanking(list);
   console.log('[HURDLE] Local score saved.');
@@ -1470,7 +1494,7 @@ async function boot() {
       onSave(names) {
         const saved = active.map((p, i) => !!names[i] && !p.dnf && saveScoreToRanking(names[i], p.runTime, p.hits));
         // rank only after every run is stored, so two saves in one go see each other
-        const all = [...(window.__frozenRanking || []), ...readLocalRanking()].filter((r) => typeof r.time === 'number').sort((a, b) => a.time - b.time);
+        const all = [...(window.__frozenRanking || []), ...readLocalRanking()].filter((r) => typeof r.time === 'number' && onBoard(r, rankingBoard())).sort((a, b) => a.time - b.time);
         return active.map((p, i) => (saved[i] ? all.findIndex((r) => r.time === p.runTime) + 1 || 1 : 0));
       },
     },
@@ -1599,7 +1623,9 @@ window.hurdleDebug = {
     return out;
   },
 };
-console.log(`[HURDLE] build 2026-11-13b (sensor: ${DEVICE})`);
+// The build id is the ?v= on this module's URL (set once in index.html, see the import map there).
+window.HURDLE_BUILD = new URL(import.meta.url).searchParams.get('v') || 'dev';
+console.log(`[HURDLE] build ${window.HURDLE_BUILD} (sensor: ${DEVICE})`);
 
 boot().catch((error) => {
   console.error('[HURDLE] failed to start:', error);

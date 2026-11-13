@@ -427,6 +427,8 @@ kbd {
   box-shadow: 0 2em 5em rgba(0, 0, 0, 0.6); animation: riseIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .ranking-container h2 { margin: 0 0 0.8em; text-align: center; font-size: 1.5em; font-weight: 800; flex-shrink: 0; }
+.ranking-container h2 { margin-bottom: 0.3em; }
+.ranking-board { margin: 0 0 1em; text-align: center; color: var(--mute); font-size: 0.85em; letter-spacing: 0.04em; flex-shrink: 0; }
 .ranking-container h2 i { color: var(--gold); margin-right: 0.3em; }
 .ranking-container h2 small { font-family: var(--display); font-weight: 400; letter-spacing: 0.3em; color: var(--mute); font-size: 0.8em; margin-left: 0.5em; }
 .back-button { position: absolute; top: 1.3em; left: 1.4em; width: 2.5em; height: 2.5em; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.08); color: var(--ink); cursor: pointer; transition: all 0.2s; }

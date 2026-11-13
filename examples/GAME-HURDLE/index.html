@@ -6,13 +6,28 @@
   <title>世界バーチャルハードル走　110m</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261114a">
   <!-- three.js + its post-processing add-ons are resolved through this import map. -->
+  <!--
+    Cache busting. The game is several ES modules; a browser that keeps an old copy of one of
+    them next to new copies of the others breaks in confusing ways. Every module and the
+    stylesheet carry the same ?v= build id: main.js and style.css in their tags, the modules
+    main.js imports through the import map below. When any of those files changes, change the
+    id everywhere on this page (tests/hurdle-build-id.test.js checks they all match).
+  -->
   <script type="importmap">
     {
       "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "./world.js": "./world.js?v=20261114a",
+        "./runner.js": "./runner.js?v=20261114a",
+        "./fx.js": "./fx.js?v=20261114a",
+        "./audio.js": "./audio.js?v=20261114a",
+        "./ui.js": "./ui.js?v=20261114a",
+        "./telemetry.js": "./telemetry.js?v=20261114a",
+        "./analysis.js": "./analysis.js?v=20261114a",
+        "./insole.js": "./insole.js?v=20261114a"
       }
     }
   </script>
@@ -58,7 +73,7 @@
     })();
   </script>
   <!-- Game: main.js (rules, input, flow) + world / runner / fx / audio / ui modules. -->
-  <script type="module" src="main.js"></script>
+  <script type="module" src="main.js?v=20261114a"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -240,6 +255,7 @@
       <div class="ranking-container">
         <button type="button" class="back-button" id="back-btn" title="戻る / Back"><i class="bi bi-arrow-left"></i></button>
         <h2><i class="bi bi-trophy-fill"></i> ランキング <small>RANKING</small></h2>
+        <p class="ranking-board" id="ranking-board"></p>
         <div class="ranking-list" id="ranking-list">
           <div class="loading-message">読み込み中... / Loading...</div>
         </div>

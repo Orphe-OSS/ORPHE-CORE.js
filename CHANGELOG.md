@@ -13,6 +13,15 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 - `BleSharedBridge`: Secondary tabs now receive the Primary's `device_information` (`lr`, `range`, etc.) through the heartbeat. Previously it stayed `''` in Secondary tabs, so `device_information.lr` was unavailable and foot-relative `gait.direction` 3/4 could not be mapped to left/right. Mixed versions keep working (an older Primary simply shares nothing).
 - `CoreToolkit`: changing the acc range, gyro range or LED brightness no longer overwrites the local `device_information.lr` with `0xFF` (the "keep LR unchanged" value is now set only on the copy that is written to the device).
 - `examples/GAME-DDR`: uses the actual `gait.direction` values (1 forward, 2 backward, 3 inside, 4 outside) and the CORE's LR setting to choose lanes. The old 0/2/4/6 mapping sent backward steps to ↑ and outside steps to ↓, and ignored forward/inside steps.
+- Use the deployed SDK in GAME-RHYTHM, WORKSHOP_07, drum_test and the FSR visualization example so CORE 3 discovery and 104-byte sensor-packet fixes reach those pages. Initialize callbacks once in GAME-HURDLE-VS, GAME-HURDLE-2D-VS and GAME-HURDLE-VS-advance, leave connection startup to CoreToolkit, and let each player explicitly select a device.
+- Discover CORE devices advertising a `CR-` name or the sensor service even when the information-service UUID is absent from the advertisement. Existing information-service discovery and required GATT service permissions remain available.
+- Decode header-50 notifications sent as a 104-byte buffer with 12 trailing zero bytes, using the same four-frame payload as the legacy 92-byte format. Reject other lengths and nonzero padding before advancing the serial-gap tracker; raw `gotData` callbacks still receive the original packets.
+- Initialize GAME-HURDLE sensor callbacks once and leave connection startup to CoreToolkit. Per-characteristic `onConnect` events no longer count as separate physical devices or start nested `begin()` calls, which attempted to open the second chooser without a user gesture. Both game toggles explicitly open a fresh device choice so old remembered devices or a failed candidate can be replaced.
+
+### Added
+
+- Discovery, padded-packet and GAME-HURDLE initialization regression tests, plus `tests/physical-core3-compat.html` for manually comparing chooser filters and inspecting two devices' notification lengths and decoded sensor values.
+- Opt-in `tests/physical-game-probe.js` to count original notification formats, parsed sensor callbacks, nonfinite values, errors and disconnects in an already connected example while preserving its handlers. Verified two CORE 2.0 units receiving header-40 / 20-byte data together for 74.7 seconds in GAME-HURDLE.
 
 ## [1.4.2] - 2026-09-08
 

@@ -63,7 +63,7 @@ export function createUI({ audio, courseLen, hurdleDistances, maxRivals, handler
   const hudRoot = $('hud-root'), hudTemplate = $('hud-template');
   let mode = 'solo';
   let device = 'core';
-  let rules = { jump: 'coast', stamina: 'pace' };
+  let rules = { jump: 'coast', stamina: 'pace', guard: 'on' };
 
   // ------------------------------------------------------------ HUD panes (one per human runner)
   function makeHud(slot) {
@@ -200,16 +200,17 @@ export function createUI({ audio, courseLen, hurdleDistances, maxRivals, handler
       : (insole ? 'スイッチをONにしてINSOLEを選択。足踏みで加速、つま先上げでジャンプ。' : 'スイッチをONにしてCOREを選択。キーボードだけでも遊べます。'));
     $('rule-jump').value = rules.jump;
     $('rule-stamina').value = rules.stamina;
-    setText($('rule-note'), rules.stamina === 'pace'
+    $('rule-guard').value = rules.guard === 'off' ? 'off' : 'on';
+    setText($('rule-note'), (rules.stamina === 'pace'
       ? 'ペース配分：速度メーターの白い目盛りを超えるとスタミナが減り始め、速いほど激しく減ります。0になると息切れで最高速が半分になり、35%まで回復すると復帰。バー下の PACE 印に合わせて、ゴールでちょうど使い切るのが最速です。'
-      : '従来：加速している間だけスタミナが減り、止めると回復します。8%を切ると加速できません。');
+      : '従来：加速している間だけスタミナが減り、止めると回復します。8%を切ると加速できません。')
+      + (rules.guard === 'off' ? '' : '　ジャンプ補助：早すぎるつま先上げは踏み切り位置まで待ってから跳び、ハードルが遠いときの足踏みはジャンプになりません。スタート直前に足を静止していると、その角度をつま先上げの基準にします（センサー入力のみ）。'));
   }
   document.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', () => handlers.onMode(b.dataset.mode)));
   document.querySelectorAll('#device-switch button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.device !== device) handlers.onDevice(b.dataset.device); }));
   $('insole-toe').addEventListener('change', (e) => handlers.onInsoleToe(e.target.value));
-  const onRule = () => handlers.onRules({ jump: $('rule-jump').value, stamina: $('rule-stamina').value });
-  $('rule-jump').addEventListener('change', onRule);
-  $('rule-stamina').addEventListener('change', onRule);
+  const onRule = () => handlers.onRules({ jump: $('rule-jump').value, stamina: $('rule-stamina').value, guard: $('rule-guard').value });
+  for (const id of ['rule-jump', 'rule-stamina', 'rule-guard']) $(id).addEventListener('change', onRule);
 
   // ------------------------------------------------------------ screens
   let countHideTimer = 0;

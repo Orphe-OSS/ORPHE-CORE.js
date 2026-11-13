@@ -82,7 +82,8 @@ export function setupInsole() {
   try { const m = localStorage.getItem(TOE_KEY); if (m === 'normal' || m === 'invert') cal.mode = m; } catch { /* storage unavailable */ }
   const sign = () => (cal.mode === 'normal' ? 1 : cal.mode === 'invert' ? -1 : cal.sign);
   /** CORE-convention pitch for an INSOLE Euler sample: toe up is negative. */
-  const gamePitch = (dev, e) => -sign() * e.roll;
+  const zero = [0, 0];   // resting pitch found during the countdown (set by the game), per insole
+  const gamePitch = (dev, e) => -sign() * e.roll - (zero[dev] || 0);
 
   let lastJumpTime = 0;
   let lastAccelTime = 0;
@@ -124,12 +125,11 @@ export function setupInsole() {
       const pitch = gamePitch(this.id, euler);
       window.devices[this.id].eulers = { pitch, roll: euler.pitch, yaw: euler.yaw };
       const now = performance.now();
-      // toe up past the threshold = jump (mirrors the CORE sensor script)
+      // toe up past the threshold = jump (mirrors the CORE sensor script). A trigger the game's
+      // jump guard ignored (no hurdle coming up) does not start the cooldown, so it cannot
+      // swallow the real take-off that follows.
       if (pitch < -window.pitchThresholdJump && (now - lastJumpTime) > JUMP_COOLDOWN_MS) {
-        if (window.gameJump) {
-          window.gameJump();
-          lastJumpTime = now;
-        }
+        if (window.gameJump && window.gameJump() !== false) lastJumpTime = now;
       }
     };
     insole.gotPress = function (press) {
@@ -140,6 +140,7 @@ export function setupInsole() {
   return {
     devices, simulator, gamePitch,
     get toeMode() { return cal.mode; },
+    setPitchZero(id, value) { zero[id] = Number.isFinite(value) ? value : 0; },
     setToeMode(mode) {
       cal.mode = mode === 'normal' || mode === 'invert' ? mode : 'auto';
       try { localStorage.setItem(TOE_KEY, cal.mode); } catch { /* ignore */ }

@@ -15,6 +15,9 @@ const DB_NAME = 'hurdle-telemetry';
 const STORE = 'sessions';
 const FORMAT = 'orphe-hurdle-session/1';
 const round = (v, d) => (Number.isFinite(v) ? +v.toFixed(d) : null);
+const STEP_REFRACTORY_MS = 350;   // one foot is counted at most once in this long
+const CONTACT_MIN_LOAD = 150;     // INSOLE pressure: ADC counts above rest before the foot counts as down...
+const CONTACT_PEAK_SHARE = 0.12;  // ...or this share of the runner's own peak load, whichever is larger
 
 // Columns of every stream in a recorded session. `t` is milliseconds since the
 // recording started (performance.now based); `dev` is the CORE id, `p` the runner index.
@@ -99,6 +102,7 @@ export function createTelemetry() {
   let stats = null;          // per-device race statistics, { 0: {...}, 1: {...} }
   let statsStart = 0;
   let pitchOf = (dev, e) => e.pitch;   // INSOLE replaces this with its toe-up mapping
+  const pressBase = { 0: null, 1: null };   // INSOLE: resting level of each pressure channel, per device
   const listeners = new Set();
   const notify = () => listeners.forEach((fn) => { try { fn(); } catch { /* ignore */ } });
 
@@ -116,6 +120,7 @@ export function createTelemetry() {
     return {
       accN: 0, eulerN: 0, packets: 0, lost: 0, first: 0, last: 0,
       steps: 0, lastStepAt: 0, above: false, peak: 0, peaks: [], maxG: 0, sumG: 0,
+      loadPeak: 0, contact: false, contactAt: 0, contacts: [],
       toeUp: false, toeMin: 0, toeMins: [],
     };
   }
@@ -154,7 +159,10 @@ export function createTelemetry() {
           // a "step" = the acceleration magnitude rising through the game's accelerate threshold
           const th = window.accThresholdAccel ?? 1.1;
           if (mag > th) {
-            if (!s.above && t - s.lastStepAt > 200) { s.steps++; s.lastStepAt = t; s.peak = 0; }   // 200 ms: one foot cannot strike faster
+            // One strike per foot per STEP_REFRACTORY_MS. With 200 ms the landing and the push-off of the
+            // same step were often counted twice: 29-34 "steps" per foot against 20-25 ground contacts
+            // on the INSOLE pressure sensors in recorded races. 350 ms brings the two in line.
+            if (!s.above && t - s.lastStepAt > STEP_REFRACTORY_MS) { s.steps++; s.lastStepAt = t; s.peak = 0; }
             s.above = true;
             if (mag > s.peak) s.peak = mag;
           } else if (s.above) {
@@ -183,7 +191,10 @@ export function createTelemetry() {
       tap(ble, 'gotPronation', (dev, p) => { if (session) push('pronation', [rel(), dev, round(p.x, 4), round(p.y, 4), round(p.z, 4)]); });
       tap(ble, 'gotLandingImpact', (dev, v) => { if (session) push('impact', [rel(), dev, round(v.value, 4)]); });
       tap(ble, 'gotFootAngle', (dev, v) => { if (session) push('footAngle', [rel(), dev, round(v.value, 4)]); });
-      tap(ble, 'gotPress', (dev, p) => { if (session) push('press', [rel(), dev, ...Array.from({ length: 6 }, (_, i) => p.values?.[i] ?? null), ...src(p)]); });
+      tap(ble, 'gotPress', (dev, p) => {
+        if (p.values) trackContact(dev, p.values, now());
+        if (session) push('press', [rel(), dev, ...Array.from({ length: 6 }, (_, i) => p.values?.[i] ?? null), ...src(p)]);
+      });
       tap(ble, 'gotStepsNumber', (dev, v) => { if (session) push('steps', [rel(), dev, v.value]); });
       tap(ble, 'lostData', (dev, serial, prev) => {
         if (stats?.[dev]) stats[dev].lost++;
@@ -192,8 +203,39 @@ export function createTelemetry() {
     }
   }
 
+  /**
+   * INSOLE ground contact. Load = how far the six pressure channels sit above their resting level
+   * (the lowest reading each has shown in this race, so no calibration step is needed); the
+   * foot is down while the load is above a threshold that follows the runner's own peak. Uses the
+   * sum of all channels only, so it does not depend on which channel sits under which part of the foot.
+   */
+  function trackContact(dev, values, t) {
+    const base = pressBase[dev] || (pressBase[dev] = new Array(6).fill(Infinity));
+    let load = 0;
+    for (let i = 0; i < 6; i++) {
+      const x = values[i];
+      if (!(x > 0)) continue;                 // missing reading
+      if (x < base[i]) base[i] = x;
+      load += x - base[i];
+    }
+    const s = stats?.[dev];
+    if (!s) return;
+    if (load > s.loadPeak) s.loadPeak = load;
+    const down = Math.max(CONTACT_MIN_LOAD, CONTACT_PEAK_SHARE * s.loadPeak);
+    if (!s.contact && load > down) { s.contact = true; s.contactAt = t; }
+    else if (s.contact && load < down * 0.6) {
+      s.contact = false;
+      const ms = t - s.contactAt;
+      if (ms >= 40 && ms <= 1500) s.contacts.push(ms);   // shorter is noise, longer is standing still
+    }
+  }
+
   // ---------------------------------------------------------------- race statistics (always on)
-  function beginStats() { stats = { 0: newStats(), 1: newStats() }; statsStart = now(); }
+  function beginStats() {
+    stats = { 0: newStats(), 1: newStats() };
+    statsStart = now();
+    pressBase[0] = pressBase[1] = null;   // resting levels are relearned each race (another runner, a shifted insole)
+  }
   /**
    * Statistics for the given CORE ids since beginStats(). `oneFoot` says the runner wears a single
    * CORE (VS), so the step count covers one foot only.
@@ -205,6 +247,7 @@ export function createTelemetry() {
     const steps = list.reduce((a, s) => a + s.steps, 0);
     const peaks = list.flatMap((s) => s.peaks);
     const toe = list.flatMap((s) => s.toeMins);
+    const contacts = list.flatMap((s) => s.contacts).sort((a, b) => a - b);
     const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
     const hz = list.map((s) => (s.last > s.first ? ((s.accN - 1) / (s.last - s.first)) * 1000 : 0));
     const perFoot = devices.map((d) => stats[d]?.steps ?? 0);
@@ -219,6 +262,9 @@ export function createTelemetry() {
       meanG: list.reduce((a, s) => a + s.sumG, 0) / list.reduce((a, s) => a + s.accN, 0),
       toeUpDeg: toe.length ? (-mean(toe) * 180) / Math.PI : null,
       toeUps: toe.length,
+      // INSOLE only: median ground contact time from the pressure sensors
+      contactMs: contacts.length >= 4 ? Math.round(contacts[contacts.length >> 1]) : null,
+      contacts: contacts.length,
       sampleHz: mean(hz),
       packets: list.reduce((a, s) => a + s.packets, 0),
       lost: list.reduce((a, s) => a + s.lost, 0),

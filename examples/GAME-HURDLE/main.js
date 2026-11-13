@@ -74,9 +74,11 @@ const EXHAUSTED_REGEN_PER_SEC = 0.10;            // => 3.5 s out of breath
 //          'classic' = airborne is treated exactly like the ground (original)
 // stamina: 'pace'    = speed-based budget with exhaustion (new)
 //          'classic' = spend while accelerating, recover otherwise (original)
-// classic + classic is the original game. Chosen in the settings drawer and
+// guard:   'on'      = a sensor "jump" with no hurdle coming up is ignored (new)
+//          'off'     = every sensor jump counts, wherever the runner is (original)
+// classic + classic + off is the original game. Chosen in the settings drawer and
 // remembered in localStorage.
-const RULE_DEFAULTS = { jump: 'coast', stamina: 'pace' };
+const RULE_DEFAULTS = { jump: 'coast', stamina: 'pace', guard: 'on' };
 const RULES_KEY = 'hurdle.rules';
 function loadRules() {
   try {
@@ -84,6 +86,7 @@ function loadRules() {
     return {
       jump: saved.jump === 'classic' ? 'classic' : RULE_DEFAULTS.jump,
       stamina: saved.stamina === 'classic' ? 'classic' : RULE_DEFAULTS.stamina,
+      guard: saved.guard === 'off' ? 'off' : RULE_DEFAULTS.guard,
     };
   } catch {
     return { ...RULE_DEFAULTS };
@@ -129,7 +132,7 @@ function makePlayer(index) {
     vz: BASE_SPEED, vy: 0, isGround: true, stamina: STAMINA_MAX, exhausted: false, exhaustCount: 0,
     slowRemain: 0, hits: 0, hitMarkers: new Set(), jumpStartTime: 0, runTime: 0, finished: false, dnf: false,
     // Pressed states – used for keyboard and ORPHE input
-    accelKeyboard: false, accelOrphe: false, sensorJumpAt: 0, keyJumpAt: 0,
+    accelKeyboard: false, accelOrphe: false, sensorJumpAt: 0, keyJumpAt: 0, guarded: 0, guardAt: 0, jumpHeldAt: 0, heldJumps: 0,
     // presentation state (never read by the rules)
     view: {}, cam: { mode: 'title', blend: 1, blendDur: 1, shot: 0, shotT: 0, shift: 0, fromPos: new THREE.Vector3(), fromQuat: new THREE.Quaternion(), fromFov: 55, fromShift: 0 },
     place: 1, cleared: 0, combo: 0, topSpeed: 0, viewW: 1, fpVisible: false, bodyVisible: false,
@@ -147,7 +150,7 @@ function resetPlayer(p) {
   p.stamina = STAMINA_MAX; p.exhausted = false; p.exhaustCount = 0;
   p.slowRemain = 0; p.hits = 0; p.hitMarkers.clear();
   p.jumpStartTime = 0; p.runTime = 0; p.finished = false; p.dnf = false;
-  p.accelKeyboard = false; p.accelOrphe = false; p.sensorJumpAt = 0;
+  p.accelKeyboard = false; p.accelOrphe = false; p.sensorJumpAt = 0; p.guarded = 0; p.guardAt = 0; p.jumpHeldAt = 0; p.heldJumps = 0;
   p.rig.position.set(laneX(p.lane), PLAYER_EYE_H, 0);
   Object.assign(p.view, {
     finishT: 0, runoutV: 0, stepPhase: 0, crouch: 0, crouchTarget: 0, air: 0, landY: 0, landV: 0,
@@ -229,6 +232,117 @@ function jump(p) {
   }
 }
 
+// ---- Sensor jump guard -----------------------------------------------------
+// The sensors read "toe up" as a jump, and a foot stamping hard to accelerate
+// pitches past that threshold on its own. Recorded races show where that hurts:
+// off the blocks, getting going again after a hit, and on the run-in, each time
+// costing a full jump with no drive (and a string of them after a hit, because
+// a stopped runner stamps hardest). They also show the opposite mistake: first-
+// time players lift the toe a few tenths too early (11 of the 23 jumps that hit
+// in the 2026-11-13 care-home recordings) and come down on the bar.
+// With the guard on, a sensor jump takes off only inside the take-off zone:
+//   - in the zone (or later): it jumps at once, as before;
+//   - too early: it is held for up to JUMP_HOLD_MS and released the moment the
+//     zone starts, which is the earliest take-off that clears;
+//   - nowhere near a hurdle (more than JUMP_GUARD_SEC away, or past the last
+//     one): it is ignored and counted.
+// A late toe-up still hits. Keyboard jumps are never filtered.
+const JUMP_GUARD_SEC = 1.0;
+const JUMP_HOLD_MS = 450;
+const JUMP_GUARD_MIN_SPEED = 0.5;   // m/s floor for the time-to-bar estimate
+function nextHurdle(p) {
+  for (const h of hurdles) { if (!p.hitMarkers.has(h) && h.userData.z < p.rig.position.z) return h; }
+  return null;
+}
+/** Seconds of flight to the next bar if the runner took off now; null with no hurdle left or out of range. */
+function timeToBar(p) {
+  const next = nextHurdle(p);
+  if (!next) return null;
+  return airTime(Math.max(0, p.rig.position.z - next.userData.z - 0.35), Math.max(p.vz, JUMP_GUARD_MIN_SPEED));
+}
+/** A jump asked for by a sensor. Returns false when the guard held or ignored it (so callers can skip their cooldown). */
+function sensorJump(p) {
+  if (RULES.guard === 'on' && state === 'running' && !p.finished && p.isGround && active.includes(p)) {
+    const t = timeToBar(p);
+    if (t == null || t > CUE_EARLY_SEC) {
+      const now = performance.now();
+      p.jumpHeldAt = now;                                  // released by releaseHeldJump() when the zone starts
+      if ((t == null || t > JUMP_GUARD_SEC) && now - p.guardAt > SENSOR_JUMP_COOLDOWN_MS) {   // the trigger repeats every sample while the toe is up: count episodes
+        p.guardAt = now;
+        p.guarded++;
+        const next = nextHurdle(p);
+        telemetry.event(p.index, 'jumpIgnored', { hurdle: next ? next.index : -1, gap: next ? r2(p.rig.position.z - next.userData.z) : null, speed: r2(p.vz) });
+      }
+      return false;
+    }
+  }
+  p.jumpHeldAt = 0;
+  jump(p);
+  return true;
+}
+/** Every frame: a sensor jump that came too early takes off as the runner reaches the take-off zone. */
+function releaseHeldJump(p) {
+  if (!p.jumpHeldAt) return;
+  const now = performance.now();
+  if (now - p.jumpHeldAt > JUMP_HOLD_MS || RULES.guard !== 'on') { p.jumpHeldAt = 0; return; }
+  if (!p.isGround || p.finished) return;
+  const t = timeToBar(p);
+  if (t != null && t <= CUE_EARLY_SEC) {
+    const waited = now - p.jumpHeldAt;
+    p.jumpHeldAt = 0;
+    jump(p);
+    if (!p.isGround) { p.sensorJumpAt = now; p.heldJumps++; telemetry.event(p.index, 'jumpHeld', { waitedMs: Math.round(waited) }); }
+  }
+}
+
+// ---- Toe-up zero -------------------------------------------------------------
+// "Toe up" is the pitch going below -threshold, measured from wherever the sensor's own zero
+// happens to be. In one recorded VS race both units rested at +0.81 / +0.29 rad (strapped at a
+// different angle), so lifting the toes never got near the threshold: 18 hurdles, no jump.
+// When a foot is held still through the end of the countdown, that resting pitch becomes the
+// zero for the race. A foot that is moving during the countdown keeps the sensor's own zero.
+// Part of the guard switch; the sensor script itself is not touched (see boot()).
+const pitchZero = [0, 0];
+const ZERO_WINDOW_MS = 1500, ZERO_MAX_SPREAD = 0.06;
+let zeroSamples = [];
+function sampleRestingPitch() {
+  const devices = window.devices;
+  if (!devices) return;
+  const now = performance.now();
+  zeroSamples.push([now, 0, 1].map((v, k) => (k === 0 ? v : (devices[v]?.eulers?.pitch ?? 0) + pitchZero[v])));
+  while (zeroSamples.length && now - zeroSamples[0][0] > ZERO_WINDOW_MS) zeroSamples.shift();
+}
+function applyRestingPitch() {
+  for (const i of [0, 1]) {
+    const xs = zeroSamples.map((r) => r[i + 1]).sort((a, b) => a - b);
+    let zero = 0;
+    if (RULES.guard === 'on' && xs.length >= 20) {
+      const spread = xs[Math.floor(xs.length * 0.95)] - xs[Math.floor(xs.length * 0.05)];
+      if (spread <= ZERO_MAX_SPREAD) zero = Math.min(1.2, Math.max(-0.2, xs[xs.length >> 1]));
+    }
+    pitchZero[i] = zero;
+    if (insole) insole.setPitchZero(i, zero);
+  }
+  zeroSamples = [];
+  telemetry.event(-1, 'pitchZero', { zero: pitchZero.map(r2) });
+}
+
+// SOLO with ORPHE CORE: the sensor script in index.html starts its 700 ms cooldown on every
+// trigger it sends, including one that produced no jump (the guard ignored it). Left alone it
+// would then sit out a real take-off: after a hit the next bar is about a second away, and a
+// stamp ignored early in the re-acceleration would mute the sensor script right through the
+// take-off zone. So while such a cooldown is running, the toe is watched here instead, with the
+// same threshold and the same cooldown counted from the last jump that actually happened (what
+// VS does all the time). ORPHE INSOLE does not need this: insole.js skips its cooldown itself.
+let soloCoverUntil = 0;   // performance.now() until which the sensor script is muted by a trigger that did not jump
+function pollSoloCover() {
+  const now = performance.now();
+  const p = P[0], devices = window.devices;
+  if (now >= soloCoverUntil || !devices || !p.isGround || now - p.sensorJumpAt <= SENSOR_JUMP_COOLDOWN_MS) return;
+  const toeUp = [devices[0], devices[1]].some((d) => d && d.eulers && d.eulers.pitch < -window.pitchThresholdJump);
+  if (toeUp && sensorJump(p) && !p.isGround) p.sensorJumpAt = now;
+}
+
 // VS: each runner is driven by one CORE. The sensor script in index.html keeps
 // window.devices[id] up to date for both devices; read each one separately here
 // with the same thresholds and jump cooldown it applies in SOLO.
@@ -241,8 +355,7 @@ function pollVsSensors() {
     if (!d) continue;
     if (d.acc) p.accelOrphe = Math.hypot(d.acc.x, d.acc.y, d.acc.z) > window.accThresholdAccel;
     if (d.eulers && d.eulers.pitch < -window.pitchThresholdJump && now - p.sensorJumpAt > SENSOR_JUMP_COOLDOWN_MS) {
-      jump(p);
-      p.sensorJumpAt = now;
+      if (sensorJump(p)) p.sensorJumpAt = now;
     }
   }
 }
@@ -432,6 +545,7 @@ function resetGame() {
   clock = new THREE.Clock();
   startEpoch = 0;
   firstFinishAt = 0;
+  soloCoverUntil = 0;
   window.jumpStartTime = 0;  // Reset jump timing
   P.forEach(resetPlayer);
   // Reset ranking return state
@@ -536,8 +650,9 @@ function stepPlayer(p, dt) {
 // Update loop: integrates ORPHE and keyboard input
 function update(dt) {
   if (state !== 'running') return;
-  if (mode === 'vs') pollVsSensors();
+  if (mode === 'vs') pollVsSensors(); else pollSoloCover();
   for (const p of active) {
+    releaseHeldJump(p);
     if (!p.finished) stepPlayer(p, dt);
   }
   window.jumpStartTime = Math.max(0, ...active.map((p) => p.jumpStartTime));
@@ -563,7 +678,13 @@ window.resetGame = resetGame;
 // wants (either foot). In VS each CORE belongs to one runner, so these are
 // ignored there and pollVsSensors() reads the two devices separately.
 window.gameJump = function() {
-  if (mode === 'solo') jump(P[0]);
+  if (mode !== 'solo') return true;
+  const p = P[0];
+  const wasGround = p.isGround;
+  const accepted = sensorJump(p);
+  if (accepted && wasGround && !p.isGround) p.sensorJumpAt = performance.now();
+  else if (!insole && state === 'running') soloCoverUntil = performance.now() + SENSOR_JUMP_COOLDOWN_MS;
+  return accepted;
 };
 window.setAccelPressed = function(pressed) {
   if (mode === 'solo') P[0].accelOrphe = pressed;
@@ -640,7 +761,7 @@ function sessionMeta() {
     app: 'GAME-HURDLE', deviceType: insole ? 'insole' : 'core', insoleToe: insole ? insole.toeState() : null,
     mode, rules: { ...RULES }, lanes: active.map((p) => p.lane),
     thresholds: { accG: window.accThresholdAccel, jumpPitchRad: window.pitchThresholdJump },
-    constants: { COURSE_LEN_M, FIRST_HURDLE_M, HURDLE_SPACING_M, MAX_SPEED, ACCEL_RATE, FRICTION, JUMP_V0, GRAVITY, JUMP_SPEED_LOSS, CRUISE_SPEED, STAMINA_BURN_AT_MAX, EXHAUSTED_SPEED, EXHAUSTED_RECOVER_LEVEL },
+    constants: { COURSE_LEN_M, FIRST_HURDLE_M, HURDLE_SPACING_M, MAX_SPEED, ACCEL_RATE, FRICTION, JUMP_V0, GRAVITY, JUMP_SPEED_LOSS, CRUISE_SPEED, STAMINA_BURN_AT_MAX, EXHAUSTED_SPEED, EXHAUSTED_RECOVER_LEVEL, JUMP_GUARD_SEC, JUMP_HOLD_MS, CUE_EARLY_SEC, CUE_LATE_SEC },
     devices: [0, 1].map((i) => ({ id: i, player: mode === 'vs' ? i : 0, name: bles[i]?.bluetoothDevice?.name ?? null, info: bles[i]?.device_information ?? null })),
     sdk: { orphe: window.orphe_js_version_date ?? null, toolkit: window.coreToolkit_version_date ?? null },
     userAgent: navigator.userAgent, screen: [window.innerWidth, window.innerHeight, window.devicePixelRatio],
@@ -663,6 +784,7 @@ function traceHurdle(p, index, hit, speed) {
 
 function onCountdownStart() {
   stageView.phase = 'countdown';
+  zeroSamples = [];
   telemetry.start(sessionMeta());   // records only while the toggle is on; starts here so the reaction to the gun is captured
   telemetry.event(-1, 'countdown', null);
   for (const p of active) { p.view.crouchTarget = 0.5; p.view.fade = 0; setCamMode(p, 'fp', 2.3); }
@@ -697,6 +819,7 @@ function onGo() {
   stageView.phase = 'race';
   telemetry.beginStats();
   telemetry.event(-1, 'go', null);
+  applyRestingPitch();
   for (const p of active) { p.view.crouchTarget = 0; p.view.fovKick = 5; p.view.flash = 0.3; p.view.stepPhase = 0; }
   ui.countdownGo();
   ui.setScreen('race');
@@ -712,7 +835,7 @@ function onGo() {
 function onJump(p) {
   audio.jump();
   p.view.fovKick = Math.max(p.view.fovKick, 2.5);
-  const next = hurdles.find((h) => !p.hitMarkers.has(h) && h.userData.z < p.rig.position.z);
+  const next = nextHurdle(p);
   const gap = next ? p.rig.position.z - next.userData.z : null;
   p.trace.lastJump = { index: next ? next.index : -1, gap, tth: gap == null ? null : airTime(Math.max(0, gap - 0.35), p.vz) };
   telemetry.event(p.index, 'jump', { hurdle: p.trace.lastJump.index, gap: r2(gap), speed: r2(p.vz) });
@@ -813,6 +936,7 @@ function onRaceFinish() {
     p.analysis = analyzeRun({
       time: p.runTime, dnf: p.dnf, hits: p.hits, cleared: p.cleared, hurdles: HURDLES, topSpeed: p.topSpeed,
       staminaLeft: p.stamina, exhaustCount: p.exhaustCount, paceRule: paceMode(), courseLen: COURSE_LEN_M, maxSpeed: MAX_SPEED,
+      ignoredJumps: p.guarded, heldJumps: p.heldJumps,
       trace: p.trace, sensor: telemetry.sensorStats(mode === 'vs' ? [p.index] : [0, 1], p.runTime, mode === 'vs'),
     });
     return { label: mode === 'vs' ? `PLAYER ${p.index + 1}` : 'YOU', color: PLAYER_LOOKS[p.index].color, analysis: p.analysis };
@@ -820,7 +944,7 @@ function onRaceFinish() {
   telemetry.stop(true, {
     players: active.map((p) => ({
       index: p.index, lane: p.lane, time: p.dnf ? null : p.runTime, hits: p.hits, cleared: p.cleared, topSpeed: p.topSpeed,
-      staminaLeft: p.stamina, exhaustCount: p.exhaustCount, place: p.place, score: p.analysis.total, grade: p.analysis.grade,
+      staminaLeft: p.stamina, exhaustCount: p.exhaustCount, ignoredJumps: p.guarded, heldJumps: p.heldJumps, pitchZero: mode === 'vs' ? [pitchZero[p.index]] : [...pitchZero], place: p.place, score: p.analysis.total, grade: p.analysis.grade,
       axes: Object.fromEntries(p.analysis.axes.map((a) => [a.key, a.score])), metrics: p.analysis.metrics, splits: p.analysis.splits,
     })),
   });
@@ -975,6 +1099,18 @@ function updateCamera(p, dt) {
   else if (camera.view) camera.clearViewOffset();
   camera.updateProjectionMatrix();
 }
+// Take-off cue. A take-off clears the bar when it comes 0.081 s to 0.544 s before it (the jump
+// arc is 0.35 m up for that long). The cue used to light at 0.47 s. In recorded sensor races,
+// when it lit on the approach (first hurdle, after a hit, a slower pace) the jump registered a
+// median 0.24 s later, i.e. about 0.2 s before the bar, close to the late edge. Lighting it at the
+// earliest take-off that still clears gives that time back without ever asking for a jump that
+// would fall short.
+// At race pace it cannot help: the flight covers most of the 9.14 m between hurdles and the
+// runner lands already inside the next zone with about 0.2 s on the ground (0.15-0.19 s in the
+// recordings), far too short to react to a sign. So the zone for the hurdle after the one being
+// jumped stays on the track while airborne (unlit), where it can be seen coming.
+const CUE_EARLY_SEC = 0.53;
+const CUE_LATE_SEC = 0.11;
 /** Metres covered per m/s of take-off speed after t seconds in the air under the current jump rule. */
 function airDistance(t) { return RULES.jump === 'coast' ? (1 - Math.exp(-AIR_DRAG * t)) / AIR_DRAG : t; }
 function jumpProgress(p) {
@@ -1052,14 +1188,15 @@ function presentPlayer(p, dt, sdt) {
 
   // take-off guide for the next hurdle
   if (running) {
-    let next = null;
-    for (const h of hurdles) { if (!p.hitMarkers.has(h) && h.userData.z < p.rig.position.z) { next = h; break; } }
+    const next = nextHurdle(p);
     let cue = false;
-    if (next && p.isGround && p.vz > 2.5) {
-      const zNear = next.userData.z + 0.35 + p.vz * airDistance(0.47);
-      const zFar = next.userData.z + 0.35 + p.vz * airDistance(0.11);
+    // in the air, the hurdle this jump was for has no zone to show; the one after it does
+    const flyingOver = !p.isGround && (!p.trace.lastJump || !next || p.trace.lastJump.index === next.index);
+    if (next && p.vz > 2.5 && !flyingOver) {
+      const zNear = next.userData.z + 0.35 + p.vz * airDistance(CUE_EARLY_SEC);
+      const zFar = next.userData.z + 0.35 + p.vz * airDistance(CUE_LATE_SEC);
       const d = p.rig.position.z - next.userData.z;
-      const inside = p.rig.position.z <= zNear && p.rig.position.z >= zFar;
+      const inside = p.isGround && p.rig.position.z <= zNear && p.rig.position.z >= zFar;
       world.setGuide(p.index, d < 34, p.rig.position.x, zNear, zFar, inside ? 1 : 0, smooth((34 - d) / 14));
       cue = inside;
     } else {
@@ -1240,6 +1377,7 @@ function trackPerformance(rawDt) {
 function loop() {
   const rawDt = clock.getDelta();
   if (state === 'running') update(rawDt);
+  else if (stageView.phase === 'countdown') sampleRestingPitch();
   present(Math.min(rawDt, 0.05), rawDt);
   render();
   trackPerformance(rawDt);
@@ -1275,6 +1413,7 @@ async function loadLogo() {
 function setRules(next) {
   RULES.jump = next.jump === 'classic' ? 'classic' : 'coast';
   RULES.stamina = next.stamina === 'classic' ? 'classic' : 'pace';
+  RULES.guard = next.guard === 'off' ? 'off' : 'on';
   try { localStorage.setItem(RULES_KEY, JSON.stringify(RULES)); } catch { /* ignore */ }
   ui.setRules(RULES);
   const best = readBest();
@@ -1343,6 +1482,18 @@ async function boot() {
     telemetry.setPitchMapper(insole.gamePitch);
     ui.setInsoleToe(insole.toeMode, insole.toeState());
     setInterval(() => ui.setInsoleToe(insole.toeMode, insole.toeState()), 500);
+  }
+  if (!insole) {
+    // ORPHE CORE: hand the sensor script a pitch measured from the resting zero. Wrapped here, before
+    // the recorder's tap, so the recording keeps the raw value and index.html stays as it is.
+    for (const ble of sensors) {
+      const inner = ble?.gotEuler;
+      if (typeof inner !== 'function') continue;
+      ble.gotEuler = function (e) {
+        const zero = pitchZero[this.id] || 0;
+        return inner.call(this, zero && e ? { ...e, pitch: e.pitch - zero } : e);
+      };
+    }
   }
   telemetry.attach(sensors);
   const refreshRec = async () => ui.setRecState({ recording: telemetry.recording, active: telemetry.active, count: await telemetry.count(), hasLast: !!telemetry.last });
@@ -1432,7 +1583,7 @@ window.hurdleDebug = {
   get exhausted() { return P[0].exhausted; },
   /** Per-runner snapshot, e.g. hurdleDebug.players[1].z */
   get players() {
-    return active.map((p) => ({ z: p.rig.position.z, speed: p.vz, stamina: p.stamina, hits: p.hits, time: p.runTime, finished: p.finished, grounded: p.isGround, exhausted: p.exhausted, place: p.place, lane: p.lane }));
+    return active.map((p) => ({ z: p.rig.position.z, speed: p.vz, stamina: p.stamina, hits: p.hits, time: p.runTime, finished: p.finished, grounded: p.isGround, exhausted: p.exhausted, place: p.place, lane: p.lane, ignoredJumps: p.guarded, heldJumps: p.heldJumps, pitchZero: [...pitchZero] }));
   },
   audio, scene, renderer, telemetry, get camera() { return P[0].camera; },
   get analysis() { return active.map((p) => p.analysis); },
@@ -1448,7 +1599,7 @@ window.hurdleDebug = {
     return out;
   },
 };
-console.log(`[HURDLE] build 2026-11-12d (sensor: ${DEVICE})`);
+console.log(`[HURDLE] build 2026-11-13b (sensor: ${DEVICE})`);
 
 boot().catch((error) => {
   console.error('[HURDLE] failed to start:', error);

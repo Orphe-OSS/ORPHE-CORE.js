@@ -3,25 +3,29 @@
  * Handles keyboard and ORPHE CORE input, scoring, and combo tracking
  */
 
+// Judgment levels (best first). The window fraction is relative to the judge window setting.
+const JUDGMENTS = [
+    { name: 'PERFECT', key: 'perfect', windowFraction: 0.4, points: 100, weight: 1.0 },
+    { name: 'GREAT',   key: 'great',   windowFraction: 0.7, points: 60,  weight: 0.6 },
+    { name: 'GOOD',    key: 'good',    windowFraction: 1.0, points: 30,  weight: 0.3 }
+];
+
+const JUDGMENT_COLORS = {
+    PERFECT: '#e5c046',
+    GREAT: '#46a758',
+    GOOD: '#3e8ed0',
+    MISS: '#e5484d'
+};
+
 class PlayerManager {
     constructor() {
         this.score = 0;
         this.combo = 0;
         this.maxCombo = 0;
-        this.perfect = 0;
-        this.good = 0;
-        this.ok = 0;
-        this.miss = 0;
-        
+        this.resetCounts();
+
         this.keyboardEnabled = true;
         this.orpheEnabled = false;
-        
-        // Judge timing window (in seconds)
-        this.judgeWindow = {
-            perfect: 0.05,
-            good: 0.1,
-            ok: 0.15
-        };
         
         // Input callbacks
         this.onInput = null;
@@ -32,14 +36,6 @@ class PlayerManager {
             'ArrowUp': 2,     // Lane 2 (Up)
             'ArrowDown': 1,   // Lane 1 (Down)
             'ArrowRight': 3   // Lane 3 (Right)
-        };
-        
-        // ORPHE direction mapping
-        this.orpheDirectionMap = {
-            0: 0,  // Left step → Lane 0
-            2: 2,  // Forward step → Lane 2 (Up)
-            4: 1,  // Backward step → Lane 1 (Down)
-            6: 3   // Right step → Lane 3
         };
         
         this.setupKeyboardInput();
@@ -65,79 +61,30 @@ class PlayerManager {
      * @param {number} lane - Lane number (0-3)
      */
     handleInput(lane) {
-        // Trigger visual feedback on lane indicator
-        if (window.gameRenderer) {
-            window.gameRenderer.triggerLanePress(lane);
-        }
-        
+        // Visual feedback is drawn after the input is judged (see handleGameInput in main.js)
         if (this.onInput) {
             this.onInput(lane);
         }
     }
 
     /**
-     * Handle ORPHE CORE gait direction
-     * @param {number} direction - ORPHE direction (0, 2, 4, 6)
-     */
-    handleOrpheDirection(direction) {
-        if (!this.orpheEnabled) return;
-        
-        const lane = this.orpheDirectionMap[direction];
-        if (lane !== undefined) {
-            console.log(`ORPHE input: direction=${direction} → lane=${lane}`);
-            this.handleInput(lane);
-        }
-    }
-
-    /**
      * Process hit result
-     * @param {Object} hitResult - Result from ChartManager.checkHit()
+     * @param {Object|null} hitResult - Result from ChartManager.checkHit(), or null for a miss
+     * @returns {{score: number, judgment: string, combo: number}}
      */
     processHit(hitResult) {
-        if (!hitResult) {
-            // Miss
+        const level = hitResult && JUDGMENTS.find(j => j.key === hitResult.accuracy);
+
+        if (!level) {
             this.miss++;
             this.combo = 0;
-            this.showJudgment('MISS', '#FF4444');
-            return {
-                score: 0,
-                judgment: 'miss'
-            };
+            this.showJudgment('MISS', JUDGMENT_COLORS.MISS);
+            this.updateScoreDisplay();
+            return { score: 0, judgment: 'MISS', combo: 0 };
         }
 
-        const { accuracy, timeDiff } = hitResult;
-        let basePoints = 0;
-        let judgment = 'miss';
-        let color = '#FF4444';
-
-        switch (accuracy) {
-            case 'perfect':
-                basePoints = 100;
-                judgment = 'PERFECT';
-                color = '#FFD700';
-                this.perfect++;
-                this.combo++;
-                break;
-            case 'good':
-                basePoints = 50;
-                judgment = 'GOOD';
-                color = '#00FF00';
-                this.good++;
-                this.combo++;
-                break;
-            case 'ok':
-                basePoints = 25;
-                judgment = 'OK';
-                color = '#88FF88';
-                this.ok++;
-                this.combo++;
-                break;
-            default:
-                this.miss++;
-                this.combo = 0;
-                judgment = 'MISS';
-                color = '#FF4444';
-        }
+        this[level.key]++;
+        this.combo++;
 
         // DDR-style combo multiplier
         let comboMultiplier = 1.0;
@@ -149,16 +96,16 @@ class PlayerManager {
             comboMultiplier = 1.2;
         }
 
-        const points = Math.floor(basePoints * comboMultiplier);
+        const points = Math.floor(level.points * comboMultiplier);
         this.score += points;
         this.maxCombo = Math.max(this.maxCombo, this.combo);
 
-        this.showJudgment(judgment, color);
+        this.showJudgment(level.name, JUDGMENT_COLORS[level.name]);
         this.updateScoreDisplay();
 
         return {
             score: points,
-            judgment: judgment,
+            judgment: level.name,
             combo: this.combo
         };
     }
@@ -179,11 +126,26 @@ class PlayerManager {
      * Update score display in HTML
      */
     updateScoreDisplay() {
-        document.getElementById('score').textContent = this.score;
-        document.getElementById('combo').textContent = this.combo;
-        document.getElementById('perfect').textContent = this.perfect;
-        document.getElementById('good').textContent = this.good;
-        document.getElementById('miss').textContent = this.miss;
+        const values = {
+            score: this.score,
+            combo: this.combo,
+            perfect: this.perfect,
+            great: this.great,
+            good: this.good,
+            miss: this.miss
+        };
+        for (const id in values) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = values[id];
+        }
+    }
+
+    /**
+     * Reset judgment counters
+     */
+    resetCounts() {
+        for (const level of JUDGMENTS) this[level.key] = 0;
+        this.miss = 0;
     }
 
     /**
@@ -193,10 +155,7 @@ class PlayerManager {
         this.score = 0;
         this.combo = 0;
         this.maxCombo = 0;
-        this.perfect = 0;
-        this.good = 0;
-        this.ok = 0;
-        this.miss = 0;
+        this.resetCounts();
         this.updateScoreDisplay();
     }
 
@@ -209,8 +168,8 @@ class PlayerManager {
             score: this.score,
             maxCombo: this.maxCombo,
             perfect: this.perfect,
+            great: this.great,
             good: this.good,
-            ok: this.ok,
             miss: this.miss,
             accuracy: this.calculateAccuracy(),
             rank: this.calculateRank()
@@ -222,11 +181,19 @@ class PlayerManager {
      * @returns {number}
      */
     calculateAccuracy() {
-        const total = this.perfect + this.good + this.ok + this.miss;
+        const total = this.totalJudged();
         if (total === 0) return 0;
-        
-        const weightedHits = (this.perfect * 1.0) + (this.good * 0.5) + (this.ok * 0.25);
+
+        const weightedHits = JUDGMENTS.reduce((sum, level) => sum + this[level.key] * level.weight, 0);
         return (weightedHits / total * 100).toFixed(2);
+    }
+
+    /**
+     * Number of judged notes (hits + misses)
+     * @returns {number}
+     */
+    totalJudged() {
+        return JUDGMENTS.reduce((sum, level) => sum + this[level.key], 0) + this.miss;
     }
 
     /**
@@ -234,24 +201,25 @@ class PlayerManager {
      * @returns {string} Rank (SS, S, A, B, C, D, E)
      */
     calculateRank() {
-        const total = this.perfect + this.good + this.ok + this.miss;
+        const total = this.totalJudged();
         if (total === 0) return 'E';
-        
+
         const accuracy = parseFloat(this.calculateAccuracy());
         const perfectRate = (this.perfect / total) * 100;
-        
-        // DDR-style ranking
+
+        // Accuracy weights a GREAT at 60% and a GOOD at 30% of a PERFECT, so a run of
+        // mostly GREATs lands around C rather than E.
         if (perfectRate === 100) {
             return 'SS'; // Perfect Full Combo
         } else if (accuracy >= 95 && this.miss === 0) {
             return 'S';  // Full Combo
-        } else if (accuracy >= 90) {
-            return 'A';
         } else if (accuracy >= 80) {
-            return 'B';
+            return 'A';
         } else if (accuracy >= 70) {
-            return 'C';
+            return 'B';
         } else if (accuracy >= 60) {
+            return 'C';
+        } else if (accuracy >= 40) {
             return 'D';
         } else {
             return 'E';
@@ -263,10 +231,8 @@ class PlayerManager {
      * @param {number} ms - Milliseconds
      */
     setJudgeWindow(ms) {
-        const seconds = ms / 1000;
-        this.judgeWindow.perfect = seconds * 0.5;
-        this.judgeWindow.good = seconds;
-        this.judgeWindow.ok = seconds * 1.5;
+        // The window is applied in ChartManager.checkHit(); kept for compatibility
+        this.judgeWindowMs = ms;
     }
 
     /**
@@ -285,4 +251,6 @@ class PlayerManager {
 // Export for use in other modules
 if (typeof window !== 'undefined') {
     window.PlayerManager = PlayerManager;
+    window.JUDGMENTS = JUDGMENTS;
+    window.JUDGMENT_COLORS = JUDGMENT_COLORS;
 }

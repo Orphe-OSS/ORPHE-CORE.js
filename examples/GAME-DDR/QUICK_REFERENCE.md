@@ -23,10 +23,11 @@
 ## 👟 ORPHE CORE Steps
 
 ```
-Direction 0 (Left step)    → ← lane
-Direction 2 (Forward)      → ↑ lane
-Direction 4 (Backward)     → ↓ lane
-Direction 6 (Right step)   → → lane
+Direction 1 (Forward)      → ↑ lane
+Direction 2 (Backward)     → ↓ lane
+Direction 3 (Inside)       → → lane (left foot) / ← lane (right foot)
+Direction 4 (Outside)      → ← lane (left foot) / → lane (right foot)
+Left/right foot = CORE LEFT/RIGHT setting (device_information.lr)
 ```
 
 ---

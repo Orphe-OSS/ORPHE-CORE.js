@@ -39,7 +39,6 @@
 6. **game/player.js** (225 lines)
    - `PlayerManager` class
    - Keyboard input handling
-   - ORPHE direction mapping
    - Scoring and combo system
    - Judgment processing
 

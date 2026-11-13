@@ -83,21 +83,24 @@ class ChartManager {
      * Get notes that should be visible at current time
      * @param {number} currentTime - Current audio time in seconds
      * @param {number} visibleDuration - How many seconds ahead to show notes
+     * @param {number} lateWindow - How many seconds past the hit time to keep showing
+     *                              notes that can still be hit (so a late step looks late)
      * @returns {Array} Array of note objects with calculated positions
      */
-    getVisibleNotes(currentTime, visibleDuration = 3) {
+    getVisibleNotes(currentTime, visibleDuration = 3, lateWindow = 0) {
         const visibleNotes = [];
         
         for (let note of this.notes) {
             const noteTime = note.time + this.offset;
             const timeDiff = noteTime - currentTime;
             
-            // Show notes that are ahead but within visible range
-            if (timeDiff >= 0 && timeDiff <= visibleDuration) {
+            // Show notes that are ahead but within visible range, plus notes just past
+            // the hit time that can still be hit
+            if (timeDiff >= -lateWindow && timeDiff <= visibleDuration) {
                 visibleNotes.push({
                     ...note,
                     timeDiff: timeDiff,
-                    active: !note.hit
+                    active: !note.hit && !note.missed
                 });
             }
         }
@@ -110,31 +113,29 @@ class ChartManager {
      * @param {number} currentTime - Current audio time
      * @param {number} lane - Lane number (0-3)
      * @param {number} window - Hit window in seconds
-     * @returns {Object|null} Note object or null
+     * @returns {Object|null} {note, timeDiff (abs, s), signedDiff (s, + = late), accuracy} or null.
+     *   accuracy is the key of the best level in JUDGMENTS (player.js) whose window contains the step
+     *   ('perfect' | 'great' | 'good').
      */
     checkHit(currentTime, lane, window = 0.15) {
         for (let note of this.notes) {
-            if (note.hit) continue; // Skip already hit notes
-            
+            if (note.hit || note.missed) continue; // Skip already judged notes
+
             const noteTime = note.time + this.offset;
             const timeDiff = Math.abs(noteTime - currentTime);
             
             if (note.lane === lane && timeDiff <= window) {
                 note.hit = true;
                 
-                // Calculate accuracy
-                let accuracy = 'miss';
-                if (timeDiff <= 0.05) {
-                    accuracy = 'perfect';
-                } else if (timeDiff <= 0.1) {
-                    accuracy = 'good';
-                } else {
-                    accuracy = 'ok';
-                }
+                // Accuracy level: the windows are fractions of the judge window
+                const levels = (typeof JUDGMENTS !== 'undefined') ? JUDGMENTS : [];
+                const level = levels.find(l => timeDiff <= window * l.windowFraction);
+                const accuracy = level ? level.key : 'good';
                 
                 return {
                     note: note,
                     timeDiff: timeDiff,
+                    signedDiff: currentTime - noteTime,
                     accuracy: accuracy
                 };
             }
@@ -144,11 +145,32 @@ class ChartManager {
     }
 
     /**
+     * Mark notes whose hit window has fully passed without being hit as missed.
+     * @param {number} currentTime - Current audio time
+     * @param {number} window - Hit window in seconds
+     * @returns {Array} Notes newly marked as missed
+     */
+    collectMissedNotes(currentTime, window = 0.15) {
+        const missed = [];
+        for (let note of this.notes) {
+            if (note.hit || note.missed) continue;
+
+            // Notes are sorted by time, so everything after this is still upcoming
+            if (note.time + this.offset + window >= currentTime) break;
+
+            note.missed = true;
+            missed.push(note);
+        }
+        return missed;
+    }
+
+    /**
      * Reset all notes (for replay)
      */
     reset() {
         for (let note of this.notes) {
             note.hit = false;
+            note.missed = false;
         }
     }
 
@@ -163,6 +185,20 @@ class ChartManager {
             noteCount: this.notes.length,
             duration: this.notes.length > 0 ? this.notes[this.notes.length - 1].time : 0
         };
+    }
+
+    /**
+     * Time at which the game ends: shortly after the last note, or when the music ends
+     * @param {number} [audioDuration] - Music length in seconds (ignored if not finite)
+     * @returns {number} Seconds
+     */
+    getEndTime(audioDuration) {
+        if (this.notes.length === 0) return 0;
+        const chartEnd = this.notes[this.notes.length - 1].time + this.offset + 2; // same grace as isComplete()
+        if (Number.isFinite(audioDuration) && audioDuration > 0) {
+            return Math.min(chartEnd, audioDuration);
+        }
+        return chartEnd;
     }
 
     /**

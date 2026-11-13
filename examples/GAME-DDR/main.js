@@ -9,6 +9,7 @@ let audioManager;
 let chartManager;
 let playerManager;
 let gameRenderer;
+let soundEffects;
 let animationFrameId;
 
 // ORPHE CORE devices (initialized in inline script in index.html)
@@ -33,6 +34,25 @@ let settings = {
     selectedChart: 'sample'
 };
 
+// Default judge window per difficulty (ms). Measured play with ORPHE: on Easy, ±150ms
+// turned about 5 more notes of 56 into hits than ±100ms. The slider still overrides it.
+const CHART_JUDGE_WINDOW_MS = { sample: 150, medium: 120, hard: 100 };
+
+/**
+ * Apply the difficulty's default judge window and show it on the slider
+ * @param {string} chart - chart id
+ */
+function applyChartJudgeWindow(chart) {
+    const ms = CHART_JUDGE_WINDOW_MS[chart];
+    if (!ms) return;
+    settings.judgeWindow = ms;
+    playerManager.setJudgeWindow(ms);
+    const slider = document.getElementById('judgeWindow');
+    if (slider) slider.value = ms;
+    const label = document.getElementById('judgeWindowValue');
+    if (label) label.textContent = ms + 'ms';
+}
+
 /**
  * Initialize the game
  */
@@ -51,6 +71,8 @@ async function init() {
         chartManager = new ChartManager();
         playerManager = new PlayerManager();
         gameRenderer = new GameRenderer('gameCanvas');
+        // Sound effects are optional: the game still runs without them
+        soundEffects = (typeof SoundEffects !== 'undefined') ? new SoundEffects() : null;
         
         // Make gameRenderer globally accessible for ORPHE input handler
         window.gameRenderer = gameRenderer;
@@ -87,6 +109,7 @@ async function init() {
     // Load default chart
     try {
         await chartManager.loadChart(settings.selectedChart);
+        applyChartJudgeWindow(settings.selectedChart);
         console.log('✅ Chart loaded successfully');
     } catch (error) {
         console.error('❌ Failed to load chart:', error);
@@ -99,11 +122,7 @@ async function init() {
     
     // Draw initial canvas state
     try {
-        gameRenderer.clear();
-        gameRenderer.drawBackground();
-        gameRenderer.drawLanes();
-        gameRenderer.drawHitLine();
-        gameRenderer.drawLaneIndicators();
+        gameRenderer.render([], 0);
         console.log('✅ Initial canvas rendered');
     } catch (error) {
         console.error('❌ Failed to render initial canvas:', error);
@@ -143,7 +162,7 @@ function setupOrpheCORE() {
                 orpheData.gaits[i] = gait;
 
                 if (gait.direction !== undefined) {
-                    handleOrpheInput(gait.direction, this.device_information);
+                    handleOrpheInput(gait.direction, i);
                 }
             };
         }
@@ -183,9 +202,10 @@ function directionToLane(direction, lr) {
 /**
  * Handle ORPHE CORE step input
  * @param {number} direction - ORPHE gait.direction (0-4)
- * @param {Object} deviceInformation - Orphe#device_information (uses .lr)
+ * @param {number} deviceIndex - Index into bles of the device that reported the step
  */
-function handleOrpheInput(direction, deviceInformation) {
+function handleOrpheInput(direction, deviceIndex) {
+    const deviceInformation = bles[deviceIndex] && bles[deviceIndex].device_information;
     let lr = deviceInformation && deviceInformation.lr;
     if (typeof lr !== 'number') {
         // LR が取れない場合は左足として扱う（左右の横ステップが逆になる可能性がある）
@@ -199,45 +219,35 @@ function handleOrpheInput(direction, deviceInformation) {
     const lane = directionToLane(direction, lr);
 
     if (lane !== null) {
-        console.log(`👟 ORPHE step detected: direction=${direction} (lr=${lr}) → lane=${lane}`);
-        
-        // Trigger visual feedback (lane indicator flash)
-        if (window.gameRenderer && typeof window.gameRenderer.triggerLanePress === 'function') {
-            console.log(`✨ Triggering lane press visual feedback for lane ${lane}`);
-            window.gameRenderer.triggerLanePress(lane);
-        } else {
-            console.warn('⚠️ gameRenderer.triggerLanePress not available');
-        }
-        
-        handleGameInput(lane);
+        console.log(`👟 ORPHE step detected: device=${deviceIndex} direction=${direction} (lr=${lr}) → lane=${lane}`);
+
+        // Visual feedback is drawn in handleGameInput, after the step is judged
+        handleGameInput(lane, 'orphe');
     }
 }
 
 /**
  * Handle game input from any source
  * @param {number} lane - Lane number (0-3)
+ * @param {string} source - 'keyboard' or 'orphe'
  */
-function handleGameInput(lane) {
+function handleGameInput(lane, source = 'keyboard') {
     if (gameState !== 'playing') return;
-    
-    const currentTime = audioManager.getCurrentTime();
-    const hitResult = chartManager.checkHit(currentTime, lane, settings.judgeWindow / 1000);
-    
-    if (hitResult) {
-        console.log(`✨ Hit! Lane ${lane}, Accuracy: ${hitResult.accuracy}`);
-    } else {
-        console.log(`❌ Miss! Lane ${lane}`);
+
+    const hitResult = chartManager.checkHit(audioManager.getCurrentTime(), lane, settings.judgeWindow / 1000);
+
+    if (!hitResult) {
+        // No note nearby: not a MISS (the step that brings the foot back is reported as a
+        // step too), just show the input faintly. Notes that pass unhit count as MISS.
+        console.log(`💨 No note near lane ${lane} (${source}), input ignored`);
+        gameRenderer.flashLane(lane, { strong: false });
+        return;
     }
-    
+
     const result = playerManager.processHit(hitResult);
-    
-    // Brief pause after judgment to prevent multiple inputs
-    if (result.judgment !== 'miss') {
-        orpheData.resultFlag = true;
-        setTimeout(() => {
-            orpheData.resultFlag = false;
-        }, 200);
-    }
+    console.log(`✨ Hit! Lane ${lane}, Judgment: ${result.judgment}`);
+    gameRenderer.flashLane(lane, { strong: true, color: JUDGMENT_COLORS[result.judgment] });
+    if (soundEffects) soundEffects.play(result.judgment);
 }
 
 /**
@@ -288,6 +298,7 @@ function setupUI() {
         chartSelect.addEventListener('change', (e) => {
             settings.selectedChart = e.target.value;
             console.log('📊 Chart changed to:', e.target.value);
+            applyChartJudgeWindow(settings.selectedChart);
             chartManager.loadChart(settings.selectedChart);
         });
         console.log('  ✅ Chart selector listener attached');
@@ -347,11 +358,17 @@ async function startGame() {
         console.warn('⚠️ Cannot start game from state:', gameState);
         return;
     }
-    
+
+    // Must run inside the click handler (before any await) so the browser allows audio
+    if (soundEffects) soundEffects.unlock();
+
     // Reset game state
     try {
         playerManager.reset();
         chartManager.reset();
+        gameRenderer.resetLanePress();
+        gameRenderer.clearText();
+        gameRenderer.setProgress(1);
         console.log('✅ Game state reset');
     } catch (error) {
         console.error('❌ Failed to reset game state:', error);
@@ -359,6 +376,17 @@ async function startGame() {
         return;
     }
     
+    // Block a second start (e.g. double-click) while loading and counting down
+    updateGameState('starting');
+
+    // Update UI
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('quitBtn').style.display = 'inline-block';
+    document.getElementById('restartBtn').style.display = 'none';
+
+    // The game loop is not running yet, so draw the field and countdown ourselves
+    const stopIdleRender = startIdleRender();
+
     // Load audio file
     let audioLoaded = false;
     try {
@@ -374,20 +402,27 @@ async function startGame() {
         // Continue without audio - visual gameplay still works
     }
     
-    // Update UI
-    document.getElementById('startBtn').style.display = 'none';
-    document.getElementById('quitBtn').style.display = 'inline-block';
-    document.getElementById('restartBtn').style.display = 'none';
-    
     // Countdown before start
     try {
         await countdown(3);
     } catch (error) {
         console.error('❌ Countdown failed:', error);
+        stopIdleRender();
+        updateGameState('ready');
+        document.getElementById('startBtn').style.display = 'inline-block';
+        document.getElementById('quitBtn').style.display = 'none';
         showErrorMessage('カウントダウンに失敗しました');
         return;
     }
     
+    stopIdleRender();
+
+    // The player may have quit during the countdown
+    if (gameState !== 'starting') {
+        console.log('⏹️ Start cancelled during countdown');
+        return;
+    }
+
     // Start audio and game
     if (audioLoaded) {
         try {
@@ -407,18 +442,36 @@ async function startGame() {
 }
 
 /**
+ * Render the empty field every frame until the game loop takes over
+ * (the game loop is not running while loading and counting down).
+ * @returns {Function} Call to stop rendering
+ */
+function startIdleRender() {
+    let frameId = null;
+    const tick = () => {
+        if (gameState !== 'starting') return;
+        gameRenderer.render([], 0);
+        frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+}
+
+/**
  * Countdown before game starts
  * @param {number} seconds
  */
 function countdown(seconds) {
     return new Promise((resolve) => {
-        let count = seconds;
+        // Show the first number right away instead of after one second
+        gameRenderer.showMessage(seconds.toString());
+        let count = seconds - 1;
         const interval = setInterval(() => {
             if (count > 0) {
-                gameRenderer.showJudgment(count.toString(), '#FFFFFF');
+                gameRenderer.showMessage(count.toString());
                 count--;
             } else {
-                gameRenderer.showJudgment('START!', '#00FF00');
+                gameRenderer.showMessage('START!', 600);
                 clearInterval(interval);
                 setTimeout(resolve, 500);
             }
@@ -438,8 +491,19 @@ function gameLoop() {
     try {
         const currentTime = audioManager.getCurrentTime();
         
+        // A note stays hittable (and visible past the step zone) until its window has passed
+        const lateWindow = settings.judgeWindow / 1000;
+
+        // Notes whose hit window has passed without a hit count as misses
+        chartManager.collectMissedNotes(currentTime, lateWindow)
+            .forEach(() => playerManager.processHit(null));
+
+        // Remaining-time bar
+        const endTime = chartManager.getEndTime(audioManager.getDuration());
+        gameRenderer.setProgress(endTime > 0 ? 1 - currentTime / endTime : null);
+
         // Get visible notes
-        const visibleNotes = chartManager.getVisibleNotes(currentTime, 3);
+        const visibleNotes = chartManager.getVisibleNotes(currentTime, 3, lateWindow);
         
         // Render game
         gameRenderer.render(visibleNotes, currentTime);
@@ -469,13 +533,14 @@ function endGame() {
     
     updateGameState('gameOver');
     audioManager.stop();
+    gameRenderer.resetLanePress();
     
     // Get final results
     const results = playerManager.getResults();
-    
+
     // Show results
     gameRenderer.renderGameOver(results);
-    
+
     // Show restart button
     document.getElementById('quitBtn').style.display = 'none';
     document.getElementById('restartBtn').style.display = 'inline-block';
@@ -485,7 +550,7 @@ function endGame() {
     console.log(`  🏆 Rank: ${results.rank}`);
     console.log(`  💯 Score: ${results.score.toLocaleString()}`);
     console.log(`  🔥 Max Combo: ${results.maxCombo}`);
-    console.log(`  ✨ Perfect: ${results.perfect} | Good: ${results.good} | OK: ${results.ok} | Miss: ${results.miss}`);
+    console.log(`  ✨ Perfect: ${results.perfect} | Great: ${results.great} | Good: ${results.good} | Miss: ${results.miss}`);
     console.log(`  📊 Accuracy: ${results.accuracy}%`);
 }
 
@@ -502,21 +567,11 @@ function restartGame() {
     
     // Reset ORPHE tracking
     orpheData.resultFlag = false;
+    gameRenderer.resetLanePress();
     
-    // Show start button
-    document.getElementById('startBtn').style.display = 'inline-block';
-    document.getElementById('quitBtn').style.display = 'none';
-    document.getElementById('restartBtn').style.display = 'none';
-    
-    // Reset to ready state
+    // Reset to ready state, then start again right away
     updateGameState('ready');
-    
-    // Clear canvas
-    gameRenderer.clear();
-    gameRenderer.drawBackground();
-    gameRenderer.drawLanes();
-    gameRenderer.drawHitLine();
-    gameRenderer.drawLaneIndicators();
+    return startGame();
 }
 
 /**
@@ -526,6 +581,12 @@ function restartGame() {
 function updateGameState(newState) {
     console.log(`Game state: ${gameState} → ${newState}`);
     gameState = newState;
+
+    // The chart can only be changed between games
+    const chartSelect = document.getElementById('chartSelect');
+    if (chartSelect) {
+        chartSelect.disabled = (newState === 'starting' || newState === 'playing');
+    }
 }
 
 /**

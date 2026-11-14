@@ -1,6 +1,6 @@
-# 🎵 ORPHE DDR GAME
+# 🎵 ORPHE STEP BEAT
 
-A DDR (Dance Dance Revolution) style rhythm game that can be played with both keyboard and ORPHE CORE motion sensors.
+A four-lane arrow-step rhythm game that can be played with both keyboard and ORPHE CORE motion sensors.
 
 ![Game Preview](../GAME-PINGPONG/rogo.png)
 
@@ -343,7 +343,6 @@ For issues related to:
 - [ORPHE-CORE.js Documentation](../../README.md)
 - [Web Audio API Guide](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
 - [Canvas API Reference](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
-- [DDR Game Design Principles](https://en.wikipedia.org/wiki/Dance_Dance_Revolution)
 
 ---
 

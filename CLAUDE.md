@@ -270,7 +270,7 @@ const DIRECTION_MAP = {
 
 // inside / outside の左右はデバイスの LR 設定（device_information.lr の bit0: 0 = 左, 1 = 右）で入れ替わる
 // LR = 左: 右へ動かす = 3, 左へ動かす = 4 / LR = 右: その逆
-// DDR 風のレーン割り当て例: docs/ai/SENSOR_RECIPES.md Recipe 4
+// 4 レーン（← ↓ ↑ →）のリズムゲームでのレーン割り当て例: docs/ai/SENSOR_RECIPES.md Recipe 4
 ```
 
 ### Sensor Ranges

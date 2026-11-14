@@ -9,7 +9,7 @@ window.debugHelper = {
      */
     checkAll: function() {
         console.log('═══════════════════════════════════════');
-        console.log('🔍 ORPHE DDR Game - System Diagnostics');
+        console.log('🔍 ORPHE STEP BEAT - System Diagnostics');
         console.log('═══════════════════════════════════════');
         
         // 1. ゲームの基本状態

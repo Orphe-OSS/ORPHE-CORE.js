@@ -1,4 +1,4 @@
-# 🎮 ORPHE DDR GAME - Quick Reference Guide
+# 🎮 ORPHE STEP BEAT - Quick Reference Guide
 
 ## 🚀 Quick Start (5 Steps)
 

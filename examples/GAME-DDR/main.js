@@ -57,7 +57,7 @@ function applyChartJudgeWindow(chart) {
  * Initialize the game
  */
 async function init() {
-    console.log('🎮 Initializing ORPHE DDR Game...');
+    console.log('🎮 Initializing ORPHE STEP BEAT...');
     console.log('📊 System Check:');
     console.log('  - ORPHE-CORE.js loaded:', typeof Orphe !== 'undefined');
     console.log('  - AudioManager loaded:', typeof AudioManager !== 'undefined');

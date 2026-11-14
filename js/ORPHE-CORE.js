@@ -627,7 +627,8 @@ class Orphe {
         if (typeof BleSharedBridge !== 'undefined' && options.useSharedBridge !== false && result) {
           this._bridge = new BleSharedBridge(this.id);
           this._isBridgeSecondary = false;
-          this._bridge.claimPrimary();
+          // device_information（lr など）も Secondary タブへ共有する
+          this._bridge.claimPrimary({ getDeviceInformation: () => this.device_information });
 
           // Primary の BLE が予期せず切断された場合、他タブへ通知する
           if (this.bluetoothDevice && !this._bridgeBleDisconnectHooked) {
@@ -1328,6 +1329,9 @@ class Orphe {
       callbacks[name] = (d) => this[name](d);
     }
     callbacks.onPrimaryLost = () => this._handlePrimaryLost(str_type);
+    // Secondary は BLE を持たないので、device_information は Primary から受け取る
+    // （gait.direction の 3/4 を左右に変換するには device_information.lr が必要）
+    callbacks.onDeviceInformation = (info) => { this.device_information = info; };
 
     bridge.subscribeAsSecondary(callbacks);
     this.onConnect('BRIDGE_SECONDARY');

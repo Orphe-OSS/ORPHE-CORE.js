@@ -77,7 +77,7 @@ A fully functional DDR-style rhythm game that supports both keyboard and ORPHE C
 
 ### ORPHE CORE Integration
 - ✅ Device connection UI (CoreToolkit)
-- ✅ Gait direction mapping (0,2,4,6)
+- ✅ Gait direction mapping (1: forward, 2: backward, 3: inside, 4: outside; foot-aware)
 - ✅ Connection status tracking
 - ✅ Automatic input enabling
 - ✅ Multi-device support
@@ -231,12 +231,9 @@ A fully functional DDR-style rhythm game that supports both keyboard and ORPHE C
 ### ORPHE Integration Pattern
 ```javascript
 // Setup device callbacks
-ble.gotGait = function(_gait) {
-    const direction = _gait.direction;
-    if (direction !== orpheData.lastDirection[id]) {
-        orpheData.lastDirection[id] = direction;
-        handleOrpheInput(direction);
-    }
+ble.gotGait = function(gait) {
+    // fires once per new step; direction is relative to the foot
+    handleOrpheInput(gait.direction, id);
 };
 ```
 

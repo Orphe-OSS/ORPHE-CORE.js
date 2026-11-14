@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SUPER PINGPONG — 湯けむりピンポン（ORPHE CORE リハビリ卓球）</title>
+  <meta name="description" content="ORPHE CORE を足の甲や太ももに着けて、足首の曲げ伸ばし・太もも上げでラケットを動かす温泉卓球ゲーム。試合後に動きの分析レポートが出ます。">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Yuji+Syuku&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- three.js and its post-processing add-ons are resolved through this import map (pinned version). -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+<script src="../../js/site-analytics.js"></script>
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl" aria-label="温泉卓球のゲーム画面"></canvas>
+
+  <!-- ===== in-match HUD ===== -->
+  <div id="hud" class="layer" hidden>
+    <div class="bottom-stack">
+    <div class="scorebar" id="scorebar">
+      <div class="score-side" data-side="0"><span class="score-name" id="score-name-0">あか</span><span class="score-pips" id="score-pips-0"></span></div>
+      <div class="score-digits"><b id="score-0">0</b><i>-</i><b id="score-1">0</b></div>
+      <div class="score-side" data-side="1"><span class="score-pips" id="score-pips-1"></span><span class="score-name" id="score-name-1">あお</span></div>
+    </div>
+    <div class="coopbar" id="coopbar" hidden>
+      <div class="coop-head"><span>ふたりのラリー</span><b id="coop-count">0</b><span>/ <span id="coop-goal">30</span> 回</span></div>
+      <div class="coop-track"><div class="coop-fill" id="coop-fill"></div></div>
+      <div class="coop-lives" id="coop-lives" aria-label="のこりミス"></div>
+    </div>
+    <div class="rally" id="rally"><span>ラリー</span><b id="rally-count">0</b></div>
+    <div class="effect-chip" id="slow-chip" hidden><span class="chip-icon">🍡</span>ゆっくり球</div>
+    </div>
+
+    <div class="player-panel" data-side="0" id="panel-0">
+      <div class="panel-head"><span class="panel-dot"></span><b class="panel-name" id="panel-name-0">あか</b><span class="panel-src" id="panel-src-0"></span></div>
+      <div class="panel-body">
+        <div class="tilt-gauge"><div class="tilt-zero"></div><div class="tilt-knob" id="tilt-knob-0"></div></div>
+        <div class="panel-stats">
+          <div class="stat-tilt"><span id="tilt-label-0">つま先</span><b id="tilt-deg-0">0°</b></div>
+          <div class="stat-reps"><span>上げ下げ</span><b id="reps-0">0</b><i>回</i></div>
+        </div>
+      </div>
+      <div class="panel-effects" id="effects-0"></div>
+    </div>
+    <div class="player-panel" data-side="1" id="panel-1">
+      <div class="panel-head"><span class="panel-dot"></span><b class="panel-name" id="panel-name-1">あお</b><span class="panel-src" id="panel-src-1"></span></div>
+      <div class="panel-body">
+        <div class="tilt-gauge"><div class="tilt-zero"></div><div class="tilt-knob" id="tilt-knob-1"></div></div>
+        <div class="panel-stats">
+          <div class="stat-tilt"><span id="tilt-label-1">つま先</span><b id="tilt-deg-1">0°</b></div>
+          <div class="stat-reps"><span>上げ下げ</span><b id="reps-1">0</b><i>回</i></div>
+        </div>
+      </div>
+      <div class="panel-effects" id="effects-1"></div>
+    </div>
+
+    <div class="banner" id="banner" hidden></div>
+    <div class="countdown" id="countdown" hidden></div>
+    <div class="popups" id="popups"></div>
+    <div class="hint" id="hint" hidden></div>
+  </div>
+
+  <!-- ===== lobby ===== -->
+  <section id="lobby" class="layer screen" hidden>
+    <div class="lobby-col">
+      <div class="title-block">
+        <p class="eyebrow">SUPER PINGPONG　ORPHE CORE リハビリ卓球</p>
+        <h1 class="title"><span class="title-small">湯けむり</span><span class="title-big">ピンポン</span><span class="title-seal" aria-hidden="true">♨</span></h1>
+        <p class="tagline">足首や太ももを動かして、だるまさんと温泉卓球。<br>あそんだあとは、動きの「げんき度」がわかります。</p>
+      </div>
+
+      <div class="mode-cards" role="radiogroup" aria-label="あそびかた">
+        <button class="mode-card" role="radio" data-mode="vs" aria-checked="false">
+          <span class="mode-icon" aria-hidden="true">🏓</span><b>ふたりで対戦</b><small>先に点をとった方の勝ち</small>
+        </button>
+        <button class="mode-card" role="radio" data-mode="coop" aria-checked="false">
+          <span class="mode-icon" aria-hidden="true">🤝</span><b>ふたりで協力</b><small>みんなでラリーをつなぐ</small>
+        </button>
+        <button class="mode-card" role="radio" data-mode="solo" aria-checked="false">
+          <span class="mode-icon" aria-hidden="true">🍵</span><b>ひとりで練習</b><small>番頭さんたちと対戦</small>
+        </button>
+      </div>
+
+      <div class="setup">
+        <div class="setup-row" data-side="0" id="setup-0">
+          <span class="setup-name"><span class="panel-dot"></span>あか</span>
+          <button class="char-btn" data-char-side="0" aria-label="あかのキャラクターをえらぶ"><img alt="" width="44" height="44"><span></span></button>
+          <div class="seg" role="radiogroup" aria-label="あかの運動">
+            <button role="radio" data-exercise="ankle" aria-checked="true">足首</button>
+            <button role="radio" data-exercise="thigh" aria-checked="false">太もも</button>
+          </div>
+          <span class="setup-src" id="setup-src-0">キーボード W / S</span>
+        </div>
+        <div class="setup-row" data-side="1" id="setup-1">
+          <span class="setup-name"><span class="panel-dot"></span>あお</span>
+          <button class="char-btn" data-char-side="1" aria-label="あおのキャラクターをえらぶ"><img alt="" width="44" height="44"><span></span></button>
+          <div class="seg" role="radiogroup" aria-label="あおの運動">
+            <button role="radio" data-exercise="ankle" aria-checked="true">足首</button>
+            <button role="radio" data-exercise="thigh" aria-checked="false">太もも</button>
+          </div>
+          <span class="setup-src" id="setup-src-1">キーボード ↑ / ↓</span>
+        </div>
+        <div class="setup-row setup-options">
+          <label class="opt"><span id="points-label">点数</span>
+            <div class="seg" id="points-seg" role="radiogroup" aria-label="点数">
+              <button role="radio" data-points="3">3</button><button role="radio" data-points="5">5</button><button role="radio" data-points="7">7</button><button role="radio" data-points="11">11</button>
+            </div>
+          </label>
+          <label class="opt"><span>球の速さ</span>
+            <div class="seg" id="speed-seg" role="radiogroup" aria-label="球の速さ">
+              <button role="radio" data-speed="2">ゆっくり</button><button role="radio" data-speed="4">ふつう</button><button role="radio" data-speed="6">はやい</button>
+            </div>
+          </label>
+          <label class="opt" id="cpu-opt"><span>相手の強さ</span>
+            <div class="seg" id="cpu-seg" role="radiogroup" aria-label="相手の強さ">
+              <button role="radio" data-cpu="0">やさしい</button><button role="radio" data-cpu="1">ふつう</button><button role="radio" data-cpu="2">つよい</button>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="lobby-actions">
+        <button class="btn-main" id="btn-start"><span aria-hidden="true">♨</span> はじめる</button>
+        <button class="btn-sub" id="btn-lobby-settings"><i class="bi bi-sliders"></i> くわしい設定</button>
+        <button class="btn-sub" id="btn-lobby-help"><i class="bi bi-question-circle"></i> あそびかた</button>
+      </div>
+      <p class="lobby-note" id="lobby-note">上の <b>01</b> / <b>02</b> のスイッチで ORPHE CORE を接続。キーボードでも体験できます。</p>
+    </div>
+  </section>
+
+  <!-- ===== range-of-motion calibration ===== -->
+  <section id="calib" class="layer screen" hidden>
+    <div class="calib-wrap">
+      <header class="calib-head">
+        <h2>じゅんび運動</h2>
+        <p>動かせる範囲をはかって、ラケットの動きを合わせます。痛みのない範囲で、ゆっくり動かしてください。</p>
+      </header>
+      <div class="calib-panels" id="calib-panels">
+        <article class="calib-panel" data-side="0" id="calib-0">
+          <div class="calib-top"><span class="panel-dot"></span><b class="calib-name">あか</b><span class="calib-ex" id="calib-ex-0">足首</span></div>
+          <div class="calib-main">
+            <div class="calib-figure" id="calib-figure-0"></div>
+            <div class="calib-ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring-bg" cx="60" cy="60" r="52"/><circle class="ring-fg" id="calib-ring-0" cx="60" cy="60" r="52"/></svg>
+              <div class="ring-text"><small id="calib-step-0">1 / 3</small><b id="calib-deg-0">0°</b></div>
+            </div>
+          </div>
+          <p class="calib-say" id="calib-say-0">らくな姿勢で、じっとして</p>
+          <ol class="calib-steps" id="calib-steps-0"><li>じっとする</li><li>上げる</li><li>下げる</li></ol>
+          <p class="calib-result" id="calib-result-0" hidden></p>
+        </article>
+        <article class="calib-panel" data-side="1" id="calib-1">
+          <div class="calib-top"><span class="panel-dot"></span><b class="calib-name">あお</b><span class="calib-ex" id="calib-ex-1">足首</span></div>
+          <div class="calib-main">
+            <div class="calib-figure" id="calib-figure-1"></div>
+            <div class="calib-ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring-bg" cx="60" cy="60" r="52"/><circle class="ring-fg" id="calib-ring-1" cx="60" cy="60" r="52"/></svg>
+              <div class="ring-text"><small id="calib-step-1">1 / 3</small><b id="calib-deg-1">0°</b></div>
+            </div>
+          </div>
+          <p class="calib-say" id="calib-say-1">らくな姿勢で、じっとして</p>
+          <ol class="calib-steps" id="calib-steps-1"><li>じっとする</li><li>上げる</li><li>下げる</li></ol>
+          <p class="calib-result" id="calib-result-1" hidden></p>
+        </article>
+      </div>
+      <footer class="calib-actions">
+        <button class="btn-sub" id="btn-calib-back"><i class="bi bi-arrow-left"></i> もどる</button>
+        <button class="btn-sub" id="btn-calib-retry"><i class="bi bi-arrow-repeat"></i> はかり直す</button>
+        <button class="btn-sub" id="btn-calib-skip">はからずに始める</button>
+        <button class="btn-main" id="btn-calib-go" disabled>試合開始</button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ===== result: celebration banner, then the report sheet ===== -->
+  <section id="result" class="layer screen" hidden>
+    <div class="win-banner" id="win-banner" hidden><small id="win-sub"></small><b id="win-title"></b></div>
+    <div class="sheet" id="sheet" hidden>
+      <header class="sheet-head">
+        <div class="sheet-title"><span class="title-seal" aria-hidden="true">♨</span><div><h2 id="sheet-title">試合結果</h2><p id="sheet-meta"></p></div></div>
+        <div class="sheet-score" id="sheet-score"></div>
+      </header>
+      <div class="sheet-players" id="sheet-players"></div>
+      <footer class="sheet-foot">
+        <p class="disclaimer">このレポートは運動のめやすを楽しく知るためのものです。医療機器ではなく、診断には使えません。痛みがあるときは無理をせず、専門家に相談してください。</p>
+        <div class="sheet-actions">
+          <button class="btn-main" id="btn-again"><i class="bi bi-arrow-repeat"></i> もう一度</button>
+          <button class="btn-sub" id="btn-title"><i class="bi bi-house"></i> タイトルへ</button>
+          <button class="btn-sub" id="btn-csv"><i class="bi bi-download"></i> 記録を保存 (CSV)</button>
+          <button class="btn-sub" id="btn-print"><i class="bi bi-printer"></i> 印刷</button>
+        </div>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ===== top bar: brand, ORPHE CORE connection (CoreToolkit), actions =====
+       Keep this bar and its ancestors free of z-index / transform / filter: CoreToolkit puts
+       its Bootstrap settings modal inside the placeholders, and a stacking context here
+       would trap the modal under Bootstrap's backdrop. -->
+  <header class="topbar" id="topbar">
+    <div class="brand"><img id="rogo" src="rogo.png" alt="ORPHE" height="18"><span>湯けむりピンポン</span></div>
+    <div class="core-dock">
+      <div class="core-chip" data-side="0"><span class="panel-dot"></span><span class="chip-name">あか</span>
+        <div id="toolkit_placeholder1"></div><span class="chip-state" id="core-state-0">未接続</span></div>
+      <div class="core-chip" data-side="1"><span class="panel-dot"></span><span class="chip-name">あお</span>
+        <div id="toolkit_placeholder2"></div><span class="chip-state" id="core-state-1">未接続</span></div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btn-help" title="あそびかた" aria-label="あそびかた"><i class="bi bi-question-lg"></i></button>
+      <button class="icon-btn" id="btn-sound" title="音のオン・オフ" aria-label="音のオン・オフ"><i class="bi bi-volume-up-fill"></i></button>
+      <button class="icon-btn" id="btn-settings" title="設定（一時停止）" aria-label="設定"><i class="bi bi-gear-fill"></i></button>
+      <button class="icon-btn" id="btn-fullscreen" title="全画面" aria-label="全画面"><i class="bi bi-arrows-fullscreen"></i></button>
+    </div>
+  </header>
+  <div id="ble-support-message" class="ble-note" style="display:none;">
+    このブラウザでは Web Bluetooth が使えません。ORPHE CORE をつなぐには Chrome でこのページを開いてください。（キーボードでの体験はできます）
+  </div>
+
+  <!-- ===== settings drawer ===== -->
+  <aside id="settings" class="drawer" hidden aria-label="設定">
+    <header class="drawer-head">
+      <h2><i class="bi bi-sliders"></i> 設定</h2>
+      <button class="icon-btn dark" id="btn-settings-close" aria-label="とじる"><i class="bi bi-x-lg"></i></button>
+    </header>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="p0" aria-selected="true"><span class="panel-dot" data-side="0"></span>あか</button>
+      <button role="tab" data-tab="p1" aria-selected="false"><span class="panel-dot" data-side="1"></span>あお</button>
+      <button role="tab" data-tab="game" aria-selected="false">ゲーム</button>
+      <button role="tab" data-tab="av" aria-selected="false">音・表示</button>
+    </nav>
+    <div class="drawer-body">
+      <!-- player tabs are filled from this template by ui.js -->
+      <template id="player-tab-template">
+        <div class="tab-pane" hidden>
+          <div class="livebox">
+            <div class="live-row"><span>いまの角度</span><b data-el="deg">0°</b><span class="live-src" data-el="src"></span></div>
+            <div class="live-bar"><div class="live-range" data-el="range"></div><div class="live-zero"></div><div class="live-dot" data-el="dot"></div></div>
+            <div class="live-row small"><span>ラケットの位置</span></div>
+            <div class="live-bar paddle"><div class="live-dot" data-el="paddle"></div><span class="end-l">手前</span><span class="end-r">奥</span></div>
+          </div>
+          <div class="field"><label>キャラクター</label>
+            <button class="char-btn light" data-action="character"><img alt="" width="44" height="44"><span></span><i class="bi bi-chevron-right"></i></button></div>
+          <div class="field"><label>運動のしかた</label>
+            <div class="seg" role="radiogroup"><button role="radio" data-exercise="ankle">足首（足の甲）</button><button role="radio" data-exercise="thigh">太もも上げ（太もも）</button></div></div>
+          <div class="field"><label>感度 <output data-out="gain"></output></label>
+            <input type="range" min="0.5" max="2.5" step="0.05" data-key="gain">
+            <div class="range-ends"><span>大きく動かす</span><span>小さな動きでOK</span></div></div>
+          <div class="field"><label>なめらか補正 <output data-out="smooth"></output></label>
+            <input type="range" min="0" max="1" step="0.05" data-key="smooth">
+            <div class="range-ends"><span>すばやく反応</span><span>ゆれをおさえる</span></div></div>
+          <div class="field"><label>ラケットの大きさ <output data-out="paddle"></output></label>
+            <input type="range" min="1" max="5" step="1" data-key="paddle"></div>
+          <div class="field"><label>おたすけ</label>
+            <div class="seg" role="radiogroup"><button role="radio" data-assist="0">なし</button><button role="radio" data-assist="1">すこし</button><button role="radio" data-assist="2">しっかり</button></div>
+            <p class="field-note">球が近づくと、ラケットが球の方へ寄ります。分析は自分の動きだけで計算します。</p></div>
+          <div class="field inline"><label>上下を反対にする</label><button class="switch" role="switch" aria-checked="false" data-key="invert"></button></div>
+          <div class="field buttons">
+            <button class="btn-sub small" data-action="zero"><i class="bi bi-bullseye"></i> いまの姿勢をまん中にする</button>
+            <button class="btn-sub small" data-action="recalib"><i class="bi bi-rulers"></i> 可動域をはかり直す</button>
+            <button class="btn-sub small" data-action="clear"><i class="bi bi-eraser"></i> 調整を消す</button>
+          </div>
+        </div>
+      </template>
+      <div id="tab-p0"></div>
+      <div id="tab-p1"></div>
+      <div class="tab-pane" id="tab-game" hidden>
+        <div class="field"><label>点数（協力では 目標ラリー = 点数 × 6）</label>
+          <div class="seg" role="radiogroup" id="set-points"><button role="radio" data-points="3">3</button><button role="radio" data-points="5">5</button><button role="radio" data-points="7">7</button><button role="radio" data-points="11">11</button></div></div>
+        <div class="field"><label>球の速さ <output id="out-ballSpeed"></output></label>
+          <input type="range" min="1" max="10" step="1" id="set-ballSpeed"><div class="range-ends"><span>ゆっくり</span><span>はやい</span></div></div>
+        <div class="field"><label>球の大きさ <output id="out-ballSize"></output></label>
+          <input type="range" min="1" max="5" step="1" id="set-ballSize"></div>
+        <div class="field"><label>相手（ひとりで練習）の強さ</label>
+          <div class="seg" role="radiogroup" id="set-cpu"><button role="radio" data-cpu="0">やさしい</button><button role="radio" data-cpu="1">ふつう</button><button role="radio" data-cpu="2">つよい</button></div></div>
+        <div class="field"><label>ラリーが続くと球が速くなるペース</label>
+          <div class="seg" role="radiogroup" id="set-pace"><button role="radio" data-pace="0">なし</button><button role="radio" data-pace="1">ゆっくり</button><button role="radio" data-pace="2">ふつう</button><button role="radio" data-pace="3">はやい</button><button role="radio" data-pace="4">超はやい</button></div>
+          <p class="field-note">返すたびに速くなり、上限で止まります（ふつう: 最大 2.1 倍）。試合中も変えられます。</p></div>
+        <div class="field inline"><label>おたのしみアイテム（みかん・だんご・竹がき）</label><button class="switch" role="switch" id="set-items" aria-checked="true"></button></div>
+        <div class="field inline"><label>球のとどく場所を光で知らせる</label><button class="switch" role="switch" id="set-guide" aria-checked="true"></button></div>
+      </div>
+      <div class="tab-pane" id="tab-av" hidden>
+        <div class="field"><label>音楽</label>
+          <div class="seg" role="radiogroup" id="set-bgm"><button role="radio" data-bgm="wafu">和風（自動演奏）</button><button role="radio" data-bgm="classic">オリジナル曲</button><button role="radio" data-bgm="off">なし</button></div></div>
+        <div class="field"><label>音楽の大きさ <output id="out-bgmVolume"></output></label><input type="range" min="0" max="1" step="0.05" id="set-bgmVolume"></div>
+        <div class="field"><label>効果音の大きさ <output id="out-sfxVolume"></output></label><input type="range" min="0" max="1" step="0.05" id="set-sfxVolume"></div>
+        <div class="field"><label>庭の季節</label>
+          <div class="seg" role="radiogroup" id="set-season"><button role="radio" data-season="auto">こよみ通り</button><button role="radio" data-season="spring">春</button><button role="radio" data-season="summer">夏</button><button role="radio" data-season="autumn">秋</button><button role="radio" data-season="winter">冬</button></div>
+          <p class="field-note">季節の変更は、ページを読み込み直すと反映されます。</p></div>
+        <div class="field inline"><label>生データを記録する（試合ごとに CSV を自動保存）</label><button class="switch" role="switch" id="set-record" aria-checked="false"></button></div>
+        <p class="field-note" style="margin-top:-10px">センサーの生の値と、ゲームが計算した角度・ラケット位置を 1 サンプル 1 行で保存します。あとで動きを確かめたいときに。</p>
+        <div class="field"><label>記録</label>
+          <div class="buttons"><button class="btn-sub small" id="btn-clear-history"><i class="bi bi-trash3"></i> これまでの記録を消す</button></div></div>
+      </div>
+    </div>
+    <footer class="drawer-foot">
+      <button class="btn-sub" id="btn-quit"><i class="bi bi-house"></i> タイトルへ</button>
+      <button class="btn-main" id="btn-resume">とじる</button>
+    </footer>
+  </aside>
+
+  <!-- ===== character select (cards are filled by ui.js with portraits rendered from the 3D models) ===== -->
+  <div id="charselect" class="modal-layer" hidden>
+    <div class="char-sheet" role="dialog" aria-labelledby="char-title">
+      <h2 id="char-title"><span class="panel-dot"></span><span id="char-title-text">あかのキャラクター</span></h2>
+      <div class="char-grid" id="char-grid" role="radiogroup" aria-label="キャラクター"></div>
+      <button class="btn-main" id="btn-char-close">きめた</button>
+    </div>
+  </div>
+
+  <!-- ===== how to play ===== -->
+  <div id="help" class="modal-layer" hidden>
+    <div class="help-card" role="dialog" aria-labelledby="help-title">
+      <h2 id="help-title">あそびかた</h2>
+      <ol class="help-steps">
+        <li><strong>つける</strong>ORPHE CORE を<em>足の甲</em>（足首の運動）か<em>太もも</em>（太もも上げ）にしっかり固定し、いすに深くすわります。</li>
+        <li><strong>つなぐ</strong>画面上の <b>01</b>（あか）・<b>02</b>（あお）のスイッチを入れて、CORE をえらびます。</li>
+        <li><strong>はじめる</strong>「はじめる」を押すとすぐ試合です。動かしているうちに、その人の動く範囲にラケットが合っていきます。</li>
+        <li><strong>うつ</strong>つま先（太もも）を<em>上げるとラケットが奥へ</em>、<em>下げると手前へ</em>。球に合わせて返しましょう。</li>
+      </ol>
+      <ul class="help-tips">
+        <li>🍊 みかん … ラケットが大きくなる　🍡 だんご … 球がゆっくりに　🎍 竹がき … 一度だけ守ってくれる</li>
+        <li>すばやく動かして当てると「スマッシュ」。ラリーが続くと球が速くなり、音楽もにぎやかになります。</li>
+        <li>キャラクターは 6 体。ロビーの顔のボタンからえらべます。</li>
+        <li>CORE がなくても、あか：<kbd>W</kbd> <kbd>S</kbd>、あお：<kbd>↑</kbd> <kbd>↓</kbd> で体験できます。</li>
+      </ul>
+      <button class="btn-main" id="btn-help-close">とじる</button>
+    </div>
+  </div>
+
+  <div class="toast-area" id="toasts" aria-live="polite"></div>
+  <div id="loading"><div class="loading-seal">♨</div><p>お湯をわかしています…</p></div>
+</div>
+
+  <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js" crossorigin="anonymous" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
+    integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
+    crossorigin="anonymous"></script>
+
+  <!-- ORPHE CORE connection: the same as in examples/GAME-PINGPONG (two COREs, SENSOR_VALUES,
+       CoreToolkit switches). Only what happens with the data differs: the samples are handed
+       to the game through pingpongBridge instead of driving a p5.js sketch directly. -->
+  <script>
+    var bles = [new Orphe(0), new Orphe(1)];
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES');
+    bles[1].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'SENSOR_VALUES');
+    guardCoreToolkitBluetooth({
+      coreIds: [0, 1],
+      messageElement: '#ble-support-message'
+    });
+
+    var devices = {
+      0: { quats: { w: 0, x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 } },
+      1: { quats: { w: 0, x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 } }
+    };
+
+    // main.js (a module, so it runs after this script) fills in these hooks.
+    var pingpongBridge = { onQuat: null, onReady: null, onDisconnect: null };
+
+    // パドル操作に必要な姿勢データを受信したプレイヤーIDを保持する。
+    const readyDeviceIds = new Set();
+
+    function markDeviceReady(deviceId) {
+      if (readyDeviceIds.has(deviceId)) return;
+      readyDeviceIds.add(deviceId);
+      if (pingpongBridge.onReady) pingpongBridge.onReady(deviceId);
+    }
+
+    function mystart(ble_device) {
+      ble_device.gotQuat = function (_quat) {
+        devices[this.id].quats = _quat;
+        if (pingpongBridge.onQuat) pingpongBridge.onQuat(this.id, _quat);
+      };
+      ble_device.gotEuler = function (_euler) {
+        devices[this.id].eulers = _euler;
+        markDeviceReady(this.id);
+      };
+    }
+
+    for (const ble of bles) {
+      mystart(ble);
+
+      ble.onDisconnect = function () {
+        readyDeviceIds.delete(this.id);
+        if (pingpongBridge.onDisconnect) pingpongBridge.onDisconnect(this.id);
+      };
+    }
+  </script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

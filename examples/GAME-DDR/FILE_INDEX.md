@@ -1,4 +1,4 @@
-# 📂 ORPHE DDR GAME - Complete File Index
+# 📂 ORPHE STEP BEAT - Complete File Index
 
 ## 🎮 Game Files (8 files)
 

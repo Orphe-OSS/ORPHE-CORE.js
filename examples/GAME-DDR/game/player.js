@@ -86,7 +86,7 @@ class PlayerManager {
         this[level.key]++;
         this.combo++;
 
-        // DDR-style combo multiplier
+        // Combo multiplier
         let comboMultiplier = 1.0;
         if (this.combo >= 50) {
             comboMultiplier = 2.0;

@@ -285,7 +285,7 @@ ble.gotStride = function(stride) {
 
 ### Recipe 4: Direction Detection
 
-**Use Case**: DDRスタイルゲーム、方向入力、ナビゲーション
+**Use Case**: 矢印ステップのリズムゲーム、方向入力、ナビゲーション
 
 ```javascript
 // === Direction Map ===

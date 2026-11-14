@@ -1,4 +1,4 @@
-# 🏗️ ORPHE DDR GAME - System Architecture
+# 🏗️ ORPHE STEP BEAT - System Architecture
 
 ## 📐 Complete System Diagram
 

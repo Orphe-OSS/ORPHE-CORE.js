@@ -504,6 +504,32 @@
       "public_navigation": "featured"
     },
     {
+      "id": "game-super-pingpong",
+      "title": "Super Ping Pong",
+      "path": "examples/GAME-SUPER-PINGPONG/",
+      "type": "web-app",
+      "status": "public",
+      "audience": ["game-player", "fitness"],
+      "value": "3D hot-spring ping pong played with ankle flexion or thigh raises: the control adapts to each player during play, six selectable characters, versus / co-op / solo modes and a post-match movement report with a radar chart.",
+      "topics": ["game", "two-player", "fitness", "calibration", "analysis", "3d"],
+      "data": ["quat", "euler"],
+      "devices": 2,
+      "validation": ["thumbnail-exists", "owner-real-device-check"],
+      "category": "playable-app",
+      "difficulty": "advanced",
+      "featured": true,
+      "thumbnail": "examples/_thumbnails/super-pingpong.png",
+      "sort_order": 235,
+      "links": {
+        "demo": "examples/GAME-SUPER-PINGPONG/index.html",
+        "source": "examples/GAME-SUPER-PINGPONG/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "featured"
+    },
+    {
       "id": "drum-test",
       "title": "Drum Game",
       "path": "examples/drum_test/",

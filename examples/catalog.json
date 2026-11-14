@@ -1,9 +1,9 @@
 {
   "schema_version": "0.2.0",
-  "updated": "2026-05-02",
+  "updated": "2026-10-13",
   "purpose": "Draft catalog for organizing existing ORPHE-CORE.js learning units before adding new examples.",
   "summary": {
-    "examples_web_apps": 36,
+    "examples_web_apps": 37,
     "starter_templates": 9,
     "getting_started_guides": 5,
     "tutorial_pages": 2,
@@ -14,7 +14,7 @@
     "modifiable_sketches_or_modules": 38,
     "internal_bridge_test_pages": 6,
     "ai_sensor_recipe_docs": 5,
-    "broad_learning_units": 129
+    "broad_learning_units": 130
   },
   "status_definitions": {
     "public": "Worth keeping in public navigation. Device verification can still be tracked separately.",
@@ -242,17 +242,17 @@
     },
     {
       "id": "pose",
-      "title": "Pose",
+      "title": "Pose + ORPHE CORE",
       "path": "examples/POSE/",
       "type": "web-app",
       "status": "public",
       "audience": ["creative-coder", "research"],
-      "value": "Combine body pose estimation with ORPHE CORE data.",
-      "topics": ["pose", "MediaPipe", "visualization"],
-      "data": ["stepsNumber", "quat"],
+      "value": "Show camera pose estimation (bones) side by side with live ORPHE CORE sensor values.",
+      "topics": ["pose", "MediaPipe", "visualization", "recording"],
+      "data": ["convertedAcc", "convertedGyro", "quat", "euler", "gait", "stride", "stepsNumber", "footAngle", "landingImpact", "pronation"],
       "devices": 1,
-      "validation": ["existing-public-link", "needs-browser-validation"],
-      "issues": ["Loads MediaPipe runtime/model assets from jsDelivr"],
+      "validation": ["existing-public-link", "thumbnail-exists", "owner-real-device-check"],
+      "issues": ["Loads MediaPipe Tasks Vision runtime/model assets and JSZip from CDN", "Requires a webcam"],
       "category": "creative-coding",
       "difficulty": "advanced",
       "featured": false,
@@ -421,6 +421,33 @@
       },
       "requires_device": true,
       "device_count": 2,
+      "needs_real_device_validation": false,
+      "public_navigation": "listed"
+    },
+    {
+      "id": "game-kick-challenge",
+      "title": "Kick Challenge",
+      "path": "examples/GAME-KICK-CHALLENGE/",
+      "type": "web-app",
+      "status": "public-candidate",
+      "audience": ["game-player", "educator"],
+      "value": "Kick back balls flying toward you, weak or strong as instructed, judged by ORPHE CORE acceleration and camera pose.",
+      "topics": ["game", "virtual sports", "soccer", "kick", "pose", "MediaPipe"],
+      "data": ["convertedAcc"],
+      "devices": 1,
+      "validation": ["static-page-check", "thumbnail-exists", "owner-real-device-check"],
+      "issues": ["Loads MediaPipe Tasks Vision runtime/model assets and JSZip from CDN", "Requires a webcam"],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/kick-challenge.png",
+      "sort_order": 230,
+      "links": {
+        "demo": "examples/GAME-KICK-CHALLENGE/index.html",
+        "source": "examples/GAME-KICK-CHALLENGE/"
+      },
+      "requires_device": true,
+      "device_count": 1,
       "needs_real_device_validation": false,
       "public_navigation": "listed"
     },

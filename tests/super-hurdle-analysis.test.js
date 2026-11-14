@@ -2,9 +2,9 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { loadExampleModule } = require('./helpers/load-example-module');
 
-// The post-race analysis of examples/GAME-HURDLE is a pure module. The cases below are
+// The post-race analysis of examples/GAME-SUPER-HURDLE is a pure module. The cases below are
 // shaped like races recorded with real sensors (interval times, speeds, hits).
-const { analyzeRun, AXES } = loadExampleModule(path.join(__dirname, '../examples/GAME-HURDLE/analysis.js'));
+const { analyzeRun, AXES } = loadExampleModule(path.join(__dirname, '../examples/GAME-SUPER-HURDLE/analysis.js'));
 
 /** A run from hurdle interval times; `hits` lists the hurdle indexes that were clipped. */
 function makeRun({ first = 1.6, splits, hits = [], speedAt = () => 11.5, time, extra = {} }) {
@@ -103,4 +103,4 @@ const stat = (analysis, label) => analysis.stats.find((s) => s.label === label);
   assert.equal(a.splits.length, 10);
 }
 
-console.log('hurdle-analysis.test.js passed');
+console.log('super-hurdle-analysis.test.js passed');

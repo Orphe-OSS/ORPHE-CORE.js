@@ -6,31 +6,397 @@
   <title>世界バーチャルハードル走　110m</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="style.css?v=20261114a">
-  <!-- three.js + its post-processing add-ons are resolved through this import map. -->
-  <!--
-    Cache busting. The game is several ES modules; a browser that keeps an old copy of one of
-    them next to new copies of the others breaks in confusing ways. Every module and the
-    stylesheet carry the same ?v= build id: main.js and style.css in their tags, the modules
-    main.js imports through the import map below. When any of those files changes, change the
-    id everywhere on this page (tests/hurdle-build-id.test.js checks they all match).
-  -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-        "./world.js": "./world.js?v=20261114a",
-        "./runner.js": "./runner.js?v=20261114a",
-        "./fx.js": "./fx.js?v=20261114a",
-        "./audio.js": "./audio.js?v=20261114a",
-        "./ui.js": "./ui.js?v=20261114a",
-        "./telemetry.js": "./telemetry.js?v=20261114a",
-        "./analysis.js": "./analysis.js?v=20261114a",
-        "./insole.js": "./insole.js?v=20261114a"
-      }
+  <style>
+    body { 
+      margin: 0; 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      overflow-x: hidden;
     }
-  </script>
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      background: linear-gradient(90deg, #00ff00, #7fff00, #ffff00, #ff8800, #ff0000);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: bold;
+    }
+    #game-container {
+      position: relative;
+      margin: 0 auto;
+      max-width: 100%;
+      height: calc(100vh - 600px);
+      min-height: 400px;
+    }
+    #game-canvas { 
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #ui { 
+      position: absolute; 
+      inset: 0; 
+      pointer-events: none; 
+      color: #fff; 
+      text-shadow: 0 2px 8px rgba(0,0,0,.6); 
+    }
+    .hud { 
+      position: absolute; 
+      top: 16px; 
+      left: 16px; 
+      font-weight: 600; 
+      font-size: 18px; 
+      line-height: 1.5;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .hud .row { margin-bottom: 6px; }
+    .center { 
+      position: absolute; 
+      inset: 0; 
+      display: grid; 
+      place-items: center; 
+    }
+    .card { 
+      pointer-events: auto; 
+      background: rgba(0,0,0,.75); 
+      padding: 30px 40px; 
+      border-radius: 15px; 
+      text-align: center;
+      border: 2px solid rgba(0,188,212,0.5);
+    }
+    .card h1 { 
+      margin: 0 0 20px; 
+      font-size: 36px;
+      color: #ffffff;
+    }
+    .card p { 
+      margin: 10px 0; 
+      font-size: 16px; 
+      opacity: .95; 
+    }
+    /* Finish card specific styling */
+    #finish-layer .card {
+      padding: 50px 60px;
+      animation: scaleIn 0.5s ease-out;
+    }
+    #finish-layer .card h1 {
+      font-size: 64px;
+      color: #FFD700;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    #finish-layer .card p {
+      font-size: 24px;
+      margin: 20px 0;
+    }
+    #finish-layer .card #final-time {
+      font-size: 96px;
+      color: #00ff00;
+      text-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+      display: block;
+      margin: 20px 0;
+      font-weight: 900;
+      line-height: 1;
+    }
+    #finish-layer .card #final-hits {
+      font-size: 32px;
+      color: #ff9800;
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .card .btn { 
+      display: inline-block; 
+      margin-top: 15px; 
+      padding: 12px 24px; 
+      border-radius: 10px; 
+      background: linear-gradient(45deg, #00bcd4, #4caf50);
+      color: #fff; 
+      font-weight: 700; 
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s;
+    }
+    .card .btn:hover {
+      transform: scale(1.05);
+    }
+    #ranking-layer {
+      position: absolute; 
+      inset: 0; 
+      display: grid; 
+      place-items: center;
+      pointer-events: none;
+    }
+    .ranking-container {
+      pointer-events: auto; 
+      background: rgba(0,0,0,.75); 
+      padding: 30px 40px; 
+      border-radius: 15px; 
+      text-align: center;
+      border: 2px solid rgba(0,188,212,0.5);
+      position: relative;
+      width: 600px;
+      max-width: 90vw;
+      max-height: 80%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .ranking-container h2 {
+      text-align: center;
+      color: #00bcd4;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+    .back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .back-button:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.1);
+    }
+    .ranking-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 10px;
+      text-align: left;
+      min-height: 0;
+    }
+    .ranking-list::-webkit-scrollbar {
+      width: 8px;
+    }
+    .ranking-list::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+    }
+    .ranking-list::-webkit-scrollbar-thumb {
+      background: rgba(0,188,212,0.5);
+      border-radius: 4px;
+    }
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      transition: background 0.3s;
+    }
+    .ranking-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    /* Highlight rows that came from this browser's localStorage so
+       the player can spot their own results among the legend snapshot. */
+    .ranking-item.is-local {
+      background: rgba(255, 215, 0, 0.10);
+      box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.45);
+    }
+    .ranking-item.is-local:hover {
+      background: rgba(255, 215, 0, 0.18);
+    }
+    .ranking-tag-local {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      background: rgba(255, 215, 0, 0.85);
+      color: #1a1a1a;
+      vertical-align: middle;
+    }
+    .ranking-rank {
+      font-size: 1.5rem;
+      font-weight: bold;
+      width: 60px;
+      text-align: center;
+      color: #4caf50;
+    }
+    .ranking-rank.top3 {
+      color: #ffd700;
+    }
+    .ranking-details {
+      flex: 1;
+      padding-left: 20px;
+    }
+    .ranking-name {
+      font-size: 1.2rem;
+      color: #fff;
+      margin-bottom: 5px;
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+    .ranking-score {
+      font-size: 1rem;
+      color: #00bcd4;
+    }
+    .ranking-date {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 5px;
+    }
+    .loading-message {
+      text-align: center;
+      color: #aaa;
+      padding: 40px;
+      font-size: 1.2rem;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .big-timer { 
+      position: absolute; 
+      bottom: 20px; 
+      right: 20px; 
+      font-size: 40px; 
+      font-weight: 800;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    /* スタミナバー */
+    #staminaWrap { 
+      position: absolute; 
+      top: 16px; 
+      right: 16px; 
+      width: 200px; 
+      height: 20px; 
+      border-radius: 10px; 
+      background: rgba(255,255,255,.2); 
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    #staminaBar { 
+      height: 100%; 
+      width: 100%; 
+      background: linear-gradient(90deg,#7CFC00,#FFD700,#FF4500); 
+      transform-origin: left center;
+      transition: transform 0.2s;
+    }
+    #staminaLabel { 
+      position:absolute; 
+      top: 40px; 
+      right: 16px; 
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .description {
+      text-align: center;
+      margin: 20px auto;
+      padding: 0 20px;
+      max-width: 800px;
+      font-size: 16px;
+      line-height: 1.1;
+    }
+    .description-ja {
+      margin-bottom: 10px;
+    }
+    .description-en {
+      color: #aaa;
+      font-size: 14px;
+    }
+    #config-panel {
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #2a2a3e;
+      border-radius: 15px;
+      max-width: 900px;
+      border: 1px solid rgba(0,188,212,0.3);
+    }
+    #config-panel h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #00bcd4;
+    }
+    #config-panel h4 {
+      margin: 20px 0 15px 0;
+      color: #4caf50;
+    }
+    .config-item {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .config-item label {
+      display: inline-block;
+      width: 350px;
+      color: #fff;
+    }
+    .config-item input[type="range"] {
+      width: 250px;
+      margin: 0 10px;
+    }
+    .config-item span {
+      color: #00bcd4;
+      font-family: monospace;
+      font-weight: bold;
+      min-width: 60px;
+      display: inline-block;
+    }
+    .sensor-monitor {
+      background-color: #1a1a2e;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .sensor-box {
+      flex: 1;
+      padding: 10px;
+      background-color: #2a2a3e;
+      border-radius: 8px;
+      margin: 0 10px;
+    }
+    .sensor-box h5 {
+      color: #4caf50;
+      margin: 0 0 10px 0;
+    }
+    .progress-bar {
+      height: 20px;
+      background: #333;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar .bar {
+      position: absolute;
+      height: 100%;
+      background: #4caf50;
+      border-radius: 3px;
+      transition: all 0.1s;
+    }
+    .progress-bar .threshold {
+      position: absolute;
+      height: 100%;
+      width: 2px;
+      background: #ff9800;
+      opacity: 0.7;
+    }
+  </style>
   <!-- ORPHE CORE ライブラリと依存関係 -->
   <!-- Load the SDK from this repository so local fixes (e.g. the
        loadScript dedup that prevents 'class float16 already declared')
@@ -72,438 +438,1029 @@
       }
     })();
   </script>
-  <!-- Game: main.js (rules, input, flow) + world / runner / fx / audio / ui modules. -->
-  <script type="module" src="main.js?v=20261114a"></script>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    window.THREE = THREE;
+
+    // Game constants
+    const COURSE_LEN_M = 110;  // 男子110mハードル規格
+    const HURDLES = 10;
+    const FIRST_HURDLE_M = 13.72;  // スタートから最初のハードルまで
+    const HURDLE_SPACING_M = 9.14;  // 各ハードル間の距離
+    const HURDLE_HEIGHT_M = 0.84;
+    const HURDLE_TOP_THICK = 0.06;
+    const PLAYER_EYE_H = 1.7;
+    const JUMP_V0 = 5.0;
+    const GRAVITY = 16.0;  // 重力を強くしてジャンプ時間を短縮
+    const BASE_SPEED = 0.0;
+    const MAX_SPEED = 12.0;
+    const SLOWDOWN_FACTOR = 0.20;  // Reduced from 0.40 for gentler slowdown
+    const RECOVER_SEC = 1.0;
+    const ACCEL_RATE = 15.0;
+    const FRICTION = 8.0;
+    const LANE_WIDTH = 1.22 * 2;
+    // Stamina parameters
+    const STAMINA_MAX = 1.0;
+    const STAMINA_USE_PER_SEC = 0.45;
+    const STAMINA_REGEN_PER_SEC = 0.45;//0.30から0.6に変更
+    const STAMINA_BLOCK_THRESHOLD = 0.08;
+    let stamina = STAMINA_MAX;
+
+    // ORPHE parameters (configurable)
+    window.accThresholdAccel = 0.3;
+    window.pitchThresholdJump = 0.1;  // ラジアンで設定
+
+    // 3D scene setup
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x87ceeb, 60, 260);
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 800);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+    
+    function updateRendererSize() {
+      const container = document.getElementById('game-container');
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+    }
+    
+    updateRendererSize();
+    window.addEventListener('resize', updateRendererSize);
+    
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setClearColor(0x87ceeb);
+    renderer.shadowMap.enabled = true;
+    // Lighting
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x668866, 0.55);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+    sun.position.set(10, 20, 8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    scene.add(sun);
+    // Ground (track)
+    const groundGeo = new THREE.PlaneGeometry(LANE_WIDTH * 3, COURSE_LEN_M + 100);
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0xd24d57 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.z = -COURSE_LEN_M / 2 - 30;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    // Lane lines
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    for (let i = -1; i <= 1; i += 2) {
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(0.05, COURSE_LEN_M + 100), lineMat);
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(i * LANE_WIDTH / 2, 0.002, -COURSE_LEN_M / 2 - 30);
+      scene.add(line);
+    }
+    // Arms (swing)
+    const skin = new THREE.MeshLambertMaterial({ color: 0xffd2b8 });
+    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.9, 0.20), skin);
+    rightArm.position.set(-0.35, -0.45, -0.8);
+    const leftArm = rightArm.clone();
+    leftArm.position.x = 0.35;
+    camera.add(rightArm, leftArm);
+    scene.add(camera);
+    // Hurdles
+    const hurdles = [];
+    const hitMarkers = new Set();
+    function makeHurdle(z) {
+      const hurdle_group = new THREE.Group();
+      const base_material = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+      const bar_material = new THREE.MeshLambertMaterial({ color: 0xDC143C });
+      const leg1_vert = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.5, 0.2), base_material);
+      leg1_vert.position.set(-2.5, 0.75, 0);
+      const leg1_horz = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), base_material);
+      leg1_horz.position.set(-2.5, 0.1, 0.4);
+      const leg2_vert = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.5, 0.2), base_material);
+      leg2_vert.position.set(2.5, 0.75, 0);
+      const leg2_horz = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 1.0), base_material);
+      leg2_horz.position.set(2.5, 0.1, 0.4);
+      const top_bar = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.2, 0.2), bar_material);
+      top_bar.position.set(0, 1.4, 0);
+      hurdle_group.add(leg1_vert, leg1_horz, leg2_vert, leg2_horz, top_bar);
+      hurdle_group.position.set(0, 0, z);
+      hurdle_group.userData = { topY: 1.4, z };
+      scene.add(hurdle_group);
+      hurdles.push(hurdle_group);
+    }
+    for (let i = 0; i < HURDLES; i++) {
+      const z = -(FIRST_HURDLE_M + i * HURDLE_SPACING_M);
+      makeHurdle(z);
+    }
+    // Distance markers (20 m increments)
+    function makeRoadStencil(text, isFinish = false) {
+      const W = 512, H = 512;
+      const cvs = document.createElement('canvas');
+      cvs.width = W; cvs.height = H;
+      const ctx = cvs.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '900 150px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      if (isFinish) {
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 22;
+        ctx.strokeText(text, W / 2, H / 2);
+        ctx.fillText(text, W / 2, H / 2);
+      } else {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 18;
+        ctx.strokeText(text, W / 2, H / 2);
+        ctx.fillText(text, W / 2, H / 2);
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.anisotropy = 8; tex.needsUpdate = true;
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+      const geo = new THREE.PlaneGeometry(2.6, 3.4);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.003;
+      return mesh;
+    }
+    // Distance markers for 110m course
+    for (let d = 10; d <= 110; d += 10) {
+      const isFinish = (d === 110);
+      const m = makeRoadStencil(`${d}m`, isFinish);
+      m.position.set(0, 0.003, -d);
+      scene.add(m);
+    }
+    // Finish line (red/white stripes)
+    (() => {
+      const cvs = document.createElement('canvas');
+      cvs.width = 256; cvs.height = 128;
+      const ctx = cvs.getContext('2d');
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#ffffff' : '#ff0000';
+        ctx.fillRect(i * 32, 0, 32, 128);
+      }
+      const tex = new THREE.CanvasTexture(cvs);
+      tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.ClampToEdgeWrapping;
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: false });
+      const geo = new THREE.PlaneGeometry(3.2, 0.5);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(0, 0.002, -110.25);  // 110mゴール位置
+      scene.add(mesh);
+    })();
+    // Clouds (movement visualisation)
+    const clouds = [];
+    const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    function makeCloud(x, y, z) {
+      const g = new THREE.Group();
+      for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) {
+        const s = 1.5 + Math.random() * 2.5;
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(s, 12, 10), cloudMat);
+        puff.position.set((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 1, 0);
+        g.add(puff);
+      }
+      g.position.set(x, y, z);
+      g.scale.set(1.2, 1, 1);
+      scene.add(g);
+      clouds.push(g);
+    }
+    for (let i = 0; i < 16; i++) {
+      const x = (Math.random() * 2 - 1) * 18;
+      const y = 6 + Math.random() * 8;
+      const z = -Math.random() * (COURSE_LEN_M + 200);
+      makeCloud(x, y, z);
+    }
+    // WebAudio variables
+    let audioCtx = null;
+    let stepGain;
+    let windGain;
+    let nextStepAt = 0;
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      stepGain = audioCtx.createGain();
+      stepGain.gain.value = 0.6;
+      stepGain.connect(audioCtx.destination);
+      const bufferSize = 2 * audioCtx.sampleRate;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const n = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) n[i] = Math.random() * 2 - 1;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer; noise.loop = true;
+      const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
+      windGain = audioCtx.createGain(); windGain.gain.value = 0.0;
+      noise.connect(lp).connect(windGain).connect(audioCtx.destination);
+      noise.start();
+    }
+    function triggerFootstep(at) {
+      if (!audioCtx) return;
+      const dur = 0.06;
+      const src = audioCtx.createBufferSource();
+      const buf = audioCtx.createBuffer(1, Math.floor(dur * audioCtx.sampleRate), audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      src.buffer = buf;
+      const hp = audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 450;
+      const g = audioCtx.createGain(); g.gain.value = 0.0;
+      src.connect(hp).connect(g).connect(stepGain);
+      const t = at || audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0, t);
+      g.gain.linearRampToValueAtTime(0.7, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.start(t); src.stop(t + dur);
+    }
+    function triggerJumpWhoosh() {
+      if (!audioCtx) return;
+      const src = audioCtx.createBufferSource();
+      const dur = 0.22;
+      const buf = audioCtx.createBuffer(1, Math.floor(dur * audioCtx.sampleRate), audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      src.buffer = buf;
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1200;
+      bp.Q.value = 0.7;
+      const g = audioCtx.createGain();
+      g.gain.value = 0.0;
+      src.connect(bp).connect(g).connect(audioCtx.destination);
+      const t = audioCtx.currentTime;
+      try { bp.frequency.linearRampToValueAtTime(1800, t + dur); } catch (e) {}
+      g.gain.linearRampToValueAtTime(0.6, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.start(t); src.stop(t + dur + 0.02);
+    }
+    function playCheer() {
+      // Try to play the audience sound file first
+      try {
+        const audio = new Audio('sound/sound-audience.mp3');
+        audio.volume = 0.7;
+        audio.play().catch(() => {
+          // If file loading fails, fallback to generated sound
+          playGeneratedCheer();
+        });
+      } catch (e) {
+        // If Audio API fails, fallback to generated sound
+        playGeneratedCheer();
+      }
+    }
+    
+    function playGeneratedCheer() {
+      if (!audioCtx) return;
+      const dur = 2.5;
+      const noise = audioCtx.createBufferSource();
+      const buf = audioCtx.createBuffer(1, Math.floor(dur * audioCtx.sampleRate), audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.6;
+      noise.buffer = buf;
+      const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200;
+      const g = audioCtx.createGain(); g.gain.value = 0.0;
+      noise.connect(lp).connect(g).connect(audioCtx.destination);
+      const tones = [440, 554.37, 659.25].map(freq => {
+        const osc = audioCtx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
+        const tg = audioCtx.createGain(); tg.gain.value = 0.0;
+        osc.connect(tg).connect(audioCtx.destination);
+        return { osc, tg };
+      });
+      const t = audioCtx.currentTime;
+      g.gain.linearRampToValueAtTime(0.9, t + 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      noise.start(t); noise.stop(t + dur + 0.1);
+      tones.forEach(({ osc, tg }, i) => {
+        const dt = t + 0.05 * i;
+        osc.start(dt);
+        tg.gain.linearRampToValueAtTime(0.15, dt + 0.3);
+        tg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.stop(t + dur + 0.1);
+      });
+    }
+    // Game state
+    let state = 'ready';
+    let countdownValue = 0;
+    let clock = new THREE.Clock();
+    let runTime = 0;
+    let startEpoch = 0;
+    let vz = BASE_SPEED;
+    let vy = 0;
+    let isGround = true;
+    // jumpStartTime は updateSensorDisplay (通常 <script> ブロック側) からも
+    // 参照されるため、ESM スコープに閉じる let ではなく window 経由で公開する。
+    window.jumpStartTime = 0;  // Track jump timing for status display
+    let slowRemain = 0;
+    let hits = 0;
+    // Pressed states – used for keyboard and ORPHE input
+    let accelPressedKeyboard = false;
+    let accelPressedOrphe = false;
+    // Track where ranking was opened from
+    let rankingReturnTo = 'start'; // 'start' or 'finish'
+    // UI elements
+    const $start = document.getElementById('start-layer');
+    const $ranking = document.getElementById('ranking-layer');
+    const $finish = document.getElementById('finish-layer');
+    const $timer = document.getElementById('timer');
+    const $dist = document.getElementById('dist');
+    const $hcount = document.getElementById('hcount');
+    const $speed = document.getElementById('speed');
+    const $final = document.getElementById('final-time');
+    const $finalHits = document.getElementById('final-hits');
+    const $staminaBar = document.getElementById('staminaBar');
+    // Utility for formatting numbers
+    function fmt(n, d = 2) { return n.toFixed(d); }
+    // Keyboard controls remain available
+    addEventListener('keydown', e => {
+      if (e.code === 'ArrowRight') jump();
+      if (e.code === 'ArrowLeft') accelPressedKeyboard = true;
+      if (e.code === 'Escape') resetGame();  // ESCキーでリセット
+    });
+    addEventListener('keyup', e => {
+      if (e.code === 'ArrowLeft') accelPressedKeyboard = false;
+    });
+    // Removed global click/touch handlers - now only start button triggers game start
+    // Jump routine
+    function jump() {
+      if (state !== 'running') return;
+      if (isGround) {
+        vy = JUMP_V0;
+        isGround = false;
+        window.jumpStartTime = performance.now();
+        triggerJumpWhoosh();
+      }
+    }
+    function startGame() {
+      if (state !== 'ready') return;
+      
+      // Initialize audio and 3D scene first
+      initAudio();
+      
+      // Set camera to start position and ensure 3D scene is ready
+      camera.position.set(0, PLAYER_EYE_H, 0);
+      camera.rotation.set(0, 0, 0);
+      
+      // Force a render to ensure 3D scene is displayed
+      renderer.render(scene, camera);
+      
+      // Hide start screen and show countdown
+      if ($start) $start.style.display = 'none';
+      const $countdown = document.getElementById('countdown-layer');
+      const $countdownNumber = document.getElementById('countdown-number');
+      
+      if ($countdown) {
+        $countdown.style.display = 'grid';
+        countdownValue = 3;
+        $countdownNumber.textContent = '3';
+        
+        // Countdown timer
+        const countdownInterval = setInterval(() => {
+          countdownValue--;
+          
+          if (countdownValue > 0) {
+            $countdownNumber.textContent = countdownValue;
+            // Play beep sound for each count
+            playCountdownBeep();
+          } else {
+            // countdownValue === 0: Show GO! and start game immediately
+            $countdownNumber.textContent = 'GO!';
+            $countdownNumber.style.color = '#00ff00';
+            
+            // Start the actual game immediately
+            clearInterval(countdownInterval);
+            state = 'running';
+            clock.start();
+            startEpoch = performance.now();
+            
+            // Play start whistle sound
+            try {
+              const whistle = new Audio('sound/笛1.mp3');
+              whistle.volume = 0.7;
+              whistle.play().catch(err => {
+                console.log('Could not play whistle sound:', err);
+              });
+            } catch (e) {
+              console.log('Error loading whistle sound:', e);
+              // Fallback to generated beep
+              playStartBeep();
+            }
+            
+            // Hide countdown after a short delay to show "GO!"
+            setTimeout(() => {
+              $countdown.style.display = 'none';
+            }, 500);
+          }
+        }, 1000);
+      }
+    }
+    
+    // Countdown beep sound
+    function playCountdownBeep() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.frequency.value = 800;
+      osc.type = 'sine';
+      gainNode.gain.value = 0.3;
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      const t = audioCtx.currentTime;
+      osc.start(t);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+      osc.stop(t + 0.1);
+    }
+    
+    // Start beep sound (fallback if whistle doesn't load)
+    function playStartBeep() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      osc.frequency.value = 1200;
+      osc.type = 'sine';
+      gainNode.gain.value = 0.5;
+      
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      const t = audioCtx.currentTime;
+      osc.start(t);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.stop(t + 0.3);
+    }
+    
+    // Stop all audio function
+    function stopAllAudio() {
+      if (!audioCtx) return;
+      
+      // Stop wind noise
+      if (windGain) {
+        windGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      }
+      
+      // Stop step sounds
+      if (stepGain) {
+        stepGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      }
+      
+      // Suspend the audio context to stop all sounds
+      try {
+        audioCtx.suspend();
+      } catch (e) {
+        console.log('Could not suspend audio context:', e);
+      }
+    }
+    function showRanking(from = 'start') {
+      rankingReturnTo = from;
+      $ranking.style.display = 'grid';
+      $start.style.display = 'none';
+      $finish.style.display = 'none';
+    }
+    
+    function hideRanking() {
+      $ranking.style.display = 'none';
+      if (rankingReturnTo === 'finish') {
+        $finish.style.display = 'grid';
+      } else {
+        $start.style.display = 'grid';
+      }
+    }
+    
+    // localStorage key for this browser's own scores. Bumping this
+    // string would effectively reset everyone's local ranking history.
+    const LOCAL_RANKING_KEY = 'hurdle.localRankings';
+    const RANKING_DISPLAY_LIMIT = 100;
+
+    // Read this browser's saved scores. Returns [] on parse failure.
+    function readLocalRanking() {
+      try {
+        const raw = localStorage.getItem(LOCAL_RANKING_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.warn('[HURDLE] Failed to read local rankings:', e);
+        return [];
+      }
+    }
+
+    function writeLocalRanking(list) {
+      try {
+        const trimmed = (Array.isArray(list) ? list : [])
+          .filter(r => r && typeof r.time === 'number' && Number.isFinite(r.time))
+          .sort((a, b) => a.time - b.time)
+          .slice(0, RANKING_DISPLAY_LIMIT);
+        localStorage.setItem(LOCAL_RANKING_KEY, JSON.stringify(trimmed));
+      } catch (e) {
+        console.error('[HURDLE] Failed to persist local rankings:', e);
+      }
+    }
+
+    // Load and display ranking data: snapshot (legend) + localStorage (you).
+    async function loadRankingData() {
+      const rankingList = document.getElementById('ranking-list');
+      if (!rankingList) return;
+
+      // Show loading message while the snapshot fetch settles
+      rankingList.innerHTML = '<div class="loading-message">読み込み中... / Loading...</div>';
+
+      const frozenRaw = await (window.frozenRankingReady || Promise.resolve([]));
+      const frozen = (Array.isArray(frozenRaw) ? frozenRaw : []).map(r => ({ ...r, source: 'legend' }));
+      const local = readLocalRanking().map(r => ({ ...r, source: 'local' }));
+
+      const merged = [...frozen, ...local]
+        .filter(r => typeof r.time === 'number' && Number.isFinite(r.time))
+        .sort((a, b) => a.time - b.time)
+        .slice(0, RANKING_DISPLAY_LIMIT);
+
+      rankingList.innerHTML = '';
+      if (merged.length === 0) {
+        rankingList.innerHTML = '<div class="loading-message">ランキングデータがありません。<br>あなたが完走するとここに記録が追加されます。 / No data yet — finish a run to add the first entry.</div>';
+        return;
+      }
+
+      let rank = 1;
+      for (const data of merged) {
+        rankingList.appendChild(createRankingItem(rank, data));
+        rank++;
+      }
+    }
+
+    // Create a ranking item element. Local rows are highlighted with a
+    // pill marker so the player can spot their own scores in the list.
+    function createRankingItem(rank, data) {
+      const item = document.createElement('div');
+      item.className = 'ranking-item' + (data.source === 'local' ? ' is-local' : '');
+
+      const rankDiv = document.createElement('div');
+      rankDiv.className = 'ranking-rank' + (rank <= 3 ? ' top3' : '');
+      rankDiv.textContent = rank + '位';
+
+      const detailsDiv = document.createElement('div');
+      detailsDiv.className = 'ranking-details';
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'ranking-name';
+      nameDiv.textContent = data.name || 'Unknown Player';
+      if (data.source === 'local') {
+        const tag = document.createElement('span');
+        tag.className = 'ranking-tag-local';
+        tag.textContent = 'YOU';
+        nameDiv.appendChild(tag);
+      }
+
+      const scoreDiv = document.createElement('div');
+      scoreDiv.className = 'ranking-score';
+      const time = typeof data.time === 'number' ? data.time : 0;
+      const hurdles = typeof data.hurdles === 'number' ? data.hurdles : 0;
+      scoreDiv.textContent = `${time.toFixed(2)}秒 / ${hurdles}回ヒット`;
+
+      const dateDiv = document.createElement('div');
+      dateDiv.className = 'ranking-date';
+      // Accept ISO strings (frozen + new local saves), Firestore-style
+      // {toDate}, or numeric epoch ms — all yield Date safely.
+      let dateText = '-';
+      if (data.date) {
+        let parsed = null;
+        if (typeof data.date === 'string') parsed = new Date(data.date);
+        else if (typeof data.date === 'number') parsed = new Date(data.date);
+        else if (typeof data.date.toDate === 'function') parsed = data.date.toDate();
+        if (parsed && !isNaN(parsed.getTime())) {
+          dateText = parsed.toLocaleDateString('ja-JP') + ' ' + parsed.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        }
+      }
+      dateDiv.textContent = dateText;
+
+      detailsDiv.appendChild(nameDiv);
+      detailsDiv.appendChild(scoreDiv);
+      detailsDiv.appendChild(dateDiv);
+
+      item.appendChild(rankDiv);
+      item.appendChild(detailsDiv);
+
+      return item;
+    }
+
+    // Save the just-finished run to localStorage. Returns true on success.
+    function saveScoreToRanking(name, timeSeconds, hurdles) {
+      if (typeof timeSeconds !== 'number' || !Number.isFinite(timeSeconds)) {
+        console.warn('[HURDLE] saveScoreToRanking: ignoring non-numeric time', timeSeconds);
+        return false;
+      }
+      const list = readLocalRanking();
+      list.push({
+        name: (name || 'Anonymous').toString().slice(0, 24),
+        time: timeSeconds,
+        hurdles: typeof hurdles === 'number' ? hurdles : 0,
+        date: new Date().toISOString(),
+      });
+      writeLocalRanking(list);
+      console.log('[HURDLE] Local score saved.');
+      return true;
+    }
+
+    // Export save function for use in game
+    window.saveScoreToRanking = saveScoreToRanking;
+    // Reset game function (preserves ORPHE CORE connection)
+    function resetGame() {
+      // Reset game state
+      state = 'ready';
+      countdownValue = 0;
+      clock = new THREE.Clock();
+      runTime = 0;
+      startEpoch = 0;
+      vz = BASE_SPEED;
+      vy = 0;
+      isGround = true;
+      window.jumpStartTime = 0;  // Reset jump timing
+      slowRemain = 0;
+      hits = 0;
+      stamina = STAMINA_MAX;
+      
+      // Reset camera position
+      camera.position.set(0, PLAYER_EYE_H, 0);
+      camera.rotation.set(0, 0, 0);
+      
+      // Reset UI
+      if ($start) $start.style.display = 'grid';
+      if ($finish) $finish.style.display = 'none';
+      if ($timer) $timer.textContent = '0.00';
+      if ($dist) $dist.textContent = fmt(COURSE_LEN_M, 1);
+      if ($hcount) $hcount.textContent = '0';
+      if ($speed) $speed.textContent = fmt(0, 1);
+      if ($staminaBar) {
+        $staminaBar.style.transform = 'scaleX(1)';
+        $staminaBar.style.filter = 'none';
+      }
+      
+      // Reset hit markers
+      hitMarkers.clear();
+      
+      // Reset cloud positions
+      for (let i = 0; i < clouds.length; i++) {
+        const c = clouds[i];
+        c.position.x = (Math.random() * 2 - 1) * 18;
+        c.position.y = 6 + Math.random() * 8;
+        c.position.z = -Math.random() * (COURSE_LEN_M + 200);
+      }
+      
+      // Reset acceleration states
+      accelPressedKeyboard = false;
+      accelPressedOrphe = false;
+      // Reset ranking return state
+      rankingReturnTo = 'start';
+      
+      // Reset audio
+      nextStepAt = 0;
+      if (windGain) windGain.gain.value = 0.0;
+      
+      // Resume audio context if it was suspended
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    
+    // Add event listeners for buttons
+    const retryBtn = document.getElementById('retry');
+    if (retryBtn) retryBtn.addEventListener('click', resetGame);
+    
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.addEventListener('click', startGame);
+    const rankingBtn = document.getElementById('btn-ranking');
+    if (rankingBtn) {
+      rankingBtn.addEventListener('click', () => {
+        showRanking('start');
+        loadRankingData();
+      });
+    }
+    
+    const rankingBtnFinish = document.getElementById('btn-ranking-finish');
+    if (rankingBtnFinish) {
+      rankingBtnFinish.addEventListener('click', () => {
+        showRanking('finish');
+        loadRankingData();
+      });
+    }
+    
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) backBtn.addEventListener('click', hideRanking);
+    // Update loop: integrates ORPHE and keyboard input
+    function update(dt) {
+      if (state !== 'running') return;
+      // Determine whether acceleration key is considered pressed
+      const canAccel = (accelPressedKeyboard || accelPressedOrphe) && (stamina > STAMINA_BLOCK_THRESHOLD);
+      if (canAccel) {
+        stamina -= STAMINA_USE_PER_SEC * dt;
+        if (stamina < 0) stamina = 0;
+        vz += ACCEL_RATE * dt;
+      } else {
+        stamina += STAMINA_REGEN_PER_SEC * dt;
+        if (stamina > STAMINA_MAX) stamina = STAMINA_MAX;
+        if (vz > BASE_SPEED) {
+          vz -= FRICTION * dt;
+          if (vz < BASE_SPEED) vz = BASE_SPEED;
+        }
+      }
+      if (vz > MAX_SPEED) vz = MAX_SPEED;
+      // Recover from slow-down
+      if (slowRemain > 0) {
+        slowRemain -= dt;
+        const t = Math.max(0, slowRemain) / RECOVER_SEC;
+        vz = vz * (1 - t) + (vz * SLOWDOWN_FACTOR) * t;
+      }
+      // Audio: adjust wind noise and schedule footsteps
+      if (audioCtx) {
+        const targetWind = (canAccel ? 0.12 : 0.02) * (vz / MAX_SPEED);
+        // Only apply wind noise if above threshold to avoid small continuous noise
+        const WIND_THRESHOLD = 0.005;
+        const actualWind = targetWind < WIND_THRESHOLD ? 0 : targetWind;
+        windGain.gain.linearRampToValueAtTime(actualWind, audioCtx.currentTime + 0.05);
+        const stepRate = 1.4 + 2.6 * (vz / MAX_SPEED);
+        const interval = 1 / stepRate;
+        const now = audioCtx.currentTime;
+        if (now > nextStepAt) nextStepAt = now + 0.01;
+        while (nextStepAt < now + 0.1) {
+          if (isGround && vz > 3.0) { triggerFootstep(nextStepAt); }
+          nextStepAt += interval;
+        }
+      }
+      // Forward motion
+      camera.position.z -= vz * dt;
+      // Vertical motion
+      camera.position.y += vy * dt;
+      vy -= GRAVITY * dt;
+      if (camera.position.y <= PLAYER_EYE_H) {
+        camera.position.y = PLAYER_EYE_H; vy = 0; isGround = true;
+        window.jumpStartTime = 0;  // Reset jump timing
+      }
+      // Arm swing
+      const swingAmp = 0.7 * (vz / MAX_SPEED);
+      const swing = Math.sin(performance.now() * 0.012) * swingAmp;
+      rightArm.rotation.x = swing; leftArm.rotation.x = -swing;
+      // Move clouds
+      for (const c of clouds) {
+        c.position.z += 0.4 * dt * vz;
+        if (c.position.z > 5) {
+          c.position.z = -(COURSE_LEN_M + 200) - Math.random() * 80;
+          c.position.x = (Math.random() * 2 - 1) * 18;
+          c.position.y = 6 + Math.random() * 8;
+        }
+      }
+      // Timer and distance display
+      runTime = (performance.now() - startEpoch) / 1000;
+      // Display remaining distance
+      const remaining = Math.max(0, COURSE_LEN_M + camera.position.z);
+      if ($timer) $timer.textContent = fmt(runTime, 2);
+      if ($dist) $dist.textContent = fmt(remaining, 1);
+      if ($speed) $speed.textContent = fmt(vz, 1);
+      // Stamina bar
+      if ($staminaBar) {
+        $staminaBar.style.transform = `scaleX(${stamina})`;
+        $staminaBar.style.filter = stamina < STAMINA_BLOCK_THRESHOLD ? 'grayscale(1)' : 'none';
+      }
+      // Update stamina percentage
+      const $staminaPercent = document.getElementById('staminaPercent');
+      if ($staminaPercent) {
+        $staminaPercent.textContent = Math.floor(stamina * 100) + '%';
+      }
+      // Hurdle collisions
+      for (const h of hurdles) {
+        if (hitMarkers.has(h)) continue;
+        const dzToBar = Math.abs(camera.position.z - h.userData.z);
+        if (dzToBar < 0.35) {
+          const lift = camera.position.y - PLAYER_EYE_H;
+          const neededLift = 0.35;
+          if (lift < neededLift) {
+            hits++;
+            if ($hcount) $hcount.textContent = hits;
+            vz = Math.max(2.5, vz * SLOWDOWN_FACTOR);
+            slowRemain = RECOVER_SEC;
+            camera.rotation.z = 0.08;
+            setTimeout(() => { camera.rotation.z = 0; }, 160);
+          }
+          hitMarkers.add(h);
+        }
+      }
+      // Finish line
+      if (camera.position.z <= -COURSE_LEN_M) {
+        state = 'finish';
+        if ($final) $final.textContent = fmt(runTime, 2) + ' s';
+        if ($finalHits) $finalHits.textContent = String(hits);
+        if ($finish) $finish.style.display = 'grid';
+        
+        // Stop wind noise immediately when finishing
+        if (windGain) windGain.gain.value = 0.0;
+        
+        playCheer();
+        
+        // Prompt for name and save score (local only — no network)
+        setTimeout(() => {
+          if (typeof window.saveScoreToRanking !== 'function') return;
+          const playerName = prompt('ランキングに登録する名前を入力してください / Enter your name for ranking:', 'Player');
+          if (playerName) {
+            window.saveScoreToRanking(playerName, runTime, hits);
+          }
+        }, 1000);
+        // Stop all audio after 5 seconds
+        setTimeout(() => {
+          stopAllAudio();
+        }, 5000);
+      }
+    }
+    // Animation loop
+    function loop() {
+      const dt = clock.getDelta();
+      if (state === 'running') update(dt);
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    }
+    // Initialize display values
+    if ($hcount) $hcount.textContent = '0';
+    if ($speed) $speed.textContent = fmt(0, 1);
+    if ($dist) $dist.textContent = fmt(COURSE_LEN_M, 1);
+    loop();
+    
+    // Export reset function for potential external use
+    window.resetGame = resetGame;
+
+    // ---------------------------------------------------------------------------
+    // ORPHE CORE integration with CoreToolkit
+    // Note: This will be initialized outside the module script
+    
+    // Export functions for external access
+    window.gameJump = jump;
+    window.setAccelPressed = function(pressed) { 
+      accelPressedOrphe = pressed;
+    };
+  </script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
-  <div id="stage">
-    <canvas id="game-canvas"></canvas>
-    <div class="letterbox top"></div>
-    <div class="letterbox bottom"></div>
-
-    <!-- ===== In-race HUD: one pane per human runner, cloned from the template by ui.js ===== -->
-    <div id="hud-root" class="hud" aria-hidden="true"></div>
-    <div class="vs-divider"></div>
-    <template id="hud-template">
-      <div class="hud-pane">
-        <div class="hud-event">
-          <span class="hud-tag" data-el="tag">110mH FINAL</span>
-          <span class="hud-lane" data-el="lane">LANE 5</span>
-        </div>
-        <div class="hud-timer">
-          <span class="hud-label">TIME</span>
-          <span class="digits" data-el="timer">0.00</span>
-        </div>
-        <div class="hud-progress">
-          <div class="progress-rail">
-            <div class="progress-fill" data-el="fill"></div>
-            <div class="progress-pips" data-el="pips"></div>
-            <div class="progress-rivals" data-el="rivals"></div>
-            <div class="progress-me" data-el="me"></div>
-          </div>
-          <div class="progress-labels">
-            <span>START</span>
-            <span class="progress-dist">残り <b data-el="dist">110.0</b> m</span>
-            <span>FINISH</span>
-          </div>
-        </div>
-        <div class="hud-place" data-el="placeWrap">
-          <span class="place-num" data-el="place">1</span><span class="place-suffix" data-el="placeSuffix">st</span>
-          <span class="place-of" data-el="placeOf">/ 8</span>
-        </div>
-        <div class="hud-hurdles">
-          <div class="hud-stat"><span class="hud-label">CLEAR</span><b data-el="clear">0</b><i>/10</i></div>
-          <div class="hud-stat hit zero" data-el="hitStat"><span class="hud-label">HIT</span><b data-el="hits">0</b></div>
-        </div>
-        <div class="hud-stamina" data-el="staminaWrap">
-          <div class="stamina-head">
-            <span>STAMINA</span>
-            <span class="stamina-delta" data-el="delta"></span>
-            <span class="stamina-pct" data-el="staminaPct">100%</span>
-          </div>
-          <div class="stamina-track">
-            <div class="stamina-bar" data-el="staminaBar"></div>
-            <div class="stamina-threshold" data-el="mark"></div>
-          </div>
-          <div class="stamina-pace" data-el="pace"><i></i><span>PACE</span></div>
-          <div class="stamina-warn" data-el="warn">息切れ！ / OUT OF BREATH</div>
-        </div>
-        <div class="hud-speed" data-el="speedWrap">
-          <svg viewBox="0 0 200 112" aria-hidden="true">
-            <defs>
-              <linearGradient id="speed-grad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="#22e3ff"/><stop offset="0.6" stop-color="#b6ff3c"/><stop offset="1" stop-color="#ffd34d"/>
-              </linearGradient>
-            </defs>
-            <path class="speed-arc-bg" d="M 16 104 A 84 84 0 0 1 184 104"/>
-            <path class="speed-arc" data-el="arc" d="M 16 104 A 84 84 0 0 1 184 104"/>
-            <line class="speed-tick" data-el="tick" x1="0" y1="0" x2="0" y2="0"/>
-          </svg>
-          <div class="speed-num"><b class="digits" data-el="speed">0.0</b><span>m/s</span></div>
-          <div class="speed-kmh"><span data-el="kmh">0</span> km/h</div>
-        </div>
-        <div class="jump-cue" data-el="jumpCue"><i class="bi bi-chevron-double-up"></i><span>JUMP</span></div>
-        <div class="popup-layer" data-el="popups"></div>
-      </div>
-    </template>
-
-    <!-- ===== Start overlay ===== -->
-    <div class="screen" id="start-layer">
-      <div class="title-block">
-        <div class="eyebrow"><img id="brand-logo" alt="ORPHE" hidden><span>VIRTUAL SPORTS</span></div>
-        <h1 class="title">
-          <span class="title-en">WORLD VIRTUAL HURDLES</span>
-          <span class="title-ja">世界バーチャルハードル走 <em>110m</em></span>
-        </h1>
-        <p class="lead">足踏みで加速、つま先を上げてジャンプ。<br>10台のハードルを越えて、ゴールへ駆け抜けろ。</p>
-        <p class="lead-en">Stamp your feet to accelerate, lift your toes to jump. Clear 10 hurdles and reach the finish.</p>
-        <div class="mode-row" id="mode-row" role="radiogroup" aria-label="プレイ人数 / Players">
-          <button type="button" class="mode-btn on" data-mode="solo" role="radio" aria-checked="true"><b>SOLO</b><span>1人で走る<small>CORE 2個を両足に</small></span></button>
-          <button type="button" class="mode-btn" data-mode="vs" role="radio" aria-checked="false"><b>VS</b><span>2人で対戦<small>CORE 1個ずつ・足の甲に</small></span></button>
-        </div>
-        <div class="cta-row">
-          <button type="button" class="hx-btn primary" id="start-btn"><span class="hx-main">START</span><span class="hx-sub">スタート</span></button>
-          <button type="button" class="hx-btn ghost" id="btn-ranking"><i class="bi bi-trophy-fill"></i> ランキング / RANKING</button>
-        </div>
-        <div class="records">
-          <span>自己ベスト BEST <b id="best-time">--.--</b></span>
-          <span>現実の世界記録 WR <b>12.80</b></span>
-        </div>
-        <div class="howto">
-          <div class="howto-col">
-            <span class="howto-head">ORPHE CORE</span>
-            <span><i class="bi bi-lightning-charge-fill"></i> <span id="howto-accel">足踏み → 加速</span></span>
-            <span><i class="bi bi-arrow-up-circle-fill"></i> <span id="howto-jump">つま先を上げる → ジャンプ</span></span>
-            <span id="howto-vs" hidden><i class="bi bi-people-fill"></i> PLAYER 1 = CORE 01　PLAYER 2 = CORE 02</span>
-          </div>
-          <div class="howto-col" id="howto-keys">
-            <span class="howto-head">KEYBOARD</span>
-          </div>
-        </div>
-      </div>
-      <footer class="credit">
-        © 2024 ORPHE Inc. All rights reserved. ORPHE CORE is a registered trademark of ORPHE Inc.
-        <a href="https://orphe.io/" target="_blank" rel="noopener">https://orphe.io/</a>
-      </footer>
+  <h1>🏃 世界バーチャルハードル走　110m 🏃</h1>
+  
+  <!-- CoreToolkit connection UI -->
+  <div class="my-4" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+    <div id="toolkit_placeholder1" style="max-width: 600px;"></div>
+    <div id="toolkit_placeholder2" style="max-width: 600px;"></div>
+    <div id="ble-support-message" class="alert alert-warning my-3" style="display:none;">
+      Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
     </div>
-
-    <!-- ===== Countdown overlay ===== -->
-    <div class="screen" id="countdown-layer" style="display:none;">
-      <div class="count-wrap">
-        <div class="count-caption" id="countdown-caption">ON YOUR MARKS</div>
-        <div class="count-number"><span id="countdown-number">3</span></div>
-        <div class="count-lights" id="count-lights"><i></i><i></i><i></i></div>
-      </div>
-    </div>
-
-    <!-- ===== Finish overlay ===== -->
-    <div class="screen" id="finish-layer" style="display:none;">
-      <div class="finish-banner" id="finish-banner"><span>FINISH</span></div>
-      <div class="result-card" id="result-card">
-        <div class="result-head">
-          <span class="result-tag">OFFICIAL RESULT · 110mH FINAL</span>
-          <span class="result-badge" id="result-badge">NEW PERSONAL BEST</span>
-        </div>
-        <div class="result-vs" id="result-vs" hidden>
-          <div class="vs-winner" id="vs-winner">PLAYER 1 WINS</div>
-          <div class="vs-cols">
-            <div class="vs-col" id="vs-col-0"><span class="vs-name">PLAYER 1</span><b class="vs-time">—</b><span class="vs-meta"></span></div>
-            <div class="vs-col" id="vs-col-1"><span class="vs-name">PLAYER 2</span><b class="vs-time">—</b><span class="vs-meta"></span></div>
-          </div>
-        </div>
-        <div class="result-main" id="result-solo-main">
-          <div class="result-time">
-            <span class="result-label">公式タイム / Official Time</span>
-            <div class="result-time-value"><b id="final-time">—</b></div>
-            <div class="result-wr" id="result-wr"></div>
-          </div>
-          <div class="result-medal" id="result-medal">
-            <div class="medal-ring"><span id="result-place">1</span><sup id="result-place-suffix">st</sup></div>
-            <div class="medal-label" id="result-medal-label">GOLD</div>
-          </div>
-        </div>
-        <div class="result-stats" id="result-solo-stats">
-          <div><span>ハードル接触 / Hits</span><b><span id="final-hits">0</span><i> 回</i></b></div>
-          <div><span>クリーン / Clean</span><b id="result-clean">10/10</b></div>
-          <div><span>最高速 / Top speed</span><b><span id="result-top">0.0</span><i> m/s</i></b></div>
-          <div><span>スタミナ残 / Stamina left</span><b><span id="result-stamina">0</span><i> %</i><i id="result-exhaust"></i></b></div>
-        </div>
-        <div class="result-board" id="result-board"></div>
-        <div class="result-analysis" id="result-analysis">
-          <div class="score-row" id="score-row"></div>
-          <div class="radar" id="result-radar"></div>
-          <p class="result-comment" id="result-comment"></p>
-          <button type="button" class="hx-btn small" id="btn-analysis"><i class="bi bi-graph-up-arrow"></i> 詳しい分析 / ANALYSIS</button>
-        </div>
-        <form class="result-entry" id="name-form" autocomplete="off">
-          <input type="text" id="player-name" maxlength="24" placeholder="名前 / Name" aria-label="ランキングに登録する名前">
-          <input type="text" id="player-name-2" maxlength="24" placeholder="PLAYER 2 の名前" aria-label="PLAYER 2 の名前" hidden>
-          <button type="submit" class="hx-btn small" id="save-score">ランキング登録 / SAVE</button>
-          <span class="save-status" id="save-status"></span>
-        </form>
-        <div class="result-actions">
-          <button type="button" class="hx-btn primary" id="retry"><span class="hx-main">RETRY</span><span class="hx-sub">もう一度</span></button>
-          <button type="button" class="hx-btn ghost" id="btn-ranking-finish"><i class="bi bi-trophy-fill"></i> ランキング</button>
-          <button type="button" class="hx-btn ghost" id="btn-title"><i class="bi bi-house-fill"></i> タイトル</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== Ranking overlay ===== -->
-    <div class="screen" id="ranking-layer" style="display:none;">
-      <div class="ranking-container">
-        <button type="button" class="back-button" id="back-btn" title="戻る / Back"><i class="bi bi-arrow-left"></i></button>
-        <h2><i class="bi bi-trophy-fill"></i> ランキング <small>RANKING</small></h2>
-        <p class="ranking-board" id="ranking-board"></p>
-        <div class="ranking-list" id="ranking-list">
-          <div class="loading-message">読み込み中... / Loading...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== Performance analysis overlay ===== -->
-    <div class="screen" id="analysis-layer" style="display:none;">
-      <div class="analysis-panel">
-        <div class="analysis-head">
-          <h2><i class="bi bi-graph-up-arrow"></i> パフォーマンス分析 <small>PERFORMANCE ANALYSIS</small></h2>
-          <button type="button" class="icon-btn" id="close-analysis" title="閉じる / Close"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="analysis-body">
-          <div class="analysis-scores" id="analysis-scores"></div>
-          <div class="radar big" id="analysis-radar"></div>
-          <div class="analysis-stats" id="analysis-stats"></div>
-        </div>
-        <div class="analysis-splits" id="analysis-splits"></div>
-        <div class="analysis-foot">
-          <span class="analysis-note">ゲーム内の動きから算出したトレーニング用の目安です（医療的な測定値ではありません）。</span>
-          <span class="analysis-export" id="analysis-export">
-            <button type="button" class="hx-btn small" id="export-json"><i class="bi bi-download"></i> 生データ JSON</button>
-            <button type="button" class="hx-btn small" id="export-csv"><i class="bi bi-download"></i> CSV</button>
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div id="rec-indicator" title="生データ記録中 / Recording"><i></i>REC</div>
-
-    <!-- ===== Top bar ===== -->
-    <div id="topbar">
-      <button type="button" class="icon-btn" id="btn-sound" title="サウンド / Sound"><i class="bi bi-volume-up-fill"></i></button>
-      <button type="button" class="icon-btn" id="btn-fullscreen" title="全画面 / Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
-      <button type="button" class="icon-btn" id="btn-settings" title="センサー設定 / Sensor settings"><i class="bi bi-sliders"></i></button>
-    </div>
-
-    <!-- ===== ORPHE CORE connection dock (CoreToolkit UI lives here) ===== -->
-    <aside id="core-dock" class="dock">
-      <div class="dock-head">
-        <span class="dock-title" id="dock-title">ORPHE CORE</span><span class="dock-sub">接続 / CONNECT</span>
-        <span class="device-switch" id="device-switch" role="radiogroup" aria-label="センサーの種類 / Sensor type">
-          <button type="button" data-device="core" role="radio">CORE</button><button type="button" data-device="insole" role="radio">INSOLE</button>
-        </span>
-      </div>
-      <div class="dock-row" id="dock-row-0">
-        <span class="foot-chip" id="foot-chip-0"><b>L</b><span>左足</span></span>
-        <div id="toolkit_placeholder1" class="toolkit-slot"></div>
-        <span class="dock-state" id="dock-state-0">未接続</span>
-      </div>
-      <div class="dock-row" id="dock-row-1">
-        <span class="foot-chip" id="foot-chip-1"><b>R</b><span>右足</span></span>
-        <div id="toolkit_placeholder2" class="toolkit-slot"></div>
-        <span class="dock-state" id="dock-state-1">未接続</span>
-      </div>
-      <div id="ble-support-message" class="dock-note" style="display:none;">
-        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
-      </div>
-      <div class="dock-check">
-        <span class="check-item" id="check-accel"><i class="bi bi-lightning-charge-fill"></i> 足踏み 加速</span>
-        <span class="check-item" id="check-jump"><i class="bi bi-arrow-up-circle-fill"></i> つま先UP ジャンプ</span>
-      </div>
-      <label class="rec-toggle" title="走行中のセンサー生データとゲーム状態を記録します">
-        <input type="checkbox" id="rec-toggle"><span class="rec-switch"></span>
-        <span class="rec-label">生データを記録 / REC</span><span class="rec-count" id="rec-count-dock"></span>
-      </label>
-      <button type="button" class="dock-link" id="open-settings"><i class="bi bi-sliders"></i> センサー値・感度の調整 / Sensor settings</button>
-      <p class="dock-hint" id="dock-hint">スイッチをONにしてCOREを選択。キーボードだけでも遊べます。</p>
-    </aside>
-
-    <!-- ===== Sensor monitor + settings drawer ===== -->
-    <aside id="settings-drawer" class="drawer" aria-hidden="true">
-      <div class="drawer-head">
-        <h3>センサー / Sensor</h3>
-        <button type="button" class="icon-btn" id="close-settings" title="閉じる / Close"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div id="config-panel">
-        <h4>📊 センサー値モニター / Sensor Monitor</h4>
-        <p class="drawer-note">
-          このゲームをセンサーでプレイするには<a href="https://orphe.io/core" target="_blank" rel="noopener">ORPHE CORE</a>が2個必要です。またブラウザはGoogle Chromeをご使用ください。<br>
-          このプログラムはオープンソースの<a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" rel="noopener">ORPHE-CORE.js</a>を利用して作成されています。誰でも利用して自作の運動ゲームを作ることができます。<br>
-          <span class="drawer-note-en">
-            To play with sensors, you need two <a href="https://orphe.io/core" target="_blank" rel="noopener">ORPHE CORE</a> devices. Please use Google Chrome browser.
-            This program is built using the open-source <a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" rel="noopener">ORPHE-CORE.js</a>. Anyone can use it to create their own exercise games.
-          </span>
-        </p>
-
-        <div class="sensor-monitor">
-          <div class="sensor-box">
-            <h5>左足 / Left (Device 0)</h5>
-            <div class="sensor-line">
-              <span class="sensor-name">Pitch</span>
-              <span class="sensor-value" id="pitch0">--</span>
-              <div class="sensor-bar">
-                <div id="pitchBar0" class="bar" style="width: 2px; left: 50%;"></div>
-                <div id="pitchThreshold0" class="threshold"></div>
-              </div>
-            </div>
-            <div class="sensor-line">
-              <span class="sensor-name">Accel</span>
-              <span class="sensor-value" id="acc0">--</span>
-              <div class="sensor-bar">
-                <div id="accBar0" class="bar"></div>
-                <div id="accThreshold0" class="threshold"></div>
-              </div>
-            </div>
-          </div>
-          <div class="sensor-box">
-            <h5>右足 / Right (Device 1)</h5>
-            <div class="sensor-line">
-              <span class="sensor-name">Pitch</span>
-              <span class="sensor-value" id="pitch1">--</span>
-              <div class="sensor-bar">
-                <div id="pitchBar1" class="bar" style="width: 2px; left: 50%;"></div>
-                <div id="pitchThreshold1" class="threshold"></div>
-              </div>
-            </div>
-            <div class="sensor-line">
-              <span class="sensor-name">Accel</span>
-              <span class="sensor-value" id="acc1">--</span>
-              <div class="sensor-bar">
-                <div id="accBar1" class="bar"></div>
-                <div id="accThreshold1" class="threshold"></div>
-              </div>
-            </div>
-          </div>
-          <div class="sensor-action">
-            <span>現在の動作 / Current Action</span>
-            <p id="actionStatus">待機中 / Waiting</p>
-          </div>
-        </div>
-
-        <h4>⚡ 加速設定 / Acceleration</h4>
-        <div class="config-item">
-          <label for="accelThreshold">加速度閾値 / Acceleration Threshold</label>
-          <div class="config-control">
-            <input type="range" id="accelThreshold" min="0.1" max="5.1" value="1.1" step="0.2">
-            <span id="accelThresholdValue">1.1 G</span>
-          </div>
-        </div>
-
-        <h4>⬆️ ジャンプ設定 / Jump</h4>
-        <div class="config-item">
-          <label for="jumpPitchThreshold">ジャンプPITCH閾値 / Jump Pitch Threshold</label>
-          <div class="config-control">
-            <input type="range" id="jumpPitchThreshold" min="0.05" max="0.5" value="0.15" step="0.05">
-            <span id="jumpPitchThresholdValue">0.15 rad</span>
-          </div>
-        </div>
-
-        <div class="controls-help">
-          <p>🎮 操作方法 / Controls</p>
-          <p>• 足踏み（加速度 &gt; 1.1G） → 前進加速</p>
-          <p>• つま先を上げる（PITCH &lt; -0.15 rad） → ジャンプ</p>
-          <p>• ジャンプ・スタミナのルールは下の「ルール」で切り替えできます</p>
-          <p class="en">• Stamp feet (Accel &gt; 1.1G) → Accelerate forward</p>
-          <p class="en">• Lift toe up (Pitch &lt; -0.15 rad) → Jump</p>
-          <p class="en">• Jump and stamina rules can be switched under "Rules" below</p>
-        </div>
-
-        <div id="insole-config" hidden>
-          <h4>👟 ORPHE INSOLE</h4>
-          <div class="config-item">
-            <label for="insole-toe">つま先上げの向き / Toe-up direction</label>
-            <div class="config-control">
-              <select id="insole-toe">
-                <option value="auto">自動（重力から判定）</option>
-                <option value="normal">標準</option>
-                <option value="invert">反転</option>
-              </select>
-              <span id="insole-toe-state">—</span>
-            </div>
-          </div>
-          <p class="drawer-note">つま先を上げたとき、上のモニターの Pitch がマイナス（左）に振れてオレンジになれば正しい向きです。逆に振れる場合は「反転」にしてください。加速・ジャンプの閾値は CORE と共通です。</p>
-        </div>
-
-        <h4>🏃 ルール / Rules</h4>
-        <div class="config-item">
-          <label for="rule-jump">ジャンプ / Jump</label>
-          <div class="config-control">
-            <select id="rule-jump">
-              <option value="coast">空中は加速できず約12%失速（新）</option>
-              <option value="classic">従来どおり（空中でも加速できる）</option>
-            </select>
-          </div>
-        </div>
-        <div class="config-item">
-          <label for="rule-stamina">スタミナ / Stamina</label>
-          <div class="config-control">
-            <select id="rule-stamina">
-              <option value="pace">ペース配分：速いほど減り、切れると息切れ（新）</option>
-              <option value="classic">従来どおり（加速中に減り、止めると回復）</option>
-            </select>
-          </div>
-        </div>
-        <div class="config-item">
-          <label for="rule-guard">ジャンプ補助 / Jump assist</label>
-          <div class="config-control">
-            <select id="rule-guard">
-              <option value="on">踏み切り位置で跳ぶ・誤ジャンプ防止（新）</option>
-              <option value="off">なし（従来どおり）</option>
-            </select>
-          </div>
-        </div>
-        <p class="drawer-note" id="rule-note"></p>
-
-        <h4>📼 データ記録 / Recording</h4>
-        <label class="rec-toggle in-drawer">
-          <input type="checkbox" id="rec-toggle-2"><span class="rec-switch"></span>
-          <span class="rec-label">走行中の生データを記録する</span>
-        </label>
-        <p class="drawer-note">ONの間、カウントダウン開始からゴールまで、CORE の受信パケット・加速度・ジャイロ・姿勢・歩行解析値と、毎フレームのゲーム状態・イベントを記録します。記録はこのブラウザ内（IndexedDB）に残り、リロードしても消えません。</p>
-        <div class="rec-actions">
-          <span class="rec-count" id="rec-count">保存済み 0 件</span>
-          <button type="button" class="hx-btn small" id="rec-last-json">最新を JSON</button>
-          <button type="button" class="hx-btn small" id="rec-last-csv">最新を CSV</button>
-          <button type="button" class="hx-btn small" id="rec-all">すべて JSON</button>
-          <button type="button" class="hx-btn small danger" id="rec-clear">消去</button>
-        </div>
-
-        <h4>🔊 サウンド / Sound</h4>
-        <div class="config-item">
-          <label for="volume-slider">音量 / Volume</label>
-          <div class="config-control">
-            <input type="range" id="volume-slider" min="0" max="1" value="0.85" step="0.05">
-            <span id="volume-value">85%</span>
-          </div>
-        </div>
-        <h4>🖥 グラフィック / Graphics</h4>
-        <div class="config-item">
-          <label for="quality-select">描画品質 / Quality</label>
-          <div class="config-control">
-            <select id="quality-select">
-              <option value="auto" selected>自動 / Auto</option>
-              <option value="high">高 / High</option>
-              <option value="medium">中 / Medium</option>
-              <option value="low">低 / Low</option>
-            </select>
-            <span id="fps-value">-- fps</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <div id="loading"><div class="loading-inner"><span class="loading-title">WORLD VIRTUAL HURDLES</span><span class="loading-bar"><i></i></span><span class="loading-text">スタジアムを準備中… / Preparing the stadium</span></div></div>
   </div>
-
+  
+  <!-- Game description -->
+  <div class="description">
+    <div class="description-ja">
+      ORPHE COREを使った110mハードル走ゲームです（キーボードでも操作可）。<br>
+      足踏みで加速、足を上げてジャンプ！10個のハードルを越えてゴールを目指そう！
+    </div>
+    <div class="description-en">
+      110m hurdles game using ORPHE CORE (keyboard controls also available).<br>
+      Stamp your feet to accelerate, lift your foot to jump! Clear 10 hurdles and reach the goal!
+    </div>
+  </div>
+  
+  <!-- Game canvas container -->
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="ui">
+      <div class="hud">
+        <div class="row">距離 / Distance: <span id="dist">110.0</span>&nbsp;m</div>
+        <div class="row">ハードル接触 / Hits: <span id="hcount">0</span></div>
+        <div class="row">速度 / Speed: <span id="speed">0.0</span>&nbsp;m/s</div>
+      </div>
+      <div id="staminaWrap">
+        <div id="staminaBar"></div>
+        <div style="position: absolute; width: 100%; text-align: center; line-height: 20px; font-size: 12px; font-weight: bold; color: #000; text-shadow: 0 0 3px #fff;">
+          <span id="staminaPercent">100%</span>
+        </div>
+      </div>
+      <div id="staminaLabel" title="消費: 45%/秒 | 回復: 45%/秒">STAMINA</div>
+      <!-- Start overlay -->
+      <div class="center" id="start-layer">
+        <div class="card">
+          <h1 style="color: #ffffff !important;">ORPHE 110m ハードル走</h1>
+          <p>→キーでジャンプ / Press → to Jump</p>
+          <p>←キーで加速（スタミナ消費） / Press ← to Accelerate</p>
+          <p>ORPHE COREで足の動きで操作 / Control with ORPHE CORE</p>
+          <div class="btn" id="start-btn">スタート / START</div>
+          <div class="btn" id="btn-ranking" style="margin: 15px auto 0 auto; padding: 8px 16px; border-radius: 10px; font-size: 14px; width: 240px; background: linear-gradient(45deg, #11cce9, #0039d4); color: #fff; font-weight: 500; cursor: pointer; border: none; transition: transform 0.2s;">ランキング / RANKING</div>
+        </div>
+      </div>
+      <!-- Countdown overlay -->
+      <div class="center" id="countdown-layer" style="display:none; background: transparent; pointer-events: none;">
+        <div style="font-size: 200px; font-weight: 900; color: #FFD700; text-shadow: 0 0 40px rgba(255, 215, 0, 0.5); animation: pulse 1s infinite; pointer-events: none;">
+          <span id="countdown-number">3</span>
+        </div>
+      </div>
+      <div class="center" id="finish-layer" style="display:none;">
+        <div class="card">
+          <h1>FINISH!</h1>
+          <p>公式タイム / Official Time: <b id="final-time">—</b></p>
+          <p>ハードル接触 / Hurdle Hits: <b id="final-hits">0</b> 回</p>
+          <div class="btn" id="retry">もう一度 / RETRY</div>
+          <div class="btn" id="btn-ranking-finish" style="margin: 15px auto 0 auto; padding: 8px 16px; border-radius: 10px; font-size: 14px; width: 240px; background: linear-gradient(45deg, #11cce9, #0039d4); color: #fff; font-weight: 500; cursor: pointer; border: none; transition: transform 0.2s;">ランキング / RANKING</div>
+        </div>
+      </div>
+      <!-- Ranking overlay -->
+      <div class="center" id="ranking-layer" style="display:none;">
+        <div class="ranking-container">
+          <div class="back-button" id="back-btn" title="戻る / Back">
+            <i class="bi bi-arrow-left" style="font-size: 1.2rem; color: #fff;"></i>
+          </div>
+          <h2>🏆 ランキング / RANKING</h2>
+          <div class="ranking-list" id="ranking-list">
+            <div class="loading-message">読み込み中... / Loading...</div>
+          </div>
+        </div>
+      </div>
+      <div class="big-timer" id="timer">0.00</div>
+    </div>
+  </div>
+  
+  <!-- Sensor configuration panel -->
+  <div id="config-panel">
+    <h3 style="color: #ffffff;">📊 センサー値モニター / Sensor Monitor</h3>
+    <p style="text-align: center; font-size: 12px; color: #aaa; margin: -10px 0 15px 0;">
+      このゲームをセンサーでプレイするには<a href="https://orphe.io/core" target="_blank" style="color: #00bcd4;">ORPHE CORE </a>が2個必要です。またブラウザはGoogle Chromeをご使用ください。<br>
+      このプログラムはオープンソースの<a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" style="color: #00bcd4;">ORPHE-CORE.js</a>を利用して作成されています。誰でも利用して自作の運動ゲームを作ることができます。<br>
+      <span style="font-size: 11px; color: #999; margin-top: 5px; display: inline-block;">
+        To play with sensors, you need two <a href="https://orphe.io/core" target="_blank" style="color: #00bcd4;">ORPHE CORE</a> devices. Please use Google Chrome browser.<br>
+        This program is built using the open-source <a href="https://orphe-oss.github.io/ORPHE-CORE.js/" target="_blank" style="color: #00bcd4;">ORPHE-CORE.js</a>. Anyone can use it to create their own exercise games.
+      </span>
+    </p>
+    
+    <div class="sensor-monitor">
+      <div style="display: flex; gap: 20px;">
+        <div class="sensor-box">
+          <h5>左足 / Left (Device 0)</h5>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Pitch:</span>
+            <span id="pitch0" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="pitchBar0" class="bar" style="width: 2px; left: 50%;"></div>
+              <div id="pitchThreshold0" class="threshold"></div>
+            </div>
+          </div>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Accel:</span>
+            <span id="acc0" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="accBar0" class="bar"></div>
+              <div id="accThreshold0" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="sensor-box">
+          <h5>右足 / Right (Device 1)</h5>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Pitch:</span>
+            <span id="pitch1" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="pitchBar1" class="bar" style="width: 2px; left: 50%;"></div>
+              <div id="pitchThreshold1" class="threshold"></div>
+            </div>
+          </div>
+          <div style="margin: 10px 0;">
+            <span style="color: #aaa; display: inline-block; width: 80px;">Accel:</span>
+            <span id="acc1" style="color: #fff; font-family: monospace;">--</span>
+            <div class="progress-bar" style="margin-top: 5px;">
+              <div id="accBar1" class="bar"></div>
+              <div id="accThreshold1" class="threshold"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <div style="flex: 1; padding: 10px; background-color: #2a2a3e; border-radius: 8px; text-align: center;">
+          <p style="margin: 10px 0; color: #aaa;">現在の動作 / Current Action</p>
+          <p id="actionStatus" style="font-size: 18px; font-weight: bold; margin: 10px 0;">待機中 / Waiting</p>
+        </div>
+      </div>
+    </div>
+    
+    <hr style="margin: 20px 0; border-color: #555;">
+    
+    <h3>⚙️ センサー設定 / Sensor Settings</h3>
+    
+    <h4>⚡ 加速設定 / Acceleration Settings</h4>
+    <div class="config-item">
+      <label for="accelThreshold">加速度閾値 / Acceleration Threshold:</label>
+      <input type="range" id="accelThreshold" min="0.1" max="5.1" value="0.3" step="0.2">
+      <span id="accelThresholdValue" style="background: #2a2a3e; padding: 5px 10px; border-radius: 5px; border: 1px solid #00bcd4;">0.3 G</span>
+    </div>
+    
+    <h4>⬆️ ジャンプ設定 / Jump Settings</h4>
+    <div class="config-item">
+      <label for="jumpPitchThreshold">ジャンプPITCH閾値 / Jump Pitch Threshold:</label>
+      <input type="range" id="jumpPitchThreshold" min="0.05" max="0.5" value="0.1" step="0.05">
+      <span id="jumpPitchThresholdValue" style="background: #2a2a3e; padding: 5px 10px; border-radius: 5px; border: 1px solid #00bcd4;">0.10 rad</span>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background-color: #1a1a2e; border-radius: 10px;">
+      <p style="margin: 5px 0; color: #fff;">🎮 操作方法 / Controls:</p>
+      <p style="margin: 5px 0; color: #ccc;">• 足踏み（加速度 > 0.3G） → 前進加速</p>
+      <p style="margin: 5px 0; color: #ccc;">• つま先を上げる（PITCH < -0.1 rad） → ジャンプ</p>
+      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Stamp feet (Accel > 0.3G) → Accelerate forward</p>
+      <p style="margin: 5px 0; color: #aaa; font-size: 14px;">• Lift toe up (Pitch < -0.1 rad) → Jump</p>
+    </div>
+  </div>
+  
   <script>
     // Initialize ORPHE CORE devices
     var bles = [new Orphe(0), new Orphe(1)];
@@ -719,5 +1676,15 @@
       updateThresholdVisuals();
     });
   </script>
+  
+  <!-- Footer -->
+  <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #333; color: #aaa;">
+    <p style="margin: 10px 0;">
+      © 2024 ORPHE Inc. All rights reserved. ORPHE CORE is a registered trademark of ORPHE Inc.
+    </p>
+    <p style="margin: 10px 0;">
+      Visit us at <a href="https://orphe.io/" target="_blank" style="color: #00bcd4; text-decoration: none;">https://orphe.io/</a>
+    </p>
+  </footer>
 </body>
 </html>

@@ -399,7 +399,21 @@ function hideRanking() {
 
 // localStorage key for this browser's own scores. Bumping this
 // string would effectively reset everyone's local ranking history.
-const LOCAL_RANKING_KEY = 'hurdle.localRankings';
+const LOCAL_RANKING_KEY = 'superhurdle.localRankings';
+// The original GAME-HURDLE keeps its own list under this key on the same origin. While this
+// game was still developed inside GAME-HURDLE it saved there too; those entries carry a
+// `rules` field, which the original never writes, so they are moved over once.
+const ORIGINAL_RANKING_KEY = 'hurdle.localRankings';
+(function adoptEarlierScores() {
+  try {
+    if (localStorage.getItem(LOCAL_RANKING_KEY) !== null) return;
+    const parsed = JSON.parse(localStorage.getItem(ORIGINAL_RANKING_KEY) || '[]');
+    const all = Array.isArray(parsed) ? parsed : [];
+    const mine = all.filter((r) => r && typeof r.rules === 'string');
+    localStorage.setItem(LOCAL_RANKING_KEY, JSON.stringify(mine));
+    if (mine.length) localStorage.setItem(ORIGINAL_RANKING_KEY, JSON.stringify(all.filter((r) => !mine.includes(r))));
+  } catch { /* storage unavailable: start with an empty list */ }
+})();
 const RANKING_DISPLAY_LIMIT = 100;
 
 // Read this browser's saved scores. Returns [] on parse failure.
@@ -782,7 +796,7 @@ const r2 = (v) => (v == null ? null : +v.toFixed(2));
 function sessionMeta() {
   const bles = sensors;
   const meta = {
-    app: 'GAME-HURDLE', deviceType: insole ? 'insole' : 'core', insoleToe: insole ? insole.toeState() : null,
+    app: 'GAME-SUPER-HURDLE', deviceType: insole ? 'insole' : 'core', insoleToe: insole ? insole.toeState() : null,
     mode, rules: { ...RULES }, lanes: active.map((p) => p.lane),
     thresholds: { accG: window.accThresholdAccel, jumpPitchRad: window.pitchThresholdJump },
     constants: { COURSE_LEN_M, FIRST_HURDLE_M, HURDLE_SPACING_M, MAX_SPEED, ACCEL_RATE, FRICTION, JUMP_V0, GRAVITY, JUMP_SPEED_LOSS, CRUISE_SPEED, STAMINA_BURN_AT_MAX, EXHAUSTED_SPEED, EXHAUSTED_RECOVER_LEVEL, JUMP_GUARD_SEC, JUMP_HOLD_MS, CUE_EARLY_SEC, CUE_LATE_SEC },
@@ -790,7 +804,7 @@ function sessionMeta() {
     sdk: { orphe: window.orphe_js_version_date ?? null, toolkit: window.coreToolkit_version_date ?? null },
     userAgent: navigator.userAgent, screen: [window.innerWidth, window.innerHeight, window.devicePixelRatio],
   };
-  try { return JSON.parse(JSON.stringify(meta)); } catch { return { app: 'GAME-HURDLE', mode }; }
+  try { return JSON.parse(JSON.stringify(meta)); } catch { return { app: 'GAME-SUPER-HURDLE', mode }; }
 }
 /** Seconds until a runner taking off `dist` metres before the bar gets there, under the current jump rule. */
 function airTime(dist, speed) {

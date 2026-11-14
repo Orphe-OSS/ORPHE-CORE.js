@@ -373,6 +373,32 @@
       "public_navigation": "featured"
     },
     {
+      "id": "game-super-hurdle",
+      "title": "SUPER VIRTUAL HURDLE",
+      "path": "examples/GAME-SUPER-HURDLE/",
+      "type": "web-app",
+      "status": "public",
+      "audience": ["game-player", "educator"],
+      "value": "Stadium edition of the 110m hurdle race: 3D night stadium, two-player VS, ORPHE INSOLE support, post-race analysis and raw-data recording. Heavier than GAME-HURDLE.",
+      "topics": ["game", "virtual sports", "running", "track", "hurdle", "versus", "insole", "analysis"],
+      "data": ["convertedAcc", "euler"],
+      "devices": 2,
+      "validation": ["static-page-check", "thumbnail-exists", "owner-real-device-check"],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/super-hurdle.png",
+      "sort_order": 205,
+      "links": {
+        "demo": "examples/GAME-SUPER-HURDLE/index.html",
+        "source": "examples/GAME-SUPER-HURDLE/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "listed"
+    },
+    {
       "id": "game-sprint-100m-vs",
       "title": "100m Sprint VS",
       "path": "examples/GAME-SPRINT-100M-VS/",

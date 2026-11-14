@@ -562,7 +562,7 @@ export function createWorld({ scene, renderer, logoImage }) {
         g.addColorStop(0, '#10e0ff'); g.addColorStop(1, '#b4ff3a');
         ctx.fillStyle = g; ctx.fillRect(x, 0, cell, H);
         ctx.fillStyle = '#04101c'; ctx.font = `86px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('WORLD VIRTUAL HURDLES', x + cell / 2, H / 2 + 6, cell - 30);
+        ctx.fillText('SUPER VIRTUAL HURDLE', x + cell / 2, H / 2 + 6, cell - 30);
       },
       (x) => {
         ctx.fillStyle = '#060a16'; ctx.fillRect(x, 0, cell, H);
@@ -898,7 +898,7 @@ export function createWorld({ scene, renderer, logoImage }) {
     ctx.fillStyle = bar; ctx.fillRect(0, 0, W, 10); ctx.fillRect(0, 84, W, 3);
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffffff'; ctx.font = `58px ${FONT}`; ctx.textAlign = 'left';
-    ctx.fillText('WORLD VIRTUAL HURDLES', 28, 50);
+    ctx.fillText('SUPER VIRTUAL HURDLE', 28, 50);
     ctx.fillStyle = '#ffd34d'; ctx.textAlign = 'right';
     ctx.fillText('110mH FINAL', W - 28, 50);
     ctx.textAlign = 'center';

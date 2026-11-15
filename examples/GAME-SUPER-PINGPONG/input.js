@@ -71,12 +71,43 @@ export function eigenSym3(m) {
 }
 
 /**
- * Learning the control from play, without a calibration step: gravity samples of the
- * last AUTO.windowSec seconds lie on an arc; the normal of the plane through them is
- * the axis of the movement, and the 4th..96th percentile of the tilt along it is the
- * range in use. Refitted twice a second, so the range follows a player who tires.
+ * The axis of a movement, from gravity samples (unit vectors in sensor coordinates) that lie
+ * on an arc: perpendicular both to the mean gravity and to the direction the arc runs in (its
+ * principal direction). This is the construction of the measured calibration
+ * (cross(rest, raised)), applied to the whole cloud instead of two poses.
+ *
+ * The normal of a plane fitted through the samples (the smallest-variance direction) is not
+ * used. On an arc of a few tens of degrees the arc's sag, which points along the mean gravity,
+ * is not much larger than the foot's small roll and the sensor noise, so that "normal" swings
+ * towards gravity itself and the tilt measured around it comes out 2–4 times too large
+ * (device test 2026-11-15: instep about 32° read as up to 92°, thigh about 27° as 115°).
+ *
+ * Returns { axis, mean, spreadDeg }: spreadDeg is the standard deviation along the arc. axis is
+ * null when the samples do not run across gravity at all (their spread points along the mean,
+ * which no rotation of a sensor produces), rather than an arbitrary direction.
  */
-export const AUTO = { windowSec: 45, sampleMs: 100, fitMs: 500, minSamples: 20, minSpreadDeg: 2.5, lockSpanDeg: 12 };
+export function arcAxis(samples) {
+  const n = samples.length;
+  const m = [0, 0, 0];
+  for (const g of samples) { m[0] += g[0] / n; m[1] += g[1] / n; m[2] += g[2] / n; }
+  const c = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (const g of samples) { const d = [g[0] - m[0], g[1] - m[1], g[2] - m[2]]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) c[i][j] += (d[i] * d[j]) / n; }
+  const along = eigenSym3(c)[0];
+  const mean = unit(m);
+  const across = cross(mean, along.vector);
+  return { axis: norm(across) > 0.3 ? unit(across) : null, mean, spreadDeg: Math.sqrt(Math.max(0, along.value)) * RAD2DEG };
+}
+
+/**
+ * Learning the control from play, without a calibration step: gravity samples of the
+ * last AUTO.windowSec seconds lie on an arc; arcAxis() gives the axis of the movement,
+ * and the 4th..96th percentile of the tilt along it is the range in use. Refitted twice
+ * a second, so the range follows a player who tires.
+ */
+// minSpreadDeg: the movement (standard deviation along the arc) needed before anything is learned.
+// 1.5 deg lets a player who can only move about ±4 deg start within seconds (2.5 took 30+ s on the
+// device); below about 1 deg, fidgeting before the first real movement starts the learning.
+export const AUTO = { windowSec: 45, sampleMs: 100, fitMs: 500, minSamples: 20, minSpreadDeg: 1.5, lockSpanDeg: 12 };
 
 /** 1€ filter (Casiez et al. 2012): heavy smoothing at rest, little lag in fast movements. */
 export class OneEuro {
@@ -102,6 +133,9 @@ export function cutoffForSmooth(smooth) {
 
 /** One player's control: fed by quaternions from a CORE, or by keys / pointer when no CORE is streaming. */
 export class TiltInput {
+  /** Which version of the control maths is loaded (shown in the console and the raw CSV; a stale cached copy has none). */
+  static BUILD = '20261116-arcaxis';
+
   constructor(id) {
     this.id = id;
     this.exercise = 'ankle';
@@ -174,6 +208,22 @@ export class TiltInput {
     this._auto = { buf: [], lastPush: -1e9, lastFit: -1e9, rest: null, signLocked: false };
   }
 
+  /**
+   * A new match learns the range afresh, so every match starts like the first one: the resting
+   * pose in the middle of the table, the default range until the player's movement is learned.
+   * Carried over, the previous match's range put the resting foot at the near end from the
+   * first serve (device test 2026-11-15, versus followed by co-op). The axis, its "up" direction
+   * and the resting pose are kept: they belong to how the sensor is strapped on, not to the match.
+   * A measured calibration is kept as it is.
+   */
+  relearnRange() {
+    if (this.calibrated) return;
+    const A = this._auto;
+    this._auto = { buf: [], lastPush: -1e9, lastFit: -1e9, rest: A.rest, signLocked: A.signLocked };
+    this.autoFitted = false;
+    this.range = { ...DEFAULT_RANGE[this.exercise] };
+  }
+
   /** Collect gravity samples and refit axis and range (only while no measured calibration is in use). */
   _autoFeed(now) {
     const A = this._auto;
@@ -185,16 +235,11 @@ export class TiltInput {
     if (A.buf.length > cap) A.buf.shift();
     if (A.buf.length < AUTO.minSamples || now - A.lastFit < AUTO.fitMs) return;
     A.lastFit = now;
-    const n = A.buf.length;
-    const m = [0, 0, 0];
-    for (const g of A.buf) { m[0] += g[0] / n; m[1] += g[1] / n; m[2] += g[2] / n; }
-    const c = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
-    for (const g of A.buf) { const d = [g[0] - m[0], g[1] - m[1], g[2] - m[2]]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) c[i][j] += (d[i] * d[j]) / n; }
-    const eig = eigenSym3(c);
-    if (Math.sqrt(Math.max(0, eig[0].value)) * RAD2DEG < AUTO.minSpreadDeg) return;   // not moving (yet)
-    let axis = unit(eig[2].vector);
+    const fit = arcAxis(A.buf);
+    if (fit.spreadDeg < AUTO.minSpreadDeg || !fit.axis) return;   // not moving (yet)
+    let axis = fit.axis;
     if (dot(axis, this.axis) < 0) axis = [-axis[0], -axis[1], -axis[2]];
-    const rest = signedTilt(A.rest, A.rest, axis) === null ? unit(m) : A.rest;
+    const rest = signedTilt(A.rest, A.rest, axis) === null ? fit.mean : A.rest;
     const tilts = [];
     for (const g of A.buf) { const t = signedTilt(g, rest, axis); if (t !== null) tilts.push(t * RAD2DEG); }
     if (tilts.length < AUTO.minSamples) return;
@@ -204,12 +249,20 @@ export class TiltInput {
     // which way is "up"? Seated, the resting foot or thigh is at the bottom of its travel,
     // so the larger excursion from the resting pose is the raise. Decided once, then kept.
     if (!A.signLocked && hi - lo >= AUTO.lockSpanDeg) {
-      if (-lo > hi) { axis = [-axis[0], -axis[1], -axis[2]]; [lo, hi] = [-hi, -lo]; }
+      if (-lo > hi) {
+        axis = [-axis[0], -axis[1], -axis[2]]; [lo, hi] = [-hi, -lo];
+        // a small movement may already have been learned the other way round: turn that round too,
+        // or the blend below would cancel the axis out and up and down would stay swapped
+        this.axis = [-this.axis[0], -this.axis[1], -this.axis[2]];
+        this.range = { up: this.range.down, down: this.range.up };
+        this.filter.reset();
+      }
       A.signLocked = true;
     }
     const k = this.autoFitted ? 0.5 : 1;
     const grow = (cur, next) => cur + (next > cur ? 0.5 : 0.08) * (next - cur);   // widen quickly, narrow slowly
-    this.axis = unit([this.axis[0] + k * (axis[0] - this.axis[0]), this.axis[1] + k * (axis[1] - this.axis[1]), this.axis[2] + k * (axis[2] - this.axis[2])]);
+    const blended = [this.axis[0] + k * (axis[0] - this.axis[0]), this.axis[1] + k * (axis[1] - this.axis[1]), this.axis[2] + k * (axis[2] - this.axis[2])];
+    this.axis = norm(blended) > 0.5 ? unit(blended) : axis;
     this.g0 = rest.slice();
     this.range = this.autoFitted ? { up: grow(this.range.up, hi), down: grow(this.range.down, -lo) } : { up: hi, down: -lo };
     this.autoFitted = true;

@@ -143,7 +143,7 @@ function saveRaw(outcome) {
   const two = (v) => String(v).padStart(2, '0');
   const head = [
     '# SUPER PINGPONG raw log (ORPHE CORE)',
-    `# date,${d.toISOString()},outcome,${outcome}`,
+    `# date,${d.toISOString()},outcome,${outcome},build,${TiltInput.BUILD || 'before-20261116'}`,
     `# mode,${settings.mode},points,${settings.points},ball_speed,${settings.ballSpeed},rally_pace,${settings.rallyPace},items,${settings.items},guide,${settings.guide}`,
     ...[0, 1].map((side) => { const p = settings.players[side], i = inputs[side]; return `# player,${side},exercise,${i.exercise},gain,${p.gain},smooth,${p.smooth},invert,${p.invert},paddle,${p.paddle},assist,${p.assist},sensor_hz,${i.hz.toFixed(0)},human,${isHuman(side)}`; }),
     `# user_agent,${navigator.userAgent.replace(/,/g, ';')}`,
@@ -321,6 +321,8 @@ function beginMatch() {
   startRaw();
   log = newLog();
   bots.forEach((b) => { b.target = 0; b.pos = 0; b.reactAt = 0; });
+  // every match learns the player's range afresh (a measured calibration is kept); ?. so that a stale cached input.js cannot stop the match
+  for (const side of humans()) inputs[side].relearnRange?.();
   const exercises = [0, 1].map((side) => (isHuman(side) ? inputs[side].exercise : null));
   ui.hudSetup({ mode: settings.mode, names: names(), points: settings.points, goal: sim.coopGoal, lives: sim.lives, exercises });
   ui.showSheet(false); ui.winBanner(null);
@@ -785,4 +787,5 @@ window.pingpongDebug = {
   get world() { return world; }, get fx() { return fx; }, get renderer() { return renderer; },
 };
 
+console.info(`[PINGPONG] build ${TiltInput.BUILD || 'before-20261116 (reload to get the latest)'}`);
 boot();

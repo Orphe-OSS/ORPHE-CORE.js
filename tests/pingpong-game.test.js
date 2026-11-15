@@ -309,6 +309,121 @@ for (const [label, mountAxis, mountDeg, jointAxis] of [['mount A', [0.3, 0.2, 1]
   run(60, (t) => 7 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));
   near(input.range.up + input.range.down, 14, 4, `${label}: the range shrinks to what the player uses`);
 }
+// real movements are not a clean arc: the foot rolls a little and the sensor is noisy. On a short arc
+// that used to turn the learned axis towards gravity, so the tilt read 2-4x too large (device test
+// 2026-11-15: instep about 32 deg read as 92 deg, thigh about 27 deg as 115 deg), and a small movement
+// was never learned at all (no tilt can be measured around an axis close to gravity).
+{
+  const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  for (const [label, mountAxis, mountDeg, jointAxis, rollAxis] of [['mount A', [0.3, 0.2, 1], 115, [1, 0.25, 0], [-0.25, 1, 0]], ['mount B', [1, 0.4, 0.2], 250, [-0.2, 1, 0.1], [1, 0.2, 0]], ['mount C', [0, 0, 1], 0, [0, -1, 0], [1, 0, 0]]]) {
+    for (const span of [30, 12]) {
+      let seed = 7;
+      const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296 - 0.5; };
+      const mount = quat(mountAxis, mountDeg);
+      const pose = (deg, t) => {
+        const roll = 2.5 * Math.sin(2 * Math.PI * 0.13 * t) + 1.5 * Math.sin(2 * Math.PI * 0.71 * t + 1);
+        const noise = quat([rnd(), rnd(), rnd() + 1e-3], 0.4 * Math.abs(2 * rnd()));
+        return mul(noise, mul(quat(rollAxis, roll), mul(quat(jointAxis, deg), mount)));
+      };
+      const input = new I.TiltInput(0);
+      input.settings.gain = 1;
+      let now = 0;
+      const run = (seconds, degAt) => { const n = Math.round(seconds * 100); for (let i = 0; i < n; i++) { now += 10; input.feedQuat(pose(degAt(now / 1000), now / 1000), now); } };
+      run(1, () => 0);
+      run(40, (t) => (span / 2) * (1 - Math.cos(2 * Math.PI * 0.4 * t)));
+      const tag = `${label}, ${span} deg with a rolling foot`;
+      assert.equal(input.autoFitted, true, `${tag}: the movement was picked up`);
+      assert.ok(Math.abs(dot3(input.axis, input.g0)) < 0.1, `${tag}: the axis lies across gravity, not along it`);
+      near(input.range.up + input.range.down, span, 3, `${tag}: learned range`);
+      run(1.5, () => span);
+      near(input.deg, span, 3, `${tag}: the raised pose reads as the angle it is`);
+    }
+  }
+  // arcAxis on a clean arc: the joint axis, seen from the sensor
+  const joint = [1, 0.25, 0], m = quat([0.3, 0.2, 1], 115);
+  const samples = [];
+  for (let d = 0; d <= 30; d += 0.5) samples.push(Array.from(I.gravityFromQuat(mul(quat(joint, d), m))));
+  const fit = I.arcAxis(samples);
+  const v = mul(mul({ w: m.w, x: -m.x, y: -m.y, z: -m.z }, { w: 0, x: joint[0], y: joint[1], z: joint[2] }), m);
+  const n = Math.hypot(v.x, v.y, v.z);
+  near(Math.abs(dot3(fit.axis, [v.x / n, v.y / n, v.z / n])), 1, 1e-3, 'arcAxis finds the joint axis of a clean arc');
+  near(fit.spreadDeg, 30 / Math.sqrt(12), 1, 'arcAxis spread is the standard deviation along the arc');
+  // no arc to speak of (the "spread" points along gravity itself): no axis rather than an arbitrary one
+  assert.equal(I.arcAxis([[0, 0, 1], [0, 0, 1], [0, 0, 0.9], [0, 0, 0.9]]).axis, null, 'a cloud without an arc gives no axis');
+
+  // a small movement is learned first, the "up" direction only later, once the movement is large
+  // enough to tell (lockSpanDeg). When that decision turns the learned axis round, the axis must not
+  // collapse to zero on the way, and up must stay up (raising = far end) for good.
+  for (const jointAxis of [[0, -1, 0], [0, 1, 0], [1, 0, 0], [-1, 0, 0], [0.7, 0.7, 0], [-0.7, 0.7, 0]]) {
+    const mount = quat([0.3, 0.2, 1], 30);
+    const input = new I.TiltInput(0);
+    input.settings.gain = 1;
+    let now = 0, smallestAxis = 1;
+    const run = (seconds, degAt) => {
+      const n = Math.round(seconds * 100);
+      for (let i = 0; i < n; i++) { now += 10; input.feedQuat(mul(quat(jointAxis, degAt(now / 1000)), mount), now); smallestAxis = Math.min(smallestAxis, Math.hypot(...input.axis)); }
+    };
+    run(1, () => 0);
+    run(20, (t) => 3 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));    // 0..6 deg: learned, too small to tell up from down
+    const tag = `joint axis ${jointAxis.join(',')}`;
+    assert.equal(input.autoFitted, true, `${tag}: the small movement was learned`);
+    run(30, (t) => 15 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));   // then 0..30 deg
+    near(smallestAxis, 1, 1e-6, `${tag}: the axis never collapses`);
+    near(input.range.up + input.range.down, 30, 4, `${tag}: learned range`);
+    assert.ok(input.range.up > input.range.down, `${tag}: the raise is "up" (up ${input.range.up.toFixed(1)}, down ${input.range.down.toFixed(1)})`);
+    run(1.5, () => 30);
+    assert.ok(input.position() > 0.85, `${tag}: raising moves the paddle to the far end (${input.position().toFixed(2)})`);
+    run(1.5, () => 0);
+    assert.ok(input.position() < -0.85, `${tag}: resting is the near end (${input.position().toFixed(2)})`);
+  }
+
+  // every match learns the range afresh: the next match starts like the first, with the resting foot
+  // in the middle, instead of at the near end of the previous match's range; the axis and up stay
+  {
+    const mount = quat([1, 0.4, 0.2], 250), jointAxis = [-1, 0, 0];
+    const input = new I.TiltInput(0);
+    input.settings.gain = 1;
+    let now = 0;
+    const run = (seconds, degAt) => { const n = Math.round(seconds * 100); for (let i = 0; i < n; i++) { now += 10; input.feedQuat(mul(quat(jointAxis, degAt(now / 1000)), mount), now); } };
+    run(1, () => 0);
+    run(30, (t) => 15 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));   // first match
+    run(1.5, () => 0);
+    assert.ok(input.position() < -0.85, 'first match, learned: resting is the near end');
+    const axis = input.axis.slice();
+    input.relearnRange();                                          // the next match starts
+    assert.equal(input.autoFitted, false);
+    assert.deepEqual({ ...input.range }, { ...I.DEFAULT_RANGE.ankle });
+    assert.deepEqual(input.axis, axis, 'the learned axis is kept');
+    run(1, () => 0);
+    near(input.position(), 0, 0.1, 'next match: the resting foot starts in the middle');
+    run(1, () => 9);
+    assert.ok(input.position() > 0.3, `next match: raising still moves the paddle away (${input.position().toFixed(2)})`);
+    run(30, (t) => 15 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));
+    assert.equal(input.autoFitted, true, 'next match: relearned');
+    near(input.range.up + input.range.down, 30, 4, 'next match: relearned range');
+    assert.ok(input.range.up > input.range.down, 'next match: up is still up');
+
+    const measured = new I.TiltInput(1);
+    assert.ok(measured.importCalibration({ axis: [0, -1, 0], up: 22, down: 9, exercise: 'ankle' }));
+    measured.relearnRange();
+    assert.deepEqual({ ...measured.range }, { up: 22, down: 9 }, 'a measured calibration is kept across matches');
+  }
+
+  // sitting still with sensor noise and a slow drift of the resting pose: nothing is learned
+  {
+    let seed = 11;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296 - 0.5; };
+    const mount = quat([0.3, 0.2, 1], 115);
+    const input = new I.TiltInput(0);
+    let now = 0;
+    for (let i = 0; i < 6000; i++) {
+      now += 10;
+      const drift = 1.5 * Math.sin(2 * Math.PI * now / 60000);   // the foot settles by a degree or two over a minute
+      input.feedQuat(mul(quat([rnd(), rnd(), rnd() + 1e-3], 0.4 * Math.abs(2 * rnd())), mul(quat([1, 0.25, 0], drift), mount)), now);
+    }
+    assert.equal(input.autoFitted, false, 'a still foot that slowly settles is not taken for a movement');
+  }
+}
 // a measured calibration is not overridden by the automatic one
 {
   const input = new I.TiltInput(0);

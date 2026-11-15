@@ -99,8 +99,12 @@ function boot({ sdk = true, bluetooth = true } = {}) {
     assert.equal(instances[0].begins[0].type, 'SENSOR_VALUES');
     assert.equal(instances[0].begins[0].options.streamingMode, 3);
     assert.equal(instances[0].begins[0].options.autoReconnect, true);
+    // 前回の INSOLE の記憶（同じ github.io の別ページとも共有）にだまってつながず、かならず選択ダイアログを出す
+    assert.equal(instances[0].begins[0].options.forceDeviceSelection, true);
+    // 応答しない INSOLE を待ちつづけない
+    assert.ok(instances[0].begins[0].options.connectTimeoutMs > 0, 'a GATT connect timeout is set');
     assert.equal(api.status()[0].state, 'connecting');
-    assert.equal(ui[0].input.disabled, true, 'the switch is locked while connecting');
+    assert.equal(ui[0].input.disabled, false, 'the switch stays pressable while connecting (turning it off cancels)');
     assert.equal(ui[0]['.u-insole-note'].textContent, '接続中…');
     instances[0].finish();
     await tick();
@@ -271,6 +275,56 @@ function boot({ sdk = true, bluetooth = true } = {}) {
     await failed.toggle(1, true);
     assert.equal(failed.api.status()[1].state, 'off');
     assert.deepEqual(failed.events(), ['1:error']);
+  }
+
+  // 7b) 「接続中…」のまま止まっても、スイッチを切れば取りやめられる。遅れて届いた結果で状態を変えない
+  {
+    // 取りやめたあとに、ダイアログで選んだ INSOLE がつながった → 切っておく。ゲームには何も知らせない
+    const late = boot();
+    await late.toggle(0, true, { settle: false });
+    assert.equal(late.api.status()[0].state, 'connecting');
+    await late.toggle(0, false);
+    assert.equal(late.api.status()[0].state, 'off');
+    assert.equal(late.ui[0].input.checked, false);
+    assert.equal(late.ui[0]['.u-insole-note'].textContent, '');
+    assert.equal(late.instances[0].resetCalls, 1, 'cancelling resets the pending connection');
+    assert.deepEqual(late.events(), [], 'nothing was connected, so no disconnect is reported');
+    late.instances[0].finish();
+    await tick();
+    assert.equal(late.api.status()[0].state, 'off', 'a late success does not turn the switch back on');
+    assert.equal(late.instances[0].resetCalls, 2, 'the late connection is dropped');
+    assert.deepEqual(late.events(), []);
+    // 入れ直せば、ふつうにつながる
+    await late.toggle(0, true);
+    assert.equal(late.api.status()[0].state, 'on');
+    assert.deepEqual(late.events(), ['0:connect']);
+
+    // 取りやめたあとの失敗（タイムアウトなど）は、だまって捨てる
+    const lateFail = boot();
+    lateFail.instances[0].plan.fail = Object.assign(new Error('GATT connect timed out after 15000ms'), { code: 'CONNECT_TIMEOUT' });
+    await lateFail.toggle(0, true, { settle: false });
+    await lateFail.toggle(0, false);
+    lateFail.instances[0].finish();
+    await tick();
+    assert.equal(lateFail.api.status()[0].state, 'off');
+    assert.deepEqual(lateFail.events(), []);
+    assert.equal(lateFail.instances[0].resetCalls, 1);
+
+    // 取りやめずにタイムアウトしたら、スイッチが戻り、ゲームに知らせる（もう一度押せる）
+    const timeout = boot();
+    timeout.instances[0].plan.fail = Object.assign(new Error('GATT connect timed out after 15000ms'), { code: 'CONNECT_TIMEOUT' });
+    await timeout.toggle(0, true);
+    assert.equal(timeout.api.status()[0].state, 'off');
+    assert.equal(timeout.ui[0].input.checked, false);
+    assert.equal(timeout.ui[0].input.disabled, false);
+    assert.deepEqual(timeout.events(), ['0:error']);
+
+    // つないでいないスイッチを切っても何もしない
+    const idle = boot();
+    idle.ui[1].input.checked = false;
+    idle.ui[1].input.listeners.change();
+    assert.equal(idle.instances[1].resetCalls, 0);
+    assert.deepEqual(idle.events(), []);
   }
 
   // 8) SDK を読み込めなかった・Web Bluetooth が無い: スイッチは押せないが、ページは壊れない

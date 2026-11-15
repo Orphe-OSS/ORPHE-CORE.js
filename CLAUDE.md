@@ -525,8 +525,12 @@ npm ci                 # 依存関係のインストール（devDependencies の
 npm run lint           # ESLint（js/ORPHE-CORE.js, js/CoreToolkit.js, js/BleSharedBridge.js, scripts/, tests/）
 npm test               # 構文チェック + Node 単体テスト（tests/*.test.js）+ バージョン整合テスト
 npm run generate-docs  # JSDoc → api_doc/
+npm run build:landing  # LP（index.html / ja/index.html / en/index.html）を scripts/landing/content.js から再生成
 node scripts/check-cdn-pins.js   # jsDelivr 自己参照が @vX.Y.Z / commit SHA に固定されているか
 ```
+
+LP の 3 つの HTML は生成物です。文言は `scripts/landing/content.js`、構造は `scripts/build-landing.js`、見た目は `css/landing.css` を編集し、
+`npm run build:landing` で作り直してください（HTML を直接編集すると `tests/landing-build-sync.test.js` が落ちます）。
 
 ソースを編集したら `npm run lint` と `npm test` を実行してください。CI（`.github/workflows/ci.yml`、Node 18/20/22）は
 `npm ci` → `npm run lint` → `npm test` → `check-cdn-pins` → `check-examples-catalog` → `check-examples-static-quality` を

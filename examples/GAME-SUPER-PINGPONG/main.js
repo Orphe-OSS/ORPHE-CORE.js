@@ -321,6 +321,8 @@ function beginMatch() {
   startRaw();
   log = newLog();
   bots.forEach((b) => { b.target = 0; b.pos = 0; b.reactAt = 0; });
+  // every match learns the player's range afresh (a measured calibration is kept); ?. so that a stale cached input.js cannot stop the match
+  for (const side of humans()) inputs[side].relearnRange?.();
   const exercises = [0, 1].map((side) => (isHuman(side) ? inputs[side].exercise : null));
   ui.hudSetup({ mode: settings.mode, names: names(), points: settings.points, goal: sim.coopGoal, lives: sim.lives, exercises });
   ui.showSheet(false); ui.winBanner(null);

@@ -208,6 +208,22 @@ export class TiltInput {
     this._auto = { buf: [], lastPush: -1e9, lastFit: -1e9, rest: null, signLocked: false };
   }
 
+  /**
+   * A new match learns the range afresh, so every match starts like the first one: the resting
+   * pose in the middle of the table, the default range until the player's movement is learned.
+   * Carried over, the previous match's range put the resting foot at the near end from the
+   * first serve (device test 2026-11-15, versus followed by co-op). The axis, its "up" direction
+   * and the resting pose are kept: they belong to how the sensor is strapped on, not to the match.
+   * A measured calibration is kept as it is.
+   */
+  relearnRange() {
+    if (this.calibrated) return;
+    const A = this._auto;
+    this._auto = { buf: [], lastPush: -1e9, lastFit: -1e9, rest: A.rest, signLocked: A.signLocked };
+    this.autoFitted = false;
+    this.range = { ...DEFAULT_RANGE[this.exercise] };
+  }
+
   /** Collect gravity samples and refit axis and range (only while no measured calibration is in use). */
   _autoFeed(now) {
     const A = this._auto;

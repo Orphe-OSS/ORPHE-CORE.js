@@ -377,6 +377,38 @@ for (const [label, mountAxis, mountDeg, jointAxis] of [['mount A', [0.3, 0.2, 1]
     assert.ok(input.position() < -0.85, `${tag}: resting is the near end (${input.position().toFixed(2)})`);
   }
 
+  // every match learns the range afresh: the next match starts like the first, with the resting foot
+  // in the middle, instead of at the near end of the previous match's range; the axis and up stay
+  {
+    const mount = quat([1, 0.4, 0.2], 250), jointAxis = [-1, 0, 0];
+    const input = new I.TiltInput(0);
+    input.settings.gain = 1;
+    let now = 0;
+    const run = (seconds, degAt) => { const n = Math.round(seconds * 100); for (let i = 0; i < n; i++) { now += 10; input.feedQuat(mul(quat(jointAxis, degAt(now / 1000)), mount), now); } };
+    run(1, () => 0);
+    run(30, (t) => 15 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));   // first match
+    run(1.5, () => 0);
+    assert.ok(input.position() < -0.85, 'first match, learned: resting is the near end');
+    const axis = input.axis.slice();
+    input.relearnRange();                                          // the next match starts
+    assert.equal(input.autoFitted, false);
+    assert.deepEqual({ ...input.range }, { ...I.DEFAULT_RANGE.ankle });
+    assert.deepEqual(input.axis, axis, 'the learned axis is kept');
+    run(1, () => 0);
+    near(input.position(), 0, 0.1, 'next match: the resting foot starts in the middle');
+    run(1, () => 9);
+    assert.ok(input.position() > 0.3, `next match: raising still moves the paddle away (${input.position().toFixed(2)})`);
+    run(30, (t) => 15 * (1 - Math.cos(2 * Math.PI * 0.4 * t)));
+    assert.equal(input.autoFitted, true, 'next match: relearned');
+    near(input.range.up + input.range.down, 30, 4, 'next match: relearned range');
+    assert.ok(input.range.up > input.range.down, 'next match: up is still up');
+
+    const measured = new I.TiltInput(1);
+    assert.ok(measured.importCalibration({ axis: [0, -1, 0], up: 22, down: 9, exercise: 'ankle' }));
+    measured.relearnRange();
+    assert.deepEqual({ ...measured.range }, { up: 22, down: 9 }, 'a measured calibration is kept across matches');
+  }
+
   // sitting still with sensor noise and a slow drift of the resting pose: nothing is learned
   {
     let seed = 11;

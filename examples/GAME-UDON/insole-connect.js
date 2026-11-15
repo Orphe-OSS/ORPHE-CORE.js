@@ -23,14 +23,26 @@
   var PLACEHOLDERS = ['insole_placeholder1', 'insole_placeholder2'];
   // mode 3 = gyro + acc + press（200Hz）。姿勢（クォータニオン）は使わないので、いちばん細かく届くモードにする。
   // insole15 は INSOLE 1.5 だけに効く設定: 表示が遅れてきたら、古いデータを飛ばして最新に追いつく
-  var BEGIN_OPTIONS = { streamingMode: 3, autoReconnect: true, reconnectIntervalMs: 2000, insole15: { maxLagMs: 300 } };
+  //
+  // forceDeviceSelection: スイッチを入れたら、かならず選択ダイアログを出す（公式の InsoleToolkit と同じ）。
+  //   SDK は「前回つないだ INSOLE」を localStorage に覚えていて、ダイアログなしでそれにつなごうとする。
+  //   この記憶は orphe-oss.github.io の別ページ（INSOLE の example など）とも共有されるため、
+  //   電源の入っていない INSOLE にだまってつなぎに行き、いつまでも「接続中…」のまま止まることがあった。
+  //   （自動再接続では SDK がこの指定を外すので、切れたときはダイアログなしでつなぎ直す）
+  // connectTimeoutMs: 選んだ INSOLE が応答しないときも、待ちつづけずにあきらめてスイッチを戻す
+  var BEGIN_OPTIONS = {
+    streamingMode: 3, autoReconnect: true, reconnectIntervalMs: 2000,
+    forceDeviceSelection: true, connectTimeoutMs: 15000,
+    insole15: { maxLagMs: 300 }
+  };
   var NOTE = { off: '', connecting: '接続中…', on: '', retry: '再接続中…' };
 
   var available = typeof OrpheInsole === 'function';
   var bluetooth = typeof navigator !== 'undefined' && !!navigator.bluetooth;
   var insoles = available ? [new OrpheInsole(0), new OrpheInsole(1)] : [];
   var slots = [0, 1].map(function (i) {
-    return { index: i, state: 'off', side: null, foot: i, hz: 0, lost: 0, input: null, badge: null, note: null };
+    // attempt: 何回目の接続か。切って入れ直したあとに、前の接続の結果が遅れて届いても取りちがえない
+    return { index: i, state: 'off', side: null, foot: i, hz: 0, lost: 0, attempt: 0, input: null, badge: null, note: null };
   });
 
   function game() { return window.UdonGame; }
@@ -81,7 +93,8 @@
     slots.forEach(function (s) {
       if (!s.input) return;
       s.input.checked = s.state !== 'off';
-      s.input.disabled = !available || !bluetooth || s.state === 'connecting';
+      // 「接続中…」の間も押せるようにしておく（切ると取りやめ）。止まったまま押せなくなるのを防ぐ
+      s.input.disabled = !available || !bluetooth;
       s.note.textContent = NOTE[s.state];
       var known = s.state !== 'off' && s.side !== null;
       s.badge.hidden = !known;
@@ -98,28 +111,38 @@
   function connect(index) {
     var s = slots[index], insole = insoles[index];
     if (!insole || s.state !== 'off') return;
+    var attempt = ++s.attempt;
+    var current = function () { return s.attempt === attempt && s.state === 'connecting'; };
     setState(index, 'connecting');
     // then の 2 つめに失敗時の処理を渡す（つながったあとの処理で何か起きても、接続を切らないため）
     insole.begin('SENSOR_VALUES', BEGIN_OPTIONS).then(function () {
-      if (slots[index].state !== 'connecting') return;   // 待っている間にスイッチを切った
+      if (!current()) {
+        // 待っている間にスイッチを切った（ダイアログで選んだのがあとから届いた）。つながったぶんを切っておく
+        if (s.attempt === attempt) try { insole.reset(); } catch (e) { /* すでに切れている */ }
+        return;
+      }
       setState(index, 'on');
       remap();
       notify(slots[index].foot, 'connect');
     }, function (error) {
-      var was = slots[index].state;
+      if (!current()) return;   // スイッチを切ったあとの失敗。後始末は disconnect() で済んでいる
       try { insole.reset(); } catch (e) { /* つながる前に失敗したときは、切るものがない */ }
       setState(index, 'off');
       remap();
-      if (was === 'connecting' && !isCancel(error)) notify(slots[index].foot, 'error');
+      if (!isCancel(error)) notify(slots[index].foot, 'error');
     });
   }
 
   function disconnect(index) {
-    var foot = slots[index].foot;
+    var s = slots[index];
+    var foot = s.foot;
+    var was = s.state;
+    if (was === 'off') return;
     setState(index, 'off');
     try { insoles[index].reset(); } catch (e) { /* すでに切れている */ }
     remap();
-    notify(foot, 'disconnect');
+    // つながる前に取りやめたときは、ゲームには何も知らせていないので「切れた」とも言わない
+    if (was !== 'connecting') notify(foot, 'disconnect');
   }
 
   function build(index) {
@@ -188,8 +211,8 @@
       remap();
     };
     insole.onError = function (error) {
-      // 選択ダイアログを閉じただけのときは、何も言わない
-      if (!isCancel(error)) console.warn('[ORPHE INSOLE 0' + (index + 1) + ']', error);
+      // 選択ダイアログを閉じただけのとき・スイッチを切ったあと（取りやめの reset() など）は、何も言わない
+      if (s.state !== 'off' && !isCancel(error)) console.warn('[ORPHE INSOLE 0' + (index + 1) + ']', error);
     };
   }
 

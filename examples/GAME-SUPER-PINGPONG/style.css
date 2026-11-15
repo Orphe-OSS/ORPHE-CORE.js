@@ -427,10 +427,78 @@ button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .popup, .banner, .countdown.tick, .score-digits b.bump, .rally b.bump { animation-duration: 0.01s; }
 }
+/* Printing the report: one A4 portrait sheet, players side by side, however many (1 or 2).
+   The colours are printed even with the print dialog's "background graphics" off (its default),
+   otherwise the score bars and chips vanish. SVG text sizes are in each chart's own units, so they
+   are raised here to stay readable once the charts are scaled down to the paper. */
+@page { size: A4 portrait; margin: 8mm; }
 @media print {
   html, body { overflow: visible; height: auto; background: #fff; }
   #stage { position: static; overflow: visible; }
-  #gl, .topbar, #hud, #lobby, #calib, .drawer, .toast-area, #loading, .win-banner, .sheet-actions, .ble-note { display: none !important; }
+  #gl, .topbar, #hud, #lobby, #calib, .drawer, .toast-area, #loading, .win-banner, .sheet-actions, .ble-note, .tip, .modal-layer { display: none !important; }
   #result { position: static; padding: 0; display: block; }
-  .sheet { max-height: none; overflow: visible; box-shadow: none; width: 100%; border-radius: 0; animation: none; }
+  .sheet, .sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet { max-height: none; overflow: visible; box-shadow: none; width: 100%; border-radius: 0; animation: none; padding: 0; background: #fff; }
+  .sheet-head { gap: 3mm; padding-bottom: 2mm; }
+  .sheet-title { gap: 2.5mm; }
+  .sheet-title .title-seal { width: 10mm; height: 10mm; font-size: 19px; }
+  .sheet-title h2 { font-size: 25px; }
+  .sheet-title p { font-size: 11px; }
+  .sheet-score { gap: 2.5mm; font-size: 14px; }
+  .sheet-score .num { font-size: 34px; }
+  .sheet-score .tag, .sheet-score .won { font-size: 11px; padding: 1px 8px; }
+  .sheet-players { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3mm; margin-top: 3mm; }
+  .pcard { padding: 2.5mm 3mm 3mm; gap: 2.2mm; border-radius: 3mm; border-top-width: 1.6mm; break-inside: avoid; }
+  .pcard-head { font-size: 15px; gap: 2mm; }
+  .pcard-head small { font-size: 11px; }
+  .pcard-head .note { font-size: 9.5px; padding: 1px 6px; }
+  /* two players (half a page each): hero across the top, then the radar beside the six scores */
+  .top-grid { grid-template-columns: 46% minmax(0, 1fr); gap: 1.5mm 3mm; align-items: start; }
+  .top-left { display: contents; }
+  .hero { grid-column: 1 / -1; gap: 3mm; }
+  .hero-ring { width: 20mm; height: 20mm; }
+  .hero-num b { font-size: 26px; }
+  .hero-num small { font-size: 9px; margin-top: 0; }
+  .hero-label { font-size: 10px; }
+  .rank b { font-size: 28px; }
+  .rank span { font-size: 11px; }
+  .delta { font-size: 10px; padding: 0 7px; gap: 3px; }
+  .spark { font-size: 10px; gap: 4px; margin-top: 0; }
+  .spark svg { width: 64px; height: 17px; }
+  .radar { grid-column: 1; }
+  .radar svg { width: 86%; }   /* the right-hand labels run past the chart's box: keep them clear of the scores */
+  .radar .axis-label { font-size: 21px; }
+  .radar .axis-value { font-size: 18px; }
+  .legend { font-size: 10px; gap: 8px; margin-top: 0; }
+  .legend i { width: 14px; margin-right: 3px; }
+  .meters { grid-column: 2; gap: 1.8mm; }
+  .meter { grid-template-columns: 4.6em minmax(0, 1fr) 2em; column-gap: 1.5mm; font-size: 11px; padding: 0; }
+  .meter .track { height: 2mm; }
+  .meter .val { font-size: 12.5px; }
+  .meter .sub { font-size: 9px; line-height: 1.3; }
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5mm; }
+  .tile { padding: 1mm 2.2mm; border-radius: 2mm; }
+  .tile span { font-size: 9px; }
+  .tile b { font-size: 16px; }
+  .tile b small { font-size: 9.5px; }
+  .advice { font-size: 10px; padding: 2mm 3mm; border-radius: 2mm; line-height: 1.45; }
+  .timeline h4 { font-size: 10px; margin-bottom: 0.5mm; }
+  .timeline .tick { font-size: 17px; }
+  .timeline .legend { font-size: 9.5px; }
+  /* one player (solo, or one human in co-op): the whole width, chart text back near its own size */
+  .pcard:only-child .top-grid { grid-template-columns: 38% minmax(0, 1fr); gap: 2mm 6mm; }
+  .pcard:only-child .radar svg { width: 100%; }
+  .pcard:only-child .radar .axis-label { font-size: 16px; }
+  .pcard:only-child .radar .axis-value { font-size: 14px; }
+  .pcard:only-child .meters { gap: 2.4mm; align-self: center; }
+  .pcard:only-child .meter { font-size: 13px; }
+  .pcard:only-child .meter .val { font-size: 15px; }
+  .pcard:only-child .meter .sub { font-size: 10.5px; }
+  .pcard:only-child .meter .track { height: 2.4mm; }
+  .pcard:only-child .tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .pcard:only-child .advice { font-size: 11.5px; }
+  .pcard:only-child .timeline h4 { font-size: 11px; }
+  .pcard:only-child .timeline .tick { font-size: 11px; }
+  .sheet-foot { margin-top: 3mm; padding-top: 2mm; gap: 3mm; }
+  .disclaimer { font-size: 9.5px; flex-basis: auto; }
 }

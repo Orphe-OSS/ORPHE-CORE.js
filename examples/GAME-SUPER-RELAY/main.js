@@ -9,7 +9,7 @@
 import { createStage, bindChrome, attachCore, MAX_SPEED, THREE, BLOCK_Z, Runner, newPose, poseRun } from '../GAME-SUPER-START/stage.js';
 import { MotionTracker, SampleClock } from '../GAME-SUPER-START/motion.js';
 import { StartProcedure, formatReaction } from '../GAME-SUPER-START/start.js';
-import { createScope, createRawScope } from '../GAME-SUPER-START/scope.js';
+import { createScope, createWaveOverlay } from '../GAME-SUPER-START/scope.js';
 import { createRecorder } from '../GAME-SUPER-START/recorder.js';
 import { RelayRace, RELAY_DEFAULTS, CALM_DEFAULTS, SWING_DEFAULTS, makeRivalTeam, roughness, swingSpeed, formatTime, gradePass } from './relay.js';
 
@@ -17,9 +17,10 @@ const $ = (id) => document.getElementById(id);
 const TRACK_HALF = (9 * 1.22) / 2;
 const LANE_W = 1.22;
 const FINISH_Z = -110;            // where the stadium's finish gate stands
-// The other teams are club runners, not a world final: an ordinary person swinging hard (about
-// 250 deg/s, 8.7 m/s) with decent exchanges comes in around 49 s, level with the best of them.
-const RIVAL_TIMES = [50.5, 52.0, 53.5, 55.0, 57.0, 59.0, 62.0];
+// The other teams finish in 40-45 s (set after the first real-sensor races, in which teams at
+// 50 s and slower were too easy to beat). On the swing scale that is a team swinging at about
+// 400-520 deg/s with decent exchanges.
+const RIVAL_TIMES = [40.5, 41.3, 42.2, 43.0, 43.8, 44.6, 45.5];
 const NEAR_M = 30;                // "zone ahead" cue from this far out
 const FALL_MS = 150;              // free fall this long = the baton was dropped (about 11 cm of fall; to be checked against hard shaking on a real sensor)
 const SLOW = 0.3;                 // the exchange is played at this speed
@@ -39,7 +40,7 @@ const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 *
 const tracker = new MotionTracker();
 const sampleClock = new SampleClock();
 // topSwing: the swing (mean angular speed, deg/s) that is worth the top speed of 12.4 m/s
-const tuning = { topSwing: SWING_DEFAULTS.topSwing, calm: 1, passSec: RELAY_DEFAULTS.passSec, rule: 'penalty' };
+const tuning = { topSwing: SWING_DEFAULTS.topSwing, calm: 1, passSec: RELAY_DEFAULTS.passSec, rule: 'penalty', autoSave: true };
 try { Object.assign(tuning, JSON.parse(localStorage.getItem(TUNE_KEY) || '{}')); } catch { /* storage unavailable */ }
 const saveTuning = () => { try { localStorage.setItem(TUNE_KEY, JSON.stringify(tuning)); } catch { /* ignore */ } };
 const calmTune = () => ({ calmAcc: CALM_DEFAULTS.calmAcc * tuning.calm, calmGyro: CALM_DEFAULTS.calmGyro * tuning.calm });
@@ -47,7 +48,7 @@ const calmTune = () => ({ calmAcc: CALM_DEFAULTS.calmAcc * tuning.calm, calmGyro
 const agg = { n: 0, rough: 0, fall: false, strokes: 0 };
 const sensor = { samples: 0, rateAt: 0, rate: 0 };
 const AXES = [{ color: '#ff5d6c', label: 'X' }, { color: '#7dff6a', label: 'Y' }, { color: '#5aa9ff', label: 'Z' }];
-let dockScope = null, gyroScope = null, accScope = null;
+let dockScope = null, wave = null;
 let lastStrokes = 0;
 function onSample(f, acc, gyro) {
   sensor.samples++;
@@ -59,8 +60,8 @@ function onSample(f, acc, gyro) {
   if (tracker.strokes !== lastStrokes) { agg.strokes += tracker.strokes - lastStrokes; lastStrokes = tracker.strokes; }
   if (!dockScope) return;
   dockScope.push(f.t, [Math.max(Math.abs(f.lin[0]), Math.abs(f.lin[1]), Math.abs(f.lin[2])) / c.calmAcc, Math.max(Math.abs(f.gyro[0]), Math.abs(f.gyro[1]), Math.abs(f.gyro[2])) / c.calmGyro]);
-  gyroScope.push(f.t, [f.gyro[0] / c.calmGyro, f.gyro[1] / c.calmGyro, f.gyro[2] / c.calmGyro]);
-  accScope.push(f.t, [f.lin[0] / c.calmAcc, f.lin[1] / c.calmAcc, f.lin[2] / c.calmAcc]);
+  wave.push(0, f.t, [f.gyro[0] / c.calmGyro, f.gyro[1] / c.calmGyro, f.gyro[2] / c.calmGyro]);
+  wave.push(1, f.t, [f.lin[0] / c.calmAcc, f.lin[1] / c.calmAcc, f.lin[2] / c.calmAcc]);
 }
 
 // How fast is a swing? One fixed scale for everybody (relay.js, swingSpeed): the mean angular speed
@@ -281,7 +282,7 @@ function placeBaton(dt) {
   mid.lerpVectors(hA, hB, 0.5);
   const a = 0.25 * Math.sin(pass.t * 0.5);
   camGoal.set(mid.x - 1.7 * Math.cos(a), mid.y + 0.3 + 0.06 * Math.sin(pass.t * 0.7), mid.z - 0.7 + 1.7 * Math.sin(a));
-  mid.y -= 0.2;      // aim below the hands so they sit in the upper half, clear of the panel at the bottom
+  mid.y -= 0.24;     // aim below the hands so they sit in the upper half, above the lines of the sensor
   const f = stage.freeCam;
   if (pass.t <= dt * 1.5) { f.pos.copy(camGoal); f.look.copy(mid); } else { f.pos.lerp(camGoal, Math.min(1, dt * 8)); f.look.lerp(mid, Math.min(1, dt * 12)); }
   f.fov = 34;
@@ -516,6 +517,13 @@ function onRaceEvent(e, now) {
   if (e.type === 'zone-enter') {
     root.classList.add('in-zone');
     lastGaugeTick = 0; roughFor = 0;
+    // time slams almost to a stop and then eases up to slow motion: the picture streaks inward,
+    // the colour drains, the sensor's lines sweep in
+    slow = 0.03;
+    stage.view.warp = 1.5;
+    restart($('warp-fx'), 'in');
+    $('warp-fx').classList.remove('out');
+    wave.appear();
     beginExchange(e.k);
     audio.timeWarp(-1);
     audio.heartRate = 1.5;
@@ -528,6 +536,9 @@ function onRaceEvent(e, now) {
     audio.heartRate = 0;
     audio.setCrowd(0.7, 0);
     audio.timeWarp(1);
+    stage.view.warp = 1.2;
+    $('warp-fx').classList.remove('in');
+    restart($('warp-fx'), 'out');
     const leg = e.k + 1;
     endExchange();
     setLeg(leg);
@@ -625,7 +636,11 @@ function row(parent, cells, cls = '') {
 function showCard() {
   cardShown = true;
   // the recording ends here (it includes the run-out) and is stored in this browser
-  recorder.end(runSummary()).then(() => { $('btn-raw').hidden = !recorder.last; });
+  // ... and, unless switched off, saved to the Downloads folder as well, so nothing has to be done by hand
+  recorder.end(runSummary()).then((run) => {
+    $('btn-raw').hidden = !recorder.last;
+    if (run && tuning.autoSave && gunFired) recorder.download(run);
+  });
   setScreen('finish');
   root.classList.add('settled');
   stage.shiftTarget = 0.3;
@@ -795,7 +810,9 @@ function updateRace(now, dt) {
   const wasAwaiting = race.awaiting;
   if (wasAwaiting) roughFor = input.rough >= 1 ? roughFor + dt : Math.max(0, roughFor - dt * 3);
   const slowGoal = wasAwaiting ? (roughFor > 1.3 ? 1 : SLOW) : 1;
-  slow += (slowGoal - slow) * Math.min(1, dt * (slowGoal < slow ? 10 : 6));
+  // into the exchange: almost at once (and from the near-stop set on entering, a slow climb back up
+  // to slow motion); out of it: quickly
+  slow += (slowGoal - slow) * Math.min(1, dt * (slowGoal < slow ? 14 : wasAwaiting ? 2.4 : 7));
   const raceDt = dt * slow;
   stage.timeScale = slow;
 
@@ -995,8 +1012,7 @@ function drawScopes(now) {
     const f = tracker.last, c = calmTune();
     const g = sensorLive && f ? Math.max(Math.abs(f.gyro[0]), Math.abs(f.gyro[1]), Math.abs(f.gyro[2])) / c.calmGyro : keyHeld ? 3 : 0;
     const a = sensorLive && f ? Math.max(Math.abs(f.lin[0]), Math.abs(f.lin[1]), Math.abs(f.lin[2])) / c.calmAcc : keyHeld ? 3 : 0;
-    gyroScope.draw(now, g);
-    accScope.draw(now, a);
+    wave.draw(now, [g, a]);
   }
 }
 
@@ -1029,11 +1045,14 @@ function bindTuning() {
   bind('calm-tol', 'calm', (v) => `×${v.toFixed(1)}`);
   bind('pass-sec', 'passSec', (v) => `${v.toFixed(1)} s`);
   bind('rule-zone', 'rule', (v) => v);
+  const auto = $('rec-auto');
+  auto.checked = tuning.autoSave !== false;
+  auto.addEventListener('change', () => { tuning.autoSave = auto.checked; saveTuning(); });
 }
 function syncBandLabels() {
   const c = calmTune();
-  gyroScope.setBandLabel(`±${c.calmGyro.toFixed(0)} °/s`);
-  accScope.setBandLabel(`±${c.calmAcc.toFixed(2)} G`);
+  wave.setBandLabel(0, `±${c.calmGyro.toFixed(0)} °/s`);
+  wave.setBandLabel(1, `±${c.calmAcc.toFixed(2)} G`);
 }
 
 async function boot() {
@@ -1047,8 +1066,11 @@ async function boot() {
   buildBaton();
   zoneMarks = buildZoneMarks();
   dockScope = createScope($('scope-dock'), { seconds: 4, max: 6, series: [{ color: '#22e3ff', label: 'ACC 加速度' }, { color: '#ff7ad9', label: 'GYRO 角速度' }], lines: [{ y: 1, color: '#7fe9ff', label: 'そっと', dash: true }] });
-  gyroScope = createRawScope($('scope-gyro'), { seconds: 2.5, series: AXES, title: 'GYRO 角速度' });
-  accScope = createRawScope($('scope-acc'), { seconds: 2.5, series: AXES, title: 'ACC 加速度（重力を除く）' });
+  // the raw axes during an exchange: drawn straight over the picture, the full width of the screen
+  wave = createWaveOverlay($('pass-wave'), { seconds: 2.4, groups: [
+    { title: 'GYRO 角速度', center: 0.61, amp: 0.05, series: AXES },
+    { title: 'ACC 加速度', center: 0.81, amp: 0.05, series: AXES },
+  ] });
   attachCore(window.bles?.[0], tracker, sampleClock, onSample);
   bindTuning();
   syncBandLabels();

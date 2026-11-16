@@ -150,6 +150,96 @@ export function createRawScope(canvas, { seconds = 2.5, range = 2.6, series = []
 }
 
 /**
+ * Raw axes drawn straight onto the picture: no panel, no frame, glowing lines running across the
+ * whole screen, newest on the right. Values are in band units (+-1 = the edge of the band).
+ * groups: [{ title, center, amp, series: [{ color, label }] }]
+ *   center  where the group's zero line sits, as a share of the height (0 = top)
+ *   amp     the height of one band unit, as a share of the height
+ */
+export function createWaveOverlay(canvas, { seconds = 2.4, range = 3.2, groups = [] } = {}) {
+  const ctx = canvas.getContext('2d');
+  const bufs = groups.map(() => []);
+  const labels = groups.map(() => '');
+  let shown = 0;
+  return {
+    push(g, t, values) {
+      const buf = bufs[g];
+      buf.push({ t, v: values });
+      const cut = t - seconds * 1000 - 400;
+      while (buf.length > 2 && buf[0].t < cut) buf.shift();
+    },
+    setBandLabel(g, text) { labels[g] = text; },
+    clear() { for (const b of bufs) b.length = 0; },
+    /** worst[g] = how far group g's worst axis is from zero right now, in band units. */
+    draw(now, worst = []) {
+      if (!canvas.clientWidth) return;
+      // a full-screen canvas: keep the pixel count down, the glow hides it
+      const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+      const w = Math.round(canvas.clientWidth * dpr), h = Math.round(canvas.clientHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      shown = Math.min(1, shown + 0.08);       // the lines sweep in from the right when the overlay appears
+      const span = seconds * 1000;
+      const right = w * 0.985;
+      const X = (t) => right - ((now - t) / span) * right;
+      ctx.clearRect(0, 0, w, h);
+      groups.forEach((g, gi) => {
+        const cy = g.center * h, a = g.amp * h;
+        const out = (worst[gi] || 0) >= 1;
+        const Y = (v) => cy - (Math.sign(v) * squash(Math.abs(v), range)) * a;
+        // the band the lines have to stay inside: a faint glow and two hairlines, edge to edge
+        ctx.globalCompositeOperation = 'source-over';
+        const band = ctx.createLinearGradient(0, Y(1), 0, Y(-1));
+        const tint = out ? '255, 61, 110' : '34, 227, 255';
+        band.addColorStop(0, `rgba(${tint}, 0)`); band.addColorStop(0.5, `rgba(${tint}, ${out ? 0.2 : 0.1})`); band.addColorStop(1, `rgba(${tint}, 0)`);
+        ctx.fillStyle = band; ctx.fillRect(0, Y(1), w, Y(-1) - Y(1));
+        ctx.strokeStyle = `rgba(${tint}, ${out ? 0.95 : 0.6})`; ctx.lineWidth = (out ? 2.5 : 1.5) * dpr; ctx.setLineDash([14 * dpr, 10 * dpr]);
+        for (const y of [1, -1]) { ctx.beginPath(); ctx.moveTo(0, Y(y)); ctx.lineTo(w, Y(y)); ctx.stroke(); }
+        ctx.setLineDash([]);
+        // the axes: three strokes each, wide and faint to narrow and bright, added together = a glow
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        const buf = bufs[gi];
+        g.series.forEach((s, k) => {
+          if (buf.length < 2) return;
+          const fade = ctx.createLinearGradient(right * (1 - shown), 0, right, 0);
+          fade.addColorStop(0, 'rgba(0, 0, 0, 0)'); fade.addColorStop(0.35, s.color); fade.addColorStop(1, s.color);
+          ctx.strokeStyle = fade;
+          ctx.beginPath();
+          let started = false, prevT = 0;
+          for (const p of buf) {
+            const x = X(p.t);
+            if (x < -20) continue;
+            if (!started || p.t - prevT > 150) { ctx.moveTo(x, Y(p.v[k])); started = true; } else ctx.lineTo(x, Y(p.v[k]));
+            prevT = p.t;
+          }
+          for (const [width, alpha] of [[13, 0.1], [6, 0.3], [2.4, 1]]) { ctx.lineWidth = width * dpr; ctx.globalAlpha = alpha; ctx.stroke(); }
+          ctx.globalAlpha = 1;
+          const last = buf[buf.length - 1];
+          if (now - last.t < 300) {
+            // the newest value: a bright head on each line
+            const y = Y(last.v[k]);
+            ctx.fillStyle = s.color; ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(right, y, 11 * dpr, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(right, y, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          }
+        });
+        // what it is, at the left end of the band
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
+        ctx.font = `${22 * dpr}px ${FONT}`;
+        ctx.fillStyle = out ? '#ffb3c4' : '#d6f8ff';
+        ctx.fillText(g.title, 18 * dpr, Y(1) - 5 * dpr);
+        let lx = 18 * dpr + ctx.measureText(g.title).width + 14 * dpr;
+        for (const s of g.series) { ctx.fillStyle = s.color; ctx.fillText(s.label, lx, Y(1) - 5 * dpr); lx += ctx.measureText(s.label).width + 10 * dpr; }
+        if (labels[gi]) { ctx.font = `${15 * dpr}px ${FONT}`; ctx.fillStyle = `rgba(${tint}, 0.95)`; ctx.fillText(labels[gi], lx + 8 * dpr, Y(1) - 7 * dpr); }
+      });
+      ctx.globalCompositeOperation = 'source-over';
+    },
+    /** Call when the overlay is shown again, so the lines sweep in. */
+    appear() { shown = 0; },
+  };
+}
+
+/**
  * One attempt, drawn around the gun.
  *   samples  [{ t, v: [..] }]  in threshold units, t in ms on the page clock
  *   t0       the gun (or, when no gun was fired, the moment the plot is centred on)

@@ -143,7 +143,10 @@
       </div>
 
       <!-- the exchange, in slow motion: the raw sensor axes against the band they must stay inside -->
+      <div class="warp-fx" id="warp-fx"></div>
       <div class="pass-ui" id="pass-ui">
+        <!-- the raw axes, as light: no panel, the lines run across the whole picture -->
+        <canvas class="pass-wave" id="pass-wave"></canvas>
         <div class="pass-head">
           <span class="pass-en" id="rh-pass-en">SLOW HANDS</span>
           <span class="pass-ja" id="rh-pass-ja">波形を帯の中に　そっと次の人へ</span>
@@ -160,11 +163,6 @@
             <span class="pass-gauge-label">受け渡し / EXCHANGE</span>
             <div class="rh-gauge"><div class="rh-gauge-fill" id="rh-gauge"></div></div>
           </div>
-          <div class="pass-scopes">
-            <div class="pass-scope"><canvas id="scope-gyro"></canvas></div>
-            <div class="pass-scope"><canvas id="scope-acc"></canvas></div>
-          </div>
-          <div class="pass-hint" id="pass-hint">どの軸でも、動かしたぶんだけバトンの速度が落ちます。帯の外に出るとゲージが戻ります。</div>
           <div class="rh-zone-left"><div class="rh-zone-left-fill" id="rh-zone-left"></div><span>ゾーン残り <b id="rh-zone-m">30</b> m</span></div>
         </div>
       </div>
@@ -337,6 +335,11 @@
         <p class="drawer-note">速度は全員おなじ物差しで決まります（自分比ではありません）。振りが 250 °/s で秒速 8.7m、500 °/s で 10.8m、800 °/s で 12.4m です。この対応は机上の見積もりで、実際の人の振りを測って決め直す前提です。</p>
         <h4>📼 生データの記録 / Recording</h4>
         <p class="drawer-note">走るたびに、加速度・角速度の生データ（約 200 Hz）、ゲームの状態、できごと、走者の名前と設定を、このブラウザに自動で保存します。リロードしても残ります。</p>
+        <label class="rec-toggle in-drawer">
+          <input type="checkbox" id="rec-auto" checked><span class="rec-switch"></span>
+          <span class="rec-label">ゴールするたびに、生データを「ダウンロード」フォルダへ自動で保存する</span>
+        </label>
+        <p class="drawer-note">2 回目の保存のときに、Chrome が「複数のファイルのダウンロードを許可しますか」と聞いてきます。「許可」を選んでください。</p>
         <div class="rec-actions">
           <span class="rec-count" id="rec-count">保存済み 0 件</span>
           <button type="button" class="hx-btn small" id="rec-all">すべて JSON で保存</button>

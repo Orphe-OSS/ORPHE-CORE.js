@@ -129,6 +129,44 @@
 .pass-bottom .rh-zone-left span { font-size: 0.8em; line-height: 1.65; }
 .pass-ui.danger .rh-zone-left-fill { background: rgba(255, 61, 110, 0.7); }
 
+/* ---- the sensor's lines run across the whole picture: no panels around anything */
+.pass-wave { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pass-bottom { bottom: 1.6vh; width: min(92em, 96vw); padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
+#stage.rough .pass-bottom { border: 0; box-shadow: none; }
+.pass-gauge .rh-gauge { height: 1.3em; border-radius: 1em; box-shadow: inset 0 0 0 2px rgba(34, 227, 255, 0.75), 0 0 1.6em rgba(34, 227, 255, 0.35); background: rgba(4, 10, 26, 0.55); }
+.pass-gauge-label { text-shadow: 0 0.05em 0.3em rgba(0, 0, 0, 0.9); }
+.pass-bottom .rh-zone-left { height: 0.5em; margin-top: 0.45em; background: rgba(255, 255, 255, 0.12); border-radius: 1em; overflow: visible; }
+.pass-bottom .rh-zone-left-fill { border-radius: 1em; }
+.pass-bottom .rh-zone-left span { position: absolute; right: 0; bottom: 0.9em; font-size: 0.85em; line-height: 1; text-shadow: 0 0.05em 0.3em rgba(0, 0, 0, 0.9); }
+.pass-speed { padding: 0; background: none; border: 0; backdrop-filter: none; text-shadow: 0 0.04em 0.25em rgba(0, 0, 0, 0.85), 0 0 0.6em rgba(0, 0, 0, 0.5); }
+.pass-speed b { font-size: 8em; text-shadow: 0 0 0.3em rgba(34, 227, 255, 0.55), 0 0.04em 0.2em rgba(0, 0, 0, 0.8); }
+.pass-speed em { font-size: 3.6em; }
+#stage.rough .pass-speed { border: 0; box-shadow: none; }
+#stage.rough .pass-speed b { text-shadow: 0 0 0.3em rgba(255, 61, 110, 0.85), 0 0.04em 0.2em rgba(0, 0, 0, 0.8); }
+.pass-side { top: 21%; }
+/* the words go to the top-left corner: the middle of the picture belongs to the baton */
+.pass-head { left: 3.2vw; right: auto; top: 6.4em; align-items: flex-start; }
+.pass-en { font-size: 3.8em; }
+.pass-ja { margin-top: 0.4em; font-size: 1.2em; }
+
+/* ---- time slamming into slow motion: the colour drains and the picture streaks toward the centre */
+.zone-veil { backdrop-filter: saturate(1) contrast(1); transition: opacity 0.12s ease, backdrop-filter 0.25s ease; }
+#stage.in-zone .zone-veil { backdrop-filter: saturate(0.5) contrast(1.18) brightness(0.86); }
+.warp-fx {
+  position: absolute; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; opacity: 0; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(190, 240, 255, 0) 0deg 1.1deg, rgba(190, 240, 255, 0.55) 1.3deg 1.6deg, rgba(190, 240, 255, 0) 1.8deg 3.2deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 9%, #000 30%, #000 100%); mask-image: radial-gradient(circle, transparent 0 9%, #000 30%, #000 100%);
+  mix-blend-mode: screen;
+}
+.warp-fx.in { animation: warpIn 0.55s cubic-bezier(0.1, 0.8, 0.2, 1) both; }
+.warp-fx.out { animation: warpOut 0.4s cubic-bezier(0.5, 0, 0.9, 0.4) both; }
+@keyframes warpIn { 0% { opacity: 0.95; transform: scale(1.9) rotate(0deg); } 35% { opacity: 0.8; } 100% { opacity: 0; transform: scale(0.42) rotate(5deg); } }
+@keyframes warpOut { 0% { opacity: 0; transform: scale(0.45); } 25% { opacity: 0.9; } 100% { opacity: 0; transform: scale(2.2); } }
+/* the words arrive stretched and snap together */
+#stage.in-zone .pass-en { animation: slowWord 0.6s cubic-bezier(0.1, 0.8, 0.2, 1) both; }
+#stage.in-zone.rough .pass-en { animation: shakeX 0.16s linear infinite; }
+@keyframes slowWord { 0% { opacity: 0; letter-spacing: 1.6em; filter: blur(0.2em); transform: scaleY(1.6); } 100% { opacity: 1; letter-spacing: 0.26em; filter: none; transform: none; } }
+
 /* the runner is on screen now: keep the instruction low and compact */
 .rh-cue { bottom: 2.4%; width: min(34em, 80vw); }
 .rh-cue > div { padding: 0.5em 1.4em 0.7em; }

@@ -65,7 +65,7 @@ export class StageAudio extends AudioEngine {
   /** A soft tick while a gauge fills (pitch 0..1). */
   tick01(p = 0) {
     if (!this.ctx) return;
-    this.tone(this.now, { f0: 520 + 620 * p, dur: 0.05, gain: 0.06, attack: 0.002 });
+    this.tone(this.now, { f0: 520 + 620 * p, dur: 0.06, gain: 0.09, attack: 0.002, dest: this.uiBus });
   }
   /**
    * A tone that follows a speed, so gaining and losing it can be heard: the pitch is the speed,
@@ -94,7 +94,7 @@ export class StageAudio extends AudioEngine {
     r.g.gain.setTargetAtTime(s < 0.03 ? 0 : 0.018 + 0.05 * Math.min(1, Math.abs(delta) * 2.5), now, 0.07);
   }
   speedToneOff() { if (this._rev && this.ctx) this._rev.g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1); }
-  stopRace() { super.stopRace(); this.speedToneOff(); }
+  stopRace() { super.stopRace(); this.speedToneOff(); this.timeReset(); }
   /** Two rising notes: a speed step gained (i = which step, 0..). */
   gearUp(i = 0) {
     if (!this.ctx) return;
@@ -118,19 +118,71 @@ export class StageAudio extends AudioEngine {
   leak(amount = 0.5) {
     if (!this.ctx) return;
     const f = 520 - 260 * Math.min(1, amount);
-    this.tone(this.now, { f0: f, f1: f * 0.6, glide: 0.12, dur: 0.14, gain: 0.1 + 0.1 * Math.min(1, amount), type: 'square', attack: 0.003 });
+    this.tone(this.now, { f0: f, f1: f * 0.6, glide: 0.12, dur: 0.14, gain: 0.1 + 0.1 * Math.min(1, amount), type: 'square', attack: 0.003, dest: this.uiBus });
   }
-  /** Time slowing down (dir = -1) or snapping back (dir = +1). */
+  /**
+   * Time slowing down hard (dir = -1) or snapping back (dir = +1).
+   *
+   * Slowing is three things at once. The whole mix (crowd, music, wind, footsteps) is pulled
+   * under a low-pass in a fifth of a second, as if the stadium had been shut behind glass. Over
+   * it, straight to the output so it stays sharp, a bright hiss and a tone fall three octaves
+   * ("shuuun") and land on a sub-bass thud. Then a thin ringing holds for as long as time is slow.
+   * Snapping back reverses it: the filter opens, the sweep rises, a crash.
+   */
   timeWarp(dir = -1) {
-    if (!this.ctx) return;
-    const t = this.now;
+    if (!this.ctx || !this.warp) return;
+    const ctx = this.ctx, t = this.now, ui = this.uiBus;
+    const f = this.warp.frequency;
+    f.cancelScheduledValues(t);
+    f.setValueAtTime(Math.max(200, f.value), t);
     if (dir < 0) {
-      this.tone(t, { f0: 420, f1: 60, glide: 0.5, dur: 0.6, gain: 0.3, type: 'sawtooth', attack: 0.01, send: 0.6 });
-      this.noise(t, { dur: 0.6, type: 'lowpass', freq: 3000, sweep: 200, gain: 0.25, attack: 0.02, send: 0.6 });
+      f.exponentialRampToValueAtTime(480, t + 0.2);
+      this.noise(t, { dur: 0.5, type: 'bandpass', freq: 9000, sweep: 240, q: 1.8, gain: 0.7, attack: 0.004, dest: ui });
+      this.tone(t, { f0: 1760, f1: 82, glide: 0.4, dur: 0.55, gain: 0.3, type: 'sawtooth', attack: 0.003, dest: ui });
+      this.tone(t, { f0: 3520, f1: 164, glide: 0.4, dur: 0.5, gain: 0.14, type: 'sine', attack: 0.003, dest: ui });
+      this.tone(t + 0.34, { f0: 110, f1: 28, glide: 0.6, dur: 1.3, gain: 0.95, attack: 0.008, dest: ui });
+      this.noise(t + 0.34, { dur: 0.25, type: 'lowpass', freq: 400, gain: 0.5, attack: 0.004, dest: ui });
+      if (!this._ring) {
+        // the held breath: two close high partials beating slowly against each other
+        const g = ctx.createGain(); g.gain.value = 0;
+        const oscs = [3951, 3967, 5274].map((hz) => { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = hz; o.connect(g); o.start(); return o; });
+        g.connect(ui);
+        this._ring = { g, oscs };
+      }
+      this._ring.g.gain.cancelScheduledValues(t);
+      this._ring.g.gain.setValueAtTime(0, t + 0.3);
+      this._ring.g.gain.linearRampToValueAtTime(0.011, t + 0.9);
     } else {
-      this.tone(t, { f0: 70, f1: 620, glide: 0.25, dur: 0.32, gain: 0.3, type: 'sawtooth', attack: 0.01, send: 0.5 });
-      this.noise(t, { dur: 0.35, type: 'bandpass', freq: 500, sweep: 5000, q: 0.8, gain: 0.3, attack: 0.02, send: 0.5 });
+      f.exponentialRampToValueAtTime(20000, t + 0.14);
+      if (this._ring) { this._ring.g.gain.cancelScheduledValues(t); this._ring.g.gain.setTargetAtTime(0, t, 0.03); }
+      this.noise(t, { dur: 0.24, type: 'bandpass', freq: 260, sweep: 9000, q: 1.4, gain: 0.6, attack: 0.01, dest: ui });
+      this.tone(t, { f0: 82, f1: 1760, glide: 0.2, dur: 0.24, gain: 0.3, type: 'sawtooth', attack: 0.004, dest: ui });
+      this.noise(t + 0.19, { dur: 0.7, type: 'highpass', freq: 5200, gain: 0.34, attack: 0.002, dest: ui, send: 0.5 });
+      this.tone(t + 0.19, { f0: 150, f1: 46, glide: 0.2, dur: 0.4, gain: 0.8, attack: 0.002, dest: ui });
     }
+  }
+  /** Back to normal time at once, whatever was going on (a race abandoned in the middle of an exchange). */
+  timeReset() {
+    if (!this.ctx || !this.warp) return;
+    const t = this.now;
+    this.warp.frequency.cancelScheduledValues(t);
+    this.warp.frequency.setTargetAtTime(20000, t, 0.03);
+    if (this._ring) { this._ring.g.gain.cancelScheduledValues(t); this._ring.g.gain.setTargetAtTime(0, t, 0.03); }
+  }
+  /** Adds the time-warp filter over the whole mix, and a bus that bypasses it for the sounds that must stay clear. */
+  init(context) {
+    const had = !!this.ctx;
+    super.init(context);
+    if (had || !this.ctx || this.warp) return;
+    const ctx = this.ctx;
+    this.warp = ctx.createBiquadFilter();
+    this.warp.type = 'lowpass'; this.warp.frequency.value = 20000; this.warp.Q.value = 1.1;
+    this.master.disconnect();
+    this.master.connect(this.warp);
+    this.warp.connect(this.limiter);
+    this.uiBus = ctx.createGain();
+    this.uiBus.gain.value = 0.9;
+    this.uiBus.connect(this.limiter);
   }
   /** Ascending chime: something went right (a clean exchange, a personal best). */
   chime(steps = 3) {
@@ -225,7 +277,8 @@ export async function createStage({ canvas, labels, rivalLanes = [2, 3, 4, 6, 7,
   });
 
   // presentation state
-  const v = { crouch: 0, crouchTarget: 0, fovKick: 0, flash: 0, hit: 0, fade: 0, trauma: 0, stepPhase: 0, settle: 0, settleTarget: 0, lookUp: 0, lookUpTarget: 0 };
+  // warp: a burst of radial blur (time slamming into slow motion, or out of it); decays by itself
+  const v = { crouch: 0, crouchTarget: 0, fovKick: 0, flash: 0, hit: 0, fade: 0, trauma: 0, stepPhase: 0, settle: 0, settleTarget: 0, lookUp: 0, lookUpTarget: 0, warp: 0 };
   const cam = { mode: 'title', blend: 1, blendDur: 1, shot: 0, shotT: 0, fromPos: new THREE.Vector3(), fromQuat: new THREE.Quaternion(), fromFov: 55 };
   const tPos = new THREE.Vector3(), tLook = new THREE.Vector3(), tQuat = new THREE.Quaternion();
   const tEuler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -355,7 +408,7 @@ export async function createStage({ canvas, labels, rivalLanes = [2, 3, 4, 6, 7,
     resetRunner() {
       rig.position.set(0, EYE_H, 0);
       stage.speed = 0;
-      Object.assign(v, { crouch: 0, crouchTarget: 0, fovKick: 0, flash: 0, hit: 0, trauma: 0, stepPhase: 0, settle: 0, settleTarget: 0, lookUp: 0, lookUpTarget: 0 });
+      Object.assign(v, { crouch: 0, crouchTarget: 0, fovKick: 0, flash: 0, hit: 0, trauma: 0, stepPhase: 0, settle: 0, settleTarget: 0, lookUp: 0, lookUpTarget: 0, warp: 0 });
     },
     /** Advance everything by one frame and draw it. rawDt in seconds. */
     frame(rawDt) {
@@ -376,6 +429,7 @@ export async function createStage({ canvas, labels, rivalLanes = [2, 3, 4, 6, 7,
       v.lookUp += (v.lookUpTarget - v.lookUp) * Math.min(1, dt * 3);
       v.trauma = Math.max(0, v.trauma - dt * 1.7);
       v.fovKick *= Math.exp(-dt / 0.35);
+      v.warp *= Math.exp(-dt / 0.2);
       v.hit = Math.max(0, v.hit - dt * 0.8);
       v.flash = Math.max(0, v.flash - dt * 2.4);
       stage.shift += (stage.shiftTarget - stage.shift) * Math.min(1, dt * 2.5);
@@ -402,7 +456,7 @@ export async function createStage({ canvas, labels, rivalLanes = [2, 3, 4, 6, 7,
       updateCamera(dt);
 
       const U = fxView.uniforms;
-      U.uSpeed.value = title ? 0 : cam.mode === 'free' ? k * 0.25 : cam.mode === 'chase' ? k * 0.8 : k;
+      U.uSpeed.value = (title ? 0 : cam.mode === 'free' ? k * 0.25 : cam.mode === 'chase' ? k * 0.8 : k) + v.warp;
       U.uHit.value = v.hit;
       U.uFlash.value = v.flash;
       U.uFade.value = v.fade;

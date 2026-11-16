@@ -26,7 +26,8 @@ const RANKING_LIMIT = 100;
 // Sensor
 const tracker = new MotionTracker({ bufferMs: 6000 });   // long enough to draw the whole attempt on the result card
 const sampleClock = new SampleClock();
-const tuning = { still: 1, move: 1, lagMs: 0 };
+// record: keep the raw data of every attempt; autoSave: also drop each one in the Downloads folder
+const tuning = { still: 1, move: 1, lagMs: 0, record: true, autoSave: true };
 try { Object.assign(tuning, JSON.parse(localStorage.getItem(TUNE_KEY) || '{}')); } catch { /* storage unavailable */ }
 function applyTuning() {
   tracker.set({
@@ -152,11 +153,13 @@ function heart(on) {
 
 function beginAttempt() {
   stage.audio.init();
+  // the name on the screen this attempt was started from (the title, or the result card before RETRY)
+  setPlayerName(state === 'result' ? $('player-name').value : $('title-name').value);
   if (recorder.active) recorder.cancel();
-  recorder.begin({
+  if (tuning.record) recorder.begin({
     build: window.START_BUILD, tuning: { ...tuning }, thresholds: { stillAcc: tracker.o.stillAcc, stillGyro: tracker.o.stillGyro, moveAcc: tracker.o.moveAcc, moveGyro: tracker.o.moveGyro },
     sensor: { name: window.bles?.[0]?.bluetoothDevice?.name ?? null, range: window.bles?.[0]?.device_information?.range ?? null, live: sensorLive(performance.now()) },
-    audioDelayMs: Math.round(stage.audio.outputDelayMs()), name: $('player-name').value.trim() || null, userAgent: navigator.userAgent,
+    audioDelayMs: Math.round(stage.audio.outputDelayMs()), name: playerName || null, userAgent: navigator.userAgent,
   });
   state = 'call';
   attempt = null; keyAt = null; cardShown = false; watchSince = null; fire = null; lastOnset = null; gunSeenAt = null;
@@ -263,7 +266,7 @@ function debugInfo(now) {
   };
 }
 function onReaction(ms, now) {
-  attempt = { type: 'reaction', ms, rivals: rivalRows(), debug: debugInfo(now) };
+  attempt = { type: 'reaction', ms, name: playerName || null, rivals: rivalRows(), debug: debugInfo(now) };
   session.push(ms);
   state = 'run';
   tracker.hold(false);
@@ -282,7 +285,7 @@ function onReaction(ms, now) {
 }
 
 function onFoul(result, now) {
-  attempt = { type: result.type, ms: result.ms, reason: result.reason, rivals: rivalRows(), debug: debugInfo(now) };
+  attempt = { type: result.type, ms: result.ms, reason: result.reason, name: playerName || null, rivals: rivalRows(), debug: debugInfo(now) };
   state = 'result'; resultAt = now; cardShown = false;
   gunSeenAt = null;      // a movement before the gun was seen: the flash and the rivals never come
   heart(false); hideCall(); setSteady(null);
@@ -316,7 +319,9 @@ function showCard() {
     for (const [type, t] of [['steady', d.steadyAt], ['gun-triggered', d.gunFiredAt], ['gun-heard', d.gunAt], ['threshold-crossed', d.trigger], ['movement-began-estimate', d.onsetEstimate], ['key', d.keyAt], ['decided', d.decidedAt]]) {
       if (t != null) recorder.event(t, type);
     }
-    recorder.end({ type: attempt.type, ms: attempt.ms == null ? null : +attempt.ms.toFixed(1), reason: attempt.reason ?? null, audioDelayMs: d.audioDelayMs, lagOffsetMs: d.lagOffsetMs, sampleRate: d.sampleRate, deliveryLagMs: d.deliveryLagMs, stampsUsable: d.stampsUsable, rivalsMs: attempt.rivals.map((r) => Math.round(r.ms)) });
+    recorder.end({ name: attempt.name ?? null, type: attempt.type, ms: attempt.ms == null ? null : +attempt.ms.toFixed(1), reason: attempt.reason ?? null, audioDelayMs: d.audioDelayMs, lagOffsetMs: d.lagOffsetMs, sampleRate: d.sampleRate, deliveryLagMs: d.deliveryLagMs, stampsUsable: d.stampsUsable, rivalsMs: attempt.rivals.map((r) => Math.round(r.ms)) })
+      // ... and, unless switched off, saved to the Downloads folder as well
+      .then((run) => { if (run && tuning.autoSave) recorder.download(run); });
   }
   const a = attempt;
   const legal = a.type === 'reaction';
@@ -327,7 +332,9 @@ function showCard() {
   $('rt-live').classList.remove('show');
   $('rt-main').hidden = !legal;
   $('rt-foul').hidden = legal;
-  $('name-form').hidden = !legal;
+  // the name field stays (the next player may want to change it); registering needs a legal start
+  $('name-form').hidden = false;
+  $('save-score').hidden = !legal;
   $('save-status').textContent = '';
   $('save-score').disabled = false;
   $('rt-badge').classList.remove('show');
@@ -372,7 +379,8 @@ function showCard() {
   drawSession();
   drawWave();
   attempts.push({ type: a.type, ms: a.ms, reason: a.reason ?? null, debug: a.debug });
-  try { const n = localStorage.getItem(NAME_KEY); if (n && !$('player-name').value) $('player-name').value = n; } catch { /* ignore */ }
+  // a name typed before the attempt puts a legal start straight into the ranking
+  if (legal && a.name) registerScore(a.name);
   $('rt-card').classList.add('show');
   updateBest();
 }
@@ -545,20 +553,38 @@ function showRanking(from) {
   $('ranking-layer').style.display = '';
 }
 function hideRanking() { $('ranking-layer').style.display = 'none'; }
+/** Put this attempt in the ranking under `name`. Returns the rank, or 0 if there was nothing to register. */
+function registerScore(name) {
+  if (!attempt || attempt.type !== 'reaction' || attempt.savedAt || !name) return 0;
+  const list = readRanking();
+  attempt.savedAt = Date.now();
+  attempt.name = name;
+  list.push({ name, ms: Math.floor(attempt.ms), at: attempt.savedAt });
+  list.sort((a, b) => a.ms - b.ms);
+  writeRanking(list);
+  const rank = list.findIndex((r) => r.at === attempt.savedAt) + 1;
+  $('save-status').textContent = `${name} で登録：${rank} 位`;
+  $('save-score').disabled = true;
+  return rank;
+}
 function saveScore(e) {
   e.preventDefault();
   if (!attempt || attempt.type !== 'reaction' || attempt.savedAt) return;
   const name = $('player-name').value.trim().slice(0, 24);
   if (!name) { $('save-status').textContent = '名前を入れてください'; return; }
-  const list = readRanking();
-  attempt.savedAt = Date.now();
-  list.push({ name, ms: Math.floor(attempt.ms), at: attempt.savedAt });
-  list.sort((a, b) => a.ms - b.ms);
-  writeRanking(list);
-  try { localStorage.setItem(NAME_KEY, name); } catch { /* ignore */ }
-  const rank = list.findIndex((r) => r.at === attempt.savedAt) + 1;
-  $('save-status').textContent = `登録しました：${rank} 位`;
-  $('save-score').disabled = true;
+  setPlayerName(name);
+  registerScore(name);
+}
+
+// ---------------------------------------------------------------------------
+// Who is playing (optional). One name, typed on the title or on the result card before RETRY: it
+// goes into the ranking automatically and into the recording. A new player just overwrites it.
+let playerName = '';
+try { playerName = (localStorage.getItem(NAME_KEY) || '').slice(0, 24); } catch { /* ignore */ }
+function setPlayerName(name, from = null) {
+  playerName = (name || '').trim().slice(0, 24);
+  try { localStorage.setItem(NAME_KEY, playerName); } catch { /* ignore */ }
+  for (const id of ['title-name', 'player-name']) { const el = $(id); if (el !== from && el.value !== playerName) el.value = playerName; }
 }
 
 // ---------------------------------------------------------------------------
@@ -687,7 +713,17 @@ async function boot() {
   ];
   // the result card's button saves the raw recording of this attempt (the older trace-only export is the fallback)
   $('btn-export').addEventListener('click', () => { if (!recorder.download()) exportAttempt(); });
-  const refreshRec = async () => { $('rec-count').textContent = `保存済み ${await recorder.count()} 件`; };
+  const refreshRec = async () => { const n = await recorder.count(); $('rec-count').textContent = `保存済み ${n} 件`; $('rec-count-dock').textContent = n ? `${n} 件` : ''; };
+  // recording is on unless switched off (dock and drawer show the same switch)
+  const recToggles = [$('rec-toggle'), $('rec-toggle-2')];
+  const syncRec = () => { for (const t of recToggles) t.checked = tuning.record !== false; $('rec-auto').checked = tuning.autoSave !== false; $('rec-auto').disabled = tuning.record === false; };
+  for (const t of recToggles) t.addEventListener('change', () => { tuning.record = t.checked; applyTuning(); syncRec(); });
+  $('rec-auto').addEventListener('change', () => { tuning.autoSave = $('rec-auto').checked; applyTuning(); });
+  syncRec();
+  // the player's name: the title field and the result card's field are one and the same
+  setPlayerName(playerName);
+  for (const id of ['title-name', 'player-name']) $(id).addEventListener('input', (e) => setPlayerName(e.target.value, e.target));
+  $('title-name').addEventListener('keydown', (e) => { if (e.code === 'Enter' && state === 'title') { e.preventDefault(); e.target.blur(); beginAttempt(); } });
   $('rec-all').addEventListener('click', () => recorder.downloadAll());
   $('rec-clear').addEventListener('click', async () => { if (window.confirm('このブラウザに保存した生データをすべて消します。よろしいですか？')) await recorder.clear(); });
   recorder.onChange(refreshRec);

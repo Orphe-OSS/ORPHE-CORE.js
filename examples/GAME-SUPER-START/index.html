@@ -7,8 +7,8 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <!-- The stadium UI (buttons, dock, drawer, title block) is the hurdle game's stylesheet; style.css adds this event's own parts. -->
-  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117c">
-  <link rel="stylesheet" href="style.css?v=20261117c">
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117d">
+  <link rel="stylesheet" href="style.css?v=20261117d">
   <!--
     Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
     ?v= build id, so a browser never mixes an old cached module with new ones. When any file of
@@ -20,15 +20,15 @@
       "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-        "./stage.js": "./stage.js?v=20261117c",
-        "./motion.js": "./motion.js?v=20261117c",
-        "./start.js": "./start.js?v=20261117c",
-        "./scope.js": "./scope.js?v=20261117c",
-        "./recorder.js": "./recorder.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117c"
+        "./stage.js": "./stage.js?v=20261117d",
+        "./motion.js": "./motion.js?v=20261117d",
+        "./start.js": "./start.js?v=20261117d",
+        "./scope.js": "./scope.js?v=20261117d",
+        "./recorder.js": "./recorder.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117d"
       }
     }
   </script>
@@ -39,7 +39,7 @@
   <script src="../../js/BleSharedBridge.js"></script>
   <script src="../../js/CoreToolkit.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="main.js?v=20261117c"></script>
+  <script type="module" src="main.js?v=20261117d"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -62,6 +62,11 @@
           <button type="button" class="hx-btn primary" id="start-btn" data-quiet="1"><span class="hx-main">START</span><span class="hx-sub">スタート</span></button>
           <button type="button" class="hx-btn ghost" id="btn-ranking"><i class="bi bi-trophy-fill"></i> ランキング / RANKING</button>
         </div>
+        <!-- who is playing (optional): goes into the ranking and the recording -->
+        <label class="who-field">
+          <span>名前（任意）</span>
+          <input type="text" id="title-name" maxlength="24" placeholder="例: KIKU" autocomplete="off" spellcheck="false">
+        </label>
         <div class="records">
           <span>自己ベスト BEST <b id="best-time">-.---</b></span>
           <span>フライングの基準 LIMIT <b>0.100</b></span>
@@ -156,9 +161,10 @@
         <div class="rt-session" id="rt-session"></div>
 
         <form class="result-entry" id="name-form" autocomplete="off">
-          <input type="text" id="player-name" maxlength="24" placeholder="名前 / Name" aria-label="ランキングに登録する名前">
-          <button type="submit" class="hx-btn small" id="save-score">ランキング登録 / SAVE</button>
+          <input type="text" id="player-name" maxlength="24" placeholder="名前（任意）" aria-label="名前。次の人は書き換えてから RETRY">
+          <button type="submit" class="hx-btn small" id="save-score">この記録を登録</button>
           <span class="save-status" id="save-status"></span>
+          <span class="who-hint">次の人は名前を書き換えて RETRY</span>
         </form>
         <div class="result-actions">
           <button type="button" class="hx-btn primary" id="retry" data-quiet="1"><span class="hx-main">RETRY</span><span class="hx-sub">もう一度 <kbd>Space</kbd></span></button>
@@ -202,6 +208,10 @@
         Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
       </div>
       <div id="audio-warn" class="dock-note" hidden></div>
+      <label class="rec-toggle" title="1 本ごとに、加速度・角速度の生データと判定の時刻を記録します">
+        <input type="checkbox" id="rec-toggle" checked><span class="rec-switch"></span>
+        <span class="rec-label">生データを記録 / REC</span><span class="rec-count" id="rec-count-dock"></span>
+      </label>
       <div class="dock-check">
         <span class="check-item" id="check-still"><i class="bi bi-pause-circle-fill"></i> 静止 STILL</span>
         <span class="check-item" id="check-move"><i class="bi bi-lightning-charge-fill"></i> 動き MOVE</span>
@@ -285,7 +295,16 @@
         </p>
 
         <h4>📼 生データの記録 / Recording</h4>
-        <p class="drawer-note">1 本ごとに、加速度・角速度の生データ（約 200 Hz）と、判定に使った時刻・しきい値を、このブラウザに自動で保存します。リロードしても残ります。リレーの記録と同じ場所に入ります。</p>
+        <label class="rec-toggle in-drawer">
+          <input type="checkbox" id="rec-toggle-2" checked><span class="rec-switch"></span>
+          <span class="rec-label">生データを記録する</span>
+        </label>
+        <p class="drawer-note">ON のあいだ、1 本ごとに、加速度・角速度の生データ（約 200 Hz）、判定に使った時刻・しきい値、入力した名前を、このブラウザに保存します。リロードしても残ります。リレーの記録と同じ場所に入ります。</p>
+        <label class="rec-toggle in-drawer">
+          <input type="checkbox" id="rec-auto" checked><span class="rec-switch"></span>
+          <span class="rec-label">1 本ごとに「ダウンロード」フォルダへも自動で保存する</span>
+        </label>
+        <p class="drawer-note">2 回目の保存のときに、Chrome が「複数のファイルのダウンロードを許可しますか」と聞いてきます。「許可」を選んでください。</p>
         <div class="rec-actions">
           <span class="rec-count" id="rec-count">保存済み 0 件</span>
           <button type="button" class="hx-btn small" id="rec-all">すべて JSON で保存</button>

@@ -28,7 +28,6 @@ const SPEED_STEPS = [3, 5, 7, 8.5, 9.8, 10.8];   // m/s: passing one of these is
 const BEST_KEY = 'superrelay.best';
 const RANKING_KEY = 'superrelay.rankings';
 const TUNE_KEY = 'superrelay.tuning.v3';
-const NAME_KEY = 'superrelay.team';
 const RUNNERS_KEY = 'superrelay.runners';
 const RANKING_LIMIT = 100;
 const LEG_NAMES = ['1走', '2走', '3走', '4走'];
@@ -40,7 +39,8 @@ const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 *
 const tracker = new MotionTracker();
 const sampleClock = new SampleClock();
 // topSwing: the swing (mean angular speed, deg/s) that is worth the top speed of 12.4 m/s
-const tuning = { topSwing: SWING_DEFAULTS.topSwing, calm: 1, passSec: RELAY_DEFAULTS.passSec, rule: 'penalty', autoSave: true };
+// record: keep the raw data of every race; autoSave: also drop each one in the Downloads folder
+const tuning = { topSwing: SWING_DEFAULTS.topSwing, calm: 1, passSec: RELAY_DEFAULTS.passSec, rule: 'penalty', record: true, autoSave: true };
 try { Object.assign(tuning, JSON.parse(localStorage.getItem(TUNE_KEY) || '{}')); } catch { /* storage unavailable */ }
 const saveTuning = () => { try { localStorage.setItem(TUNE_KEY, JSON.stringify(tuning)); } catch { /* ignore */ } };
 const calmTune = () => ({ calmAcc: CALM_DEFAULTS.calmAcc * tuning.calm, calmGyro: CALM_DEFAULTS.calmGyro * tuning.calm });
@@ -101,6 +101,7 @@ let roughFor = 0;                 // seconds the hands have been past the limit 
 let lastV = 0, speedStep = 0, lastStepAt = 0, lastLeakAt = 0, lastGaugeTick = 0, strokeSide = 1;
 let lastInput = { effort: 0, rough: 0, drop: false };
 let runners = [];                 // optional names of the four runners
+let raceRunners = '';             // the team's name as it was when this race started (for the ranking)
 
 const live = (now) => !tracker.stale(now);
 const readBest = () => { try { const v = parseFloat(localStorage.getItem(BEST_KEY)); return Number.isFinite(v) ? v : null; } catch { return null; } };
@@ -109,11 +110,19 @@ const writeRanking = (list) => { try { localStorage.setItem(RANKING_KEY, JSON.st
 /** "1走" or, when the team typed names, "1走 KIKU". */
 const legLabel = (i) => (runners[i] ? `${LEG_NAMES[i]} ${runners[i]}` : LEG_NAMES[i]);
 const legShort = (i) => runners[i] || LEG_NAMES[i];
-function readRunners() {
-  const text = $('team-names').value;
-  runners = text.split(/[,、，\n]/).map((s) => s.trim().slice(0, 14)).filter(Boolean).slice(0, 4);
+/**
+ * The runners' names (optional), typed on the title or on the result card before RETRY: one text,
+ * names separated by commas. They label the runners, go into the ranking as the team's name and
+ * into the recording. A new team just overwrites them.
+ */
+function setRunners(text, from = null) {
+  text = (text || '').slice(0, 80);
+  // shown in capitals everywhere (the fields display them that way too)
+  runners = text.split(/[,、，\n]/).map((s) => s.trim().slice(0, 14).toUpperCase()).filter(Boolean).slice(0, 4);
   try { localStorage.setItem(RUNNERS_KEY, text); } catch { /* ignore */ }
+  for (const id of ['team-names', 'player-name']) { const el = $(id); if (el !== from && el.value !== text) el.value = text; }
 }
+const teamName = () => runners.join('・');
 
 // ---------------------------------------------------------------------------
 // UI helpers
@@ -340,6 +349,7 @@ function resetField() {
 // Recording: every run, as it is played
 function beginRecording() {
   if (recorder.active) recorder.cancel();       // restarted before the last one got anywhere
+  if (tuning.record === false) return;
   const ble = window.bles?.[0];
   recorder.begin({
     build: window.RELAY_BUILD, runners: [...runners], legNames: LEG_NAMES,
@@ -375,6 +385,7 @@ function runSummary(extra = {}) {
 async function refreshRecCount() {
   const n = await recorder.count();
   $('rec-count').textContent = `保存済み ${n} 件`;
+  $('rec-count-dock').textContent = n ? `${n} 件` : '';
 }
 
 function toTitle() {
@@ -399,7 +410,9 @@ function toTitle() {
 
 function beginCall() {
   stage.audio.init();
-  readRunners();
+  // the names on the screen this race was started from (the title, or the result card before RETRY)
+  setRunners(state === 'result' ? $('player-name').value : $('team-names').value);
+  raceRunners = teamName();
   state = 'call';
   keyAt = null; cardShown = false;
   setScreen('countdown');
@@ -648,7 +661,9 @@ function showCard() {
   const dq = race.dq;
   $('rc-main').hidden = dq;
   $('rc-dq').hidden = !dq;
-  $('name-form').hidden = dq;
+  // the names stay (the next team may want to change them); registering needs a finished race
+  $('name-form').hidden = false;
+  $('save-score').hidden = dq;
   $('save-status').textContent = '';
   $('save-score').disabled = false;
   $('rt-badge').classList.toggle('show', !dq && !!race.isBest);
@@ -703,7 +718,8 @@ function showCard() {
     }
     board.appendChild(el);
   });
-  try { const n = localStorage.getItem(NAME_KEY); if (n && !$('player-name').value) $('player-name').value = n; } catch { /* ignore */ }
+  // names typed before the race put a finished race straight into the ranking
+  if (!dq && raceRunners) registerScore(raceRunners);
   $('result-card').classList.add('show');
   updateBest();
 }
@@ -733,19 +749,25 @@ function showRanking(from) {
   $('ranking-layer').style.display = '';
 }
 function hideRanking() { $('ranking-layer').style.display = 'none'; }
+/** Put this race in the ranking under `name`. Returns the rank, or 0 if there was nothing to register. */
+function registerScore(name) {
+  if (race.dq || !race.finished || race.time == null || savedAt || !name) return 0;
+  const list = readRanking();
+  savedAt = Date.now();
+  list.push({ name: name.slice(0, 60), time: Math.floor(race.time * 100) / 100, penalty: race.penalty, at: savedAt });
+  list.sort((a, b) => a.time - b.time);
+  writeRanking(list);
+  const rank = list.findIndex((r) => r.at === savedAt) + 1;
+  $('save-status').textContent = `${name} で登録：${rank} 位`;
+  $('save-score').disabled = true;
+  return rank;
+}
 function saveScore(e) {
   e.preventDefault();
   if (race.dq || !race.finished || savedAt) return;
-  const name = $('player-name').value.trim().slice(0, 24);
-  if (!name) { $('save-status').textContent = 'チーム名を入れてください'; return; }
-  const list = readRanking();
-  savedAt = Date.now();
-  list.push({ name, time: Math.floor(race.time * 100) / 100, penalty: race.penalty, at: savedAt });
-  list.sort((a, b) => a.time - b.time);
-  writeRanking(list);
-  try { localStorage.setItem(NAME_KEY, name); } catch { /* ignore */ }
-  $('save-status').textContent = `登録しました：${list.findIndex((r) => r.at === savedAt) + 1} 位`;
-  $('save-score').disabled = true;
+  setRunners($('player-name').value);
+  if (!runners.length) { $('save-status').textContent = '名前を入れてください'; return; }
+  registerScore(teamName());
 }
 
 // ---------------------------------------------------------------------------
@@ -1074,9 +1096,17 @@ async function boot() {
   attachCore(window.bles?.[0], tracker, sampleClock, onSample);
   bindTuning();
   syncBandLabels();
-  try { $('team-names').value = localStorage.getItem(RUNNERS_KEY) || ''; } catch { /* ignore */ }
-  readRunners();
-  $('team-names').addEventListener('change', readRunners);
+  // the runners' names: the title field and the result card's field are one and the same
+  let stored = '';
+  try { stored = localStorage.getItem(RUNNERS_KEY) || ''; } catch { /* ignore */ }
+  setRunners(stored);
+  for (const id of ['team-names', 'player-name']) $(id).addEventListener('input', (e) => setRunners(e.target.value, e.target));
+  $('team-names').addEventListener('keydown', (e) => { if (e.code === 'Enter' && state === 'title') { e.preventDefault(); e.target.blur(); beginCall(); } });
+  // recording is on unless switched off (dock and drawer show the same switch)
+  const recToggles = [$('rec-toggle'), $('rec-toggle-2')];
+  const syncRec = () => { for (const t of recToggles) t.checked = tuning.record !== false; $('rec-auto').checked = tuning.autoSave !== false; $('rec-auto').disabled = tuning.record === false; };
+  for (const t of recToggles) t.addEventListener('change', () => { tuning.record = t.checked; saveTuning(); syncRec(); });
+  syncRec();
   const pips = $('rh-rivals');
   for (let i = 0; i < stage.rivals.length; i++) pips.appendChild(document.createElement('i'));
 

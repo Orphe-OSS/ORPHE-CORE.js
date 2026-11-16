@@ -7,9 +7,9 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <!-- Stadium UI from the hurdle game, the starter's calls from the start game, then this event's own parts. -->
-  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117c">
-  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261117c">
-  <link rel="stylesheet" href="style.css?v=20261117c">
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117d">
+  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261117d">
+  <link rel="stylesheet" href="style.css?v=20261117d">
   <!--
     Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
     ?v= build id. When any file of this example, of ../GAME-SUPER-START/ or of
@@ -21,16 +21,16 @@
       "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-        "./relay.js": "./relay.js?v=20261117c",
-        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261117c",
-        "../GAME-SUPER-START/motion.js": "../GAME-SUPER-START/motion.js?v=20261117c",
-        "../GAME-SUPER-START/start.js": "../GAME-SUPER-START/start.js?v=20261117c",
-        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261117c",
-        "../GAME-SUPER-START/recorder.js": "../GAME-SUPER-START/recorder.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117c",
-        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117c"
+        "./relay.js": "./relay.js?v=20261117d",
+        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261117d",
+        "../GAME-SUPER-START/motion.js": "../GAME-SUPER-START/motion.js?v=20261117d",
+        "../GAME-SUPER-START/start.js": "../GAME-SUPER-START/start.js?v=20261117d",
+        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261117d",
+        "../GAME-SUPER-START/recorder.js": "../GAME-SUPER-START/recorder.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117d",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117d"
       }
     }
   </script>
@@ -41,7 +41,7 @@
   <script src="../../js/BleSharedBridge.js"></script>
   <script src="../../js/CoreToolkit.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="main.js?v=20261117c"></script>
+  <script type="module" src="main.js?v=20261117d"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -213,9 +213,10 @@
         <div class="result-board" id="rc-board"></div>
 
         <form class="result-entry" id="name-form" autocomplete="off">
-          <input type="text" id="player-name" maxlength="24" placeholder="チーム名 / Team name" aria-label="ランキングに登録するチーム名">
-          <button type="submit" class="hx-btn small" id="save-score">ランキング登録 / SAVE</button>
+          <input type="text" id="player-name" maxlength="80" placeholder="走者の名前（任意・「,」区切り）" aria-label="走者の名前。次のチームは書き換えてから RETRY" spellcheck="false">
+          <button type="submit" class="hx-btn small" id="save-score">この記録を登録</button>
           <span class="save-status" id="save-status"></span>
+          <span class="who-hint">次のチームは名前を書き換えて RETRY</span>
         </form>
         <div class="result-actions">
           <button type="button" class="hx-btn primary" id="retry" data-quiet="1"><span class="hx-main">RETRY</span><span class="hx-sub">もう一度 <kbd>Enter</kbd></span></button>
@@ -258,6 +259,10 @@
         Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
       </div>
       <div id="audio-warn" class="dock-note" hidden></div>
+      <label class="rec-toggle" title="走るたびに、加速度・角速度の生データとゲームの状態を記録します">
+        <input type="checkbox" id="rec-toggle" checked><span class="rec-switch"></span>
+        <span class="rec-label">生データを記録 / REC</span><span class="rec-count" id="rec-count-dock"></span>
+      </label>
       <div class="dock-check">
         <span class="check-item" id="check-shake"><i class="bi bi-lightning-charge-fill"></i> 振る SHAKE</span>
         <span class="check-item" id="check-calm"><i class="bi bi-pause-circle-fill"></i> そっと CALM</span>
@@ -334,7 +339,11 @@
         </div>
         <p class="drawer-note">速度は全員おなじ物差しで決まります（自分比ではありません）。振りが 250 °/s で秒速 8.7m、500 °/s で 10.8m、800 °/s で 12.4m です。この対応は机上の見積もりで、実際の人の振りを測って決め直す前提です。</p>
         <h4>📼 生データの記録 / Recording</h4>
-        <p class="drawer-note">走るたびに、加速度・角速度の生データ（約 200 Hz）、ゲームの状態、できごと、走者の名前と設定を、このブラウザに自動で保存します。リロードしても残ります。</p>
+        <label class="rec-toggle in-drawer">
+          <input type="checkbox" id="rec-toggle-2" checked><span class="rec-switch"></span>
+          <span class="rec-label">生データを記録する</span>
+        </label>
+        <p class="drawer-note">ON のあいだ、走るたびに、加速度・角速度の生データ（約 200 Hz）、ゲームの状態、できごと、走者の名前と設定を、このブラウザに保存します。リロードしても残ります。</p>
         <label class="rec-toggle in-drawer">
           <input type="checkbox" id="rec-auto" checked><span class="rec-switch"></span>
           <span class="rec-label">ゴールするたびに、生データを「ダウンロード」フォルダへ自動で保存する</span>

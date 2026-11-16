@@ -784,7 +784,7 @@ function updateRace(now, dt) {
   if (proc.phase === 'fired') {
     const on = live(now) ? tracker.findOnset(watchSince ?? proc.watchFrom) : null;
     // the official moment is the signal passing the threshold, as a timing system would take it
-    for (const e of proc.step(now, { stillMs: 0, onsetAt: on ? Math.max(proc.watchFrom, on.trigger) : null, keyAt })) {
+    for (const e of proc.step(now, { stillMs: 0, onsetAt: on ? Math.max(proc.watchFrom, on.t) : null, keyAt })) {
       if (e.type === 'reaction') { reactionMs = e.ms; recorder.event(now, 'reaction', { ms: +e.ms.toFixed(1) }); popup(formatReaction(e.ms), 'info', 'REACTION TIME'); } else if (e.type === 'false-start') { onFalseStart(e); return; }
     }
     if (proc.phase === 'done') tracker.hold(false);   // the SET pose is no longer the reference
@@ -916,7 +916,7 @@ function update(now, dt) {
     const on = sensorLive && watch != null ? tracker.findOnset(watchSince ?? watch) : null;
     // no sensor at all = keyboard play, nothing to hold still; a sensor that has just gone quiet is lost, never "still"
     const lost = !sensorLive && tracker.inUse(now);
-    const events = proc.step(now, { stillMs: sensorLive ? tracker.stillMs(now) : lost ? 0 : Infinity, onsetAt: on ? Math.max(watch, on.trigger) : null, keyAt });
+    const events = proc.step(now, { stillMs: sensorLive ? tracker.stillMs(now) : lost ? 0 : Infinity, onsetAt: on ? Math.max(watch, on.t) : null, keyAt });
     for (const e of events) {
       if (e.type === 'set') onSet();
       else if (e.type === 'steady') {

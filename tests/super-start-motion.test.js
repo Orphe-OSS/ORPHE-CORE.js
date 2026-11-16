@@ -7,7 +7,7 @@ const { loadExampleModule } = require('./helpers/load-example-module');
 // a few hundredths of a G and a few deg/s of tremor while "still".
 const dir = path.join(__dirname, '../examples/GAME-SUPER-START');
 const { MotionTracker, SampleClock, MOTION_DEFAULTS } = loadExampleModule(path.join(dir, 'motion.js'));
-const { StartProcedure, FALSE_START_MS, gradeReaction, formatReaction } = loadExampleModule(path.join(dir, 'start.js'));
+const { StartProcedure, START_DEFAULTS, FALSE_START_MS, holdMs, gradeReaction, formatReaction } = loadExampleModule(path.join(dir, 'start.js'));
 
 function lcg(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
 
@@ -95,6 +95,22 @@ function feed(tracker, t0, t1, shape, rnd = lcg(1)) {
   assert.ok(on, 'movement found despite the offset');
   assert.ok(on.t >= 2595 && on.t <= 2620, `onset at the push, not the full backtrack window earlier (${on.t})`);
 }
+// a hand that tenses and creeps upward before the push: the reaction is the push, not the creep
+{
+  const m = new MotionTracker();
+  feed(m, 0, 1000, () => null);
+  m.hold(true);
+  // from 2300 ms the hand drifts up to 0.2 G over 300 ms (never past the move threshold), the push starts at 2600 ms
+  const shape = (t) => {
+    const creep = t >= 2300 ? Math.min(0.2, ((t - 2300) / 300) * 0.2) : 0;
+    const push = t >= 2600 ? Math.min(1.5, ((t - 2600) / 60) * 1.5) : 0;
+    return { a: [creep + push, 0, 0] };
+  };
+  feed(m, 1000, 3000, shape);
+  const on = m.findOnset(1000);
+  assert.ok(on && on.t >= 2590 && on.t <= 2615, `onset at the push, not during the creep (${on && on.t})`);
+  assert.ok(on.trigger > on.t, 'the threshold comes later than the start of the movement');
+}
 // a gap in the stream: stillness is not credited for the time nothing was seen
 {
   const m = new MotionTracker();
@@ -176,7 +192,9 @@ function feed(tracker, t0, t1, shape, rnd = lcg(1)) {
 }
 
 // ---------------------------------------------------------------- start procedure
-const OPT = { marksMs: 1000, steadyMs: 500, holdMinMs: 1000, holdMaxMs: 2000, setLimitMs: 4000, noStartMs: 2000 };
+// with these numbers the wait after "steady" is 1000 ms + 1000 ms * -ln(1 - u), at most 3000 ms:
+// u = 0.5 gives 1693 ms, so the gun is triggered on the 10 ms tick at 1500 + 1700 = 3200 ms
+const OPT = { marksMs: 1000, steadyMs: 500, holdMinMs: 1000, holdMeanMs: 1000, holdMaxMs: 3000, setLimitMs: 4000, noStartMs: 2000 };
 /** Run the procedure on a 10 ms tick. script(now, proc) -> input. Returns all events with their time. */
 function run(proc, script, until = 12000) {
   const out = [];
@@ -199,12 +217,12 @@ const types = (ev) => ev.map((e) => e.type).join(' ');
   const [set, steady, fire, reaction] = ev;
   assert.equal(set.at, 1000);
   assert.equal(steady.at, 1500, 'steady needs steadyMs of stillness');
-  assert.equal(fire.at, 3000, 'hold = min + rng * (max - min)');
+  assert.equal(fire.at, 3200, 'hold = min + an exponentially distributed wait');
   assert.equal(reaction.ms, 150, 'measured from when the gun is heard, not from when it was triggered');
 }
 // the hold really is random between the two limits
 {
-  for (const [r, at] of [[0, 2500], [0.999, 3500]]) {
+  for (const [r, at] of [[0, 2500], [0.999, 4500]]) {
     const ev = run(new StartProcedure(OPT, () => r), (now) => ({ stillMs: now >= 1000 ? now - 1000 : 0 }));
     assert.ok(Math.abs(ev.find((e) => e.type === 'fire').at - at) <= 10);
     assert.equal(ev[ev.length - 1].type, 'no-start', 'no reaction within noStartMs');
@@ -238,7 +256,7 @@ const types = (ev) => ev.map((e) => e.type).join(' ');
 // a movement that began between the trigger and the sound of the gun is before the gun
 {
   const p = new StartProcedure(OPT, () => 0.5);
-  const ev = run(p, (now) => ({ stillMs: now >= 1000 ? now - 1000 : 0, onsetAt: now >= 3010 ? 3010 : null }));
+  const ev = run(p, (now) => ({ stillMs: now >= 1000 ? now - 1000 : 0, onsetAt: now >= 3210 ? 3210 : null }));
   const last = ev[ev.length - 1];
   assert.equal(last.type, 'false-start');
   assert.equal(last.reason, 'before-gun');
@@ -263,6 +281,23 @@ const types = (ev) => ev.map((e) => e.type).join(' ');
   p = new StartProcedure(OPT, () => 0.5);
   ev = run(p, (now, proc) => ({ stillMs: Infinity, keyAt: now < 1000 ? 500 : (proc.gunAt != null && now >= proc.gunAt + 180 ? proc.gunAt + 180 : null) }));
   assert.equal(types(ev), 'set steady fire reaction');
+}
+
+// ---------------------------------------------------------------- the wait before the gun cannot be timed
+{
+  const o = START_DEFAULTS;
+  assert.equal(holdMs(o, 0), o.holdMinMs, 'never sooner than the minimum');
+  assert.equal(holdMs(o, 0.999999), o.holdMaxMs, 'never later than the maximum');
+  assert.equal(holdMs(o, 1), o.holdMaxMs, 'a random source that returns 1 is safe');
+  const rnd = lcg(11), waits = [];
+  for (let i = 0; i < 20000; i++) waits.push(holdMs(o, rnd()));
+  waits.sort((a, b) => a - b);
+  const q = (p) => waits[Math.floor(p * waits.length)];
+  assert.ok(q(0.9) - q(0.1) > 2500, `the gun is spread over seconds (10 %..90 %: ${q(0.1).toFixed(0)}..${q(0.9).toFixed(0)} ms)`);
+  // exponential: having waited already says nothing about how much longer it will be.
+  // Of the waits still running at 2 s, the share that end within the next 0.5 s is the same as at 3 s.
+  const share = (from) => { const alive = waits.filter((w) => w >= from); return alive.filter((w) => w < from + 500).length / alive.length; };
+  assert.ok(Math.abs(share(2000) - share(3000)) < 0.03, `the same chance per half second at 2 s and at 3 s (${share(2000).toFixed(3)} vs ${share(3000).toFixed(3)})`);
 }
 
 // ---------------------------------------------------------------- grades and formatting

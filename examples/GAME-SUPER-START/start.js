@@ -12,8 +12,14 @@ export const FALSE_START_MS = 100;
 export const START_DEFAULTS = {
   marksMs: 2600,     // time on "on your marks" before "set"
   steadyMs: 600,     // the sensor has to be still this long before the starter is satisfied
-  holdMinMs: 1100,   // the gun comes this long after everyone is steady ...
-  holdMaxMs: 2400,   // ... up to this long, at random
+  // The gun comes holdMinMs after everyone is steady, plus a wait that is exponentially
+  // distributed (mean holdMeanMs), cut off at holdMaxMs. With an exponential wait the gun is no
+  // more likely in the next instant however long it has been already, so it cannot be timed:
+  // a uniform 1.1-2.4 s wait could be, after a few goes. About half the guns come within 2 s
+  // of "steady", one in ten after more than 4.2 s.
+  holdMinMs: 1000,
+  holdMeanMs: 1400,
+  holdMaxMs: 6000,
   setLimitMs: 8000,  // still not steady after this long in SET: stand up and start over
   noStartMs: 2500,   // no reaction this long after the gun: recorded as no start
 };
@@ -57,7 +63,7 @@ export class StartProcedure {
         finish({ type: 'false-start', reason: 'before-gun', ms: null });
       } else if (stillMs >= o.steadyMs && now - this.setAt >= o.steadyMs) {
         this.phase = 'hold'; this.steadyAt = now;
-        this.fireAt = now + o.holdMinMs + this.rng() * (o.holdMaxMs - o.holdMinMs);
+        this.fireAt = now + holdMs(o, this.rng());
         ev.push({ type: 'steady' });
       } else if (now - this.setAt >= o.setLimitMs) {
         // the starter never fires on a field that will not settle: everyone stands up, no penalty
@@ -86,6 +92,12 @@ export class StartProcedure {
     }
     return ev;
   }
+}
+
+/** The wait between "steady" and the gun for a random number u in [0, 1). */
+export function holdMs(o, u) {
+  const extra = -o.holdMeanMs * Math.log(1 - Math.min(0.999999, Math.max(0, u)));
+  return Math.min(o.holdMaxMs, o.holdMinMs + extra);
 }
 
 function earliest(a, b, since) {

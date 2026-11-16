@@ -255,8 +255,8 @@ function debugInfo(now) {
   return {
     decidedAt: now, steadyAt: proc.steadyAt, watchSince, gunFiredAt: fire ? fire.at : null, gunAt: fire ? proc.gunAt : null,
     audioDelayMs: fire ? fire.audioDelayMs : null,
-    trigger: lastOnset ? lastOnset.trigger : null,       // the sensor passed the "moved" threshold (the official moment)
-    onsetEstimate: lastOnset ? lastOnset.t : null,       // where that movement began to rise (shown, not used)
+    trigger: lastOnset ? lastOnset.trigger : null,       // the sensor passed the "moved" threshold (how the movement is found)
+    onsetEstimate: lastOnset ? lastOnset.t : null,       // where that movement began to rise (the reaction time)
     keyAt, lagOffsetMs: tuning.lagMs, sensorLive: sensorLive(now), sampleRate: Math.round(sensor.rate), deliveryLagMs: Math.round(sensor.lag),
     stampsUsable: sampleClock.usable,
     thresholds: { stillAcc: o.stillAcc, stillGyro: o.stillGyro, moveAcc: o.moveAcc, moveGyro: o.moveGyro },
@@ -478,8 +478,10 @@ function drawWave() {
   const legal = a.type === 'reaction';
   if (d.trigger != null) {
     const at = d.trigger - ref;
-    marks.push({ at, color: legal ? '#ffd34d' : '#ff3d6e', label: !fired ? 'ここで動いた（号砲の前）' : `しきい値を超えた ${formatReaction(at)}` });
-    if (d.onsetEstimate != null && d.trigger - d.onsetEstimate >= 10) marks.push({ at: d.onsetEstimate - ref, color: '#9fb4d8', dash: true, label: '動き始め', align: 'right' });
+    // solid: where the movement began (the reaction time); dashed: where it passed the threshold
+    const began = d.onsetEstimate != null ? d.onsetEstimate - d.lagOffsetMs - ref : at;
+    marks.push({ at: began, color: legal ? '#ffd34d' : '#ff3d6e', label: !fired ? 'ここで動いた（号砲の前）' : `動き始め ${formatReaction(began)}`, align: 'right' });
+    if (at - began >= 10) marks.push({ at, color: '#9fb4d8', dash: true, label: `しきい値 ${formatReaction(at)}`, align: 'left' });
   }
   if (d.keyAt != null && d.trigger == null) marks.push({ at: d.keyAt - ref, color: '#ffd34d', label: 'キー' });
   drawReactionPlot($('rt-wave-canvas'), {
@@ -575,10 +577,10 @@ function update(now, dt) {
     const lost = !live && tracker.inUse(now);
     const events = proc.step(now, {
       stillMs: live ? tracker.stillMs(now) : lost ? 0 : Infinity,
-      // The official moment is the one a timing system would use: the signal passing the threshold.
-      // (Dating it back to where the movement "began" is fragile: a hand that creeps during the
-      // hold makes that look up to 0.15 s earlier, enough to turn a good start into a false one.)
-      onsetAt: on ? Math.max(watch, on.trigger - tuning.lagMs) : null,
+      // The reaction is timed to where the movement began (the foot of its rising edge), not to
+      // where it passed the threshold: with a hand-held sensor the threshold comes several
+      // hundredths of a second into the movement, and that read as a slow reaction.
+      onsetAt: on ? Math.max(watch, on.t - tuning.lagMs) : null,
       keyAt,
     });
     for (const e of events) {

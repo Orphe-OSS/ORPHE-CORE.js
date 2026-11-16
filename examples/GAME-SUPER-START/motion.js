@@ -172,8 +172,8 @@ export class MotionTracker {
 
   /**
    * The first deliberate movement at or after `since`.
-   * The trigger is the first sample past the move thresholds; the onset is where that movement
-   * began to rise from the resting level, searched back from the trigger (never before `since`).
+   * The trigger is the first sample past the move thresholds; the onset (t) is where that movement
+   * began, searched back from the trigger over backtrackMs (never before `since`).
    * Returns { t, trigger, peak } or null.
    */
   findOnset(since) {
@@ -183,19 +183,28 @@ export class MotionTracker {
       if (buf[k].t >= since && buf[k].level >= 1) { i = k; break; }
     }
     if (i < 0) return null;
-    // The level the sensor sat at before this movement. With the gravity reference frozen, a hand
-    // that has slowly sagged reads a constant offset; searching back to "quiet" would then run the
-    // full backtrack window and date the movement far too early. So the start of the movement is
-    // where the level rose 30 % of the way from that resting level to the trigger level.
-    const rest = [];
-    for (let k = i - 1; k >= 0 && buf[i].t - buf[k].t <= o.backtrackMs + 300; k--) {
-      if (buf[i].t - buf[k].t > o.backtrackMs) rest.push(buf[k].level);
-    }
-    rest.sort((a, b) => a - b);
-    const base = rest.length ? Math.min(1, rest[rest.length >> 1]) : 0;
-    const rise = base + 0.3 * (1 - base);
+    // Where did this movement begin? Look at the signal over the backtrack window before the
+    // trigger and find its knee: the sample that lies furthest below the straight line from the
+    // start of the window to the trigger. Before the knee the hand was resting (or sagging, or
+    // slowly tensing: all of them shallow); after it the signal climbs steeply to the trigger.
+    // The movement begins with the sample after the knee.
+    // Two simpler rules were tried and dropped. "Back to where it was quiet" runs the whole
+    // window when a hand has sagged against the frozen gravity reference. "Back along the rise
+    // above the resting level" follows a slow tensing of the hand all the way down.
+    let i0 = i;
+    while (i0 > 0 && buf[i0 - 1].t >= since && buf[i].t - buf[i0 - 1].t <= o.backtrackMs) i0--;
     let j = i;
-    while (j > 0 && buf[j - 1].t >= since && buf[i].t - buf[j - 1].t <= o.backtrackMs && buf[j - 1].level >= rise) j--;
+    if (i0 < i) {
+      const t0 = buf[i0].t, l0 = buf[i0].level, span = buf[i].t - t0, climb = buf[i].level - l0;
+      let best = 0, knee = i0 - 1;
+      for (let k = i0; k < i && span > 0; k++) {
+        const d = l0 + (climb * (buf[k].t - t0)) / span - buf[k].level;
+        if (d > best) { best = d; knee = k; }
+      }
+      // no knee: the signal climbed in a straight line through the whole window, so the movement
+      // began at or before its start
+      j = best > 0.03 ? knee + 1 : i0;
+    }
     let peak = 0;
     for (let k = i; k < buf.length && buf[k].t - buf[i].t <= 200; k++) peak = Math.max(peak, buf[k].level);
     return { t: buf[j].t, trigger: buf[i].t, peak };

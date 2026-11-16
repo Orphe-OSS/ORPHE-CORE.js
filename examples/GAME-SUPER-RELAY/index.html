@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUPER VIRTUAL RELAY　4×100m</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <!-- Stadium UI from the hurdle game, the starter's calls from the start game, then this event's own parts. -->
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117a">
+  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261117a">
+  <link rel="stylesheet" href="style.css?v=20261117a">
+  <!--
+    Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
+    ?v= build id. When any file of this example, of ../GAME-SUPER-START/ or of
+    ../GAME-SUPER-HURDLE/ changes, change the id everywhere on this page
+    (tests/super-start-build-id.test.js checks they all match).
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "./relay.js": "./relay.js?v=20261117a",
+        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261117a",
+        "../GAME-SUPER-START/motion.js": "../GAME-SUPER-START/motion.js?v=20261117a",
+        "../GAME-SUPER-START/start.js": "../GAME-SUPER-START/start.js?v=20261117a",
+        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261117a",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117a",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117a",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117a",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117a"
+      }
+    }
+  </script>
+  <!-- ORPHE CORE SDK from this repository (see GAME-SUPER-HURDLE for why not the CDN copy). -->
+  <script src="../../js/float16.min.js"></script>
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="main.js?v=20261117a"></script>
+<script src="../../js/site-analytics.js"></script>
+</head>
+<body>
+  <div id="stage" data-screen="start">
+    <canvas id="game-canvas"></canvas>
+    <div class="zone-veil" id="zone-veil"></div>
+    <div class="letterbox top"></div>
+    <div class="letterbox bottom"></div>
+
+    <!-- ===== Title ===== -->
+    <div class="screen" id="start-layer">
+      <div class="title-block">
+        <div class="eyebrow"><img id="brand-logo" alt="ORPHE" hidden><span>VIRTUAL SPORTS</span></div>
+        <h1 class="title">
+          <span class="title-en">SUPER VIRTUAL RELAY</span>
+          <span class="title-ja">バーチャルリレー <em>4×100m</em></span>
+        </h1>
+        <p class="lead">CORE がバトン。走る区間は全力で振り、<br>青いゾーンではぴたりと止めて、そっと次の人へ。</p>
+        <p class="lead-en">The CORE is the baton. Shake it flat out on the track; in the blue zone hold it calm and hand it on.</p>
+        <div class="cta-row">
+          <button type="button" class="hx-btn primary" id="start-btn" data-quiet="1"><span class="hx-main">START</span><span class="hx-sub">スタート</span></button>
+          <button type="button" class="hx-btn ghost" id="btn-ranking"><i class="bi bi-trophy-fill"></i> ランキング / RANKING</button>
+        </div>
+        <div class="records">
+          <span>チームベスト BEST <b id="best-time">--.--</b></span>
+          <span>現実の世界記録 WR <b>36.84</b></span>
+          <span>日本記録 NR <b>37.43</b></span>
+        </div>
+        <label class="team-names">
+          <span>走者の名前（任意・区切りは「,」）</span>
+          <input type="text" id="team-names" maxlength="80" placeholder="例: KIKU, SAKA, TARO, ANCHOR" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="howto relay-howto">
+          <div class="howto-col">
+            <span class="howto-head">走る / RUN</span>
+            <span><i class="bi bi-lightning-charge-fill"></i> CORE を振る → 振るほど速い</span>
+            <span><kbd>Space</kbd> 押しっぱなしで走る</span>
+          </div>
+          <div class="howto-col">
+            <span class="howto-head zone">ゾーン / TAKEOVER ZONE</span>
+            <span><i class="bi bi-pause-circle-fill"></i> スローになる。振るのをやめて、そっと渡す</span>
+            <span><i class="bi bi-activity"></i> 動かしたぶんだけバトンの速度が落ちる</span>
+            <span><i class="bi bi-check-circle-fill"></i> ゲージが満タンで受け渡し完了 → 次の人が振る</span>
+            <span><kbd>Space</kbd> を離すと「そっと」</span>
+          </div>
+        </div>
+      </div>
+      <footer class="credit">
+        © 2026 ORPHE Inc. All rights reserved. ORPHE CORE is a registered trademark of ORPHE Inc.
+        <a href="https://orphe.io/" target="_blank" rel="noopener">https://orphe.io/</a>
+      </footer>
+    </div>
+
+    <!-- ===== Starter's calls (styles from GAME-SUPER-START) ===== -->
+    <div class="screen" id="call-layer" aria-live="polite">
+      <div class="call" id="call">
+        <div class="call-en" id="call-en">ON YOUR MARKS</div>
+        <div class="call-ja" id="call-ja">位置について</div>
+        <div class="steady" id="steady">
+          <div class="steady-track"><div class="steady-fill" id="steady-fill"></div></div>
+          <div class="steady-label" id="steady-label">手を止める / HOLD STILL</div>
+        </div>
+      </div>
+      <div class="foul-flash" id="foul-flash"><span>FALSE START</span></div>
+    </div>
+
+    <!-- ===== Race HUD ===== -->
+    <div class="relay-hud" id="relay-hud" aria-hidden="true">
+      <div class="rh-top">
+        <div class="rh-legs" id="rh-legs">
+          <span data-leg="0"><b>1</b>走</span><span data-leg="1"><b>2</b>走</span><span data-leg="2"><b>3</b>走</span><span data-leg="3"><b>4</b>走</span>
+        </div>
+        <div class="rh-timer"><span class="hud-label">TIME</span><b id="rh-time">0.00</b></div>
+        <div class="rh-place"><b id="rh-place">1</b><span id="rh-place-of">/ 8</span></div>
+      </div>
+      <div class="rh-rail-wrap">
+        <div class="rh-rail" id="rh-rail">
+          <i class="rh-zone" style="left:20%;width:7.5%"></i><i class="rh-zone" style="left:45%;width:7.5%"></i><i class="rh-zone" style="left:70%;width:7.5%"></i>
+          <div class="rh-fill" id="rh-fill"></div>
+          <div class="rh-rivals" id="rh-rivals"></div>
+          <div class="rh-me" id="rh-me"></div>
+        </div>
+        <div class="rh-rail-labels"><span>START</span><span>100</span><span>200</span><span>300</span><span>FINISH</span></div>
+      </div>
+
+      <!-- the one instruction that matters right now -->
+      <div class="rh-cue" id="rh-cue" data-mode="run">
+        <div class="rh-cue-run">
+          <span class="rh-cue-en">SHAKE!</span><span class="rh-cue-ja" id="rh-cue-run-ja">振れ！</span>
+          <div class="rh-effort"><div class="rh-effort-fill" id="rh-effort"></div></div>
+        </div>
+        <div class="rh-cue-near">
+          <span class="rh-cue-en">ZONE AHEAD</span><span class="rh-cue-ja">まもなくゾーン　あと <b id="rh-near-m">20</b> m</span>
+        </div>
+      </div>
+
+      <!-- the exchange, in slow motion: the raw sensor axes against the band they must stay inside -->
+      <div class="pass-ui" id="pass-ui">
+        <div class="pass-head">
+          <span class="pass-en" id="rh-pass-en">SLOW HANDS</span>
+          <span class="pass-ja" id="rh-pass-ja">波形を帯の中に　そっと次の人へ</span>
+        </div>
+        <div class="pass-side">
+          <div class="pass-speed">
+            <span>バトンの速度 / BATON SPEED</span>
+            <div><b id="pass-speed">0.0</b><i>m/s</i></div>
+            <em id="pass-keep">100%</em>
+          </div>
+        </div>
+        <div class="pass-bottom">
+          <div class="pass-gauge">
+            <span class="pass-gauge-label">受け渡し / EXCHANGE</span>
+            <div class="rh-gauge"><div class="rh-gauge-fill" id="rh-gauge"></div></div>
+          </div>
+          <div class="pass-scopes">
+            <div class="pass-scope"><canvas id="scope-gyro"></canvas></div>
+            <div class="pass-scope"><canvas id="scope-acc"></canvas></div>
+          </div>
+          <div class="pass-hint" id="pass-hint">どの軸でも、動かしたぶんだけバトンの速度が落ちます。帯の外に出るとゲージが戻ります。</div>
+          <div class="rh-zone-left"><div class="rh-zone-left-fill" id="rh-zone-left"></div><span>ゾーン残り <b id="rh-zone-m">30</b> m</span></div>
+        </div>
+      </div>
+
+      <div class="runner-tag" id="runner-tag"><b id="runner-tag-name"></b><i></i></div>
+      <div class="rh-speed"><b id="rh-speed">0.0</b><span>m/s</span><em id="rh-delta"></em></div>
+      <div class="finish-banner" id="finish-banner"><span>FINISH</span></div>
+      <div class="popup-layer" id="popup-layer"></div>
+    </div>
+
+    <!-- ===== Result ===== -->
+    <div class="screen" id="finish-layer">
+      <div class="rt-card relay-card" id="result-card">
+        <div class="rt-head">
+          <span class="rt-tag">4×100m RELAY · LANE 5</span>
+          <span class="rt-badge" id="rt-badge">NEW TEAM BEST</span>
+        </div>
+        <div class="rt-main" id="rc-main">
+          <div class="rt-time">
+            <span class="rt-label">タイム / Time</span>
+            <div class="rt-value"><b id="rc-time">--.--</b><i>秒</i></div>
+            <div class="rc-sub" id="rc-sub"></div>
+          </div>
+          <div class="result-medal" id="rc-medal">
+            <div class="medal-ring"><span id="rc-place">1</span><sup id="rc-place-suffix">st</sup></div>
+            <div class="medal-label" id="rc-medal-label">GOLD</div>
+          </div>
+        </div>
+        <div class="rt-foul" id="rc-dq" hidden>
+          <div class="red-card" aria-hidden="true"></div>
+          <div class="rt-foul-text">
+            <b>DISQUALIFIED</b>
+            <span>失格</span>
+            <p id="rc-dq-reason"></p>
+          </div>
+        </div>
+
+        <div class="rc-grid">
+          <div class="rc-block">
+            <h5>区間タイム / Splits</h5>
+            <div class="rc-table" id="rc-splits"></div>
+          </div>
+          <div class="rc-block">
+            <h5>バトンパス / Exchanges <small>受け渡しで残ったバトンの速度</small></h5>
+            <div class="rc-table" id="rc-passes"></div>
+          </div>
+        </div>
+        <div class="result-board" id="rc-board"></div>
+
+        <form class="result-entry" id="name-form" autocomplete="off">
+          <input type="text" id="player-name" maxlength="24" placeholder="チーム名 / Team name" aria-label="ランキングに登録するチーム名">
+          <button type="submit" class="hx-btn small" id="save-score">ランキング登録 / SAVE</button>
+          <span class="save-status" id="save-status"></span>
+        </form>
+        <div class="result-actions">
+          <button type="button" class="hx-btn primary" id="retry" data-quiet="1"><span class="hx-main">RETRY</span><span class="hx-sub">もう一度 <kbd>Enter</kbd></span></button>
+          <button type="button" class="hx-btn ghost" id="btn-ranking-finish"><i class="bi bi-trophy-fill"></i> ランキング</button>
+          <button type="button" class="hx-btn ghost" id="btn-title"><i class="bi bi-house-fill"></i> タイトル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Ranking ===== -->
+    <div class="screen" id="ranking-layer" style="display:none;">
+      <div class="ranking-container">
+        <button type="button" class="back-button" id="back-btn" title="戻る / Back"><i class="bi bi-arrow-left"></i></button>
+        <h2 class="ranking-title">ランキング / RANKING</h2>
+        <p class="ranking-board">4×100m リレー · このブラウザの記録</p>
+        <div class="ranking-list" id="ranking-list"></div>
+        <div class="ranking-foot"><button type="button" class="hx-btn small danger" id="ranking-clear">記録を消す / Clear</button></div>
+      </div>
+    </div>
+
+    <!-- ===== Top bar ===== -->
+    <div id="topbar">
+      <button type="button" class="icon-btn" id="btn-sound" title="サウンド / Sound"><i class="bi bi-volume-up-fill"></i></button>
+      <button type="button" class="icon-btn" id="btn-fullscreen" title="全画面 / Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button type="button" class="icon-btn" id="btn-settings" title="センサー設定 / Sensor settings"><i class="bi bi-sliders"></i></button>
+    </div>
+
+    <!-- ===== ORPHE CORE connection dock ===== -->
+    <aside id="core-dock" class="dock">
+      <div class="dock-head">
+        <span class="dock-title">ORPHE CORE</span><span class="dock-sub" style="display:inline">接続 / CONNECT</span>
+      </div>
+      <div class="dock-row" id="dock-row-0">
+        <span class="foot-chip"><b>1</b><span>バトン</span></span>
+        <div id="toolkit_placeholder1" class="toolkit-slot"></div>
+        <span class="dock-state" id="dock-state-0">未接続</span>
+      </div>
+      <div id="ble-support-message" class="dock-note" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
+      <div id="audio-warn" class="dock-note" hidden></div>
+      <div class="dock-check">
+        <span class="check-item" id="check-shake"><i class="bi bi-lightning-charge-fill"></i> 振る SHAKE</span>
+        <span class="check-item" id="check-calm"><i class="bi bi-pause-circle-fill"></i> そっと CALM</span>
+      </div>
+      <!-- the signal the game judges, live: 1.0 on this scale is the upper limit of "calm" -->
+      <div class="scope-box" id="scope-dock-box">
+        <canvas class="scope" id="scope-dock"></canvas>
+        <span class="scope-cap">判定に使っている動き。水色の線より下が「そっと」。大きく振るほど上に振れて速くなる</span>
+      </div>
+      <button type="button" class="dock-link" id="open-settings"><i class="bi bi-sliders"></i> センサー値・感度の調整 / Sensor settings</button>
+      <p class="dock-hint">スイッチをONにして CORE を 1 個選びます。その CORE を 4 人で回します（1 人で持ち替えても遊べます）。キーボードだけでも遊べます。</p>
+    </aside>
+
+    <!-- ===== Sensor monitor + settings drawer ===== -->
+    <aside id="settings-drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <h3>センサー / Sensor</h3>
+        <button type="button" class="icon-btn" id="close-settings" title="閉じる / Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="config-panel">
+        <h4>📊 センサー値モニター / Sensor Monitor</h4>
+        <p class="drawer-note">
+          <a href="https://orphe.io/core" target="_blank" rel="noopener">ORPHE CORE</a> 1 個の加速度とジャイロだけで、「振っている強さ」と「そっと扱っているか」を判定します。誰が持っているかはセンサーでは分かりません。受け渡しは、席のみなさんで見届けてください。<br>
+          <span class="drawer-note-en">One ORPHE CORE's acceleration and gyro tell how hard it is shaken and whether it is handled gently. The sensor cannot tell who holds it.</span>
+        </p>
+        <div class="sensor-monitor one">
+          <div class="sensor-box">
+            <h5>CORE 01</h5>
+            <div class="sensor-line">
+              <span class="sensor-name">振り</span>
+              <span class="sensor-value" id="mon-effort">--</span>
+              <div class="sensor-bar"><div id="mon-effort-bar" class="bar"></div></div>
+            </div>
+            <div class="sensor-line">
+              <span class="sensor-name">Accel</span>
+              <span class="sensor-value" id="mon-acc">--</span>
+              <div class="sensor-bar"><div id="mon-acc-bar" class="bar"></div><div id="mon-acc-calm" class="threshold still"></div></div>
+            </div>
+            <div class="sensor-line">
+              <span class="sensor-name">Gyro</span>
+              <span class="sensor-value" id="mon-gyro">--</span>
+              <div class="sensor-bar"><div id="mon-gyro-bar" class="bar"></div><div id="mon-gyro-calm" class="threshold still"></div></div>
+            </div>
+          </div>
+          <div class="sensor-action">
+            <span>いまの状態 / State</span>
+            <p id="mon-state">未接続 / Not connected</p>
+            <span id="mon-rate">-- Hz</span>
+          </div>
+        </div>
+
+        <h4>⚡ 走る / Run</h4>
+        <div class="config-item">
+          <label for="shake-full">全速に必要な振りの強さの下限（小さいほど、軽い振りで全速になる）</label>
+          <div class="config-control">
+            <input type="range" id="shake-full" min="0.06" max="0.5" value="0.16" step="0.02">
+            <span id="shake-full-value">0.16</span>
+          </div>
+        </div>
+        <h4>✋ バトンパス / Exchange</h4>
+        <div class="config-item">
+          <label for="calm-tol">帯の幅（大きいほど、多少動かしてもゲージがたまる。×1.0 で 角速度 ±90 °/s・加速度 ±0.2 G）</label>
+          <div class="config-control">
+            <input type="range" id="calm-tol" min="0.5" max="3" value="1" step="0.1">
+            <span id="calm-tol-value">×1.0</span>
+          </div>
+        </div>
+        <div class="config-item">
+          <label for="pass-sec">受け渡しに必要な時間（まったく動かさなかったとき）</label>
+          <div class="config-control">
+            <input type="range" id="pass-sec" min="0.6" max="3" value="1.4" step="0.1">
+            <span id="pass-sec-value">1.4 s</span>
+          </div>
+        </div>
+        <h4>🏃 ルール / Rules</h4>
+        <div class="config-item">
+          <label for="rule-zone">ゾーン内で渡せなかったとき / Zone not completed</label>
+          <div class="config-control">
+            <select id="rule-zone">
+              <option value="penalty">+3 秒のペナルティ（居酒屋ルール）</option>
+              <option value="dq">失格（公式ルール）</option>
+            </select>
+          </div>
+        </div>
+        <p class="drawer-note">ゲージがたまる速さと「そっと」の基準は、実機で遊びながら合わせてください。設定はこのブラウザに保存されます。ランキングは設定ごとに分かれません。</p>
+
+        <h4>🔊 サウンド / Sound</h4>
+        <div class="config-item">
+          <label for="volume-slider">音量 / Volume</label>
+          <div class="config-control">
+            <input type="range" id="volume-slider" min="0" max="1" value="0.85" step="0.05">
+            <span id="volume-value">85%</span>
+          </div>
+        </div>
+        <h4>🖥 グラフィック / Graphics</h4>
+        <div class="config-item">
+          <label for="quality-select">描画品質 / Quality</label>
+          <div class="config-control">
+            <select id="quality-select">
+              <option value="auto" selected>自動 / Auto</option>
+              <option value="high">高 / High</option>
+              <option value="medium">中 / Medium</option>
+              <option value="low">低 / Low</option>
+            </select>
+            <span id="fps-value">-- fps</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="loading"><div class="loading-inner"><span class="loading-title">SUPER VIRTUAL RELAY</span><span class="loading-bar"><i></i></span><span class="loading-text">スタジアムを準備中… / Preparing the stadium</span></div></div>
+  </div>
+
+  <script>
+    // One ORPHE CORE: the baton. CoreToolkit.js creates the global `bles`; the switch it builds
+    // starts the connection from its own user gesture. main.js attaches the sensor callbacks.
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES', { forceDeviceSelection: true });
+    guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
+  </script>
+</body>
+</html>

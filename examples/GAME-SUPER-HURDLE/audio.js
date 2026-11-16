@@ -40,6 +40,8 @@ export class AudioEngine {
     this.heartRate = 0;
     this.stepCount = 0;
     this.cheerBuf = null;
+    // relative to the page; events that borrow this engine from another folder point it back here
+    this.cheerUrl = 'sound/sound-audience.mp3';
     try {
       const v = parseFloat(localStorage.getItem('hurdle.volume'));
       if (Number.isFinite(v)) this.volume = Math.min(1, Math.max(0, v));
@@ -98,7 +100,7 @@ export class AudioEngine {
     this.nextStep = 0; this.step = 0;
     this.nextGrain = 0; this.nextHeart = 0;
     if (this.live) {
-      fetch('sound/sound-audience.mp3').then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).then((buf) => { this.cheerBuf = buf; }).catch(() => {});
+      fetch(this.cheerUrl).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).then((buf) => { this.cheerBuf = buf; }).catch(() => {});
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) ctx.suspend(); else ctx.resume();
       });

@@ -135,6 +135,15 @@
 .rh-cue-en { font-size: 2.1em; }
 .rh-effort { margin-top: 0.45em; }
 
+/* the swing in deg/s next to its bar */
+.rh-swing-row { display: flex; align-items: center; gap: 0.8em; width: 100%; margin-top: 0.45em; }
+.rh-swing-row .rh-effort { flex: 1; margin-top: 0; }
+.rh-swing { font-family: var(--display); font-size: 1.1em; color: var(--mute); white-space: nowrap; min-width: 5.2em; text-align: right; }
+.rh-swing b { font-weight: 400; font-size: 1.9em; color: var(--ink); margin-right: 0.15em; font-variant-numeric: tabular-nums; }
+.hx-btn[hidden] { display: none; }
+.relay-card .result-actions .hx-btn.ghost { padding: 0.7em 1em; white-space: nowrap; }
+.rc-grid { grid-template-columns: 1.25fr 1.25fr; }
+
 /* the runner's name above the runner */
 .runner-tag { position: absolute; left: 0; top: 0; opacity: 0; transition: opacity 0.2s ease; pointer-events: none; will-change: transform; }
 .runner-tag.show { opacity: 1; }

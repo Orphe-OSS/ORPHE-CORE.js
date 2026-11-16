@@ -10,20 +10,23 @@ import { createStage, bindChrome, attachCore, MAX_SPEED, THREE, BLOCK_Z, Runner,
 import { MotionTracker, SampleClock } from '../GAME-SUPER-START/motion.js';
 import { StartProcedure, formatReaction } from '../GAME-SUPER-START/start.js';
 import { createScope, createRawScope } from '../GAME-SUPER-START/scope.js';
-import { RelayRace, RELAY_DEFAULTS, CALM_DEFAULTS, makeRivalTeam, roughness, formatTime, gradePass } from './relay.js';
+import { createRecorder } from '../GAME-SUPER-START/recorder.js';
+import { RelayRace, RELAY_DEFAULTS, CALM_DEFAULTS, SWING_DEFAULTS, makeRivalTeam, roughness, swingSpeed, formatTime, gradePass } from './relay.js';
 
 const $ = (id) => document.getElementById(id);
 const TRACK_HALF = (9 * 1.22) / 2;
 const LANE_W = 1.22;
 const FINISH_Z = -110;            // where the stadium's finish gate stands
-const RIVAL_TIMES = [39.6, 41.0, 42.3, 43.6, 45.0, 46.8, 49.0];
+// The other teams are club runners, not a world final: an ordinary person swinging hard (about
+// 250 deg/s, 8.7 m/s) with decent exchanges comes in around 49 s, level with the best of them.
+const RIVAL_TIMES = [50.5, 52.0, 53.5, 55.0, 57.0, 59.0, 62.0];
 const NEAR_M = 30;                // "zone ahead" cue from this far out
 const FALL_MS = 150;              // free fall this long = the baton was dropped (about 11 cm of fall; to be checked against hard shaking on a real sensor)
 const SLOW = 0.3;                 // the exchange is played at this speed
 const SPEED_STEPS = [3, 5, 7, 8.5, 9.8, 10.8];   // m/s: passing one of these is heard
 const BEST_KEY = 'superrelay.best';
 const RANKING_KEY = 'superrelay.rankings';
-const TUNE_KEY = 'superrelay.tuning.v2';
+const TUNE_KEY = 'superrelay.tuning.v3';
 const NAME_KEY = 'superrelay.team';
 const RUNNERS_KEY = 'superrelay.runners';
 const RANKING_LIMIT = 100;
@@ -35,8 +38,8 @@ const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 *
 // Sensor
 const tracker = new MotionTracker();
 const sampleClock = new SampleClock();
-// full: the shake effort that counts as flat out can never be lower than this (see effortOf)
-const tuning = { full: 0.16, calm: 1, passSec: RELAY_DEFAULTS.passSec, rule: 'penalty' };
+// topSwing: the swing (mean angular speed, deg/s) that is worth the top speed of 12.4 m/s
+const tuning = { topSwing: SWING_DEFAULTS.topSwing, calm: 1, passSec: RELAY_DEFAULTS.passSec, rule: 'penalty' };
 try { Object.assign(tuning, JSON.parse(localStorage.getItem(TUNE_KEY) || '{}')); } catch { /* storage unavailable */ }
 const saveTuning = () => { try { localStorage.setItem(TUNE_KEY, JSON.stringify(tuning)); } catch { /* ignore */ } };
 const calmTune = () => ({ calmAcc: CALM_DEFAULTS.calmAcc * tuning.calm, calmGyro: CALM_DEFAULTS.calmGyro * tuning.calm });
@@ -46,8 +49,9 @@ const sensor = { samples: 0, rateAt: 0, rate: 0 };
 const AXES = [{ color: '#ff5d6c', label: 'X' }, { color: '#7dff6a', label: 'Y' }, { color: '#5aa9ff', label: 'Z' }];
 let dockScope = null, gyroScope = null, accScope = null;
 let lastStrokes = 0;
-function onSample(f) {
+function onSample(f, acc, gyro) {
   sensor.samples++;
+  recorder.sample(f.t, acc, gyro);
   const c = calmTune();
   agg.n++;
   agg.rough = Math.max(agg.rough, roughness(f, c));
@@ -59,16 +63,19 @@ function onSample(f) {
   accScope.push(f.t, [f.lin[0] / c.calmAcc, f.lin[1] / c.calmAcc, f.lin[2] / c.calmAcc]);
 }
 
-// How hard is "flat out"? People and wrists differ a lot, so it is measured against this team's own
-// hardest shaking in the race so far (never below tuning.full): shaking as hard as you can is full
-// speed for anyone, and easing off costs speed.
-const shake = { peak: 0 };
-function effortOf(dt) {
-  const e = tracker.energy;
-  shake.peak = Math.max(shake.peak * Math.exp(-dt / 25), e);
-  const full = Math.min(0.5, Math.max(tuning.full, 0.75 * shake.peak));
-  return Math.min(1, e / full);
-}
+// How fast is a swing? One fixed scale for everybody (relay.js, swingSpeed): the mean angular speed
+// of the hand in deg/s is worth a speed in m/s, with no ceiling at an ordinary person's best. The
+// harder the swing, the faster, up to what a human arm can do.
+const swingTune = () => ({ topSwing: tuning.topSwing });
+const speedOfSwing = () => swingSpeed(tracker.swing, tracker.shakeG, swingTune());
+
+// Every run is recorded (raw samples, game state, events) so the scale can be set from real swings.
+const recorder = createRecorder('super-relay');
+const FRAME_COLUMNS = ['race_s', 'distance_m', 'speed_mps', 'leg', 'awaiting', 'gauge', 'swing_dps', 'shake_G', 'target_mps', 'rough', 'time_scale', 'place'];
+let lastFrameRec = 0;
+/** Per leg: how hard and how often the runner swung, for the result card and the recording. */
+let legStats = [];
+const newLegStat = () => ({ sec: 0, swingSum: 0, swingPeak: 0, strokes: 0, topSpeed: 0 });
 
 // ---------------------------------------------------------------------------
 // State
@@ -307,7 +314,8 @@ function resetField() {
   view.base = 0;
   reactionMs = null; finalPlace = null; place = 1; savedAt = null; dqReason = '';
   gunFired = false; gunSeenAt = null; watchSince = null;
-  slow = 1; roughFor = 0; lastV = 0; speedStep = 0; shake.peak = 0;
+  slow = 1; roughFor = 0; lastV = 0; speedStep = 0;
+  legStats = [newLegStat(), newLegStat(), newLegStat(), newLegStat()];
   tracker.hold(false);
   pass.active = false; pass.blend = 0;
   if (receiver) receiver.root.visible = false;
@@ -327,7 +335,50 @@ function resetField() {
   $('popup-layer').textContent = '';
 }
 
+// ---------------------------------------------------------------------------
+// Recording: every run, as it is played
+function beginRecording() {
+  if (recorder.active) recorder.cancel();       // restarted before the last one got anywhere
+  const ble = window.bles?.[0];
+  recorder.begin({
+    build: window.RELAY_BUILD, runners: [...runners], legNames: LEG_NAMES,
+    tuning: { ...tuning },
+    swingScale: { ...SWING_DEFAULTS, ...swingTune() },
+    calmLimit: calmTune(),
+    rules: { ...race.o },
+    slowMotion: SLOW,
+    rivalTimes: teams.map((t) => +t.targetTime.toFixed(2)),
+    sensor: { name: ble?.bluetoothDevice?.name ?? null, range: ble?.device_information?.range ?? null, live: live(performance.now()) },
+    audioDelayMs: stage.audio.ready ? Math.round(stage.audio.outputDelayMs()) : null,
+    userAgent: navigator.userAgent,
+  }, FRAME_COLUMNS);
+  lastFrameRec = 0;
+}
+function recordEvent(e, now) {
+  const { type, ...rest } = e;
+  const data = {};
+  for (const [k, v] of Object.entries(rest)) data[k] = typeof v === 'number' ? +v.toFixed(3) : v;
+  recorder.event(now, type, data);
+}
+/** What the run came to, stored with the recording. */
+function runSummary(extra = {}) {
+  return {
+    time: race.time, dq: race.dq, dqReason: dqReason || null, penalty: race.penalty, drops: race.drops, place: finalPlace,
+    reactionMs: reactionMs == null ? null : +reactionMs.toFixed(1), topSpeed: +race.topSpeed.toFixed(2),
+    splits: race.splits.map((t) => +t.toFixed(3)),
+    passes: race.passes.map((p) => ({ k: p.k, keep: p.keep == null ? null : +p.keep.toFixed(3), handSec: p.handSec == null ? null : +p.handSec.toFixed(2), roughAvg: +p.roughAvg.toFixed(2), over: p.over, dropped: p.dropped })),
+    legs: legStats.map((s, i) => ({ runner: runners[i] || null, sec: +s.sec.toFixed(2), swingMeanDps: s.sec > 0 ? +(s.swingSum / s.sec).toFixed(1) : null, swingPeakDps: +s.swingPeak.toFixed(1), strokesPerSec: s.sec > 0 ? +(s.strokes / s.sec).toFixed(2) : null, topSpeed: +s.topSpeed.toFixed(2) })),
+    ...extra,
+  };
+}
+async function refreshRecCount() {
+  const n = await recorder.count();
+  $('rec-count').textContent = `保存済み ${n} 件`;
+}
+
 function toTitle() {
+  // a race that was under way is kept, marked as abandoned; one that never started is dropped
+  if (recorder.active) { if (gunFired) recorder.end(runSummary({ abandoned: true })); else recorder.cancel(); }
   state = 'title';
   setScreen('start');
   chrome.setCinema(false);
@@ -355,6 +406,7 @@ function beginCall() {
   $('result-card').classList.remove('show');
   $('foul-flash').classList.remove('show');
   resetField();
+  beginRecording();
   stage.setCam('chase', stage.cam.mode === 'title' ? 2.3 : 1.2);
   stage.audio.ui('start');
   stage.audio.setMusic('off', 0.5);
@@ -402,6 +454,8 @@ function onFire(now) {
   stage.audio.gun();
   proc.fired(now + delay);
   gunSeenAt = now + delay;
+  recorder.event(now, 'gun-triggered', { audioDelayMs: Math.round(delay) });
+  recorder.event(now + delay, 'gun-heard');
   stage.audio.heartRate = 0;
   stage.audio.setCrowd(0.75, 0);
   stage.audio.setMusic('race', 0.05);
@@ -426,6 +480,8 @@ function onGunSeen() {
 }
 function onFalseStart(result) {
   gunSeenAt = null;
+  recorder.event(performance.now(), 'false-start', { reason: result.reason, ms: result.ms == null ? null : +result.ms.toFixed(1) });
+  if (tuning.rule !== 'dq') recorder.end(runSummary({ falseStart: true }));    // under the strict rule the DQ card ends it
   stage.audio.recall();
   stage.audio.foul();
   stage.audio.crowdGasp();
@@ -568,6 +624,8 @@ function row(parent, cells, cls = '') {
 }
 function showCard() {
   cardShown = true;
+  // the recording ends here (it includes the run-out) and is stored in this browser
+  recorder.end(runSummary()).then(() => { $('btn-raw').hidden = !recorder.last; });
   setScreen('finish');
   root.classList.add('settled');
   stage.shiftTarget = 0.3;
@@ -600,7 +658,10 @@ function showCard() {
   sp.textContent = '';
   for (let i = 0; i < RELAY_DEFAULTS.legs; i++) {
     const t = race.splits[i], prev = i === 0 ? 0 : race.splits[i - 1];
-    row(sp, [['rc-name', runners[i] || `${i * 100}–${(i + 1) * 100} m`], ['rc-num', t == null ? '–' : (t - prev).toFixed(2)], ['rc-note', t == null ? '' : `通過 ${formatTime(t)}`]]);
+    // how the runner of this leg swung: the mean angle swept per second, and the strokes per second
+    const st = legStats[i];
+    const swung = st && st.sec > 0.5 && st.swingSum > 0 ? `振り ${(st.swingSum / st.sec).toFixed(0)}°/s ・ ${(st.strokes / st.sec).toFixed(1)}回/秒` : '';
+    row(sp, [['rc-name', runners[i] || `${i * 100}–${(i + 1) * 100} m`], ['rc-num', t == null ? '–' : (t - prev).toFixed(2)], ['rc-note', t == null ? '' : swung || `通過 ${formatTime(t)}`]]);
   }
   // exchanges: what was left of the baton speed
   const ps = $('rc-passes');
@@ -676,9 +737,10 @@ function saveScore(e) {
 // Per-frame
 function readInput(now, dt) {
   const sensorLive = live(now);
-  let effort = 0, rough = 0, drop = false;
+  let target = 0, rough = 0, drop = false, swing = 0;
   if (sensorLive) {
-    effort = effortOf(dt);
+    swing = tracker.swing;
+    target = speedOfSwing();
     rough = agg.n ? agg.rough : roughness(tracker.last, calmTune());
     drop = agg.fall;
   } else if (tracker.inUse(now)) {
@@ -686,11 +748,12 @@ function readInput(now, dt) {
     // must not complete by itself while it is away
     rough = 3;
   }
-  // keyboard: the key down is shaking, the key up is perfectly still
-  if (keyHeld) { effort = 1; rough = 3; }
+  // keyboard: the key down is a strong swing (worth 11.4 m/s), the key up is perfectly still
+  if (keyHeld) { target = race.o.vmax; rough = 3; }
   const strokes = agg.strokes;
   agg.n = 0; agg.rough = 0; agg.fall = false; agg.strokes = 0;
-  lastInput = { effort, rough, drop, strokes };
+  // effort 0..1 only drives sounds and bars: the share of the top speed this swing is worth
+  lastInput = { target, effort: Math.min(1, target / SWING_DEFAULTS.topSpeed), rough, drop, strokes, swing, dt };
   return lastInput;
 }
 
@@ -722,7 +785,7 @@ function updateRace(now, dt) {
     const on = live(now) ? tracker.findOnset(watchSince ?? proc.watchFrom) : null;
     // the official moment is the signal passing the threshold, as a timing system would take it
     for (const e of proc.step(now, { stillMs: 0, onsetAt: on ? Math.max(proc.watchFrom, on.trigger) : null, keyAt })) {
-      if (e.type === 'reaction') { reactionMs = e.ms; popup(formatReaction(e.ms), 'info', 'REACTION TIME'); } else if (e.type === 'false-start') { onFalseStart(e); return; }
+      if (e.type === 'reaction') { reactionMs = e.ms; recorder.event(now, 'reaction', { ms: +e.ms.toFixed(1) }); popup(formatReaction(e.ms), 'info', 'REACTION TIME'); } else if (e.type === 'false-start') { onFalseStart(e); return; }
     }
     if (proc.phase === 'done') tracker.hold(false);   // the SET pose is no longer the reference
   }
@@ -736,7 +799,18 @@ function updateRace(now, dt) {
   const raceDt = dt * slow;
   stage.timeScale = slow;
 
-  for (const e of race.step(raceDt, { effort: input.effort, rough: input.rough, drop: input.drop, handDt: dt })) onRaceEvent(e, now);
+  const legNow = race.leg, wasRunning = !wasAwaiting;
+  for (const e of race.step(raceDt, { target: input.target, rough: input.rough, drop: input.drop, handDt: dt })) { recordEvent(e, now); onRaceEvent(e, now); }
+  // how this runner swung while running (the exchange is not part of it)
+  if (wasRunning && legStats[legNow] && (reactionMs != null || race.s > 0.5)) {
+    const st = legStats[legNow];
+    st.sec += dt; st.swingSum += input.swing * dt; st.swingPeak = Math.max(st.swingPeak, input.swing);
+    st.strokes += input.strokes; st.topSpeed = Math.max(st.topSpeed, race.v);
+  }
+  if (now - lastFrameRec >= 50) {
+    lastFrameRec = now;
+    recorder.frame(now, [+race.t.toFixed(3), +race.s.toFixed(2), +race.v.toFixed(3), race.leg, race.awaiting ? 1 : 0, +race.gauge.toFixed(3), +tracker.swing.toFixed(1), +tracker.shakeG.toFixed(3), +input.target.toFixed(2), +input.rough.toFixed(2), +slow.toFixed(2), place]);
+  }
   if (state !== 'race') return;
 
   // the runner and the seven other teams on the straight
@@ -806,7 +880,8 @@ function updateRace(now, dt) {
   $('rh-me').style.left = `${Math.min(100, (race.s / race.total) * 100)}%`;
   const pips = $('rh-rivals').children;
   teams.forEach((team, i) => { pips[i].style.left = `${Math.min(100, (team.s / race.total) * 100)}%`; });
-  $('rh-effort').style.transform = `scaleX(${input.effort})`;
+  $('rh-effort').style.transform = `scaleX(${Math.min(1, input.swing / tuning.topSwing)})`;
+  $('rh-swing').textContent = keyHeld && !live(now) ? 'KEY' : input.swing.toFixed(0);
   if (awaiting) {
     $('rh-gauge').style.transform = `scaleX(${race.gauge})`;
     const left = Math.max(0, zone.end - race.s);
@@ -881,9 +956,8 @@ function update(now, dt) {
 
   // dock + drawer indicators
   const f = tracker.last;
-  const effortNow = sensorLive ? lastInput.effort : keyHeld ? 1 : 0;
   const roughNow = sensorLive ? roughness(f, calmTune()) : 0;
-  $('check-shake').classList.toggle('on', (state === 'race' ? effortNow : sensorLive ? Math.min(1, tracker.energy / tuning.full) : 0) > 0.35);
+  $('check-shake').classList.toggle('on', sensorLive ? tracker.swing > 100 : keyHeld);
   $('check-calm').classList.toggle('on', sensorLive && roughNow < 1);
   if (now - sensor.rateAt >= 500) {
     sensor.rate = (sensor.samples * 1000) / (now - sensor.rateAt);
@@ -895,8 +969,8 @@ function update(now, dt) {
   }
   if ($('settings-drawer').classList.contains('open')) {
     const c = calmTune();
-    const e = sensorLive ? Math.min(1, tracker.energy / Math.max(tuning.full, 0.01)) : 0;
-    $('mon-effort').textContent = sensorLive ? `${tracker.energy.toFixed(2)}（下限 ${tuning.full.toFixed(2)}）` : '--';
+    const e = sensorLive ? Math.min(1, tracker.swing / tuning.topSwing) : 0;
+    $('mon-effort').textContent = sensorLive ? `${tracker.swing.toFixed(0)} °/s ・ ${tracker.shakeG.toFixed(2)} G → ${speedOfSwing().toFixed(1)} m/s` : '--';
     $('mon-effort-bar').style.width = `${e * 100}%`;
     $('mon-acc').textContent = sensorLive && f ? `${Math.max(Math.abs(f.lin[0]), Math.abs(f.lin[1]), Math.abs(f.lin[2])).toFixed(2)} G` : '--';
     $('mon-gyro').textContent = sensorLive && f ? `${Math.max(Math.abs(f.gyro[0]), Math.abs(f.gyro[1]), Math.abs(f.gyro[2])).toFixed(0)} °/s` : '--';
@@ -951,7 +1025,7 @@ function bindTuning() {
       syncBandLabels();
     });
   };
-  bind('shake-full', 'full', (v) => v.toFixed(2));
+  bind('top-swing', 'topSwing', (v) => `${v.toFixed(0)} °/s`);
   bind('calm-tol', 'calm', (v) => `×${v.toFixed(1)}`);
   bind('pass-sec', 'passSec', (v) => `${v.toFixed(1)} s`);
   bind('rule-zone', 'rule', (v) => v);
@@ -992,6 +1066,11 @@ async function boot() {
   $('back-btn').addEventListener('click', hideRanking);
   $('ranking-clear').addEventListener('click', () => { writeRanking([]); showRanking(rankingFrom); });
   $('name-form').addEventListener('submit', saveScore);
+  $('btn-raw').addEventListener('click', () => recorder.download());
+  $('rec-all').addEventListener('click', async () => { if (!(await recorder.downloadAll())) $('rec-count').textContent = '保存済み 0 件'; });
+  $('rec-clear').addEventListener('click', async () => { if (window.confirm('このブラウザに保存した生データをすべて消します。よろしいですか？')) await recorder.clear(); });
+  recorder.onChange(refreshRecCount);
+  refreshRecCount();
   root.addEventListener('audio-ready', () => { if (state === 'title') { stage.audio.setCrowd(0.14, 0); stage.audio.setMusic('title', 2.0); } });
 
   window.addEventListener('keydown', (e) => {
@@ -1027,12 +1106,12 @@ window.relayDebug = {
   get state() { return state; }, get phase() { return proc.phase; }, get race() { return race; },
   get teams() { return teams; }, get place() { return place; }, get finalPlace() { return finalPlace; },
   get reactionMs() { return reactionMs; }, get tuning() { return { ...tuning }; }, get view() { return { ...view }; },
-  get slow() { return slow; }, get input() { return { ...lastInput }; }, get shakePeak() { return shake.peak; },
+  get slow() { return slow; }, get input() { return { ...lastInput }; }, get legStats() { return legStats; }, recorder,
   get stage() { return stage; }, tracker,
   /** Hold / release the run key from a script. */
   key(down) { keyHeld = !!down; if (down && keyAt == null && ((state === 'call' && proc.phase !== 'marks') || (state === 'race' && proc.phase === 'fired'))) keyAt = performance.now(); },
   /** Feed one synthetic sample (tests / demos without a sensor). */
-  push(s) { const f = tracker.push({ t: performance.now(), ...s }); onSample(f); return f; },
+  push(s) { const f = tracker.push({ t: performance.now(), ...s }); onSample(f, { x: s.ax, y: s.ay, z: s.az }, { x: s.gx, y: s.gy, z: s.gz }); return f; },
 };
 window.RELAY_BUILD = new URL(import.meta.url).searchParams.get('v') || 'dev';
 console.log(`[RELAY] build ${window.RELAY_BUILD}`);

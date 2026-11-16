@@ -19,7 +19,8 @@ export const MOTION_DEFAULTS = {
   shakeAccFull: 2.5,  // G     a shake this strong counts as full effort
   shakeGyroFull: 700, // deg/s
   energyTau: 280,     // ms    smoothing of the shake effort
-  strokeLevel: 0.45,  // effort (0..1) a swing has to reach to count as one stroke
+  swingTau: 350,      // ms    smoothing of the mean angular speed / mean acceleration (swing, shakeG)
+  strokeLevel: 0.3,   // effort (0..1) a swing has to reach to count as one stroke
   strokeGapMs: 90,    // two strokes cannot be closer than this
   fallAcc: 0.3,       // G     total acceleration below this = falling (see fallMs)
   linTau: 400,        // ms    high-pass that removes gravity from the per-axis acceleration (lin)
@@ -80,6 +81,8 @@ export class MotionTracker {
     this.fallSince = null;
     this.last = null;
     this.energy = 0;
+    this.swing = 0;           // deg/s, mean angular speed (see push)
+    this.shakeG = 0;          // G, mean acceleration without gravity
     this.strokes = 0;
     this.strokeTimes = [];
     this._strokeArmed = true;
@@ -125,6 +128,12 @@ export class MotionTracker {
     // shaking: effort 0..1 per sample, smoothed; strokes are counted on the way up
     const effort = Math.min(1, Math.max(mag / o.shakeAccFull, rot / o.shakeGyroFull));
     this.energy += (effort - this.energy) * (1 - Math.exp(-dt / o.energyTau));
+    // The same in physical units, with no ceiling. swing is the mean angular speed in deg/s: for a
+    // swing of amplitude A at frequency f it is 4 * A * f, the angle swept per second (what
+    // stride length x cadence is to a runner). shakeG is the mean acceleration without gravity.
+    const c = 1 - Math.exp(-dt / o.swingTau);
+    this.swing += (rot - this.swing) * c;
+    this.shakeG += (Math.hypot(lin[0], lin[1], lin[2]) - this.shakeG) * c;
     if (effort >= o.strokeLevel && this._strokeArmed && s.t - this._lastStrokeAt >= o.strokeGapMs) {
       this.strokes++; this._strokeArmed = false; this._lastStrokeAt = s.t;
       this.strokeTimes.push(s.t);
@@ -159,7 +168,7 @@ export class MotionTracker {
     return (n * 1000) / windowMs;
   }
   /** Let the smoothed effort fall when samples stop coming (so a dropped connection is not "running"). */
-  decay(now) { if (this.stale(now)) this.energy *= 0.9; }
+  decay(now) { if (this.stale(now)) { this.energy *= 0.9; this.swing *= 0.9; this.shakeG *= 0.9; } }
 
   /**
    * The first deliberate movement at or after `since`.

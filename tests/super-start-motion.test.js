@@ -129,6 +129,17 @@ function feed(tracker, t0, t1, shape, rnd = lcg(1)) {
   feed(m, 3000, 4500, () => null);
   assert.ok(m.energy < 0.05, `effort falls when the shaking stops (${m.energy.toFixed(3)})`);
   assert.equal(m.cadence(4500), 0);
+  // the same swing in physical units: mean angular speed = 4 x amplitude x frequency, with no ceiling
+  const s = new MotionTracker();
+  // +-40 degrees at 2.5 Hz: peak 2*pi*2.5*40 = 628 deg/s, mean (2/pi) of that = 400 deg/s
+  feed(s, 0, 3000, (t) => ({ w: 628 * Math.sin((2 * Math.PI * 2.5 * t) / 1000) }), () => 0.5);
+  assert.ok(Math.abs(s.swing - 400) < 45, `mean angular speed of a 2.5 Hz, +-40 deg swing is about 400 deg/s (${s.swing.toFixed(0)})`);
+  const hard = new MotionTracker();
+  feed(hard, 0, 3000, (t) => ({ w: 1880 * Math.sin((2 * Math.PI * 3 * t) / 1000) }), () => 0.5);
+  assert.ok(hard.swing > 1050, `a swing far beyond the effort scale still reads in full (${hard.swing.toFixed(0)} deg/s)`);
+  assert.ok(hard.energy <= 1);
+  feed(hard, 3000, 5000, () => null, () => 0.5);
+  assert.ok(hard.swing < 20, 'and falls when the swinging stops');
   // gentle waving is little effort
   const g = new MotionTracker();
   feed(g, 0, 3000, (t) => { const p = Math.sin((2 * Math.PI * 1.5 * t) / 1000); return { a: [0.3 * p, 0, 0], w: 80 * p }; });

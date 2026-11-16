@@ -9,6 +9,7 @@ import { createStage, bindChrome, attachCore, MAX_SPEED } from './stage.js';
 import { MotionTracker, SampleClock, MOTION_DEFAULTS } from './motion.js';
 import { StartProcedure, gradeReaction, formatReaction, REACTION_GRADES, FALSE_START_MS } from './start.js';
 import { createScope, drawReactionPlot } from './scope.js';
+import { createRecorder } from './recorder.js';
 
 const $ = (id) => document.getElementById(id);
 const TAU_ACCEL = 1.25;           // s: how quickly the runner approaches top speed (same curve as the rivals)
@@ -45,8 +46,11 @@ const scopeLines = () => [
 ];
 let scopes = [];
 applyTuning();
+// Every attempt is recorded with its raw samples (see recorder.js) and stored in this browser.
+const recorder = createRecorder('super-start');
 function onSample(f, acc, gyro, lag) {
   sensor.samples++;
+  recorder.sample(f.t, acc, gyro);
   if (Number.isFinite(lag)) { sensor.lagSum += lag; sensor.lagN++; }
   const v = [f.dyn / tracker.o.moveAcc, f.rot / tracker.o.moveGyro];
   for (const s of scopes) s.push(f.t, v);
@@ -108,6 +112,7 @@ function updateBest() {
 // ---------------------------------------------------------------------------
 // Flow
 function toTitle() {
+  if (recorder.active) recorder.cancel();      // an attempt that was left before it was decided
   state = 'title';
   gunSeenAt = null;
   tracker.hold(false);
@@ -147,6 +152,12 @@ function heart(on) {
 
 function beginAttempt() {
   stage.audio.init();
+  if (recorder.active) recorder.cancel();
+  recorder.begin({
+    build: window.START_BUILD, tuning: { ...tuning }, thresholds: { stillAcc: tracker.o.stillAcc, stillGyro: tracker.o.stillGyro, moveAcc: tracker.o.moveAcc, moveGyro: tracker.o.moveGyro },
+    sensor: { name: window.bles?.[0]?.bluetoothDevice?.name ?? null, range: window.bles?.[0]?.device_information?.range ?? null, live: sensorLive(performance.now()) },
+    audioDelayMs: Math.round(stage.audio.outputDelayMs()), name: $('player-name').value.trim() || null, userAgent: navigator.userAgent,
+  });
   state = 'call';
   attempt = null; keyAt = null; cardShown = false; watchSince = null; fire = null; lastOnset = null; gunSeenAt = null;
   setScreen('countdown');
@@ -299,6 +310,14 @@ function onFoul(result, now) {
 
 function showCard() {
   cardShown = true;
+  // close the recording of this attempt: the moments that decided it, then what it came to
+  {
+    const d = attempt.debug;
+    for (const [type, t] of [['steady', d.steadyAt], ['gun-triggered', d.gunFiredAt], ['gun-heard', d.gunAt], ['threshold-crossed', d.trigger], ['movement-began-estimate', d.onsetEstimate], ['key', d.keyAt], ['decided', d.decidedAt]]) {
+      if (t != null) recorder.event(t, type);
+    }
+    recorder.end({ type: attempt.type, ms: attempt.ms == null ? null : +attempt.ms.toFixed(1), reason: attempt.reason ?? null, audioDelayMs: d.audioDelayMs, lagOffsetMs: d.lagOffsetMs, sampleRate: d.sampleRate, deliveryLagMs: d.deliveryLagMs, stampsUsable: d.stampsUsable, rivalsMs: attempt.rivals.map((r) => Math.round(r.ms)) });
+  }
   const a = attempt;
   const legal = a.type === 'reaction';
   setScreen('finish');
@@ -664,7 +683,13 @@ async function boot() {
     createScope($('scope-dock'), { seconds: 4, series: SCOPE_SERIES, lines: scopeLines() }),
     createScope($('scope-call'), { seconds: 3, series: SCOPE_SERIES, lines: scopeLines() }),
   ];
-  $('btn-export').addEventListener('click', exportAttempt);
+  // the result card's button saves the raw recording of this attempt (the older trace-only export is the fallback)
+  $('btn-export').addEventListener('click', () => { if (!recorder.download()) exportAttempt(); });
+  const refreshRec = async () => { $('rec-count').textContent = `保存済み ${await recorder.count()} 件`; };
+  $('rec-all').addEventListener('click', () => recorder.downloadAll());
+  $('rec-clear').addEventListener('click', async () => { if (window.confirm('このブラウザに保存した生データをすべて消します。よろしいですか？')) await recorder.clear(); });
+  recorder.onChange(refreshRec);
+  refreshRec();
   bindTuning();
 
   $('start-btn').addEventListener('click', beginAttempt);
@@ -704,7 +729,8 @@ window.startDebug = {
   get sensorRate() { return sensor.rate; }, get clockUsable() { return sampleClock.usable; },
   get stage() { return stage; }, tracker, get proc() { return proc; },
   /** Feed one synthetic sample (tests / demos without a sensor). */
-  push(s) { const f = tracker.push({ t: performance.now(), ...s }); onSample(f, null, null, 0); return f; },
+  push(s) { const f = tracker.push({ t: performance.now(), ...s }); onSample(f, { x: s.ax, y: s.ay, z: s.az }, { x: s.gx, y: s.gy, z: s.gz }, 0); return f; },
+  recorder,
 };
 window.START_BUILD = new URL(import.meta.url).searchParams.get('v') || 'dev';
 console.log(`[START] build ${window.START_BUILD}`);

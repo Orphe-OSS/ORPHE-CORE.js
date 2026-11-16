@@ -67,7 +67,8 @@ export class RelayRace {
 
   /**
    * Advance by dt seconds of race time. input: { effort, rough, drop, handDt } (or the older { calm })
-   *   effort  0..1  how hard the sensor is shaken
+   *   effort  0..1  how hard the sensor is shaken (the runner heads for vmax * effort^effortCurve)
+   *   target  m/s   or the speed the runner heads for, given directly (takes the place of effort)
    *   rough   >= 0  how much the sensor moves, in units of the calm limit (0 = still, 1 = at the limit)
    *   drop    bool  the sensor is in free fall
    *   handDt  s     real time that passed for the hands (defaults to dt; larger than dt in slow motion)
@@ -109,7 +110,8 @@ export class RelayRace {
       }
     } else {
       // only a runner who holds the baton outside an unfinished exchange can drive it
-      const target = this.lock <= 0 ? o.vmax * Math.pow(effort, o.effortCurve) : 0;
+      const drive = input.target != null ? Math.max(0, +input.target || 0) : o.vmax * Math.pow(effort, o.effortCurve);
+      const target = this.lock <= 0 ? drive : 0;
       const tau = target > this.v ? o.tauUp : o.tauCoast;
       this.v += (target - this.v) * (1 - Math.exp(-dt / tau));
     }
@@ -211,6 +213,29 @@ export function makeRivalTeam(targetTime, reaction = 0.16, options = {}) {
     },
   };
   return team;
+}
+
+// ---------------------------------------------------------------- how hard a swing is, as a speed
+/**
+ * The speed a swing is worth, on one fixed scale for everybody.
+ *
+ * The measure is the mean angular speed of the hand in deg/s: amplitude x frequency, the angle
+ * swept per second. A hand that shakes without turning (a piston) is measured by its mean
+ * acceleration instead, whichever says more.
+ *   topSwing / topAccel  the hardest swing a human arm can be expected to produce
+ *   topSpeed             what that is worth: 12.4 m/s, the fastest a human has been timed at
+ *   gamma                how speed grows with the swing: twice the swing is 2^gamma times the speed
+ * There is deliberately no ceiling at an ordinary person's best: swinging harder is always faster,
+ * up to `limit` times the top (the sensor's own range ends about there).
+ * THE NUMBERS ARE ESTIMATES. Nobody's swing had been recorded when they were chosen; the game
+ * saves the raw data of every run so that they can be set from measurements.
+ */
+export const SWING_DEFAULTS = { topSwing: 800, topAccel: 5, topSpeed: 12.4, gamma: 0.3, limit: 1.25, floor: 0.04 };
+export function swingSpeed(swingDps, accelG = 0, tune = SWING_DEFAULTS) {
+  const o = { ...SWING_DEFAULTS, ...tune };
+  const i = Math.min(o.limit, Math.max((+swingDps || 0) / o.topSwing, (+accelG || 0) / o.topAccel));
+  if (i < o.floor) return 0;      // a resting hand's tremor is not running
+  return o.topSpeed * Math.pow(i, o.gamma);
 }
 
 /** 38.412 -> "38.41" */

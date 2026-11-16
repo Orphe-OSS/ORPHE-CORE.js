@@ -77,6 +77,7 @@ CORE をつなぐと、判定に使っている動きの大きさ（加速度・
 | `start.js` | スタートの手順とフライングのルール（DOM 非依存） |
 | `motion.js` | センサーの読み方：静止・動き出し・振りの強さ・落下、サンプル時刻の補正（DOM 非依存） |
 | `scope.js` | 判定に使っている波形の表示（ライブ・結果カード・リレーの生波形） |
+| `recorder.js` | 生データの記録。1 本ごとに加速度・角速度の生データ（約 200 Hz）と判定の時刻をこのブラウザ（IndexedDB）に自動で保存し、JSON で取り出す。リレーも同じ場所に保存する |
 | `stage.js` | スタジアムの用意。`../GAME-SUPER-HURDLE/` の `world.js` / `runner.js` / `fx.js` / `audio.js` を読み込み、カメラ・ライバル・毎フレームの更新をまとめる。[SUPER VIRTUAL RELAY](../GAME-SUPER-RELAY/README.md) もこれを使う |
 | `style.css` | この種目のスタイル（土台は `../GAME-SUPER-HURDLE/style.css`） |
 

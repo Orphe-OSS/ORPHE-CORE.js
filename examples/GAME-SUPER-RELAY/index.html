@@ -7,9 +7,9 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <!-- Stadium UI from the hurdle game, the starter's calls from the start game, then this event's own parts. -->
-  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117a">
-  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261117a">
-  <link rel="stylesheet" href="style.css?v=20261117a">
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117b">
+  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261117b">
+  <link rel="stylesheet" href="style.css?v=20261117b">
   <!--
     Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
     ?v= build id. When any file of this example, of ../GAME-SUPER-START/ or of
@@ -21,15 +21,16 @@
       "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-        "./relay.js": "./relay.js?v=20261117a",
-        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261117a",
-        "../GAME-SUPER-START/motion.js": "../GAME-SUPER-START/motion.js?v=20261117a",
-        "../GAME-SUPER-START/start.js": "../GAME-SUPER-START/start.js?v=20261117a",
-        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261117a",
-        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117a",
-        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117a",
-        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117a",
-        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117a"
+        "./relay.js": "./relay.js?v=20261117b",
+        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261117b",
+        "../GAME-SUPER-START/motion.js": "../GAME-SUPER-START/motion.js?v=20261117b",
+        "../GAME-SUPER-START/start.js": "../GAME-SUPER-START/start.js?v=20261117b",
+        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261117b",
+        "../GAME-SUPER-START/recorder.js": "../GAME-SUPER-START/recorder.js?v=20261117b",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117b",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117b",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117b",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117b"
       }
     }
   </script>
@@ -40,7 +41,7 @@
   <script src="../../js/BleSharedBridge.js"></script>
   <script src="../../js/CoreToolkit.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="main.js?v=20261117a"></script>
+  <script type="module" src="main.js?v=20261117b"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -130,7 +131,11 @@
       <div class="rh-cue" id="rh-cue" data-mode="run">
         <div class="rh-cue-run">
           <span class="rh-cue-en">SHAKE!</span><span class="rh-cue-ja" id="rh-cue-run-ja">振れ！</span>
-          <div class="rh-effort"><div class="rh-effort-fill" id="rh-effort"></div></div>
+          <!-- the swing itself: the angle the hand sweeps per second -->
+          <div class="rh-swing-row">
+            <div class="rh-effort"><div class="rh-effort-fill" id="rh-effort"></div></div>
+            <span class="rh-swing"><b id="rh-swing">0</b>°/s</span>
+          </div>
         </div>
         <div class="rh-cue-near">
           <span class="rh-cue-en">ZONE AHEAD</span><span class="rh-cue-ja">まもなくゾーン　あと <b id="rh-near-m">20</b> m</span>
@@ -218,6 +223,7 @@
           <button type="button" class="hx-btn primary" id="retry" data-quiet="1"><span class="hx-main">RETRY</span><span class="hx-sub">もう一度 <kbd>Enter</kbd></span></button>
           <button type="button" class="hx-btn ghost" id="btn-ranking-finish"><i class="bi bi-trophy-fill"></i> ランキング</button>
           <button type="button" class="hx-btn ghost" id="btn-title"><i class="bi bi-house-fill"></i> タイトル</button>
+          <button type="button" class="hx-btn ghost" id="btn-raw" title="この走行の生データ（加速度・角速度・ゲームの状態）を JSON で保存。保存しなくても、このブラウザには自動で残ります" hidden><i class="bi bi-download"></i> 生データ</button>
         </div>
       </div>
     </div>
@@ -307,10 +313,10 @@
 
         <h4>⚡ 走る / Run</h4>
         <div class="config-item">
-          <label for="shake-full">全速に必要な振りの強さの下限（小さいほど、軽い振りで全速になる）</label>
+          <label for="top-swing">トップスピード（秒速 12.4m）になる振りの強さ。振りの強さ＝手が 1 秒間に振れた角度の合計</label>
           <div class="config-control">
-            <input type="range" id="shake-full" min="0.06" max="0.5" value="0.16" step="0.02">
-            <span id="shake-full-value">0.16</span>
+            <input type="range" id="top-swing" min="300" max="1600" value="800" step="50">
+            <span id="top-swing-value">800 °/s</span>
           </div>
         </div>
         <h4>✋ バトンパス / Exchange</h4>
@@ -327,6 +333,14 @@
             <input type="range" id="pass-sec" min="0.6" max="3" value="1.4" step="0.1">
             <span id="pass-sec-value">1.4 s</span>
           </div>
+        </div>
+        <p class="drawer-note">速度は全員おなじ物差しで決まります（自分比ではありません）。振りが 250 °/s で秒速 8.7m、500 °/s で 10.8m、800 °/s で 12.4m です。この対応は机上の見積もりで、実際の人の振りを測って決め直す前提です。</p>
+        <h4>📼 生データの記録 / Recording</h4>
+        <p class="drawer-note">走るたびに、加速度・角速度の生データ（約 200 Hz）、ゲームの状態、できごと、走者の名前と設定を、このブラウザに自動で保存します。リロードしても残ります。</p>
+        <div class="rec-actions">
+          <span class="rec-count" id="rec-count">保存済み 0 件</span>
+          <button type="button" class="hx-btn small" id="rec-all">すべて JSON で保存</button>
+          <button type="button" class="hx-btn small danger" id="rec-clear">消去</button>
         </div>
         <h4>🏃 ルール / Rules</h4>
         <div class="config-item">

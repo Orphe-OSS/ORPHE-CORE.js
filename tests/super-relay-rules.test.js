@@ -5,7 +5,7 @@ const { loadExampleModule } = require('./helpers/load-example-module');
 // examples/GAME-SUPER-RELAY/relay.js: the rules of the one-sensor 4 x 100 m relay.
 // A "team" below is a policy: given the race state, how hard is the sensor shaken (effort) and
 // how much does it move while it changes hands (rough, in units of the calm limit).
-const { RelayRace, RELAY_DEFAULTS, makeRivalTeam, roughness, isCalm, formatTime, gradePass } = loadExampleModule(path.join(__dirname, '../examples/GAME-SUPER-RELAY/relay.js'));
+const { RelayRace, RELAY_DEFAULTS, SWING_DEFAULTS, makeRivalTeam, roughness, swingSpeed, isCalm, formatTime, gradePass } =loadExampleModule(path.join(__dirname, '../examples/GAME-SUPER-RELAY/relay.js'));
 
 const H = 1 / 120;          // one step of hand (real) time
 const SLOW = 0.3;           // the game plays the exchange at this speed
@@ -190,6 +190,33 @@ const flawless = team(0);
   assert.ok(Math.abs(calm.time - run(flawless).race.time) < 1e-9);
   const never = run(() => ({ effort: 1, calm: false }), {}, 1).race;
   assert.equal(never.penalty, 9);
+}
+
+// ---------------------------------------------------------------- one scale for every swing
+// the speed a swing is worth: fixed, the same for everybody, and never capped at an ordinary best
+{
+  const v = (dps, g = 0, tune) => swingSpeed(dps, g, tune);
+  assert.equal(v(0), 0);
+  assert.equal(v(20), 0, 'the tremor of a resting hand is not running');
+  assert.ok(Math.abs(v(SWING_DEFAULTS.topSwing) - 12.4) < 1e-9, 'the top swing is worth the fastest speed a human has run');
+  let prev = 0;
+  for (const dps of [60, 120, 250, 400, 600, 800, 950]) { assert.ok(v(dps) > prev, `harder is always faster (${dps} deg/s)`); prev = v(dps); }
+  assert.ok(v(250) > 8.4 && v(250) < 9.1, `an ordinary hard swing is an ordinary sprinter (${v(250).toFixed(2)} m/s)`);
+  assert.ok(v(500) / v(250) > 1.2, 'twice the swing is clearly faster, not a little');
+  assert.ok(v(900) > 12.4, 'no ceiling at the top of the scale either ...');
+  assert.equal(v(5000), v(1000), '... until the sensor range runs out');
+  assert.ok(v(0, 2.5) > 9, 'a hand that shakes without turning is measured by its acceleration');
+  assert.equal(v(300, 0.1), v(300), 'whichever of the two says more');
+  assert.ok(v(400, 0, { topSwing: 400 }) > v(400), 'the scale can be reset from measurements');
+  // the rules take that speed as it is: the runner heads for it, with no vmax in the way
+  const race = new RelayRace();
+  for (let i = 0; i < 120 * 6; i++) race.step(H, { target: 13, rough: 3 });
+  assert.ok(race.v > 12.5 && race.v <= 13, `a 13 m/s swing reaches 13 m/s (${race.v.toFixed(2)})`);
+  // and an ordinary team with decent hands is level with the best of the other teams (about 50 s)
+  const ordinary = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(250), rough: 3 })).race;
+  const elite = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(520), rough: 3 })).race;
+  assert.ok(ordinary.time > 47 && ordinary.time < 51, `ordinary swing: ${ordinary.time.toFixed(1)} s`);
+  assert.ok(elite.time < ordinary.time - 7, `an elite swing wins by a street (${elite.time.toFixed(1)} s)`);
 }
 
 // ---------------------------------------------------------------- rivals

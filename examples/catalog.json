@@ -1,9 +1,9 @@
 {
   "schema_version": "0.2.0",
-  "updated": "2026-05-02",
+  "updated": "2026-11-17",
   "purpose": "Draft catalog for organizing existing ORPHE-CORE.js learning units before adding new examples.",
   "summary": {
-    "examples_web_apps": 36,
+    "examples_web_apps": 37,
     "starter_templates": 9,
     "getting_started_guides": 5,
     "tutorial_pages": 2,
@@ -14,7 +14,7 @@
     "modifiable_sketches_or_modules": 38,
     "internal_bridge_test_pages": 6,
     "ai_sensor_recipe_docs": 5,
-    "broad_learning_units": 129
+    "broad_learning_units": 130
   },
   "status_definitions": {
     "public": "Worth keeping in public navigation. Device verification can still be tracked separately.",
@@ -319,6 +319,32 @@
       "device_count": 1,
       "needs_real_device_validation": true,
       "public_navigation": "featured"
+    },
+    {
+      "id": "jump-over",
+      "title": "Jump Over",
+      "path": "examples/JUMP-OVER/",
+      "type": "web-app",
+      "status": "needs-review",
+      "audience": ["research", "sports-tech", "workshop"],
+      "value": "Estimate how high the shoe rises in a jump from acceleration and quaternion, and composite an everyday object you jumped over into the apex frame of the camera.",
+      "topics": ["jump", "camera", "recording", "analysis", "calibration"],
+      "data": ["convertedAcc", "quat", "convertedGyro"],
+      "devices": 1,
+      "validation": ["recorded-data-replay", "needs-device-verification"],
+      "category": "recording-analysis",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/jump-over.png",
+      "sort_order": 115,
+      "links": {
+        "demo": "examples/JUMP-OVER/index.html",
+        "source": "examples/JUMP-OVER/"
+      },
+      "requires_device": true,
+      "device_count": 1,
+      "needs_real_device_validation": true,
+      "public_navigation": "hidden"
     },
     {
       "id": "gesture-demo",

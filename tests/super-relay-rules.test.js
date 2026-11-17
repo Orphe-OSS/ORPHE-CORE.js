@@ -201,10 +201,17 @@ const flawless = team(0);
   assert.ok(Math.abs(v(SWING_DEFAULTS.topSwing) - 12.4) < 1e-9, 'the top swing is worth the fastest speed a human has run');
   let prev = 0;
   for (const dps of [60, 120, 250, 400, 600, 800, 950]) { assert.ok(v(dps) > prev, `harder is always faster (${dps} deg/s)`); prev = v(dps); }
-  assert.ok(v(250) > 8.4 && v(250) < 9.1, `an ordinary hard swing is an ordinary sprinter (${v(250).toFixed(2)} m/s)`);
+  // The swings recorded on 2026-11-17 (one adult, all out; median swing in deg/s and mean
+  // acceleration in G over the running stretches of two races). They sit a little under the top
+  // speed, not at the limit: the first scale (800 deg/s, 5 G) put both at the limit, because 5 G
+  // was reached by any hard shake.
+  const measured = [v(632, 6.0), v(774, 5.15)];
+  for (const m of measured) assert.ok(m > 11.5 && m < 12.4, `an ordinary all-out swing is a little under the top speed (${m.toFixed(2)} m/s)`);
+  assert.ok(v(5000, 50) / Math.max(...measured) > 1.12, 'a stronger arm has a clear step above it');
   assert.ok(v(500) / v(250) > 1.2, 'twice the swing is clearly faster, not a little');
   assert.ok(v(900) > 12.4, 'no ceiling at the top of the scale either ...');
-  assert.equal(v(5000), v(1000), '... until the sensor range runs out');
+  assert.equal(v(5000), v(SWING_DEFAULTS.topSwing * SWING_DEFAULTS.limit), '... until the limit');
+  assert.equal(v(0, 50), v(5000), 'the limit is the same for a swing measured by its acceleration');
   assert.ok(v(0, 2.5) > 9, 'a hand that shakes without turning is measured by its acceleration');
   assert.equal(v(300, 0.1), v(300), 'whichever of the two says more');
   assert.ok(v(400, 0, { topSwing: 400 }) > v(400), 'the scale can be reset from measurements');
@@ -212,11 +219,14 @@ const flawless = team(0);
   const race = new RelayRace();
   for (let i = 0; i < 120 * 6; i++) race.step(H, { target: 13, rough: 3 });
   assert.ok(race.v > 12.5 && race.v <= 13, `a 13 m/s swing reaches 13 m/s (${race.v.toFixed(2)})`);
-  // and an ordinary team with decent hands is level with the best of the other teams (about 50 s)
-  const ordinary = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(250), rough: 3 })).race;
-  const elite = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(520), rough: 3 })).race;
-  assert.ok(ordinary.time > 47 && ordinary.time < 51, `ordinary swing: ${ordinary.time.toFixed(1)} s`);
-  assert.ok(elite.time < ordinary.time - 7, `an elite swing wins by a street (${elite.time.toFixed(1)} s)`);
+  // An ordinary all-out team against the strongest swing the scale allows. A steady swing and
+  // decent hands, so these are best cases: the two recorded races took about 2.5 s longer than
+  // this model gives for their swing (the swing fades and the hands take a moment to settle),
+  // which puts the recorded player level with the best of the other teams (40.5 s).
+  const ordinary = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(700, 5.6), rough: 3 })).race;
+  const elite = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(5000), rough: 3 })).race;
+  assert.ok(ordinary.time > 36.5 && ordinary.time < 39, `ordinary all-out swing: ${ordinary.time.toFixed(1)} s`);
+  assert.ok(elite.time < ordinary.time - 3, `the strongest swing wins by a street (${elite.time.toFixed(1)} s against ${ordinary.time.toFixed(1)} s)`);
 }
 
 // ---------------------------------------------------------------- rivals

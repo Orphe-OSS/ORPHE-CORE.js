@@ -7,8 +7,8 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <!-- The stadium UI (buttons, dock, drawer, title block) is the hurdle game's stylesheet; style.css adds this event's own parts. -->
-  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117d">
-  <link rel="stylesheet" href="style.css?v=20261117d">
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117e">
+  <link rel="stylesheet" href="style.css?v=20261117e">
   <!--
     Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
     ?v= build id, so a browser never mixes an old cached module with new ones. When any file of
@@ -20,15 +20,15 @@
       "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-        "./stage.js": "./stage.js?v=20261117d",
-        "./motion.js": "./motion.js?v=20261117d",
-        "./start.js": "./start.js?v=20261117d",
-        "./scope.js": "./scope.js?v=20261117d",
-        "./recorder.js": "./recorder.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117d"
+        "./stage.js": "./stage.js?v=20261117e",
+        "./motion.js": "./motion.js?v=20261117e",
+        "./start.js": "./start.js?v=20261117e",
+        "./scope.js": "./scope.js?v=20261117e",
+        "./recorder.js": "./recorder.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117e"
       }
     }
   </script>
@@ -39,7 +39,7 @@
   <script src="../../js/BleSharedBridge.js"></script>
   <script src="../../js/CoreToolkit.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="main.js?v=20261117d"></script>
+  <script type="module" src="main.js?v=20261117e"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -61,27 +61,72 @@
         <div class="cta-row">
           <button type="button" class="hx-btn primary" id="start-btn" data-quiet="1"><span class="hx-main">START</span><span class="hx-sub">スタート</span></button>
           <button type="button" class="hx-btn ghost" id="btn-ranking"><i class="bi bi-trophy-fill"></i> ランキング / RANKING</button>
+          <div class="records records-side">
+            <span>自己ベスト BEST <b id="best-time">-.---</b></span>
+            <span>フライングの基準 LIMIT <b>0.100</b></span>
+          </div>
         </div>
         <!-- who is playing (optional): goes into the ranking and the recording -->
         <label class="who-field">
           <span>名前（任意）</span>
           <input type="text" id="title-name" maxlength="24" placeholder="例: KIKU" autocomplete="off" spellcheck="false">
         </label>
-        <div class="records">
-          <span>自己ベスト BEST <b id="best-time">-.---</b></span>
-          <span>フライングの基準 LIMIT <b>0.100</b></span>
-        </div>
-        <div class="howto">
-          <div class="howto-col">
-            <span class="howto-head">ORPHE CORE</span>
-            <span><i class="bi bi-hand-index-thumb-fill"></i> 手に持って止める → SET</span>
-            <span><i class="bi bi-lightning-charge-fill"></i> 号砲で振る・突き出す → スタート</span>
-          </div>
-          <div class="howto-col">
-            <span class="howto-head">KEYBOARD</span>
-            <span><kbd>Space</kbd> スタート / 反応</span>
-            <span><kbd>Esc</kbd> タイトルへ</span>
-          </div>
+        <!-- HOW TO PLAY: how the CORE is held and what to do with it, as three moving pictures
+             (styles and keyframes: "HOW TO PLAY" in style.css; the relay uses the same parts) -->
+        <div class="howto ht" aria-label="遊び方 / How to play">
+          <svg class="ht-defs" width="0" height="0" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="ht-core-grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22e3ff"/><stop offset="1" stop-color="#b6ff3c"/></linearGradient>
+              <!-- a fist around the CORE, seen from the front; (0,0) is the middle of the fist, the elbow end of the forearm is at (-9,40) -->
+              <g id="ht-hand">
+                <path d="M-3 9 L-9 40" stroke="#c3cfec" stroke-width="15" stroke-linecap="round" fill="none"/>
+                <rect x="-21" y="-9" width="42" height="13" rx="6.5" fill="url(#ht-core-grad)"/>
+                <circle cx="16.5" cy="-2.5" r="1.6" fill="#04060f" opacity="0.5"/>
+                <rect x="-12.5" y="-14" width="25" height="27" rx="8.5" fill="#f4f7ff"/>
+                <path d="M-6 -13v15M0 -13.6v15.6M6 -13v15" stroke="#9fb0d0" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+                <rect x="-15" y="1" width="17" height="8.5" rx="4.25" fill="#f4f7ff" stroke="#9fb0d0" stroke-width="1.2" transform="rotate(-14 -6 5)"/>
+              </g>
+            </defs>
+          </svg>
+          <div class="ht-head"><b>HOW TO PLAY</b><span>遊び方</span><span class="ht-keys">キーボードでも遊べます　<kbd>Space</kbd> スタート・反応　<kbd>Esc</kbd> タイトルへ</span></div>
+          <ol class="ht-steps">
+            <li class="ht-step">
+              <h3>にぎる <small>HOLD</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <g transform="translate(50 31) scale(0.96)"><g class="ht-rock"><use href="#ht-hand"/></g></g>
+                <path d="M73 27 L85 16 H152" class="ht-lead"/>
+                <circle cx="73" cy="27" r="1.6" class="ht-dot"/>
+                <text x="88" y="12" class="ht-t ht-label">ORPHE CORE</text>
+              </svg>
+              <p>片手で握る。向きは自由</p>
+            </li>
+            <li class="ht-step">
+              <h3>とめる <small>SET</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <circle cx="80" cy="35" r="30" class="ht-ring-bg"/>
+                <circle cx="80" cy="35" r="30" class="ht-ring" transform="rotate(-90 80 35)"/>
+                <g transform="translate(80 32) scale(0.96)"><g class="ht-settle"><use href="#ht-hand"/></g></g>
+                <text x="156" y="13" text-anchor="end" class="ht-t ht-ok">STILL ✓</text>
+              </svg>
+              <p>「SET」で、ぴたりと止める</p>
+            </li>
+            <li class="ht-step">
+              <h3>うごかす <small>GO!</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <g transform="translate(24 20)"><g class="ht-bang">
+                  <path d="M0 -15V-9M0 9V15M-15 0H-9M9 0H15M-10.6 -10.6L-6.4 -6.4M6.4 6.4L10.6 10.6M-10.6 10.6L-6.4 6.4M6.4 -6.4L10.6 -10.6" class="ht-rays"/>
+                  <text x="0" y="3" text-anchor="middle" class="ht-t ht-gun">BANG</text>
+                </g></g>
+                <path d="M30 36H56M35 45H58M31 54H52" class="ht-streak"/>
+                <g transform="translate(64 37) scale(0.96)"><g class="ht-go"><use href="#ht-hand"/></g></g>
+                <g class="ht-time">
+                  <text x="156" y="52" text-anchor="end" class="ht-t ht-num">0.142</text>
+                  <text x="156" y="63" text-anchor="end" class="ht-t ht-unit">REACTION / 秒</text>
+                </g>
+              </svg>
+              <p>号砲の瞬間に、振る・突き出す</p>
+            </li>
+          </ol>
         </div>
       </div>
       <footer class="credit">

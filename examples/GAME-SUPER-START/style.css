@@ -171,6 +171,105 @@
 .rt-card .result-entry { row-gap: 0.25em; }
 .dock .rec-toggle { margin: 0.2em 0 0.5em; }
 
+/* ------------------------------------------------------------------ HOW TO PLAY (title)
+   Three cards, each a small moving picture of the hand and the CORE. The drawing of the hand is
+   <g id="ht-hand"> in the page; a picture places it with <g transform="translate(..)"> and moves
+   an inner <g> with one of the keyframes below, so every motion is about the middle of the fist
+   (or about the elbow, at -9px 40px). Used by this page and by ../GAME-SUPER-RELAY/. */
+.howto.ht { display: block; max-width: 46em; margin-top: 1.1em; padding-top: 0.9em; font-size: 1em; }
+.ht-defs { position: absolute; }
+.ht-head { display: flex; align-items: baseline; gap: 0.8em; margin-bottom: 0.5em; }
+.ht-head b { font-family: var(--display); font-weight: 400; font-size: 1.35em; line-height: 1; letter-spacing: 0.22em; color: var(--cyan); }
+.ht-head span { font-size: 0.85em; font-weight: 700; color: var(--mute); letter-spacing: 0.1em; }
+.ht-head .ht-keys { margin-left: auto; font-size: 0.8em; font-weight: 500; letter-spacing: 0; white-space: nowrap; }
+.ht-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7em; margin: 0; padding: 0; list-style: none; counter-reset: ht; }
+.ht-step {
+  counter-increment: ht; padding: 0.45em 0.75em 0.5em; border-radius: 0.8em;
+  background: rgba(7, 11, 26, 0.62); border: 1px solid var(--line); backdrop-filter: blur(8px);
+  animation: htLit 9s linear infinite;
+}
+.ht-step:nth-child(2) { animation-delay: 3s; }
+.ht-step:nth-child(3) { animation-delay: 6s; }
+.ht-step.ht-zone { background: linear-gradient(180deg, rgba(34, 227, 255, 0.2), rgba(7, 11, 26, 0.62) 75%); }
+.ht-step svg { display: block; width: 100%; height: auto; overflow: hidden; }
+.ht-step h3 { display: flex; align-items: baseline; gap: 0.45em; margin: 0; font-size: 1.15em; line-height: 1.2; font-weight: 900; letter-spacing: 0.04em; }
+.ht-step h3::before { content: counter(ht); font-family: var(--display); font-weight: 400; font-size: 1.5em; line-height: 0.9; color: var(--cyan); }
+.ht-step h3 small { font-family: var(--display); font-weight: 400; font-size: 0.95em; letter-spacing: 0.18em; color: var(--mute); }
+.ht-step p { margin: 0.1em 0 0; font-size: 0.86em; line-height: 1.4; font-weight: 600; color: #d5def2; }
+/* the records sit beside the buttons, so that the pictures have the room below */
+.cta-row .hx-btn { flex: none; white-space: nowrap; }
+.cta-row { gap: 1em; }
+.cta-row .records-side {
+  flex: none; flex-direction: column; flex-wrap: nowrap; gap: 0.1em; margin: 0; padding: 0.45em 0.9em; font-size: 0.76em; white-space: nowrap;
+  color: #d5def2; background: rgba(7, 11, 26, 0.55); border: 1px solid var(--line); border-radius: 0.7em; backdrop-filter: blur(8px);
+}
+.cta-row .records-side b { font-size: 1.55em; }
+@keyframes htLit {
+  0%, 30% { border-color: rgba(34, 227, 255, 0.75); box-shadow: 0 0 1.2em rgba(34, 227, 255, 0.22); }
+  36%, 100% { border-color: var(--line); box-shadow: none; }
+}
+/* the drawing */
+.ht-t { font-family: var(--display); font-size: 10px; letter-spacing: 0.14em; fill: var(--cyan); }
+.ht-label { font-size: 10.5px; }
+.ht-dot { fill: var(--cyan); }
+.ht-num { font-size: 19px; letter-spacing: 0.04em; fill: var(--lime); }
+.ht-unit { font-size: 7.5px; fill: var(--mute); }
+.ht-gun { font-size: 7.5px; fill: var(--gold); }
+.ht-lead { fill: none; stroke: var(--cyan); stroke-width: 0.9; }
+.ht-ring-bg, .ht-ring { fill: none; stroke-width: 3.2; }
+.ht-ring-bg { stroke: rgba(255, 255, 255, 0.14); }
+.ht-ring { stroke: var(--lime); stroke-linecap: round; stroke-dasharray: 188.5; animation: htRing 4.6s linear infinite; }
+.ht-rays { fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-linecap: round; }
+.ht-streak { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-linecap: round; opacity: 0; animation: htStreak 4.6s linear infinite; }
+.ht-arc { fill: none; stroke: rgba(34, 227, 255, 0.6); stroke-width: 1.3; stroke-linecap: round; stroke-dasharray: 3 3.5; }
+.ht-arc-tip { stroke-dasharray: none; }
+.ht-meter-bg { fill: rgba(255, 255, 255, 0.12); }
+.ht-band { fill: none; stroke: rgba(34, 227, 255, 0.55); stroke-width: 0.8; stroke-dasharray: 2.5 2.5; }
+.ht-wave-rough, .ht-wave-calm { fill: none; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+.ht-wave-rough { stroke: var(--hot); animation: htRoughOn 4.8s linear infinite; }
+.ht-wave-calm { stroke: var(--cyan); animation: htCalmOn 4.8s linear infinite; }
+.ht-slow { fill: var(--hot); font-size: 9px; animation: htRoughOn 4.8s linear infinite; }
+/* the motions */
+.ht-rock { animation: htRock 3.4s ease-in-out infinite; }
+.ht-settle { animation: htSettle 4.6s linear infinite; }
+.ht-ok { fill: var(--lime); animation: htOk 4.6s linear infinite; }
+.ht-go { animation: htGo 4.6s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; }
+.ht-bang { animation: htBang 4.6s linear infinite; }
+.ht-time { animation: htTime 4.6s linear infinite; }
+.ht-swing { transform-origin: -9px 40px; animation: htSwing 0.36s ease-in-out infinite alternate; }
+.ht-meter { transform-origin: 0 63px; animation: htMeter 3.6s cubic-bezier(0.3, 0.6, 0.3, 1) infinite; }
+.ht-calm { transform-origin: -9px 40px; animation: htCalm 4.8s linear infinite; }
+.ht-gauge { transform-origin: 88px 0; animation: htGauge 4.8s linear infinite; }
+.ht-pass { animation: htPass 4.8s linear infinite; }
+@keyframes htRock { 0%, 100% { transform: rotate(-6deg) scale(1); } 25% { transform: rotate(0deg) scale(1.06); } 50% { transform: rotate(6deg) scale(1); } 75% { transform: rotate(0deg) scale(1.06); } }
+@keyframes htSettle {
+  0% { transform: translate(-2.6px, 1px) rotate(-5deg); } 4% { transform: translate(2.6px, -1.4px) rotate(5deg); }
+  8% { transform: translate(-2px, 1px) rotate(-3.5deg); } 12% { transform: translate(1.3px, -0.6px) rotate(2deg); }
+  16% { transform: translate(-0.6px, 0.3px) rotate(-0.8deg); } 20%, 100% { transform: none; }
+}
+@keyframes htRing { 0%, 20% { stroke-dashoffset: 188.5; opacity: 1; } 70%, 93% { stroke-dashoffset: 0; opacity: 1; } 97%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes htOk { 0%, 68% { opacity: 0; } 72%, 93% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes htGo {
+  0%, 36% { transform: none; } 43%, 90% { transform: translate(24px, -9px) rotate(26deg); } 97%, 100% { transform: none; }
+}
+@keyframes htBang { 0%, 31% { opacity: 0; transform: scale(0.3); } 33% { opacity: 1; transform: scale(1); } 46% { opacity: 1; transform: scale(1.2); } 58%, 100% { opacity: 0; transform: scale(1.45); } }
+@keyframes htStreak { 0%, 37% { opacity: 0; transform: translateX(-8px); } 41% { opacity: 0.9; transform: none; } 55%, 100% { opacity: 0; transform: translateX(10px); } }
+@keyframes htTime { 0%, 45% { opacity: 0; } 49%, 90% { opacity: 1; } 95%, 100% { opacity: 0; } }
+@keyframes htSwing { from { transform: rotate(-33deg); } to { transform: rotate(31deg); } }
+@keyframes htMeter { 0% { transform: scaleY(0.12); } 62%, 92% { transform: scaleY(1); } 100% { transform: scaleY(0.12); } }
+@keyframes htCalm {
+  0% { transform: rotate(-20deg); } 3.5% { transform: rotate(18deg); } 7% { transform: rotate(-15deg); } 10.5% { transform: rotate(11deg); }
+  14% { transform: rotate(-6deg); } 17% { transform: rotate(2.5deg); } 20%, 96% { transform: none; } 100% { transform: rotate(-20deg); }
+}
+@keyframes htGauge { 0%, 21% { transform: scaleX(0); } 74%, 95% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes htRoughOn { 0%, 17% { opacity: 1; } 21%, 97% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes htCalmOn { 0%, 17% { opacity: 0; } 21%, 97% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes htPass { 0%, 74% { opacity: 0; } 77%, 95% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ht-step, .ht-step svg * { animation: none !important; }
+  .ht-streak, .ht-wave-rough, .ht-slow { opacity: 0; }
+}
+
 /* ------------------------------------------------------------------ the signal, shown (scope.js) */
 .scope { display: block; width: 100%; height: 5.4em; border-radius: 0.45em; border: 1px solid var(--line); }
 .scope-cap { display: block; margin-top: 0.35em; font-size: 0.66em; line-height: 1.45; color: rgba(159, 176, 208, 0.9); }

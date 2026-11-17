@@ -27,7 +27,7 @@ const SLOW = 0.3;                 // the exchange is played at this speed
 const SPEED_STEPS = [3, 5, 7, 8.5, 9.8, 10.8];   // m/s: passing one of these is heard
 const BEST_KEY = 'superrelay.best';
 const RANKING_KEY = 'superrelay.rankings';
-const TUNE_KEY = 'superrelay.tuning.v3';
+const TUNE_KEY = 'superrelay.tuning.v4';
 const RUNNERS_KEY = 'superrelay.runners';
 const RANKING_LIMIT = 100;
 const LEG_NAMES = ['1走', '2走', '3走', '4走'];
@@ -67,7 +67,8 @@ function onSample(f, acc, gyro) {
 // How fast is a swing? One fixed scale for everybody (relay.js, swingSpeed): the mean angular speed
 // of the hand in deg/s is worth a speed in m/s, with no ceiling at an ordinary person's best. The
 // harder the swing, the faster, up to what a human arm can do.
-const swingTune = () => ({ topSwing: tuning.topSwing });
+// the slider moves the whole scale: the acceleration worth the top speed goes with the swing
+const swingTune = () => ({ topSwing: tuning.topSwing, topAccel: (tuning.topSwing * SWING_DEFAULTS.topAccel) / SWING_DEFAULTS.topSwing });
 const speedOfSwing = () => swingSpeed(tracker.swing, tracker.shakeG, swingTune());
 
 // Every run is recorded (raw samples, game state, events) so the scale can be set from real swings.
@@ -98,6 +99,8 @@ let gunSeenAt = null;             // when the gun is heard (the audio output has
 let watchSince = null;            // sample time from which a movement counts (set when the starter is satisfied)
 let slow = 1;                     // current time scale of the race (SLOW during an exchange)
 let roughFor = 0;                 // seconds the hands have been past the limit without a break
+let passRough = 0;                // roughness as the exchange sounds it (smoothed)
+let passSounding = false;
 let lastV = 0, speedStep = 0, lastStepAt = 0, lastLeakAt = 0, lastGaugeTick = 0, strokeSide = 1;
 let lastInput = { effort: 0, rough: 0, drop: false };
 let runners = [];                 // optional names of the four runners
@@ -336,7 +339,7 @@ function resetField() {
   stage.world.setGate(false);
   stage.world.setGuide(0, false);
   stage.fx.reset();
-  stage.audio.speedToneOff();
+  stage.audio.speedToneOff(); stage.audio.passToneOff();
   if (zoneMarks) zoneMarks.group.visible = false;
   root.classList.remove('in-zone', 'rough', 'over');
   $('finish-banner').classList.remove('show');
@@ -499,7 +502,7 @@ function onFalseStart(result) {
   stage.audio.recall();
   stage.audio.foul();
   stage.audio.crowdGasp();
-  stage.audio.speedToneOff();
+  stage.audio.speedToneOff(); stage.audio.passToneOff();
   stage.view.hit = 1; stage.view.trauma = 0.5;
   stage.audio.heartRate = 0;
   hideCall(); setSteady(null);
@@ -529,7 +532,7 @@ function onRaceEvent(e, now) {
   const audio = stage.audio;
   if (e.type === 'zone-enter') {
     root.classList.add('in-zone');
-    lastGaugeTick = 0; roughFor = 0;
+    lastGaugeTick = 0; roughFor = 0; passRough = 0;
     // time slams almost to a stop and then eases up to slow motion: the picture streaks inward,
     // the colour drains, the sensor's lines sweep in
     slow = 0.03;
@@ -600,7 +603,7 @@ function endRace(now) {
   root.classList.add('over');
   if (!race.dq) { $('rh-time').textContent = formatTime(race.time); restart($('finish-banner'), 'show'); }
   stage.audio.heartRate = 0;
-  stage.audio.speedToneOff();
+  stage.audio.speedToneOff(); stage.audio.passToneOff();
   stage.world.setGuide(0, false);
   if (zoneMarks) zoneMarks.group.visible = false;
   if (race.dq) {
@@ -861,8 +864,9 @@ function updateRace(now, dt) {
   const awaiting = race.awaiting;
   const dv = dt > 0 ? (race.v - lastV) / dt : 0;       // m/s per real second
   lastV = race.v;
-  audio.speedTone(k, dv / 8);
+  if (awaiting) audio.speedToneOff(); else audio.speedTone(k, dv / 8);
   if (awaiting) {
+    passSounding = true;
     // hushed and muffled; every leak of speed is heard, and so is the gauge filling
     audio.setRace(0.04, 1, false);
     stage.world.setExcitement(0.25, 0.01);
@@ -874,12 +878,21 @@ function updateRace(now, dt) {
       root.classList.toggle('rough', out);
       $('rh-pass-en').textContent = out ? 'TOO ROUGH!' : 'SLOW HANDS';
     }
-    if (input.rough > 0.35 && race.zone.handSec > RELAY_DEFAULTS.graceSec && now - lastLeakAt > (out ? 150 : 260)) {
+    // Heard as two voices: a clear high chord while the baton crosses without losing speed, and
+    // a buzzing synth that falls with the speed while the hands are throwing it away. The limits
+    // leave room for a sensor at rest: an 8-bit CORE 2.0 flickers by one step (0.13 G, 18 deg/s),
+    // which reads as a roughness of up to about 0.5 in a hand that is perfectly still.
+    const forgiven = race.zone.handSec <= RELAY_DEFAULTS.graceSec;
+    const r = forgiven ? 0 : Math.min(2, input.rough);
+    passRough += (r - passRough) * Math.min(1, dt * (r > passRough ? 30 : 9));
+    const keep = race.zone.enterV > 0 ? race.v / race.zone.enterV : 1;
+    audio.passTone(1 - (passRough - 0.55) / 0.35, (passRough - 0.7) / 1.3, keep, race.gauge);
+    if (out && !forgiven && now - lastLeakAt > 150) {
       lastLeakAt = now;
-      audio.leak(Math.min(1, input.rough / 2));
-      if (out) stage.view.trauma = Math.max(stage.view.trauma, 0.25);
+      stage.view.trauma = Math.max(stage.view.trauma, 0.25);
     }
   } else {
+    if (passSounding) { audio.passToneOff(); passSounding = false; }
     audio.setRace(k, 1, false);
     const e = 0.42 + 0.45 * k;
     stage.world.setExcitement(e, 0.02 + 0.03 * k);

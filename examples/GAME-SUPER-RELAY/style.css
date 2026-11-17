@@ -2,8 +2,6 @@
    ../GAME-SUPER-START/style.css (starter's calls, result card). */
 
 .records { flex-wrap: wrap; row-gap: 0.4em; }
-.relay-howto .howto-head.zone { color: var(--cyan); }
-.relay-howto .howto-col > span { white-space: normal; }
 
 /* ------------------------------------------------------------------ the zone: everything goes quiet and blue */
 .zone-veil {

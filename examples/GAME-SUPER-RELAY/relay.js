@@ -222,15 +222,21 @@ export function makeRivalTeam(targetTime, reaction = 0.16, options = {}) {
  * The measure is the mean angular speed of the hand in deg/s: amplitude x frequency, the angle
  * swept per second. A hand that shakes without turning (a piston) is measured by its mean
  * acceleration instead, whichever says more.
- *   topSwing / topAccel  the hardest swing a human arm can be expected to produce
- *   topSpeed             what that is worth: 12.4 m/s, the fastest a human has been timed at
+ *   topSwing / topAccel  the swing that is worth the top speed
+ *   topSpeed             12.4 m/s, the fastest a human has been timed at
  *   gamma                how speed grows with the swing: twice the swing is 2^gamma times the speed
  * There is deliberately no ceiling at an ordinary person's best: swinging harder is always faster,
- * up to `limit` times the top (the sensor's own range ends about there).
- * THE NUMBERS ARE ESTIMATES. Nobody's swing had been recorded when they were chosen; the game
- * saves the raw data of every run so that they can be set from measurements.
+ * up to `limit` times the top.
+ *
+ * Where the numbers come from: two races recorded on 2026-11-17 (one adult shaking as hard as he
+ * could, CORE 2.0). Over the running stretches the swing was 630 and 770 deg/s (median; 780 and
+ * 950 at the 90th percentile) and the mean acceleration 6.0 and 5.2 G. The first scale
+ * (800 deg/s, 5 G, limit 1.25) had been guessed before anybody was measured, and its 5 G was far
+ * too low: it put that ordinary all-out swing at the limit, with nothing left above it for a
+ * stronger arm. This one puts it a little under the top speed (about 11.9 m/s) and leaves 40%
+ * of swing above the top. ONE PERSON, TWO RACES: set it again as more recordings come in.
  */
-export const SWING_DEFAULTS = { topSwing: 800, topAccel: 5, topSpeed: 12.4, gamma: 0.3, limit: 1.25, floor: 0.04 };
+export const SWING_DEFAULTS = { topSwing: 880, topAccel: 7, topSpeed: 12.4, gamma: 0.3, limit: 1.4, floor: 0.04 };
 export function swingSpeed(swingDps, accelG = 0, tune = SWING_DEFAULTS) {
   const o = { ...SWING_DEFAULTS, ...tune };
   const i = Math.min(o.limit, Math.max((+swingDps || 0) / o.topSwing, (+accelG || 0) / o.topAccel));

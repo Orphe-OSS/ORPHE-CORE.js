@@ -94,7 +94,7 @@ export class StageAudio extends AudioEngine {
     r.g.gain.setTargetAtTime(s < 0.03 ? 0 : 0.018 + 0.05 * Math.min(1, Math.abs(delta) * 2.5), now, 0.07);
   }
   speedToneOff() { if (this._rev && this.ctx) this._rev.g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1); }
-  stopRace() { super.stopRace(); this.speedToneOff(); this.timeReset(); }
+  stopRace() { super.stopRace(); this.speedToneOff(); this.passToneOff(); this.timeReset(); }
   /** Two rising notes: a speed step gained (i = which step, 0..). */
   gearUp(i = 0) {
     if (!this.ctx) return;
@@ -114,11 +114,62 @@ export class StageAudio extends AudioEngine {
     if (!this.ctx) return;
     this.noise(this.now, { dur: 0.09, type: 'bandpass', freq: 1600 + 1800 * power, sweep: 700, q: 1.2, gain: 0.05 + 0.1 * power, attack: 0.01, pan });
   }
-  /** Baton speed leaking away in rough hands: a short falling blip, lower the more is lost. */
-  leak(amount = 0.5) {
-    if (!this.ctx) return;
-    const f = 520 - 260 * Math.min(1, amount);
-    this.tone(this.now, { f0: f, f1: f * 0.6, glide: 0.12, dur: 0.14, gain: 0.1 + 0.1 * Math.min(1, amount), type: 'square', attack: 0.003, dest: this.uiBus });
+  /**
+   * The exchange, heard: two voices that cannot be mistaken for each other, so that the hands
+   * know how they are doing without the eyes.
+   *   clean  a high, clear chord that swells in ("faah") and opens up as the gauge fills:
+   *          the baton is crossing and no speed is being thrown away
+   *   loss   a buzzing synth whose pitch IS the baton speed that is left. It sounds only while
+   *          speed is leaking, flutters faster the rougher the hands, and every time it comes
+   *          back it starts lower than where it stopped
+   * clean 0..1, loss 0..1 (how fast speed is leaking), keep 0..1 (share of the speed the baton
+   * came in with), gauge 0..1. Call it every frame of the exchange, and passToneOff() after.
+   */
+  passTone(clean, loss, keep = 1, gauge = 0) {
+    if (!this.ctx || !this.uiBus) return;
+    const ctx = this.ctx, now = ctx.currentTime;
+    const unit = (v) => Math.min(1, Math.max(0, +v || 0));
+    if (!this._pass) {
+      const osc = (type, hz) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = hz; o.start(); return o; };
+      const gain = (v) => { const g = ctx.createGain(); g.gain.value = v; return g; };
+      // the clean voice: A major, two octaves up, each note a pair a little apart so it shimmers
+      const padG = gain(0), top = gain(0.25);
+      const padF = ctx.createBiquadFilter(); padF.type = 'lowpass'; padF.frequency.value = 2200; padF.Q.value = 0.5;
+      const note = (hz, level, beat, dest) => [0, beat].forEach((d) => osc('sine', hz + d).connect(gain(level)).connect(dest));
+      note(880, 0.5, 1.1, padF); note(1318.51, 0.36, 1.7, padF); note(1760, 0.3, 2.3, padF);
+      note(2217.46, 0.24, 1.9, top); note(2637.02, 0.17, 2.9, top); note(3520, 0.11, 3.7, top);   // opens with the gauge
+      top.connect(padF); padF.connect(padG).connect(this.uiBus);
+      // the loss voice: two saws and a square below them, through a resonant filter and a flutter
+      const lossG = gain(0), trem = gain(0.75), depth = gain(0.2);
+      const lossF = ctx.createBiquadFilter(); lossF.type = 'lowpass'; lossF.Q.value = 7;
+      const s1 = osc('sawtooth', 440), s2 = osc('sawtooth', 440), sub = osc('square', 220), lfo = osc('square', 12);
+      s2.detune.value = 16;
+      s1.connect(lossF); s2.connect(lossF); sub.connect(gain(0.45)).connect(lossF);
+      lfo.connect(depth).connect(trem.gain);
+      lossF.connect(trem).connect(lossG).connect(this.uiBus);
+      this._pass = { padG, padF, top, lossG, lossF, s1, s2, sub, lfo, depth, clean: 0, loss: 0 };
+    }
+    const p = this._pass, c = unit(clean), l = unit(loss), k = unit(keep), g = unit(gauge);
+    // swells in slowly and is cut off at once: the silence is the first warning
+    p.padG.gain.setTargetAtTime(0.075 * c, now, c >= p.clean ? 0.2 : 0.045);
+    p.padF.frequency.setTargetAtTime(2200 + 5600 * g, now, 0.12);
+    p.top.gain.setTargetAtTime(0.25 + 0.75 * g, now, 0.15);
+    const hz = 92 * Math.pow(2, 2.6 * k);                 // all of the speed left: 558 Hz; half of it: 227 Hz
+    p.s1.frequency.setTargetAtTime(hz, now, 0.05);
+    p.s2.frequency.setTargetAtTime(hz, now, 0.05);
+    p.sub.frequency.setTargetAtTime(hz / 2, now, 0.05);
+    p.lossF.frequency.setTargetAtTime(hz * (2.4 + 3.2 * l), now, 0.05);
+    p.lfo.frequency.setTargetAtTime(9 + 17 * l, now, 0.08);
+    p.depth.gain.setTargetAtTime(0.12 + 0.13 * l, now, 0.08);
+    p.lossG.gain.setTargetAtTime(l > 0 ? 0.045 + 0.1 * l : 0, now, l > 0 ? 0.03 : 0.07);
+    p.clean = c; p.loss = l;
+  }
+  passToneOff() {
+    if (!this._pass || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this._pass.padG.gain.setTargetAtTime(0, now, 0.06);
+    this._pass.lossG.gain.setTargetAtTime(0, now, 0.04);
+    this._pass.clean = 0; this._pass.loss = 0;
   }
   /**
    * Time slowing down hard (dir = -1) or snapping back (dir = +1).

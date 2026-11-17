@@ -7,9 +7,9 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <!-- Stadium UI from the hurdle game, the starter's calls from the start game, then this event's own parts. -->
-  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117d">
-  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261117d">
-  <link rel="stylesheet" href="style.css?v=20261117d">
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117e">
+  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261117e">
+  <link rel="stylesheet" href="style.css?v=20261117e">
   <!--
     Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
     ?v= build id. When any file of this example, of ../GAME-SUPER-START/ or of
@@ -21,16 +21,16 @@
       "imports": {
         "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-        "./relay.js": "./relay.js?v=20261117d",
-        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261117d",
-        "../GAME-SUPER-START/motion.js": "../GAME-SUPER-START/motion.js?v=20261117d",
-        "../GAME-SUPER-START/start.js": "../GAME-SUPER-START/start.js?v=20261117d",
-        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261117d",
-        "../GAME-SUPER-START/recorder.js": "../GAME-SUPER-START/recorder.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117d",
-        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117d"
+        "./relay.js": "./relay.js?v=20261117e",
+        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261117e",
+        "../GAME-SUPER-START/motion.js": "../GAME-SUPER-START/motion.js?v=20261117e",
+        "../GAME-SUPER-START/start.js": "../GAME-SUPER-START/start.js?v=20261117e",
+        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261117e",
+        "../GAME-SUPER-START/recorder.js": "../GAME-SUPER-START/recorder.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117e"
       }
     }
   </script>
@@ -41,7 +41,7 @@
   <script src="../../js/BleSharedBridge.js"></script>
   <script src="../../js/CoreToolkit.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="main.js?v=20261117d"></script>
+  <script type="module" src="main.js?v=20261117e"></script>
 <script src="../../js/site-analytics.js"></script>
 </head>
 <body>
@@ -64,29 +64,71 @@
         <div class="cta-row">
           <button type="button" class="hx-btn primary" id="start-btn" data-quiet="1"><span class="hx-main">START</span><span class="hx-sub">スタート</span></button>
           <button type="button" class="hx-btn ghost" id="btn-ranking"><i class="bi bi-trophy-fill"></i> ランキング / RANKING</button>
-        </div>
-        <div class="records">
-          <span>チームベスト BEST <b id="best-time">--.--</b></span>
-          <span>現実の世界記録 WR <b>36.84</b></span>
-          <span>日本記録 NR <b>37.43</b></span>
+          <div class="records records-side">
+            <span>チームベスト BEST <b id="best-time">--.--</b></span>
+            <span>世界記録 WR <b>36.84</b>　日本 NR <b>37.43</b></span>
+          </div>
         </div>
         <label class="team-names">
           <span>走者の名前（任意・区切りは「,」）</span>
           <input type="text" id="team-names" maxlength="80" placeholder="例: KIKU, SAKA, TARO, ANCHOR" autocomplete="off" spellcheck="false">
         </label>
-        <div class="howto relay-howto">
-          <div class="howto-col">
-            <span class="howto-head">走る / RUN</span>
-            <span><i class="bi bi-lightning-charge-fill"></i> CORE を振る → 振るほど速い</span>
-            <span><kbd>Space</kbd> 押しっぱなしで走る</span>
-          </div>
-          <div class="howto-col">
-            <span class="howto-head zone">ゾーン / TAKEOVER ZONE</span>
-            <span><i class="bi bi-pause-circle-fill"></i> スローになる。振るのをやめて、そっと渡す</span>
-            <span><i class="bi bi-activity"></i> 動かしたぶんだけバトンの速度が落ちる</span>
-            <span><i class="bi bi-check-circle-fill"></i> ゲージが満タンで受け渡し完了 → 次の人が振る</span>
-            <span><kbd>Space</kbd> を離すと「そっと」</span>
-          </div>
+        <!-- HOW TO PLAY: how the CORE is held and what to do with it, as three moving pictures
+             (styles and keyframes: "HOW TO PLAY" in ../GAME-SUPER-START/style.css) -->
+        <div class="howto ht" aria-label="遊び方 / How to play">
+          <svg class="ht-defs" width="0" height="0" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="ht-core-grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22e3ff"/><stop offset="1" stop-color="#b6ff3c"/></linearGradient>
+              <!-- a fist around the CORE, seen from the front; (0,0) is the middle of the fist, the elbow end of the forearm is at (-9,40) -->
+              <g id="ht-hand">
+                <path d="M-3 9 L-9 40" stroke="#c3cfec" stroke-width="15" stroke-linecap="round" fill="none"/>
+                <rect x="-21" y="-9" width="42" height="13" rx="6.5" fill="url(#ht-core-grad)"/>
+                <circle cx="16.5" cy="-2.5" r="1.6" fill="#04060f" opacity="0.5"/>
+                <rect x="-12.5" y="-14" width="25" height="27" rx="8.5" fill="#f4f7ff"/>
+                <path d="M-6 -13v15M0 -13.6v15.6M6 -13v15" stroke="#9fb0d0" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+                <rect x="-15" y="1" width="17" height="8.5" rx="4.25" fill="#f4f7ff" stroke="#9fb0d0" stroke-width="1.2" transform="rotate(-14 -6 5)"/>
+              </g>
+            </defs>
+          </svg>
+          <div class="ht-head"><b>HOW TO PLAY</b><span>遊び方</span><span class="ht-keys">キーボードでも遊べます　<kbd>Space</kbd> 押して走る・離して「そっと」</span></div>
+          <ol class="ht-steps">
+            <li class="ht-step">
+              <h3>にぎる <small>HOLD</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <g transform="translate(50 31) scale(0.96)"><g class="ht-rock"><use href="#ht-hand"/></g></g>
+                <path d="M73 27 L85 16 H152" class="ht-lead"/>
+                <circle cx="73" cy="27" r="1.6" class="ht-dot"/>
+                <text x="88" y="12" class="ht-t ht-label">CORE = BATON</text>
+              </svg>
+              <p>CORE がバトン。片手で握る</p>
+            </li>
+            <li class="ht-step">
+              <h3>ふる <small>RUN</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <path d="M22.5 22.8 A54 54 0 0 1 84.5 22.8" class="ht-arc"/>
+                <path d="M22.5 22.8l0.6 -6.5M22.5 22.8l6.4 -1.4M84.5 22.8l-0.6 -6.5M84.5 22.8l-6.4 -1.4" class="ht-arc ht-arc-tip"/>
+                <g transform="translate(62 30) scale(0.96)"><g class="ht-swing"><use href="#ht-hand"/></g></g>
+                <text x="133" y="10" text-anchor="middle" class="ht-t">SPEED</text>
+                <rect x="128" y="15" width="10" height="48" rx="5" class="ht-meter-bg"/>
+                <rect x="128" y="15" width="10" height="48" rx="5" fill="url(#ht-core-grad)" class="ht-meter"/>
+              </svg>
+              <p>腕を振るように。強いほど速い</p>
+            </li>
+            <li class="ht-step ht-zone">
+              <h3>とめる <small>ZONE</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <g transform="translate(42 31) scale(0.96)"><g class="ht-calm"><use href="#ht-hand"/></g></g>
+                <rect x="88" y="7" width="64" height="7" rx="3.5" class="ht-meter-bg"/>
+                <rect x="88" y="7" width="64" height="7" rx="3.5" fill="url(#ht-core-grad)" class="ht-gauge"/>
+                <path d="M88 23H152M88 45H152" class="ht-band"/>
+                <path d="M88 34l5 -13 5 24 5 -20 5 17 5 -23 5 21 5 -15 5 19 5 -22 5 16 5 -8 5 4h4" class="ht-wave-rough"/>
+                <path d="M88 34h10l4 -2 4 3 6 -1h12l4 1 5 -2 5 1h14" class="ht-wave-calm"/>
+                <text x="120" y="60" text-anchor="middle" class="ht-t ht-slow">▼ 減速 SLOWING</text>
+                <text x="120" y="65" text-anchor="middle" class="ht-t ht-num ht-pass">PASS!</text>
+              </svg>
+              <p>ぴたりと止める。動かすと減速</p>
+            </li>
+          </ol>
         </div>
       </div>
       <footer class="credit">
@@ -318,8 +360,8 @@
         <div class="config-item">
           <label for="top-swing">トップスピード（秒速 12.4m）になる振りの強さ。振りの強さ＝手が 1 秒間に振れた角度の合計</label>
           <div class="config-control">
-            <input type="range" id="top-swing" min="300" max="1600" value="800" step="50">
-            <span id="top-swing-value">800 °/s</span>
+            <input type="range" id="top-swing" min="300" max="1600" value="880" step="10">
+            <span id="top-swing-value">880 °/s</span>
           </div>
         </div>
         <h4>✋ バトンパス / Exchange</h4>

@@ -55,7 +55,9 @@ export function createRecorder(app) {
         app, startedAt: new Date().toISOString(), t0: performance.now(), meta,
         // times are ms from the start of the recording, on the page clock; samples are dated when measured
         sampleColumns: ['t_ms', 'ax_G', 'ay_G', 'az_G', 'gx_dps', 'gy_dps', 'gz_dps'],
-        samples: [], frameColumns, frames: [], events: [], truncated: false,
+        // every frame row starts with its time, so the column list does too (files saved before
+        // 2026-11-17 14:00 lack this first name: their rows have one value more than their columns)
+        samples: [], frameColumns: frameColumns.length ? ['t_ms', ...frameColumns] : [], frames: [], events: [], truncated: false,
       };
     },
     /** One sensor sample, as delivered: acc {x,y,z} in G, gyro {x,y,z} in deg/s, t on the page clock. */

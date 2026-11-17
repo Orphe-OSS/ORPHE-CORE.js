@@ -331,7 +331,7 @@
       "topics": ["jump", "camera", "recording", "analysis", "calibration"],
       "data": ["convertedAcc", "quat", "convertedGyro"],
       "devices": 1,
-      "validation": ["recorded-data-replay", "needs-device-verification"],
+      "validation": ["real-device-validated", "recorded-data-replay"],
       "category": "recording-analysis",
       "difficulty": "intermediate",
       "featured": false,
@@ -343,7 +343,7 @@
       },
       "requires_device": true,
       "device_count": 1,
-      "needs_real_device_validation": true,
+      "needs_real_device_validation": false,
       "public_navigation": "hidden"
     },
     {

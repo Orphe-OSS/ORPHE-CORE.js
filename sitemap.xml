@@ -77,6 +77,18 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-SUPER-START/</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-SUPER-RELAY/</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://orphe-oss.github.io/ORPHE-CORE.js/examples/GAME-SPRINT-100M-VS/</loc>
     <lastmod>2026-05-04</lastmod>
     <changefreq>monthly</changefreq>

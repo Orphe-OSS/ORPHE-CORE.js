@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUPER VIRTUAL START　号砲リアクション</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <!-- The stadium UI (buttons, dock, drawer, title block) is the hurdle game's stylesheet; style.css adds this event's own parts. -->
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261117e">
+  <link rel="stylesheet" href="style.css?v=20261117e">
+  <!--
+    Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
+    ?v= build id, so a browser never mixes an old cached module with new ones. When any file of
+    this example or of ../GAME-SUPER-HURDLE/ changes, change the id everywhere on this page
+    (tests/super-start-build-id.test.js checks they all match).
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "./stage.js": "./stage.js?v=20261117e",
+        "./motion.js": "./motion.js?v=20261117e",
+        "./start.js": "./start.js?v=20261117e",
+        "./scope.js": "./scope.js?v=20261117e",
+        "./recorder.js": "./recorder.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261117e",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261117e"
+      }
+    }
+  </script>
+  <!-- ORPHE CORE SDK from this repository (see GAME-SUPER-HURDLE for why not the CDN copy). -->
+  <script src="../../js/float16.min.js"></script>
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="main.js?v=20261117e"></script>
+<script src="../../js/site-analytics.js"></script>
+</head>
+<body>
+  <div id="stage" data-screen="start">
+    <canvas id="game-canvas"></canvas>
+    <div class="letterbox top"></div>
+    <div class="letterbox bottom"></div>
+
+    <!-- ===== Title ===== -->
+    <div class="screen" id="start-layer">
+      <div class="title-block">
+        <div class="eyebrow"><img id="brand-logo" alt="ORPHE" hidden><span>VIRTUAL SPORTS</span></div>
+        <h1 class="title">
+          <span class="title-en">SUPER VIRTUAL START</span>
+          <span class="title-ja">号砲リアクション <em>0.100秒の壁</em></span>
+        </h1>
+        <p class="lead">「SET」でぴたりと止まり、号砲が鳴った瞬間に動く。<br>0.100秒より速い反応は、フライング。</p>
+        <p class="lead-en">Hold still on "SET", move the instant the gun fires. A reaction faster than 0.100 s is a false start.</p>
+        <div class="cta-row">
+          <button type="button" class="hx-btn primary" id="start-btn" data-quiet="1"><span class="hx-main">START</span><span class="hx-sub">スタート</span></button>
+          <button type="button" class="hx-btn ghost" id="btn-ranking"><i class="bi bi-trophy-fill"></i> ランキング / RANKING</button>
+          <div class="records records-side">
+            <span>自己ベスト BEST <b id="best-time">-.---</b></span>
+            <span>フライングの基準 LIMIT <b>0.100</b></span>
+          </div>
+        </div>
+        <!-- who is playing (optional): goes into the ranking and the recording -->
+        <label class="who-field">
+          <span>名前（任意）</span>
+          <input type="text" id="title-name" maxlength="24" placeholder="例: KIKU" autocomplete="off" spellcheck="false">
+        </label>
+        <!-- HOW TO PLAY: how the CORE is held and what to do with it, as three moving pictures
+             (styles and keyframes: "HOW TO PLAY" in style.css; the relay uses the same parts) -->
+        <div class="howto ht" aria-label="遊び方 / How to play">
+          <svg class="ht-defs" width="0" height="0" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="ht-core-grad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22e3ff"/><stop offset="1" stop-color="#b6ff3c"/></linearGradient>
+              <!-- a fist around the CORE, seen from the front; (0,0) is the middle of the fist, the elbow end of the forearm is at (-9,40) -->
+              <g id="ht-hand">
+                <path d="M-3 9 L-9 40" stroke="#c3cfec" stroke-width="15" stroke-linecap="round" fill="none"/>
+                <rect x="-21" y="-9" width="42" height="13" rx="6.5" fill="url(#ht-core-grad)"/>
+                <circle cx="16.5" cy="-2.5" r="1.6" fill="#04060f" opacity="0.5"/>
+                <rect x="-12.5" y="-14" width="25" height="27" rx="8.5" fill="#f4f7ff"/>
+                <path d="M-6 -13v15M0 -13.6v15.6M6 -13v15" stroke="#9fb0d0" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+                <rect x="-15" y="1" width="17" height="8.5" rx="4.25" fill="#f4f7ff" stroke="#9fb0d0" stroke-width="1.2" transform="rotate(-14 -6 5)"/>
+              </g>
+            </defs>
+          </svg>
+          <div class="ht-head"><b>HOW TO PLAY</b><span>遊び方</span><span class="ht-keys">キーボードでも遊べます　<kbd>Space</kbd> スタート・反応　<kbd>Esc</kbd> タイトルへ</span></div>
+          <ol class="ht-steps">
+            <li class="ht-step">
+              <h3>にぎる <small>HOLD</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <g transform="translate(50 31) scale(0.96)"><g class="ht-rock"><use href="#ht-hand"/></g></g>
+                <path d="M73 27 L85 16 H152" class="ht-lead"/>
+                <circle cx="73" cy="27" r="1.6" class="ht-dot"/>
+                <text x="88" y="12" class="ht-t ht-label">ORPHE CORE</text>
+              </svg>
+              <p>片手で握る。向きは自由</p>
+            </li>
+            <li class="ht-step">
+              <h3>とめる <small>SET</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <circle cx="80" cy="35" r="30" class="ht-ring-bg"/>
+                <circle cx="80" cy="35" r="30" class="ht-ring" transform="rotate(-90 80 35)"/>
+                <g transform="translate(80 32) scale(0.96)"><g class="ht-settle"><use href="#ht-hand"/></g></g>
+                <text x="156" y="13" text-anchor="end" class="ht-t ht-ok">STILL ✓</text>
+              </svg>
+              <p>「SET」で、ぴたりと止める</p>
+            </li>
+            <li class="ht-step">
+              <h3>うごかす <small>GO!</small></h3>
+              <svg viewBox="0 0 160 70" aria-hidden="true">
+                <g transform="translate(24 20)"><g class="ht-bang">
+                  <path d="M0 -15V-9M0 9V15M-15 0H-9M9 0H15M-10.6 -10.6L-6.4 -6.4M6.4 6.4L10.6 10.6M-10.6 10.6L-6.4 6.4M6.4 -6.4L10.6 -10.6" class="ht-rays"/>
+                  <text x="0" y="3" text-anchor="middle" class="ht-t ht-gun">BANG</text>
+                </g></g>
+                <path d="M30 36H56M35 45H58M31 54H52" class="ht-streak"/>
+                <g transform="translate(64 37) scale(0.96)"><g class="ht-go"><use href="#ht-hand"/></g></g>
+                <g class="ht-time">
+                  <text x="156" y="52" text-anchor="end" class="ht-t ht-num">0.142</text>
+                  <text x="156" y="63" text-anchor="end" class="ht-t ht-unit">REACTION / 秒</text>
+                </g>
+              </svg>
+              <p>号砲の瞬間に、振る・突き出す</p>
+            </li>
+          </ol>
+        </div>
+      </div>
+      <footer class="credit">
+        © 2026 ORPHE Inc. All rights reserved. ORPHE CORE is a registered trademark of ORPHE Inc.
+        <a href="https://orphe.io/" target="_blank" rel="noopener">https://orphe.io/</a>
+      </footer>
+    </div>
+
+    <!-- ===== Starter's calls: ON YOUR MARKS / SET, and the reaction time as it lands ===== -->
+    <div class="screen" id="call-layer" aria-live="polite">
+      <div class="call" id="call">
+        <div class="call-en" id="call-en">ON YOUR MARKS</div>
+        <div class="call-ja" id="call-ja">位置について</div>
+        <div class="steady" id="steady">
+          <div class="steady-track"><div class="steady-fill" id="steady-fill"></div></div>
+          <div class="steady-label" id="steady-label">手を止める / HOLD STILL</div>
+        </div>
+      </div>
+      <!-- the hand's movement during SET and the hold, against the lines the starter judges by -->
+      <div class="call-scope" id="call-scope">
+        <canvas class="scope" id="scope-call"></canvas>
+        <span class="scope-cap" id="call-scope-cap">手の動き　緑の線より下で静止</span>
+      </div>
+      <div class="rt-live" id="rt-live">
+        <span class="rt-live-label">REACTION TIME</span>
+        <b id="rt-live-value">0.000</b>
+      </div>
+      <div class="foul-flash" id="foul-flash"><span>FALSE START</span></div>
+    </div>
+
+    <!-- ===== Result ===== -->
+    <div class="screen" id="finish-layer">
+      <div class="rt-card" id="rt-card">
+        <div class="rt-head">
+          <span class="rt-tag">REACTION TIME · LANE 5</span>
+          <span class="rt-badge" id="rt-badge">NEW PERSONAL BEST</span>
+        </div>
+
+        <!-- a legal start -->
+        <div class="rt-main" id="rt-main">
+          <div class="rt-time">
+            <span class="rt-label">反応時間 / Reaction time</span>
+            <div class="rt-value"><b id="rt-value">0.000</b><i>秒</i></div>
+          </div>
+          <div class="rt-grade" id="rt-grade">
+            <div class="rt-grade-ring"><span id="rt-grade-letter">A</span></div>
+            <div class="rt-grade-text"><b id="rt-grade-en">ELITE</b><span id="rt-grade-ja">トップ選手なみ</span></div>
+          </div>
+        </div>
+        <!-- a false start / no start -->
+        <div class="rt-foul" id="rt-foul" hidden>
+          <div class="red-card" aria-hidden="true"></div>
+          <div class="rt-foul-text">
+            <b id="rt-foul-title">FALSE START</b>
+            <span id="rt-foul-ja">フライング</span>
+            <p id="rt-foul-reason"></p>
+          </div>
+        </div>
+
+        <!-- where the reaction sits: false start | S | A | B | C | D | late -->
+        <div class="rt-scale" id="rt-scale">
+          <div class="rt-scale-bar" id="rt-scale-bar"></div>
+          <div class="rt-scale-rivals" id="rt-scale-rivals"></div>
+          <div class="rt-scale-me" id="rt-scale-me"><i></i><span>YOU</span></div>
+          <div class="rt-scale-ticks" id="rt-scale-ticks"></div>
+        </div>
+
+        <!-- the sensor signal of this attempt around the gun, with the moments the game used -->
+        <div class="rt-wave" id="rt-wave" hidden>
+          <div class="rt-wave-head"><span>判定に使った波形 / Sensor trace</span><span id="rt-wave-info"></span></div>
+          <canvas id="rt-wave-canvas"></canvas>
+        </div>
+
+        <div class="rt-board-head"><span>決勝 8 人の反応時間 / Reaction times of the final</span><span id="rt-place"></span></div>
+        <div class="rt-board" id="rt-board"></div>
+
+        <div class="rt-session" id="rt-session"></div>
+
+        <form class="result-entry" id="name-form" autocomplete="off">
+          <input type="text" id="player-name" maxlength="24" placeholder="名前（任意）" aria-label="名前。次の人は書き換えてから RETRY">
+          <button type="submit" class="hx-btn small" id="save-score">この記録を登録</button>
+          <span class="save-status" id="save-status"></span>
+          <span class="who-hint">次の人は名前を書き換えて RETRY</span>
+        </form>
+        <div class="result-actions">
+          <button type="button" class="hx-btn primary" id="retry" data-quiet="1"><span class="hx-main">RETRY</span><span class="hx-sub">もう一度 <kbd>Space</kbd></span></button>
+          <button type="button" class="hx-btn ghost" id="btn-ranking-finish"><i class="bi bi-trophy-fill"></i> ランキング</button>
+          <button type="button" class="hx-btn ghost" id="btn-title"><i class="bi bi-house-fill"></i> タイトル</button>
+          <button type="button" class="hx-btn ghost" id="btn-export" title="この 1 本の計測データ（波形・時刻・しきい値）を JSON で保存" hidden><i class="bi bi-download"></i> 計測データ</button>
+        </div>
+        <p class="rt-note">0.100 秒未満の反応はフライングです（世界陸連のルール）。センサーと Bluetooth の遅れのぶん、実際より 0.01〜0.03 秒ほど遅く出ることがあります。競技用の計測値ではありません。</p>
+      </div>
+    </div>
+
+    <!-- ===== Ranking ===== -->
+    <div class="screen" id="ranking-layer" style="display:none;">
+      <div class="ranking-container">
+        <button type="button" class="back-button" id="back-btn" title="戻る / Back"><i class="bi bi-arrow-left"></i></button>
+        <h2 class="ranking-title">ランキング / RANKING</h2>
+        <p class="ranking-board">反応時間 · このブラウザの記録</p>
+        <div class="ranking-list" id="ranking-list"></div>
+        <div class="ranking-foot"><button type="button" class="hx-btn small danger" id="ranking-clear">記録を消す / Clear</button></div>
+      </div>
+    </div>
+
+    <!-- ===== Top bar ===== -->
+    <div id="topbar">
+      <button type="button" class="icon-btn" id="btn-sound" title="サウンド / Sound"><i class="bi bi-volume-up-fill"></i></button>
+      <button type="button" class="icon-btn" id="btn-fullscreen" title="全画面 / Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button type="button" class="icon-btn" id="btn-settings" title="センサー設定 / Sensor settings"><i class="bi bi-sliders"></i></button>
+    </div>
+
+    <!-- ===== ORPHE CORE connection dock ===== -->
+    <aside id="core-dock" class="dock">
+      <div class="dock-head">
+        <span class="dock-title">ORPHE CORE</span><span class="dock-sub" style="display:inline">接続 / CONNECT</span>
+      </div>
+      <div class="dock-row" id="dock-row-0">
+        <span class="foot-chip"><b>1</b><span>手に持つ</span></span>
+        <div id="toolkit_placeholder1" class="toolkit-slot"></div>
+        <span class="dock-state" id="dock-state-0">未接続</span>
+      </div>
+      <div id="ble-support-message" class="dock-note" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
+      <div id="audio-warn" class="dock-note" hidden></div>
+      <label class="rec-toggle" title="1 本ごとに、加速度・角速度の生データと判定の時刻を記録します">
+        <input type="checkbox" id="rec-toggle" checked><span class="rec-switch"></span>
+        <span class="rec-label">生データを記録 / REC</span><span class="rec-count" id="rec-count-dock"></span>
+      </label>
+      <div class="dock-check">
+        <span class="check-item" id="check-still"><i class="bi bi-pause-circle-fill"></i> 静止 STILL</span>
+        <span class="check-item" id="check-move"><i class="bi bi-lightning-charge-fill"></i> 動き MOVE</span>
+      </div>
+      <!-- the signal the game judges, live: 1.0 on this scale is the "moved" threshold -->
+      <div class="scope-box" id="scope-dock-box">
+        <canvas class="scope" id="scope-dock"></canvas>
+        <span class="scope-cap">判定に使っている動き。黄の線を超えると「動いた」、緑の線より下が「静止」</span>
+      </div>
+      <button type="button" class="dock-link" id="open-settings"><i class="bi bi-sliders"></i> センサー値・感度の調整 / Sensor settings</button>
+      <p class="dock-hint">スイッチをONにして CORE を 1 個選びます。手に持つか、ひざの上で押さえます。キーボードだけでも遊べます。</p>
+    </aside>
+
+    <!-- ===== Sensor monitor + settings drawer ===== -->
+    <aside id="settings-drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <h3>センサー / Sensor</h3>
+        <button type="button" class="icon-btn" id="close-settings" title="閉じる / Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="config-panel">
+        <h4>📊 センサー値モニター / Sensor Monitor</h4>
+        <p class="drawer-note">
+          <a href="https://orphe.io/core" target="_blank" rel="noopener">ORPHE CORE</a> 1 個の加速度とジャイロだけで、「止まっている」「動き出した」を判定します。ブラウザは Google Chrome を使ってください。<br>
+          <span class="drawer-note-en">One ORPHE CORE's acceleration and gyro decide "still" and "started moving". Please use Google Chrome.</span>
+        </p>
+        <div class="sensor-monitor one">
+          <div class="sensor-box">
+            <h5>CORE 01</h5>
+            <div class="sensor-line">
+              <span class="sensor-name">Accel</span>
+              <span class="sensor-value" id="mon-acc">--</span>
+              <div class="sensor-bar">
+                <div id="mon-acc-bar" class="bar"></div>
+                <div id="mon-acc-still" class="threshold still"></div>
+                <div id="mon-acc-move" class="threshold"></div>
+              </div>
+            </div>
+            <div class="sensor-line">
+              <span class="sensor-name">Gyro</span>
+              <span class="sensor-value" id="mon-gyro">--</span>
+              <div class="sensor-bar">
+                <div id="mon-gyro-bar" class="bar"></div>
+                <div id="mon-gyro-still" class="threshold still"></div>
+                <div id="mon-gyro-move" class="threshold"></div>
+              </div>
+            </div>
+          </div>
+          <div class="sensor-action">
+            <span>いまの状態 / State</span>
+            <p id="mon-state">未接続 / Not connected</p>
+            <span id="mon-rate">-- Hz</span>
+          </div>
+        </div>
+
+        <h4>✋ 静止の判定 / Stillness</h4>
+        <div class="config-item">
+          <label for="still-tol">静止の許容（大きいほど、手の小さな揺れを見逃す）</label>
+          <div class="config-control">
+            <input type="range" id="still-tol" min="0.5" max="3" value="1" step="0.1">
+            <span id="still-tol-value">×1.0</span>
+          </div>
+        </div>
+        <h4>⚡ 動き出しの判定 / Start movement</h4>
+        <div class="config-item">
+          <label for="move-sens">動き出しのしきい値（小さいほど、わずかな動きで反応とみなす）</label>
+          <div class="config-control">
+            <input type="range" id="move-sens" min="0.5" max="3" value="1" step="0.1">
+            <span id="move-sens-value">×1.0</span>
+          </div>
+        </div>
+        <div class="config-item">
+          <label for="lag-offset">センサーの遅れ補正（反応時間から引く）</label>
+          <div class="config-control">
+            <input type="range" id="lag-offset" min="0" max="80" value="0" step="5">
+            <span id="lag-offset-value">0 ms</span>
+          </div>
+        </div>
+        <p class="drawer-note">
+          号砲の時刻は、音がスピーカーから出るまでの遅れ（ブラウザが報告する値）を足して決めています。Bluetooth スピーカーやテレビにつなぐと、音の遅れが大きくなり反応時間が長く出ます。本体のスピーカーを使ってください。<br>
+          センサー側の遅れ（Bluetooth の送信待ち）は機器ごとに違い、既定では補正しません。
+        </p>
+
+        <h4>📼 生データの記録 / Recording</h4>
+        <label class="rec-toggle in-drawer">
+          <input type="checkbox" id="rec-toggle-2" checked><span class="rec-switch"></span>
+          <span class="rec-label">生データを記録する</span>
+        </label>
+        <p class="drawer-note">ON のあいだ、1 本ごとに、加速度・角速度の生データ（約 200 Hz）、判定に使った時刻・しきい値、入力した名前を、このブラウザに保存します。リロードしても残ります。リレーの記録と同じ場所に入ります。</p>
+        <label class="rec-toggle in-drawer">
+          <input type="checkbox" id="rec-auto" checked><span class="rec-switch"></span>
+          <span class="rec-label">1 本ごとに「ダウンロード」フォルダへも自動で保存する</span>
+        </label>
+        <p class="drawer-note">2 回目の保存のときに、Chrome が「複数のファイルのダウンロードを許可しますか」と聞いてきます。「許可」を選んでください。</p>
+        <div class="rec-actions">
+          <span class="rec-count" id="rec-count">保存済み 0 件</span>
+          <button type="button" class="hx-btn small" id="rec-all">すべて JSON で保存</button>
+          <button type="button" class="hx-btn small danger" id="rec-clear">消去</button>
+        </div>
+        <h4>🔊 サウンド / Sound</h4>
+        <div class="config-item">
+          <label for="volume-slider">音量 / Volume</label>
+          <div class="config-control">
+            <input type="range" id="volume-slider" min="0" max="1" value="0.85" step="0.05">
+            <span id="volume-value">85%</span>
+          </div>
+        </div>
+        <h4>🖥 グラフィック / Graphics</h4>
+        <div class="config-item">
+          <label for="quality-select">描画品質 / Quality</label>
+          <div class="config-control">
+            <select id="quality-select">
+              <option value="auto" selected>自動 / Auto</option>
+              <option value="high">高 / High</option>
+              <option value="medium">中 / Medium</option>
+              <option value="low">低 / Low</option>
+            </select>
+            <span id="fps-value">-- fps</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="loading"><div class="loading-inner"><span class="loading-title">SUPER VIRTUAL START</span><span class="loading-bar"><i></i></span><span class="loading-text">スタジアムを準備中… / Preparing the stadium</span></div></div>
+  </div>
+
+  <script>
+    // One ORPHE CORE, held in the hand. CoreToolkit.js creates the global `bles`; the switch it
+    // builds starts the connection from its own user gesture. main.js attaches the sensor callbacks.
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'SENSOR_VALUES', { forceDeviceSelection: true });
+    guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message' });
+  </script>
+</body>
+</html>

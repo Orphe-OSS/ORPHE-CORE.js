@@ -399,6 +399,92 @@
       "public_navigation": "listed"
     },
     {
+      "id": "game-super-start",
+      "title": "SUPER VIRTUAL START",
+      "path": "examples/GAME-SUPER-START/",
+      "type": "web-app",
+      "status": "public",
+      "audience": [
+        "game-player",
+        "educator"
+      ],
+      "value": "Reaction to the starting gun: hold one ORPHE CORE still on \"SET\" and move the instant the gun fires. Faster than 0.100 s is a false start. Raw data of every attempt can be recorded.",
+      "topics": [
+        "game",
+        "virtual sports",
+        "track",
+        "sprint start",
+        "reaction time",
+        "recording"
+      ],
+      "data": [
+        "convertedAcc",
+        "convertedGyro"
+      ],
+      "devices": 1,
+      "validation": [
+        "static-page-check",
+        "thumbnail-exists",
+        "owner-real-device-check"
+      ],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/super-start.png",
+      "sort_order": 206,
+      "links": {
+        "demo": "examples/GAME-SUPER-START/index.html",
+        "source": "examples/GAME-SUPER-START/"
+      },
+      "requires_device": true,
+      "device_count": 1,
+      "needs_real_device_validation": true,
+      "public_navigation": "listed"
+    },
+    {
+      "id": "game-super-relay",
+      "title": "SUPER VIRTUAL RELAY",
+      "path": "examples/GAME-SUPER-RELAY/",
+      "type": "web-app",
+      "status": "public",
+      "audience": [
+        "game-player",
+        "educator"
+      ],
+      "value": "Virtual 4×100m relay with one ORPHE CORE as the baton: shake it flat out on the track, then hold it still in the takeover zone to hand it on without losing speed. One to four players.",
+      "topics": [
+        "game",
+        "virtual sports",
+        "track",
+        "relay",
+        "baton pass",
+        "recording"
+      ],
+      "data": [
+        "convertedAcc",
+        "convertedGyro"
+      ],
+      "devices": 1,
+      "validation": [
+        "static-page-check",
+        "thumbnail-exists",
+        "owner-real-device-check"
+      ],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/super-relay.png",
+      "sort_order": 207,
+      "links": {
+        "demo": "examples/GAME-SUPER-RELAY/index.html",
+        "source": "examples/GAME-SUPER-RELAY/"
+      },
+      "requires_device": true,
+      "device_count": 1,
+      "needs_real_device_validation": true,
+      "public_navigation": "listed"
+    },
+    {
       "id": "game-sprint-100m-vs",
       "title": "100m Sprint VS",
       "path": "examples/GAME-SPRINT-100M-VS/",

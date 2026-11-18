@@ -41,7 +41,12 @@ function makeCanvas(w, h) {
   return c;
 }
 
-export function createWorld({ scene, renderer, logoImage }) {
+// `labels` lets another event held in the same stadium (GAME-SUPER-START, GAME-SUPER-RELAY) put
+// its own name on the LED boards and the big screen: { event, tag, tagAccent }.
+export function createWorld({ scene, renderer, logoImage, labels = {} }) {
+  const EVENT_NAME = labels.event || 'SUPER VIRTUAL HURDLE';
+  const EVENT_TAG = labels.tag || '110mH';
+  const EVENT_TAG_ACCENT = labels.tagAccent || 'FINAL';
   const rng = mulberry32(20261111);
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
   const FONT = '"Bebas Neue", "Arial Narrow", Impact, sans-serif';
@@ -562,14 +567,14 @@ export function createWorld({ scene, renderer, logoImage }) {
         g.addColorStop(0, '#10e0ff'); g.addColorStop(1, '#b4ff3a');
         ctx.fillStyle = g; ctx.fillRect(x, 0, cell, H);
         ctx.fillStyle = '#04101c'; ctx.font = `86px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('SUPER VIRTUAL HURDLE', x + cell / 2, H / 2 + 6, cell - 30);
+        ctx.fillText(EVENT_NAME, x + cell / 2, H / 2 + 6, cell - 30);
       },
       (x) => {
         ctx.fillStyle = '#060a16'; ctx.fillRect(x, 0, cell, H);
         ctx.fillStyle = '#ffffff'; ctx.font = `100px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('110mH', x + cell * 0.33, H / 2 + 6);
+        ctx.fillText(EVENT_TAG, x + cell * 0.33, H / 2 + 6, cell * 0.5);
         ctx.fillStyle = '#ffd34d';
-        ctx.fillText('FINAL', x + cell * 0.72, H / 2 + 6);
+        ctx.fillText(EVENT_TAG_ACCENT, x + cell * 0.72, H / 2 + 6, cell * 0.4);
       },
       (x) => {
         const g = ctx.createLinearGradient(x, 0, x + cell, 0);
@@ -898,9 +903,9 @@ export function createWorld({ scene, renderer, logoImage }) {
     ctx.fillStyle = bar; ctx.fillRect(0, 0, W, 10); ctx.fillRect(0, 84, W, 3);
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffffff'; ctx.font = `58px ${FONT}`; ctx.textAlign = 'left';
-    ctx.fillText('SUPER VIRTUAL HURDLE', 28, 50);
+    ctx.fillText(EVENT_NAME, 28, 50);
     ctx.fillStyle = '#ffd34d'; ctx.textAlign = 'right';
-    ctx.fillText('110mH FINAL', W - 28, 50);
+    ctx.fillText(`${EVENT_TAG} ${EVENT_TAG_ACCENT}`, W - 28, 50);
     ctx.textAlign = 'center';
     if (s.mode === 'title') {
       if (logoImage) {
@@ -1082,6 +1087,8 @@ export function createWorld({ scene, renderer, logoImage }) {
     hitHurdle(lane, i, speed) { const h = tippable.get(lane)?.[i]; if (!h || h.angle !== 0) return; h.falling = true; h.vel = -(3.2 + speed * 0.4); },
     clearHurdle(lane, i) { const h = tippable.get(lane)?.[i]; if (h) h.glow = 1; },
     burstGate() { if (gate.visible && gateBurst < 0) gateBurst = 0; },
+    /** Show / hide the finish gate (events with several legs only want it on the last one). */
+    setGate(visible) { gate.visible = !!visible; gateBurst = -1; gateUniforms.uBurst.value = 0; },
     /** Take-off zone of runner `slot`. Only records what to show; viewGuides() applies it per view. */
     setGuide(slot, visible, x = 0, zNear = 0, zFar = 0, active = 0, alpha = 0) {
       const g = guides[slot];

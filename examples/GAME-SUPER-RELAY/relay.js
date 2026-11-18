@@ -24,9 +24,15 @@ export const RELAY_DEFAULTS = {
   effortCurve: 0.7,    // speed target = vmax * effort^curve: half effort is still 62 % speed
   tauUp: 1.3,          // s: approach to the target speed when speeding up
   tauCoast: 2.5,       // s: decay when the shaking stops on the open track
-  tauPass: 8.0,        // s (hand time): decay of the baton speed in perfectly still hands
-  bleed: 0.22,         // extra decay per second (hand time) at roughness 1, growing with its square (capped at roughness 2)
-  graceSec: 0.35,      // hand time after entering the zone during which roughness is forgiven: nobody stops a shake instantly
+  // The three values below were set from 12 exchanges recorded on real sensors (2026-11-17, CORE 2.0
+  // and 3.0). With the first values (8 s / 0.22 / 0.35 s) a hand that came to rest 0.4 s after the
+  // line kept only 54 % of the speed: the reading stays above the limit for another 0.3-0.4 s while
+  // the gravity estimate settles, and still hands alone lost 16 %. Replayed with these values the
+  // same exchanges keep 86-88 % (rest reached in 0.7-0.8 s), 74-79 % (1.0 s), 58-68 % (1.4 s) and
+  // 15-30 % (kept shaking for 3 s or more).
+  tauPass: 30.0,       // s (hand time): decay of the baton speed in perfectly still hands (5 % over a still exchange)
+  bleed: 0.3,          // extra decay per second (hand time) at roughness 1, growing with its square (capped at roughness 2)
+  graceSec: 0.8,       // hand time after entering the zone during which roughness is forgiven: nobody stops a shake instantly, and the reading lags the hand
   creep: 2.0,          // m/s: the incoming runner never quite stops inside the zone, so a zone always ends
   passSec: 1.4,        // s (hand time) of perfectly still hands for the baton to change hands
   gaugeSlow: 0.5,      // the gauge fills this much slower at roughness 1 than at 0
@@ -255,9 +261,9 @@ export function gradePass(pass) {
   if (pass.over) return { grade: '×', ja: 'ゾーンオーバー' };
   if (pass.dropped) return { grade: 'D', ja: 'バトン落下' };
   const keep = pass.keep ?? 0;
-  if (keep >= 0.8) return { grade: 'S', ja: '流れるようなパス' };
-  if (keep >= 0.7) return { grade: 'A', ja: 'なめらか' };
-  if (keep >= 0.58) return { grade: 'B', ja: 'まずまず' };
-  if (keep >= 0.42) return { grade: 'C', ja: 'もたついた' };
+  if (keep >= 0.85) return { grade: 'S', ja: '流れるようなパス' };
+  if (keep >= 0.72) return { grade: 'A', ja: 'なめらか' };
+  if (keep >= 0.55) return { grade: 'B', ja: 'まずまず' };
+  if (keep >= 0.4) return { grade: 'C', ja: 'もたついた' };
   return { grade: 'D', ja: '詰まった' };
 }

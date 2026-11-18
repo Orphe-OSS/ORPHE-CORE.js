@@ -944,7 +944,7 @@ function updateRace(now, dt) {
     const keep = race.zone.enterV > 0 ? race.v / race.zone.enterV : 1;
     const el = $('pass-keep');
     el.textContent = `${Math.round(keep * 100)}%`;
-    el.dataset.level = keep >= 0.8 ? 's' : keep >= 0.7 ? 'a' : keep >= 0.58 ? 'b' : 'c';
+    el.dataset.level = keep >= 0.85 ? 's' : keep >= 0.72 ? 'a' : keep >= 0.55 ? 'b' : 'c';
   } else if (race.nextZone && race.nextZone.start - race.s <= NEAR_M) {
     setCue('near');
     $('rh-near-m').textContent = Math.max(0, race.nextZone.start - race.s).toFixed(0);

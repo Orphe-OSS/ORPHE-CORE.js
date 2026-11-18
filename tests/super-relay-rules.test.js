@@ -38,13 +38,15 @@ const flawless = team(0);
   assert.equal(race.splits.length, 4, 'a split at 100, 200, 300 and the finish');
   assert.ok(race.splits.every((t, i) => i === 0 || t > race.splits[i - 1]));
   assert.ok(Math.abs(race.splits[3] - race.time) < 1e-9, 'no penalty: the time is the last split');
-  assert.ok(race.time > 36.84 && race.time < 38.5, `a flawless race is world class but does not beat the real record of 36.84 (${race.time.toFixed(2)} s)`);
+  // 11.4 m/s all the way with still hands: at the pace of the real record (36.84 s), a little under it
+  // since the exchange was eased from recorded races (still hands now keep 95 % of the speed, not 84 %)
+  assert.ok(race.time > 36.2 && race.time < 38.5, `a flawless race is at world-record pace (${race.time.toFixed(2)} s)`);
   for (const p of of(events, 'pass')) {
     const z = race.zoneOf(p.k);
     assert.ok(p.s > z.start && p.s < z.end, `exchange ${p.k} inside the zone (${p.s.toFixed(1)} m)`);
     assert.ok(Math.abs(p.handSec - RELAY_DEFAULTS.passSec) < 0.05, 'still hands: the exchange takes passSec of real time');
     assert.ok(Math.abs(p.sec - RELAY_DEFAULTS.passSec * SLOW) < 0.05, 'and that much less of race time, because it is played in slow motion');
-    assert.ok(p.keep > 0.8 && p.keep < 0.88, `still hands keep about 84 % of the baton speed (${p.keep.toFixed(2)})`);
+    assert.ok(p.keep > 0.93 && p.keep < 0.97, `still hands keep about 95 % of the baton speed (${p.keep.toFixed(2)})`);
   }
   for (const p of race.passes) {
     assert.equal(p.over, false);
@@ -59,13 +61,16 @@ const flawless = team(0);
 {
   const runs = [0, 0.3, 0.6, 0.9].map((r) => run(team(r)).race);
   for (let i = 1; i < runs.length; i++) {
-    assert.ok(runs[i].passes[0].keep < runs[i - 1].passes[0].keep - 0.03, `keep falls with roughness (${runs.map((x) => x.passes[0].keep.toFixed(2)).join(' > ')})`);
+    assert.ok(runs[i].passes[0].keep < runs[i - 1].passes[0].keep - 0.01, `keep falls with roughness (${runs.map((x) => x.passes[0].keep.toFixed(2)).join(' > ')})`);
     assert.ok(runs[i].passes[0].handSec > runs[i - 1].passes[0].handSec + 0.1, 'the exchange takes longer');
     assert.ok(runs[i].time > runs[i - 1].time, 'the race is slower');
   }
-  assert.deepEqual(runs.map((x) => gradePass(x.passes[0]).grade), ['S', 'A', 'B', 'C'], 'the grades spread over the range of hands');
-  // a small twitch is not free: even well inside the limit it costs measurable speed
-  assert.ok(runs[0].passes[0].keep - runs[1].passes[0].keep > 0.04);
+  assert.deepEqual(runs.map((x) => gradePass(x.passes[0]).grade), ['S', 'S', 'A', 'B'], 'the grades spread over the range of hands');
+  // the tremor of a hand at rest (a CORE 3.0 held still reads 0.1-0.3) costs something, but little;
+  // near the limit it costs a lot
+  const d = runs[0].passes[0].keep - runs[1].passes[0].keep;
+  assert.ok(d > 0.01 && d < 0.04, `a resting tremor costs ${d.toFixed(3)}`);
+  assert.ok(runs[0].passes[0].keep - runs[3].passes[0].keep > 0.25);
 }
 
 // ---------------------------------------------------------------- past the limit
@@ -104,7 +109,7 @@ const flawless = team(0);
 }
 
 // ---------------------------------------------------------------- the first moments are forgiven
-// nobody stops a shake instantly: roughness in the first 0.35 s of the exchange costs no extra speed
+// nobody stops a shake instantly: roughness in the first 0.8 s of the exchange costs no extra speed
 {
   const late = run((race) => {
     if (!race.awaiting) return { effort: 1, rough: 3 };
@@ -116,7 +121,7 @@ const flawless = team(0);
   // but keeping it up after the grace does cost
   const later = run((race) => {
     if (!race.awaiting) return { effort: 1, rough: 3 };
-    return race.zone.handSec < 0.9 ? { effort: 1, rough: 3 } : { effort: 0, rough: 0 };
+    return race.zone.handSec < 1.8 ? { effort: 1, rough: 3 } : { effort: 0, rough: 0 };
   });
   assert.ok(later.race.passes[0].keep < clean.race.passes[0].keep - 0.25);
 }
@@ -225,7 +230,7 @@ const flawless = team(0);
   // which puts the recorded player level with the best of the other teams (40.5 s).
   const ordinary = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(700, 5.6), rough: 3 })).race;
   const elite = run((r) => (r.awaiting ? { target: 0, rough: 0.4 } : { target: v(5000), rough: 3 })).race;
-  assert.ok(ordinary.time > 36.5 && ordinary.time < 39, `ordinary all-out swing: ${ordinary.time.toFixed(1)} s`);
+  assert.ok(ordinary.time > 35.5 && ordinary.time < 39, `ordinary all-out swing: ${ordinary.time.toFixed(1)} s`);
   assert.ok(elite.time < ordinary.time - 3, `the strongest swing wins by a street (${elite.time.toFixed(1)} s against ${ordinary.time.toFixed(1)} s)`);
 }
 

@@ -23,6 +23,7 @@ and the "Version History" section of [CLAUDE.md](./CLAUDE.md).
 
 ### Changed
 
+- `examples/GAME-SUPER-RELAY`: the exchange no longer halves the baton speed of a hand that stops promptly. From 12 exchanges recorded on real sensors, the forgiven time after the zone line is 0.8 s (was 0.35 s: the reading stays above the limit for 0.3–0.4 s after the hand is still), still hands keep 95 % of the speed (was 84 %), and roughness after the grace costs a little more (`bleed` 0.22 → 0.3). Replayed, the recorded exchanges keep 86–88 % when rest is reached in 0.7–0.8 s (was 54–61 %) and 15–30 % when the shaking went on for 3 s or more (unchanged). Grades: S from 85 %, A from 72 %, B from 55 %, C from 40 %. Build id `20261118a`.
 - `examples/GAME-SUPER-PINGPONG`: the post-match report now prints on one A4 portrait sheet, with the players side by side (a two-player report used to run to four pages, one player to two). Scores, bars, rings and chips keep their colours even with the print dialog's "background graphics" option off, which is its default (the score bars used to vanish). Screen layout is unchanged.
 
 - `examples/GAME-DDR` is now presented as "ORPHE STEP BEAT" (ステップビート): game page title and description, README, landing pages, catalog and gallery, plus a new thumbnail taken from the current screen. The folder name and URL (`examples/GAME-DDR/`) stay the same so existing links keep working; historical notes inside the folder are left as written.

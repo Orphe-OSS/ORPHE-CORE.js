@@ -120,6 +120,8 @@ These already have public value and should stay in the catalog:
 - `examples/GESTURE-DEMO/`
 - `examples/GAME-HURDLE/`
 - `examples/GAME-SUPER-HURDLE/`
+- `examples/GAME-SUPER-START/`
+- `examples/GAME-SUPER-RELAY/`
 - `examples/GAME-UDON/`
 - `examples/MOVEYOURFEET/`
 - `examples/GAME-PINGPONG/`

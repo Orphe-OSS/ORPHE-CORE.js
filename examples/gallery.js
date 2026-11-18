@@ -151,6 +151,14 @@
       title: 'SUPER VIRTUAL HURDLE',
       value: '110mハードル走のスタジアム版です。3Dの夜のスタジアム、2人対戦、ORPHE INSOLE対応、ゴール後の分析つき。110mハードル走より動作が重めです。'
     },
+    'game-super-start': {
+      title: 'SUPER VIRTUAL START',
+      value: '号砲リアクションです。ORPHE COREを1個手に持ち、「SET」で止まって号砲の瞬間に動かします。0.100秒より速い反応はフライングです。'
+    },
+    'game-super-relay': {
+      title: 'SUPER VIRTUAL RELAY',
+      value: 'バーチャル 4×100m リレーです。ORPHE CORE 1個をバトンにして、走る区間は全力で振り、ゾーンでは止めて次の人へ渡します。1〜4人で遊べます。'
+    },
     'game-sprint-100m-vs': {
       title: '100m走 VS',
       value: '2台のORPHE COREで対戦するバーチャル短距離走です。'

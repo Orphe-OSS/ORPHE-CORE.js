@@ -139,6 +139,10 @@
       title: 'Sensor Calibration',
       value: 'キャリブレーション用にセンサーデータを記録・確認します。'
     },
+    'jump-over': {
+      title: 'ジャンプ・オーバー',
+      value: '加速度とクォータニオンから跳んだ高さを推定し、カメラの最高点の写真に「飛び越えたもの」を合成します。'
+    },
     'gesture-demo': {
       title: 'Gesture Demo',
       value: 'ORPHE COREのデータからジェスチャー検出を試す起点です。'

@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jump Over — ORPHE CORE</title>
+<link href="../../css/custom.css" rel="stylesheet">
+<link href="../../css/orphe_custom.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+<script src="../../js/site-analytics.js"></script>
+<script src="../../js/bootstrap.bundle.min.js"></script>
+<script src="../../js/ORPHE-CORE.js"></script>
+<script src="../../js/BleSharedBridge.js"></script>
+<script src="../../js/CoreToolkit.js"></script>
+<script src="jump.js"></script>
+<script src="objects.js"></script>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #181b22; --line: #2a2f3a; --text: #e8eaf0; --muted: #8a91a0;
+    --accent: #36d399; --warn: #f5a524; --air: #4aa3ff; --rec: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  /* ナビバー（ORPHE の example と同じ Bootstrap テーマ） */
+  .navbar { background: #0b0d11 !important; }
+  .brand-sub { font-size: 13px; letter-spacing: .18em; color: var(--muted); font-weight: 500; }
+  .tb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tb-group { display: flex; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid var(--line); }
+  .tb .btn { white-space: nowrap; }
+  #camSelect { width: 180px; background-color: #12151b; color: var(--text); border-color: var(--line); }
+  .settings { width: 300px; font-size: 13px; }
+  #helpModal code { color: #45e6e6; background: #12151b; padding: 1px 5px; }
+  .settings .dropdown-header { padding: 0; margin: 4px 0 6px; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+  .settings .form-control { width: 80px; display: inline-block; background: #12151b; color: var(--text); border-color: var(--line); }
+  @media (max-width: 700px) { .tb-group { border-left: 0; padding-left: 0; } #camSelect { width: 130px; } .lbl-wide { display: none; } }
+  button:not(.btn):not(.btn-close), select:not(.form-select) { background: var(--panel); color: var(--text); border: 1px solid var(--line);
+           padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; }
+  button.primary { background: var(--accent); color: #052; border-color: var(--accent); font-weight: 700; }
+  button:disabled { opacity: .45; cursor: default; }
+  .rec-btn { font-weight: 700; }
+  .rec-btn .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #dc3545; margin-right: 6px; vertical-align: 1px; }
+  .rec-btn.on { background: #dc3545 !important; border-color: #dc3545 !important; color: #fff !important; }
+  .rec-btn.on .dot { background: #fff; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  .status { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #555; margin-right: 5px; vertical-align: middle; }
+  .status.on .dot { background: var(--accent); }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 16px; display: grid; gap: 16px;
+         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); padding: 12px; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .full { grid-column: 1 / -1; }
+  h2 { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0 10px; }
+
+  #stage { position: relative; background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16 / 9; }
+  #stage video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  #noCam[hidden], #card[hidden], #cardCtl[hidden] { display: none; }
+  /* 全画面モード */
+  .iconbtn { position: absolute; top: 8px; right: 8px; width: 38px; height: 38px; padding: 0; display: grid; place-items: center;
+             background: rgba(20,22,28,.7); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; color: #fff; z-index: 3; }
+  .iconbtn .exit { display: none; }
+  .iconbtn i { font-size: 17px; line-height: 1; }
+  #fsWrap.fs .iconbtn .exit { display: inline; } #fsWrap.fs .iconbtn .enter { display: none; }
+  #fsSide, #fsModal { display: none; }
+  #fsWrap.fs { position: fixed; inset: 0; z-index: 1000; background: #000; display: flex; align-items: center; gap: 10px; padding: 8px; }
+  #fsWrap.fs #stage { flex: none; border-radius: 6px; aspect-ratio: auto; }
+  #fsWrap.fs #fsSide { display: flex; flex-direction: column; align-self: stretch; width: clamp(120px, 15vw, 240px); margin-left: auto;
+                       overflow-y: auto; gap: 8px; }
+  #fsTools { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  #fsTools button { width: 100%; font-size: 13px; padding: 8px 6px; }
+  #fsTools .status { font-size: 11px; }
+  .fsHead { color: var(--muted); font-size: 12px; font-weight: 700; padding: 2px 2px 0; }
+  #fsList img { width: 100%; display: block; border-radius: 6px; border: 1px solid var(--line); cursor: zoom-in; }
+  #fsList .cap { font-size: 12px; color: var(--text); margin: 3px 2px 0; display: flex; justify-content: space-between; }
+  #fsList .cap span:last-child { color: var(--muted); }
+  #fsList .empty { color: var(--muted); font-size: 12px; line-height: 1.6; }
+  #fsWrap.fs #fsModal:not([hidden]) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+                                      position: absolute; inset: 0; background: rgba(0,0,0,.88); z-index: 10; cursor: zoom-out; padding: 20px; }
+  #fsModal img { max-width: 100%; max-height: calc(100% - 40px); border-radius: 8px; }
+  #fsModal .cap { color: #fff; font-size: 15px; }
+  /* 合成ガイド（地面・基準の高さ・イラストの位置） */
+  #overlay { position: absolute; inset: 0; pointer-events: none; }
+  #overlay[hidden] { display: none; }
+  .hline { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid var(--accent); }
+  .hline.ref { border-top: 2px dashed var(--warn); }
+  .handle { position: absolute; left: 8px; transform: translateY(-50%); pointer-events: auto; touch-action: none;
+            cursor: ns-resize; background: var(--accent); color: #021; font-size: 12px; font-weight: 700;
+            padding: 5px 10px; border-radius: 99px; white-space: nowrap; user-select: none; box-shadow: 0 1px 6px rgba(0,0,0,.5); }
+  .hline.ref .handle { background: var(--warn); }
+  #objPrev { position: absolute; pointer-events: auto; touch-action: none; cursor: ew-resize; transform: translateX(-50%);
+             opacity: .8; user-select: none; -webkit-user-drag: none; }
+  #objPrev img { height: 100%; display: block; pointer-events: none; }
+  #calRow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); margin-top: 10px; }
+  #calRow input[type=number] { width: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px; font-size: 14px; }
+  #calRow label { display: flex; gap: 5px; align-items: center; }
+
+  /* 自動校正 */
+  #calCanvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #calGuide { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10,12,16,.35); padding: 12px; }
+  #calGuide[hidden] { display: none; }
+  #calGuide.top { place-items: start center; background: transparent; }
+  #calGuide.top .box { padding: 10px 16px; background: rgba(20,23,30,.85); }
+  #calGuide.top .title { margin: 2px 0; font-size: clamp(14px, 2.4vw, 17px); }
+  #calGuide.top .sub { font-size: 12px; }
+  #calGuide.top .bar { margin: 6px auto 0; height: 6px; }
+  #calGuide.top .btns { margin-top: 6px; }
+  #calGuide.top button { padding: 4px 12px; font-size: 12px; }
+  #calGuide .box { background: rgba(20,23,30,.92); border: 1px solid var(--line); border-radius: 14px;
+                   padding: 18px 22px; text-align: center; max-width: 92%; box-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  #calGuide .step { font-size: 12px; color: var(--muted); letter-spacing: .05em; }
+  #calGuide .title { font-size: clamp(16px, 3vw, 22px); font-weight: 800; margin: 6px 0; line-height: 1.5; }
+  #calGuide .sub { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  #calGuide .count { font-size: clamp(40px, 9vw, 72px); font-weight: 800; color: var(--accent); line-height: 1.1; }
+  #calGuide .bar { height: 8px; background: #2a2f3a; border-radius: 4px; overflow: hidden; margin: 10px auto 2px; width: 220px; max-width: 100%; }
+  #calGuide .bar div { height: 100%; background: var(--accent); width: 0; transition: width .1s; }
+  #calGuide input { font-size: 22px; width: 110px; text-align: center; background: var(--bg); color: var(--text);
+                    border: 1px solid var(--line); border-radius: 8px; padding: 6px; margin: 8px 4px; }
+  #calGuide .btns { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+  #calGuide .ok { color: var(--accent); }
+  #calGuide .ng { color: var(--warn); }
+  #noCam { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 14px; text-align: center; padding: 20px; }
+  #phase { position: absolute; top: 10px; left: 10px; font-size: 13px; padding: 4px 12px; border-radius: 99px;
+           background: rgba(20,22,28,.75); color: var(--muted); }
+  #phase.air { background: var(--air); color: #021; }
+  #phase.done { background: var(--accent); color: #021; }
+  #recInfo { position: absolute; top: 10px; right: 56px; font-size: 13px; padding: 4px 10px; border-radius: 99px;
+             background: var(--rec); color: #fff; display: none; font-variant-numeric: tabular-nums; }
+  #liveBig { position: absolute; bottom: 10px; right: 14px; font-size: clamp(36px, 7vw, 64px); font-weight: 800;
+             text-shadow: 0 2px 10px rgba(0,0,0,.7); font-variant-numeric: tabular-nums; }
+  #liveBig small { font-size: .4em; margin-left: 4px; }
+  .ctl-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  #msg { color: var(--warn); font-size: 13px; min-height: 1.3em; margin-top: 8px; }
+
+  #result canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: #000; }
+  #resultEmpty { color: var(--muted); font-size: 14px; padding: 40px 10px; text-align: center; line-height: 1.8; }
+  #frameInfo { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  #gallery a { color: var(--text); text-decoration: none; font-size: 13px; }
+  #gallery img { width: 100%; border-radius: 8px; display: block; border: 1px solid var(--line); }
+  #gallery .cap { display: flex; justify-content: space-between; margin-top: 4px; }
+  #gallery .cap span:last-child { color: var(--muted); }
+  details { font-size: 13px; color: var(--muted); }
+  details label { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  input[type=range] { width: 200px; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.7; }
+</style>
+</head>
+<body>
+<nav class="navbar navbar-dark sticky-top border-bottom border-secondary py-2">
+  <div class="container-fluid tb">
+    <a class="navbar-brand d-flex align-items-center gap-2 me-auto" href="../index.html" title="ORPHE-CORE.js Examples">
+      <img src="../../images/orphe.svg" alt="ORPHE" height="22">
+      <span class="brand-sub">JUMP OVER</span>
+    </a>
+
+    <!-- センサー接続は CoreToolkit（スイッチ・バッテリー・Hz・設定） -->
+    <div class="tb-group" id="toolkit_placeholder" title="センサー"></div>
+
+    <div class="tb-group" title="カメラ">
+      <select id="camSelect" class="form-select form-select-sm" title="カメラ"><option value="">カメラ: 自動</option></select>
+      <button id="camBtn" class="btn btn-sm btn-outline-light"><i class="bi bi-camera-video"></i> <span class="lbl">カメラ開始</span></button>
+    </div>
+
+    <div class="tb-group">
+      <button id="autoCal" class="btn btn-sm btn-outline-light" title="身長を基準に、地面と高さの線を自動で合わせる">
+        <i class="bi bi-person-bounding-box"></i> <span class="lbl-wide">自動校正</span></button>
+      <button id="recBtn" class="btn btn-sm btn-outline-danger rec-btn" title="生データ・動画・校正情報を zip で保存">
+        <span class="dot"></span><span id="recText">録画</span></button>
+    </div>
+
+    <div class="tb-group">
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-light" data-bs-toggle="dropdown" data-bs-auto-close="outside" title="設定" aria-label="設定">
+          <i class="bi bi-gear"></i></button>
+        <div class="dropdown-menu dropdown-menu-end dropdown-menu-dark p-3 settings">
+          <div class="dropdown-header">校正</div>
+          <label class="d-flex align-items-center gap-2">基準の高さ
+            <input type="number" id="refCm" class="form-control form-control-sm" min="10" max="300" step="1" value="170"> cm</label>
+          <button id="resetHeight" class="btn btn-sm btn-outline-light w-100 mt-2">身長を入力し直して自動校正</button>
+          <div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" id="showGuide" checked>
+            <label class="form-check-label" for="showGuide">ガイド線を表示</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="composite" checked>
+            <label class="form-check-label" for="composite">写真にイラストを合成</label></div>
+          <hr class="dropdown-divider">
+          <div class="dropdown-header">録画</div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="recVideo" checked>
+            <label class="form-check-label" for="recVideo">動画も保存する</label></div>
+          <hr class="dropdown-divider">
+          <div class="dropdown-header">写真</div>
+          <label for="sync" class="d-flex justify-content-between">タイミング補正 <span id="syncVal">0 ms</span></label>
+          <input type="range" class="form-range" id="sync" min="-300" max="300" step="10" value="0">
+        </div>
+      </div>
+      <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#helpModal" title="使い方" aria-label="使い方">
+        <i class="bi bi-question-lg"></i></button>
+    </div>
+  </div>
+</nav>
+
+<div id="ble-support-message" class="alert alert-warning m-3" style="display:none;"></div>
+
+<main>
+  <section class="panel">
+    <h2>ライブ</h2>
+    <div id="fsWrap">
+    <div id="stage">
+      <video id="video" autoplay muted playsinline></video>
+      <div id="noCam">上の <i class="bi bi-camera-video"></i>「カメラ開始」を押してください<br>（スマホのカメラの使い方は <i class="bi bi-question-lg"></i> ヘルプ）</div>
+      <span id="phase">待機中</span>
+      <span id="recInfo"></span>
+      <div id="liveBig"></div>
+      <div id="overlay">
+        <div class="hline ref" id="refLine"><span class="handle" id="refHandle">基準の高さ</span></div>
+        <div class="hline" id="groundLine"><span class="handle" id="groundHandle">地面</span></div>
+        <div id="objPrev"><img alt=""></div>
+      </div>
+      <canvas id="calCanvas"></canvas>
+      <div id="calGuide" hidden></div>
+      <button id="fsBtn" class="iconbtn" title="全画面" aria-label="全画面">
+        <i class="bi bi-arrows-fullscreen enter"></i><i class="bi bi-fullscreen-exit exit"></i>
+      </button>
+    </div>
+    <aside id="fsSide">
+      <div id="fsTools">
+        <span class="status" id="fsStatus"><span class="dot"></span><span class="txt">センサー未接続</span></span>
+        <button id="fsConnect" class="btn btn-sm btn-primary"><i class="bi bi-bluetooth"></i> <span class="lbl">ORPHE CORE を接続</span></button>
+        <button data-mirror="autoCal"></button>
+        <button data-mirror="recBtn"></button>
+      </div>
+      <div class="fsHead">記録</div><div id="fsList"></div>
+    </aside>
+    <div id="fsModal" hidden><img alt=""><div class="cap"></div></div>
+    </div>
+    <div id="msg"></div>
+  </section>
+
+  <section class="panel" id="result">
+    <h2>最高点の記録</h2>
+    <div id="resultEmpty">センサーを接続して、1 秒ほど静止してからジャンプ！<br>いちばん高く跳んだ瞬間の写真と、飛び越えられたものが表示されます。</div>
+    <canvas id="card" hidden></canvas>
+    <div class="ctl-row" id="cardCtl" hidden>
+      <button id="prevF">◀ 前のコマ</button><button id="nextF">次のコマ ▶</button>
+      <button id="saveCard">画像を保存</button>
+      <span id="frameInfo"></span>
+    </div>
+  </section>
+
+  <section class="panel full">
+    <h2>今日の記録 <span id="bestText" style="font-weight:400"></span></h2>
+    <div id="gallery"></div>
+    <p class="hint" id="galleryEmpty">まだ記録はありません。</p>
+  </section>
+
+</main>
+
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-light border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="helpTitle">使い方</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body hint" style="font-size:14px">
+        <ol>
+          <li><i class="bi bi-camera-video"></i> <b>カメラ開始</b> → 上部の CoreToolkit のスイッチで <b>ORPHE CORE に接続</b>（加速度 ±16G / ジャイロ ±2000dps で接続します）</li>
+          <li><i class="bi bi-person-bounding-box"></i> <b>自動校正</b>: 画面の指示に従うと、地面と基準の高さ（身長）の線が自動で合います。
+            手動で合わせる場合は、緑の線を<b>地面</b>、オレンジの線を<b>高さの分かる位置</b>（立った人の頭のてっぺん等）に合わせ、
+            <i class="bi bi-gear"></i> 設定で「基準の高さ」を入力。イラストは<b>跳ぶ場所</b>まで横にドラッグ。</li>
+          <li>1 秒ほど静止してからジャンプ。最高点の写真と、飛び越えたものが表示されます。</li>
+          <li><span class="rec-btn"><span class="dot"></span></span><b>録画</b>: 停止すると生データ・動画・ジャンプ一覧・校正情報を zip で保存します。</li>
+          <li>映像右上の <i class="bi bi-arrows-fullscreen"></i> で全画面（右側に記録画像、クリックで拡大）。</li>
+        </ol>
+        <h6 class="mt-3">スマホのカメラを使う</h6>
+        <p><b>iPhone（Mac の場合）</b>: Mac の「連係カメラ」で iPhone がカメラ一覧に出ます。iPhone を Mac の近くに置き、カメラの一覧から iPhone を選んでください。センサーは Mac に接続します。<br>
+        <b>Android</b>: Android の Chrome は Web Bluetooth に対応しているので、スマホだけで計測できます。GitHub Pages など https で公開されたこのページを、スマホの Chrome でそのまま開いてください（カメラと Web Bluetooth は https でのみ使えます）。<br>
+        <b>iPhone 単体</b>: iOS のブラウザは Web Bluetooth に対応していないため、センサー接続には PC か Android が必要です。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const detector = new JumpDetector();
+const clock = new SerialClock();
+const video = $('video');
+
+// =============== カメラ: 直近のフレームをリングバッファに保持 ===============
+const FRAME_KEEP_MS = 1600;
+let frames = [];      // {ts (performance.now 基準), c: canvas}
+let pool = [];
+let stream = null;
+let frameLoopId = 0;
+
+function grabFrame(ts) {
+  if (!video.videoWidth) return;
+  const W = Math.min(video.videoWidth, 800), H = Math.round(W * video.videoHeight / video.videoWidth);
+  const c = pool.pop() || document.createElement('canvas');
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  c.getContext('2d').drawImage(video, 0, 0, W, H);
+  frames.push({ ts, c });
+  while (frames.length && frames[0].ts < ts - FRAME_KEEP_MS) pool.push(frames.shift().c);
+}
+
+function startFrameLoop() {
+  const id = ++frameLoopId;
+  if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+    const cb = (now, md) => {
+      if (id !== frameLoopId) return;
+      // captureTime（撮影時刻）があればそれを、無ければ表示時刻からおおよその遅延を引く
+      grabFrame(md.captureTime ?? (md.expectedDisplayTime - 80));
+      video.requestVideoFrameCallback(cb);
+    };
+    video.requestVideoFrameCallback(cb);
+  } else {
+    (function loop() { if (id !== frameLoopId) return; grabFrame(performance.now() - 100); setTimeout(loop, 1000 / 30); })();
+  }
+}
+
+async function listCameras() {
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  const sel = $('camSelect'), cur = sel.value;
+  sel.innerHTML = '<option value="">カメラ: 自動</option>' + devs.map((d, i) =>
+    `<option value="${d.deviceId}">${d.label || 'カメラ ' + (i + 1)}</option>`).join('');
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) { $('msg').textContent = 'このブラウザ / 接続ではカメラが使えません（https か localhost で開いてください）'; return; }
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  const id = $('camSelect').value;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        ...(id ? { deviceId: { exact: id } } : { facingMode: 'environment' }),
+        width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 60 },
+      },
+    });
+    video.srcObject = stream;
+    await video.play();
+    $('stage').style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;  // ガイド座標 = 映像座標にする
+    $('noCam').hidden = true;
+    $('camBtn').querySelector('.lbl').textContent = 'カメラ再起動';
+    frames.forEach(f => pool.push(f.c)); frames = [];
+    startFrameLoop();
+    await listCameras();
+    if (!id) {
+      const s = stream.getVideoTracks()[0].getSettings();
+      if (s.deviceId) $('camSelect').value = s.deviceId;
+    }
+    const s = stream.getVideoTracks()[0].getSettings();
+    $('msg').textContent = `カメラ: ${s.width}×${s.height} ${Math.round(s.frameRate || 0)}fps`;
+  } catch (err) {
+    console.error(err); $('msg').textContent = 'カメラを開始できません: ' + (err.message || err.name);
+  }
+}
+$('camBtn').onclick = startCamera;
+$('camSelect').onchange = () => { if (stream) startCamera(); };
+$('sync').oninput = () => { $('syncVal').textContent = `${$('sync').value} ms`; };
+
+// =============== センサー ===============
+// センサー時刻 [s] → performance.now() [ms] への変換。パケットの到着遅延は常に正なので、
+// 「到着時刻 − センサー時刻」の直近 5 秒間の最小値を時計のずれとみなす。
+let offs = [];
+function noteOffset(now, tSensor) {
+  offs.push({ now, v: now - tSensor * 1000 });
+  while (offs.length && offs[0].now < now - 5000) offs.shift();
+}
+const sensorToWall = t => t * 1000 + Math.min(...offs.map(o => o.v));
+
+// CoreToolkit のスイッチで接続する。ジャンプの衝撃（10〜20G）と足の回転を測るため ±16G / ±2000dps。
+buildCoreToolkit($('toolkit_placeholder'), 'ORPHE CORE', 0, 'SENSOR_VALUES', { range: { acc: 16, gyro: 2000 } });
+guardCoreToolkitBluetooth({ coreIds: [0], messageElement: '#ble-support-message',
+  message: 'このブラウザでは Web Bluetooth が使えません。PC / Android の Chrome で開いてください。' });
+const ble = bles[0];   // bles は CoreToolkit.js が用意する
+ble.setup();
+let connected = false, sampleIdx = 0;
+
+ble.gotConvertedAcc = function (acc) {
+  const now = performance.now();
+  const t = acc.serial_number !== undefined ? clock.time(acc.serial_number, acc.packet_number) : clock.arrival(now);  // CORE 2.0 はシリアル番号なし
+  if (acc.packet_number === 3 || acc.serial_number === undefined) noteOffset(now, t);
+  const q = ble.quat, g = ble.converted_gyro || { x: 0, y: 0, z: 0 };
+  if (recording) {
+    rec.rows.push([1, Date.now(), sampleIdx, Math.round(t * 1000), acc.serial_number ?? '', acc.packet_number ?? '',
+      Math.round(acc.timestamp ?? 0), acc.x.toFixed(5), acc.y.toFixed(5), acc.z.toFixed(5),
+      g.x.toFixed(5), g.y.toFixed(5), g.z.toFixed(5), q.w.toFixed(5), q.x.toFixed(5), q.y.toFixed(5), q.z.toFixed(5)].join(','));
+  }
+  sampleIdx++;
+  handleEvent(detector.push(t, acc, q));
+};
+// 接続・切断（再接続を含む）のたびに時計と検出器をリセットする
+ble.onConnect = function () {
+  connected = true; detector.reset(); clock.reset(); offs = [];
+  setConnectUI(true);
+};
+ble.onDisconnect = function () { connected = false; setConnectUI(false); };
+ble.onError = function (err) { console.error(err); $('msg').textContent = 'センサー: ' + String(err?.message || err); };
+function setConnectUI(on) {
+  $('fsStatus').className = on ? 'status on' : 'status';
+  $('fsStatus').querySelector('.txt').textContent = on ? 'センサー接続中' : 'センサー未接続';
+  const b = $('fsConnect');
+  b.querySelector('.lbl').textContent = on ? '切断' : 'ORPHE CORE を接続';
+  b.classList.toggle('btn-primary', !on); b.classList.toggle('btn-outline-light', on);
+}
+// 全画面の接続ボタンは CoreToolkit のスイッチを操作する
+$('fsConnect').onclick = () => { const sw = $('switch_ble0'); if (sw && !sw.disabled) sw.click(); };
+
+// =============== ジャンプ処理 ===============
+function setPhase(text, cls) { const el = $('phase'); el.textContent = text; el.className = cls || ''; }
+let records = [];   // {cm, flight, apexWall, img(dataURL), objName, time}
+let current = null; // 最新ジャンプ: {e, cm, frames:[{ts,c}], idx, apexWall}
+
+function handleEvent(e) {
+  if (!e) return;
+  if (e.type === 'takeoff') { setPhase('空中', 'air'); return; }
+  if (e.type === 'cancel') { setPhase('待機中'); return; }
+  if (e.type === 'rejected') { setPhase('待機中'); $('msg').textContent = e.reason; return; }
+  setPhase('着地', 'done');
+  $('liveBig').innerHTML = `${e.cm.toFixed(1)}<small>cm</small>`;
+  const takeoffWall = sensorToWall(e.takeoffT), landingWall = sensorToWall(e.landingT);
+  const apexWall = sensorToWall(e.takeoffT + e.apexT);
+  // カメラの遅延ぶん、少し待ってからフレームを取り出す
+  setTimeout(() => captureJump(e, takeoffWall, landingWall, apexWall), 350);
+  setTimeout(() => { if ($('phase').textContent === '着地') setPhase('待機中'); }, 1500);
+}
+
+function captureJump(e, takeoffWall, landingWall, apexWall) {
+  // 前回のジャンプで保持していたフレームをプールへ返す
+  if (current) current.frames.forEach(f => pool.push(f.c));
+  const keep = [], rest = [];
+  for (const f of frames) (f.ts >= takeoffWall - 150 && f.ts <= landingWall + 150 ? keep : rest).push(f);
+  frames = rest;
+  const target = apexWall + Number($('sync').value);
+  let idx = -1, best = Infinity;
+  keep.forEach((f, i) => { const d = Math.abs(f.ts - target); if (d < best) { best = d; idx = i; } });
+  current = { e, cm: e.cm, frames: keep, idx, apexWall, time: new Date() };
+  const rec_i = records.length;
+  records.push({ cm: e.cm, flight: e.flight, apexWall, time: current.time, img: null });
+  current.recIndex = rec_i;
+  if (recording) rec.jumps.push({ e, takeoffWall, landingWall, apexWall, recIndex: rec_i });
+  renderCard();
+}
+
+// ---------- 記録カード（写真 + 比べたもの） ----------
+async function renderCard() {
+  if (!current) return;
+  const { cm } = current;
+  const f = current.frames[current.idx];
+  const card = $('card'), g = card.getContext('2d');
+  const H = 720, panelW = 520;
+  const photoW = f ? Math.round(H * f.c.width / f.c.height) : 960;
+  card.width = photoW + panelW; card.height = H;
+  g.fillStyle = '#0f1115'; g.fillRect(0, 0, card.width, H);
+
+  // 写真
+  if (f) g.drawImage(f.c, 0, 0, photoW, H);
+  else { g.fillStyle = '#8a91a0'; g.font = '28px sans-serif'; g.textAlign = 'center'; g.fillText('（カメラ映像なし）', photoW / 2, H / 2); g.textAlign = 'left'; }
+  if (f && $('composite').checked) await drawInPhoto(g, photoW, H, cm);
+  g.fillStyle = 'rgba(15,17,21,.75)'; roundRect(g, 18, 18, 190, 44, 22); g.fill();
+  g.fillStyle = '#36d399'; g.font = 'bold 24px sans-serif'; g.fillText('▲ 最高点', 38, 49);
+
+  // 右パネル
+  const x0 = photoW, { cleared, next } = compareHeight(cm);
+  previewObj = cleared || next; layoutGuide();   // ガイドのプレビューも最新の記録のものにする
+  g.fillStyle = '#181b22'; g.fillRect(x0, 0, panelW, H);
+  g.fillStyle = '#e8eaf0'; g.font = 'bold 84px sans-serif';
+  g.fillText(cm.toFixed(1), x0 + 30, 112);
+  const numW = g.measureText(cm.toFixed(1)).width;
+  g.font = 'bold 34px sans-serif'; g.fillStyle = '#8a91a0'; g.fillText('cm', x0 + 40 + numW, 112);
+  g.font = 'bold 32px sans-serif'; g.fillStyle = '#36d399';
+  if (cleared) {
+    wrapText(g, `${cleared.name}（約${cleared.cm}cm）を飛び越えた！`, x0 + 30, 166, panelW - 60, 42);
+  } else {
+    g.fillStyle = '#f5a524'; wrapText(g, 'もう少し！', x0 + 30, 162, panelW - 60, 36);
+  }
+  g.font = '24px sans-serif'; g.fillStyle = '#8a91a0';
+  wrapText(g, next ? `次の目標: ${next.name}（あと ${(next.cm - cm).toFixed(1)} cm）` : '全部飛び越えた！すごい！', x0 + 30, 254, panelW - 60, 30);
+
+  // 実寸比のイラスト
+  const groundY = H - 70, topY = 310;
+  const maxCm = Math.max(cm, cleared?.cm || 0, next?.cm || 0) * 1.12;
+  const px = (groundY - topY) / maxCm;
+  let x = x0 + 50;
+  for (const [o, alpha] of [[cleared, 1], [next, 0.35]]) {
+    if (!o) continue;
+    const img = await objectImage(o);
+    const h = o.cm * px, w = h * o.w / 100;
+    g.globalAlpha = alpha; g.drawImage(img, x, groundY - h, w, h); g.globalAlpha = 1;
+    g.fillStyle = alpha < 1 ? '#5c6270' : '#8a91a0'; g.font = '16px sans-serif';
+    g.fillText(`${o.cm}cm`, x, groundY + 24);
+    x += w + 40;
+  }
+  g.strokeStyle = '#2a2f3a'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(x0 + 20, groundY); g.lineTo(x0 + panelW - 20, groundY); g.stroke();
+  const jy = groundY - cm * px;
+  g.strokeStyle = '#4aa3ff'; g.setLineDash([10, 8]); g.lineWidth = 3;
+  g.beginPath(); g.moveTo(x0 + 20, jy); g.lineTo(x0 + panelW - 20, jy); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#4aa3ff'; g.font = 'bold 22px sans-serif';
+  g.fillText(`あなたの足 ${cm.toFixed(1)}cm`, x0 + panelW - 240, jy - 10);
+  g.fillStyle = '#5c6270'; g.font = '16px sans-serif';
+  g.fillText(`${current.time.toLocaleString()} · 高さは靴底の最高点（目安）`, x0 + 20, H - 18);
+
+  $('card').hidden = false; $('cardCtl').hidden = false; $('resultEmpty').hidden = true;
+  const n = current.frames.length;
+  $('frameInfo').textContent = f
+    ? `コマ ${current.idx + 1}/${n}（最高点の推定時刻との差 ${Math.round(f.ts - current.apexWall)} ms）`
+    : 'カメラ映像がありません';
+  $('prevF').disabled = !f || current.idx <= 0;
+  $('nextF').disabled = !f || current.idx >= n - 1;
+
+  const r = records[current.recIndex];
+  r.img = card.toDataURL('image/jpeg', 0.88); r.name = cleared?.name || '';
+  renderGallery();
+}
+
+// ---------- 合成ガイド（地面・基準の高さ・イラストの位置） ----------
+// 位置はすべて映像に対する割合 (0〜1)。写真上の 1 cm = (ground − ref) / refCm × 写真の高さ
+const CAL_KEY = 'jumpcam.calibration';
+let cal = { ground: 0.85, ref: 0.25, refCm: 170, objX: 0.72 };
+try { Object.assign(cal, JSON.parse(localStorage.getItem(CAL_KEY)) || {}); } catch (_) {}
+const saveCal = () => { try { localStorage.setItem(CAL_KEY, JSON.stringify(cal)); } catch (_) {} };
+let previewObj = OBJECTS.find(o => o.id === 'cone');
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+async function layoutGuide() {
+  $('groundLine').style.top = `${cal.ground * 100}%`;
+  $('refLine').style.top = `${cal.ref * 100}%`;
+  $('refHandle').textContent = `基準の高さ ${cal.refCm} cm`;
+  const hPct = previewObj.cm * (cal.ground - cal.ref) / cal.refCm * 100;
+  const el = $('objPrev');
+  el.style.height = `${hPct}%`; el.style.top = `${cal.ground * 100 - hPct}%`; el.style.left = `${cal.objX * 100}%`;
+  el.title = `${previewObj.name}（約${previewObj.cm}cm）: 横にドラッグして跳ぶ場所へ`;
+  const img = el.querySelector('img'), src = (await objectImage(previewObj)).src;
+  if (img.src !== src) img.src = src;
+}
+
+function makeDraggable(el, onMove) {
+  el.addEventListener('pointerdown', ev => {
+    ev.preventDefault(); el.setPointerCapture(ev.pointerId);
+    const move = e => {
+      const r = $('stage').getBoundingClientRect();
+      onMove((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+      layoutGuide();
+    };
+    const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); saveCal(); };
+    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
+  });
+}
+makeDraggable($('groundHandle'), (x, y) => { cal.ground = clamp(y, cal.ref + 0.03, 1); });
+makeDraggable($('refHandle'), (x, y) => { cal.ref = clamp(y, 0, cal.ground - 0.03); });
+makeDraggable($('objPrev'), (x) => { cal.objX = clamp(x, 0.02, 0.98); });
+$('refCm').value = cal.refCm;
+$('refCm').onchange = () => { cal.refCm = clamp(Number($('refCm').value) || 170, 10, 300); $('refCm').value = cal.refCm; saveCal(); layoutGuide(); renderCard(); };
+$('showGuide').onchange = () => { $('overlay').hidden = !$('showGuide').checked; };
+$('composite').onchange = () => renderCard();
+layoutGuide();
+
+// =============== 自動校正 ===============
+// 背景（誰もいない映像）を覚え、入ってきた人を背景との差分で切り出す。
+// 人の頭のてっぺん = 基準の高さ（身長）、足の裏 = 地面、人の中心 = イラストの位置。
+const HEIGHT_KEY = 'jumpcam.height';
+const loadHeight = () => { try { return Number(localStorage.getItem(HEIGHT_KEY)) || 0; } catch (_) { return 0; } };
+const saveHeight = h => { try { localStorage.setItem(HEIGHT_KEY, String(h)); } catch (_) {} };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+class CalCancelled extends Error {}
+let calib = null;   // 実行中の校正 { cancelled }
+
+function showGuideBox(html, top = false) {
+  const el = $('calGuide'); el.innerHTML = `<div class="box">${html}</div>`; el.hidden = false;
+  el.classList.toggle('top', top);   // STEP 3 は本人が映るよう上に小さく出す
+}
+const CANCEL_BTN = '<div class="btns"><button data-act="cancel">中止</button></div>';
+$('calGuide').addEventListener('click', ev => {
+  if (ev.target.dataset.act === 'cancel' && calib) { calib.cancelled = true; calib.wake?.(); }
+});
+function checkCal() { if (!calib || calib.cancelled) throw new CalCancelled(); }
+
+/** 身長の入力（初回のみ） */
+function askHeight() {
+  return new Promise((resolve, reject) => {
+    showGuideBox(`<div class="step">STEP 1 / 3</div>
+      <div class="title">身長を入力してください</div>
+      <div><input type="number" id="calHeight" min="80" max="230" step="1" placeholder="170" inputmode="numeric"> cm</div>
+      <div class="sub">靴をはいた状態なら、その分（2〜3 cm）を足してください</div>
+      <div class="btns"><button data-act="cancel">中止</button><button class="primary" id="calHeightOk">次へ</button></div>`);
+    const inp = $('calHeight'); inp.focus();
+    const ok = () => {
+      const h = Number(inp.value);
+      if (!(h >= 80 && h <= 230)) { inp.style.borderColor = 'var(--warn)'; inp.focus(); return; }
+      saveHeight(h); resolve(h);
+    };
+    $('calHeightOk').onclick = ok;
+    inp.onkeydown = e => { if (e.key === 'Enter') ok(); };
+    calib.wake = () => reject(new CalCancelled());
+  });
+}
+
+// ---- 画像処理（解析は横 320 px に縮小して行う） ----
+const workC = document.createElement('canvas');
+const workG = workC.getContext('2d', { willReadFrequently: true });
+function readFrame() {
+  const W = 320, H = Math.round(W * video.videoHeight / video.videoWidth);
+  if (workC.width !== W || workC.height !== H) { workC.width = W; workC.height = H; }
+  workG.imageSmoothingQuality = 'high';   // 1/4 縮小でのちらつきを減らす（サイズ変更で戻るので毎回設定）
+  workG.drawImage(video, 0, 0, W, H);
+  return { W, H, d: workG.getImageData(0, 0, W, H).data };
+}
+
+async function captureBackground(n = 12) {
+  let acc = null, W, H;
+  for (let k = 0; k < n; k++) {
+    const f = readFrame(); W = f.W; H = f.H;
+    if (!acc) acc = new Float32Array(W * H * 3);
+    for (let i = 0, j = 0; i < f.d.length; i += 4, j += 3) { acc[j] += f.d[i]; acc[j + 1] += f.d[i + 1]; acc[j + 2] += f.d[i + 2]; }
+    await sleep(60); checkCal();
+  }
+  for (let j = 0; j < acc.length; j++) acc[j] /= n;
+  return { W, H, bg: acc };
+}
+
+/** 背景差分 → 影の除去 → ノイズ除去 → 最大の塊（= 人）の上端・下端 */
+function segmentPerson(f, B) {
+  const { W, H, d } = f, N = W * H, bg = B.bg;
+  // カメラの自動露出で全体の明るさが変わるので、中央値の明るさ比で背景を補正する
+  const ratios = [];
+  for (let p = 0; p < N; p += 7) {
+    const lb = bg[p * 3] + bg[p * 3 + 1] + bg[p * 3 + 2], li = d[p * 4] + d[p * 4 + 1] + d[p * 4 + 2];
+    if (lb > 30) ratios.push(li / lb);
+  }
+  ratios.sort((a, b) => a - b);
+  const gain = clamp(ratios[ratios.length >> 1] || 1, 0.6, 1.6);
+
+  const raw = new Uint8Array(N);
+  for (let p = 0; p < N; p++) {
+    const br = bg[p * 3] * gain, bgc = bg[p * 3 + 1] * gain, bb = bg[p * 3 + 2] * gain;
+    const ir = d[p * 4], ig = d[p * 4 + 1], ib = d[p * 4 + 2];
+    const dr = ir - br, dg = ig - bgc, db = ib - bb;
+    if (dr * dr + dg * dg + db * db < 42 * 42) continue;           // 背景とほぼ同じ色
+    const bn = br * br + bgc * bgc + bb * bb + 1;
+    const r = (ir * br + ig * bgc + ib * bb) / bn;                  // 背景に対する明るさの比
+    if (r > 0.3 && r < 0.95) {                                       // 暗くなっただけ（影）なら背景扱い
+      const cr = ir - r * br, cg = ig - r * bgc, cb = ib - r * bb;
+      if (Math.sqrt(cr * cr + cg * cg + cb * cb) < 0.1 * Math.sqrt(bn) + 10) continue;
+    }
+    raw[p] = 1;
+  }
+  // 3×3 の多数決でノイズを消す
+  const m = new Uint8Array(N);
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const p = y * W + x;
+    const s = raw[p - W - 1] + raw[p - W] + raw[p - W + 1] + raw[p - 1] + raw[p] + raw[p + 1] + raw[p + W - 1] + raw[p + W] + raw[p + W + 1];
+    if (s >= 5) m[p] = 1;
+  }
+  // 連結成分（塊）ごとの面積と外接矩形
+  const lab = new Int32Array(N), stack = new Int32Array(N);
+  const comps = [null];
+  for (let p = 0; p < N; p++) {
+    if (!m[p] || lab[p]) continue;
+    const L = comps.length; let sp = 0;
+    const c = { a: 0, x0: W, x1: 0, y0: H, y1: 0, sx: 0 };
+    stack[sp++] = p; lab[p] = L;
+    while (sp) {
+      const q = stack[--sp], x = q % W, y = (q / W) | 0;
+      c.a++; c.sx += x;
+      if (x < c.x0) c.x0 = x; if (x > c.x1) c.x1 = x; if (y < c.y0) c.y0 = y; if (y > c.y1) c.y1 = y;
+      if (x > 0 && m[q - 1] && !lab[q - 1]) { lab[q - 1] = L; stack[sp++] = q - 1; }
+      if (x < W - 1 && m[q + 1] && !lab[q + 1]) { lab[q + 1] = L; stack[sp++] = q + 1; }
+      if (q >= W && m[q - W] && !lab[q - W]) { lab[q - W] = L; stack[sp++] = q - W; }
+      if (q < N - W && m[q + W] && !lab[q + W]) { lab[q + W] = L; stack[sp++] = q + W; }
+    }
+    comps.push(c);
+  }
+  let main = 0;
+  for (let l = 1; l < comps.length; l++) if (!main || comps[l].a > comps[main].a) main = l;
+  if (!main) return { W, H, area: 0, gain };
+
+  // 体の真上にある塊（顔が背景色に近く首で途切れた頭・髪など）も人に含める
+  // （髪の下端〜肩は顔と首の分で、体の高さの 2 割前後あく）
+  const keep = new Uint8Array(comps.length); keep[main] = 1;
+  const body = comps[main], bodyH = body.y1 - body.y0 + 1;
+  let curTop = body.y0, area = body.a, sx = body.sx, changed = true;
+  while (changed) {
+    changed = false;
+    for (let l = 1; l < comps.length; l++) {
+      const c = comps[l];
+      if (keep[l] || c.a < N * 0.0003) continue;
+      const ccx = c.sx / c.a;
+      if (ccx >= body.x0 && ccx <= body.x1 && c.y0 < curTop && c.y1 >= curTop - bodyH * 0.25 && c.y1 < body.y1
+          && c.x1 - c.x0 < body.x1 - body.x0) {
+        keep[l] = 1; curTop = c.y0; area += c.a; sx += c.sx; changed = true;
+      }
+    }
+  }
+
+  const rowCnt = new Int32Array(H);
+  for (let p = 0; p < N; p++) if (keep[lab[p]]) rowCnt[(p / W) | 0]++;
+  const minRow = Math.max(2, Math.round(W * 0.006));
+  let rawTop = -1, bottom = -1;
+  for (let y = 0; y < H; y++) if (rowCnt[y] >= minRow) { if (rawTop < 0) rawTop = y; bottom = y; }
+  if (rawTop < 0) return { W, H, area: 0, gain };
+
+  // 頭が写っているか: 上端付近の幅が肩幅より十分狭ければ頭。
+  // 肩幅のままなら頭を検出できていない → 肩の高さ ≒ 身長の 82% から頭のてっぺんを推定する。
+  const hgt = bottom - rawTop + 1;
+  let shoulderW = 0;
+  for (let y = rawTop; y <= rawTop + hgt * 0.35; y++) shoulderW = Math.max(shoulderW, rowCnt[y]);
+  const topRows = [];
+  for (let y = rawTop; y <= rawTop + Math.max(2, hgt * 0.08); y++) topRows.push(rowCnt[y]);
+  topRows.sort((a, b) => a - b);
+  const headW = topRows[topRows.length >> 1];
+  const headFound = headW < shoulderW * 0.65;
+  const SHOULDER_RATIO = 0.82;
+  const top = headFound ? rawTop : (bottom + 1) - (bottom + 1 - rawTop) / SHOULDER_RATIO;
+  return { W, H, area, top, rawTop, bottom, cx: sx / area, lab, keep, gain,
+           headFound, headW, shoulderW, method: headFound ? 'head' : 'shoulder_estimate', merged: keep.reduce((a, b) => a + b, 0) - 1 };
+}
+
+function drawSegmentation(s, color, c = $('calCanvas')) {
+  const g = c.getContext('2d');
+  if (c.width !== s.W || c.height !== s.H) { c.width = s.W; c.height = s.H; }
+  g.clearRect(0, 0, s.W, s.H);
+  if (!s.area) return;
+  const img = g.createImageData(s.W, s.H);
+  for (let p = 0; p < s.W * s.H; p++) if (s.keep[s.lab[p]]) { img.data[p * 4 + 2] = 255; img.data[p * 4 + 1] = 160; img.data[p * 4 + 3] = 90; }
+  g.putImageData(img, 0, 0);
+  g.strokeStyle = color; g.lineWidth = 1.5;
+  for (const y of [s.top, s.bottom + 1]) {
+    g.setLineDash(y === s.top && !s.headFound ? [4, 3] : []);   // 推定した頭の位置は点線
+    g.beginPath(); g.moveTo(0, y); g.lineTo(s.W, y); g.stroke();
+  }
+  g.setLineDash([]);
+  if (!s.headFound) {                                  // 検出できた上端（肩）は赤
+    g.strokeStyle = '#ef4444'; g.beginPath(); g.moveTo(0, s.rawTop); g.lineTo(s.W, s.rawTop); g.stroke();
+  }
+}
+function clearSegmentation() { const c = $('calCanvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); }
+
+/**
+ * 人が画面に入り、1.5 秒静止するまで待つ。
+ * 静止が始まった時点（run[0]）からの経過で判定する（ループ周期に左右されない）。
+ * 頭の検出が一瞬乱れる程度の外れ値（連続 2 コマまで）では静止をリセットしない。
+ */
+async function waitForStillPerson(B, height) {
+  const STILL_MS = 1500, TIMEOUT_MS = 30000, MAX_BAD = 3, t0 = performance.now();
+  let run = [], bad = 0, lastProblem = '', prevLoop = t0;
+  const st = calib.stats = { loops: 0, loopMs: 0, validFrames: 0, resets: 0, maxStillMs: 0, outliers: 0 };
+  const med = k => { const v = run.map(h => h[k]).sort((a, b) => a - b); return v[v.length >> 1]; };
+  while (performance.now() - t0 < TIMEOUT_MS) {
+    checkCal();
+    const s = segmentPerson(readFrame(), B);
+    calib.lastSeg = s;
+    const { W, H } = s;
+    let problem = '';
+    if (!s.area || s.area < W * H * 0.008 || s.bottom - s.top < H * 0.2) problem = '人が見つかりません。カメラの前に全身が映るように立ってください';
+    else if (s.rawTop <= 1 || s.top < 0) problem = '頭が画面からはみ出しています。カメラから少し離れてください';
+    else if (s.bottom >= H - 2) problem = '足元が映っていません。カメラを下に向けるか、離れてください';
+    else if (s.area > W * H * 0.6) problem = '明るさが大きく変わりました。照明を固定して「中止」→ やり直してください';
+    drawSegmentation(s, problem ? '#f5a524' : '#36d399');
+
+    const now = performance.now();
+    st.loops++; st.loopMs += now - prevLoop; prevLoop = now;
+    const smp = problem ? null : { t: now, top: s.top, bottom: s.bottom + 1, cx: s.cx };
+    if (smp) st.validFrames++;
+    const dev = !smp || (run.length > 0 && (Math.abs(smp.top - med('top')) > H * 0.015 ||
+      Math.abs(smp.bottom - med('bottom')) > H * 0.015 || Math.abs(smp.cx - med('cx')) > W * 0.03));
+    if (dev) {
+      if (run.length) st.outliers++;
+      if (++bad >= MAX_BAD) {                      // 続けてずれた → 動いた（または居なくなった）
+        if (run.length) st.resets++;
+        run = smp ? [smp] : []; bad = 0;
+      }
+    } else { bad = 0; run.push(smp); }
+    if (problem) lastProblem = problem;
+
+    const stillMs = run.length ? now - run[0].t : 0;
+    st.maxStillMs = Math.max(st.maxStillMs, stillMs);
+    if (run.length >= 5 && stillMs >= STILL_MS) {
+      return { top: med('top') / H, ground: med('bottom') / H, cx: med('cx') / W, seg: s };
+    }
+    const prog = Math.min(1, stillMs / STILL_MS);
+    showGuideBox(`<div class="step">STEP 3 / 3</div>
+      <div class="title">画面の中に入って、静止してください</div>
+      <div class="sub ${problem ? 'ng' : 'ok'}">${problem || (prog > 0 ? 'そのまま動かないでください…' : `跳ぶ場所に全身が映るように、まっすぐ立ってください（身長 ${height} cm）`)}</div>
+      <div class="bar"><div style="width:${Math.round(prog * 100)}%"></div></div>${CANCEL_BTN}`, true);
+    await sleep(100);
+  }
+  if (st.validFrames < 10) throw new Error(lastProblem || '人を検出できませんでした。背景がすっきりした明るい場所で、全身が映るように立ってください。');
+  throw new Error('静止を確認できませんでした。跳ぶ場所で、まっすぐ立ったまま 2 秒ほど動かずにいてください。');
+}
+
+// ---- 校正の記録（録画の zip に calibration.csv と画像として入る） ----
+let calLog = [];          // 校正ごとの値
+let calDebug = null;      // 最後の校正の画像 { background, frame, mask }（PNG Blob）
+const canvasBlob = (c, type = 'image/png', q) => new Promise(res => c.toBlob(res, type, q));
+async function logCalibration({ ok, reason = '', height, B, seg: s }) {
+  const v = x => (x === undefined || x === null || Number.isNaN(x)) ? '' : (typeof x === 'number' ? +x.toFixed(4) : x);
+  calLog.push({
+    time: new Date().toLocaleString(), result: ok ? 'ok' : 'failed', reason,
+    height_cm: v(height), ref_norm: ok ? v(cal.ref) : '', ground_norm: ok ? v(cal.ground) : '', objX_norm: ok ? v(cal.objX) : '',
+    method: v(s?.method), head_found: v(s?.headFound), top_px: v(s?.top), raw_top_px: v(s?.rawTop), bottom_px: v(s?.bottom),
+    work_w: v(s?.W), work_h: v(s?.H), head_width_px: v(s?.headW), shoulder_width_px: v(s?.shoulderW),
+    person_area_px: v(s?.area), merged_parts: v(s?.merged), exposure_gain: v(s?.gain),
+    video: `${video.videoWidth}x${video.videoHeight}`, camera: stream?.getVideoTracks()[0]?.label || '',
+    loop_ms: v(calib?.stats?.loops ? calib.stats.loopMs / calib.stats.loops : undefined), valid_frames: v(calib?.stats?.validFrames),
+    still_resets: v(calib?.stats?.resets), outlier_frames: v(calib?.stats?.outliers), max_still_ms: v(calib?.stats?.maxStillMs),
+  });
+  const imgs = {};
+  if (B) {
+    const c = document.createElement('canvas'); c.width = B.W; c.height = B.H;
+    const g = c.getContext('2d'), im = g.createImageData(B.W, B.H);
+    for (let p = 0, j = 0; p < B.W * B.H; p++, j += 3) { im.data.set([B.bg[j], B.bg[j + 1], B.bg[j + 2], 255], p * 4); }
+    g.putImageData(im, 0, 0); imgs.background = await canvasBlob(c);
+  }
+  if (workC.width) {
+    imgs.frame = await canvasBlob(workC);                      // 判定に使った最後のフレーム
+    if (s && s.area) {
+      const ov = document.createElement('canvas'); ov.width = s.W; ov.height = s.H;
+      drawSegmentation(s, ok ? '#36d399' : '#f5a524', ov);
+      const c = document.createElement('canvas'); c.width = s.W; c.height = s.H;
+      const g = c.getContext('2d'); g.drawImage(workC, 0, 0); g.drawImage(ov, 0, 0);
+      imgs.mask = await canvasBlob(c);
+    }
+  }
+  calDebug = imgs;
+}
+
+function calibrationCSV() {
+  const cols = ['time', 'result', 'reason', 'height_cm', 'ref_norm', 'ground_norm', 'objX_norm', 'method', 'head_found',
+    'top_px', 'raw_top_px', 'bottom_px', 'work_w', 'work_h', 'head_width_px', 'shoulder_width_px', 'person_area_px',
+    'merged_parts', 'exposure_gain', 'video', 'camera',
+    'loop_ms', 'valid_frames', 'still_resets', 'outlier_frames', 'max_still_ms'];
+  const esc = x => /[",\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : x;
+  const rows = calLog.map(r => cols.map(k => esc(r[k] ?? '')).join(','));
+  // 保存時点の設定（手で線を動かした後の値）
+  rows.push(cols.map(k => esc({ time: new Date().toLocaleString(), result: 'current_setting', height_cm: cal.refCm,
+    ref_norm: +cal.ref.toFixed(4), ground_norm: +cal.ground.toFixed(4), objX_norm: +cal.objX.toFixed(4),
+    video: `${video.videoWidth}x${video.videoHeight}` }[k] ?? '')).join(','));
+  return '﻿' + cols.join(',') + '\n' + rows.join('\n') + '\n';
+}
+
+async function runAutoCalibration() {
+  if (calib) return;
+  if (!stream) await startCamera();
+  if (!stream || !video.videoWidth) { $('msg').textContent = '先にカメラを開始してください'; return; }
+  calib = { cancelled: false };
+  $('overlay').hidden = true;
+  let height = 0, B = null;
+  try {
+    height = loadHeight() || await askHeight();
+    checkCal();
+    for (let s = 3; s > 0; s--) {
+      showGuideBox(`<div class="step">STEP 2 / 3</div>
+        <div class="title">誰も映っていない状態にしてください</div>
+        <div class="count">${s}</div>
+        <div class="sub">画面の外に出て、そのまま待ってください</div>${CANCEL_BTN}`);
+      await sleep(1000); checkCal();
+    }
+    showGuideBox(`<div class="step">STEP 2 / 3</div><div class="title">背景を記録しています…</div>
+      <div class="sub">画面に入らないでください</div>${CANCEL_BTN}`);
+    B = await captureBackground();
+    const r = await waitForStillPerson(B, height);
+    cal.ref = r.top; cal.ground = r.ground; cal.refCm = height; cal.objX = clamp(r.cx, 0.02, 0.98);
+    $('refCm').value = height;
+    saveCal(); layoutGuide(); renderCard();
+    await logCalibration({ ok: true, height, B, seg: r.seg });
+    $('overlay').hidden = !$('showGuide').checked;
+    showGuideBox(`<div class="title ok">校正が完了しました</div>
+      <div class="sub">オレンジの線 = 頭のてっぺん（${height} cm）、緑の線 = 地面<br>
+      ${r.seg.headFound ? '' : '頭がはっきり映らなかったため、肩の高さから頭の位置を推定しました<br>'}ずれていたら線をドラッグして微調整できます</div>`);
+    await sleep(2500);
+  } catch (err) {
+    if (!(err instanceof CalCancelled)) {
+      console.error(err);
+      await logCalibration({ ok: false, reason: err.message, height, B, seg: calib?.lastSeg }).catch(console.error);
+      showGuideBox(`<div class="title ng">校正できませんでした</div><div class="sub">${err.message}</div>
+        <div class="btns"><button data-act="close">閉じる</button></div>`);
+      await new Promise(res => { $('calGuide').querySelector('[data-act=close]').onclick = res; setTimeout(res, 8000); });
+    }
+  } finally {
+    calib = null;
+    $('calGuide').hidden = true; clearSegmentation();
+    $('overlay').hidden = !$('showGuide').checked;
+  }
+}
+$('autoCal').onclick = runAutoCalibration;
+$('resetHeight').onclick = () => { try { localStorage.removeItem(HEIGHT_KEY); } catch (_) {} runAutoCalibration(); };
+
+/** 写真の地面の上に、超えたもののイラストを実寸比で置き、足の最高点の線を引く */
+async function drawInPhoto(g, W, H, cm) {
+  const k = (cal.ground - cal.ref) / cal.refCm * H;   // 写真上の px / cm
+  if (!(k > 0)) return;
+  const { cleared, next } = compareHeight(cm);
+  const o = cleared || next, ghost = !cleared;
+  const gy = cal.ground * H, ox = cal.objX * W;
+  const img = await objectImage(o);
+  const h = o.cm * k, w = h * o.w / 100;
+
+  g.save();
+  g.fillStyle = 'rgba(0,0,0,.35)';                     // 接地の影
+  g.beginPath(); g.ellipse(ox, gy, w * 0.6, Math.max(4, w * 0.08), 0, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = ghost ? 0.55 : 1;
+  g.drawImage(img, ox - w / 2, gy - h, w, h);
+  g.globalAlpha = 1;
+
+  const label = (text, x, y, bg, fg, align) => {
+    g.font = 'bold 22px sans-serif';
+    const tw = g.measureText(text).width, bx = align === 'right' ? x - tw - 24 : align === 'center' ? x - tw / 2 - 12 : x;
+    g.fillStyle = bg; roundRect(g, bx, y - 18, tw + 24, 36, 18); g.fill();
+    g.fillStyle = fg; g.fillText(text, bx + 12, y + 8);
+  };
+  label(ghost ? `${o.name} まで あと ${(o.cm - cm).toFixed(1)}cm` : `${o.name} 約${o.cm}cm`,
+        ox, Math.max(24, gy - h - 26), 'rgba(15,17,21,.8)', ghost ? '#f5a524' : '#36d399', 'center');
+
+  const jy = gy - cm * k;                              // 足の最高点の高さ
+  if (jy > 0) {
+    g.strokeStyle = '#4aa3ff'; g.lineWidth = 3; g.setLineDash([14, 10]);
+    g.beginPath(); g.moveTo(0, jy); g.lineTo(W, jy); g.stroke(); g.setLineDash([]);
+    label(`▲ ${cm.toFixed(1)} cm`, W - 16, jy - 24, '#4aa3ff', '#021', 'right');
+  }
+  g.restore();
+}
+
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function wrapText(g, text, x, y, maxW, lh) {
+  let line = '';
+  for (const ch of text) {
+    if (g.measureText(line + ch).width > maxW && line) { g.fillText(line, x, y); line = ch; y += lh; }
+    else line += ch;
+  }
+  g.fillText(line, x, y);
+}
+
+$('prevF').onclick = () => { if (current && current.idx > 0) { current.idx--; renderCard(); } };
+$('nextF').onclick = () => { if (current && current.idx < current.frames.length - 1) { current.idx++; renderCard(); } };
+const pad2 = n => String(n).padStart(2, '0');
+const stamp = d => `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+$('saveCard').onclick = () => {
+  const r = records[current.recIndex];
+  download(r.img, `jump_${stamp(r.time)}_${r.cm.toFixed(1)}cm.jpg`);
+};
+
+function renderGallery() {
+  const best = records.reduce((m, r) => Math.max(m, r.cm), 0);
+  $('bestText').textContent = records.length ? `（${records.length} 回 · ベスト ${best.toFixed(1)} cm）` : '';
+  $('galleryEmpty').hidden = records.length > 0;
+  $('gallery').innerHTML = records.slice().reverse().filter(r => r.img).map(r =>
+    `<a href="${r.img}" download="jump_${stamp(r.time)}_${r.cm.toFixed(1)}cm.jpg" title="クリックで保存">
+       <img src="${r.img}" alt="">
+       <div class="cap"><span><b>${r.cm.toFixed(1)} cm</b>${r.cm === best ? ' 🏆' : ''}</span><span>${r.time.toLocaleTimeString()}</span></div>
+     </a>`).join('');
+  renderFsList();
+}
+
+// =============== 録画（生データ CSV + 動画 + ジャンプ一覧） ===============
+let recording = false, rec = null, recTimer = 0;
+const RAW_HEADER = 'core,pc_ms,sample_idx,t_ms,serial,packet,core_ts_ms,ax_g,ay_g,az_g,gx_dps,gy_dps,gz_dps,qw,qx,qy,qz';
+
+$('recBtn').onclick = () => recording ? stopRecording() : startRecording();
+
+function startRecording() {
+  rec = { rows: [], jumps: [], start: new Date(), startWall: performance.now(), videoChunks: [], mr: null, videoStartWall: null };
+  if ($('recVideo').checked && stream && window.MediaRecorder) {
+    const type = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t));
+    try {
+      rec.mr = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 8e6 } : {});
+      const R = rec;   // 停止後の最後の dataavailable でも同じ録画に入れる
+      R.mr.ondataavailable = ev => { if (ev.data.size) R.videoChunks.push(ev.data); };
+      R.mr.onstart = () => { R.videoStartWall = performance.now(); };
+      rec.mr.start(1000);
+    } catch (err) { console.error(err); rec.mr = null; $('msg').textContent = '動画の録画を開始できませんでした（生データのみ記録します）'; }
+  }
+  recording = true;
+  $('recBtn').classList.add('on'); $('recText').textContent = '停止して保存';
+  $('recInfo').style.display = 'block';
+  if (!connected) $('msg').textContent = 'センサー未接続のため、生データはまだ記録されていません';
+  recTimer = setInterval(() => {
+    const s = Math.floor((performance.now() - rec.startWall) / 1000);
+    $('recInfo').textContent = `● REC ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')} · ${rec.rows.length} サンプル`;
+  }, 250);
+}
+
+async function stopRecording() {
+  recording = false; clearInterval(recTimer);
+  $('recBtn').classList.remove('on'); $('recText').textContent = '録画'; $('recInfo').style.display = 'none';
+  $('recBtn').disabled = true; $('msg').textContent = '保存しています…';
+  const r = rec; rec = null;
+  try {
+    const base = `orphe_raw_${stamp(r.start)}`;
+    const files = [];
+    if (r.rows.length) files.push({ name: `${base}_samples.csv`, data: RAW_HEADER + '\n' + r.rows.join('\n') + '\n' });
+
+    let videoName = '';
+    if (r.mr) {
+      await new Promise(res => { r.mr.onstop = res; r.mr.stop(); });
+      const type = r.mr.mimeType || 'video/webm';
+      videoName = `${base}_video.${type.includes('mp4') ? 'mp4' : 'webm'}`;
+      files.push({ name: videoName, data: new Blob(r.videoChunks, { type }) });
+    }
+    if (r.jumps.length) {
+      // 動画内の最高点の時刻つき一覧（動画から教師データを作るときに使える）
+      const v0 = r.videoStartWall;
+      const lines = ['jump_no,takeoff_t_ms,landing_t_ms,flight_ms,apex_video_time_s,raw_cm,est_cm,cleared_object,video_file,image_file'];
+      for (const [i, { e, apexWall, recIndex }] of r.jumps.entries()) {
+        const obj = compareHeight(e.cm).cleared, img = records[recIndex]?.img;
+        const imgName = img ? `jump_${String(i + 1).padStart(2, '0')}_${e.cm.toFixed(1)}cm.jpg` : '';
+        if (img) files.push({ name: imgName, data: await (await fetch(img)).blob() });
+        lines.push([i + 1, Math.round(e.takeoffT * 1000), Math.round(e.landingT * 1000), Math.round(e.flight * 1000),
+          v0 != null ? ((apexWall - v0) / 1000).toFixed(3) : '', e.raw.toFixed(2), e.cm.toFixed(2), obj ? obj.name : '', videoName, imgName].join(','));
+      }
+      files.push({ name: `${base}_jumps.csv`, data: '﻿' + lines.join('\n') + '\n' });
+    }
+    // 校正の値と画像（画面の debug 用）
+    files.push({ name: 'calibration.csv', data: calibrationCSV() });
+    if (calDebug) for (const [k, b] of Object.entries(calDebug)) if (b) files.push({ name: `calibration_${k}.png`, data: b });
+
+    download(await makeZip(files), `orphe_session_${stamp(r.start)}.zip`);
+    $('msg').textContent = `保存しました（zip）: 生データ ${r.rows.length} サンプル` + (videoName ? ' / 動画' : '') +
+      (r.jumps.length ? ` / ジャンプ ${r.jumps.length} 回` : '') + ` / 校正 ${calLog.length} 件`;
+  } catch (err) {
+    console.error(err); $('msg').textContent = '保存に失敗しました: ' + (err.message || err);
+  } finally { $('recBtn').disabled = false; }
+}
+
+// ---- zip（無圧縮）の作成。動画はすでに圧縮済みなので圧縮はしない ----
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(buf) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 255] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+async function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], central = [];
+  const d = new Date();
+  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  let offset = 0;
+  for (const f of files) {
+    const data = typeof f.data === 'string' ? enc.encode(f.data) : new Uint8Array(await f.data.arrayBuffer());
+    const name = enc.encode(f.name), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);  // UTF-8 のファイル名
+    lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true);
+    parts.push(lh.buffer, name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(ch.buffer, name);
+    offset += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((n, b) => n + b.byteLength, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, end.buffer], { type: 'application/zip' });
+}
+
+function download(data, name) {
+  const url = typeof data === 'string' ? data : URL.createObjectURL(data);
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  if (typeof data !== 'string') setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+window.addEventListener('beforeunload', ev => { if (recording) { ev.preventDefault(); ev.returnValue = ''; } });
+
+// =============== 全画面モード（映像 + 右側に記録画像） ===============
+const fsWrap = $('fsWrap');
+const isFs = () => fsWrap.classList.contains('fs');
+function fitStage() {
+  const st = $('stage');
+  if (!isFs()) { st.style.width = st.style.height = ''; return; }
+  // ガイド線の座標が映像と一致するよう、映像と同じ縦横比のまま最大化する
+  const ar = video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 16 / 9;
+  const side = $('fsSide').getBoundingClientRect().width;
+  const w = Math.max(100, Math.min(fsWrap.clientWidth - side - 30, (fsWrap.clientHeight - 16) * ar));
+  st.style.width = `${w}px`; st.style.height = `${w / ar}px`;
+}
+async function setFullscreen(on) {
+  fsWrap.classList.toggle('fs', on);
+  $('fsBtn').title = on ? '全画面を終了' : '全画面';
+  if (on) {
+    renderFsList();
+    if (!document.fullscreenElement) {
+      if (fsWrap.requestFullscreen) await fsWrap.requestFullscreen().catch(() => {});
+      else if (fsWrap.webkitRequestFullscreen) fsWrap.webkitRequestFullscreen();   // Safari（無ければ画面いっぱいの表示のみ）
+    }
+  } else {
+    $('fsModal').hidden = true;
+    if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+  }
+  fitStage();
+}
+$('fsBtn').onclick = () => setFullscreen(!isFs());
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && isFs()) setFullscreen(false); else fitStage();
+});
+window.addEventListener('resize', fitStage);
+video.addEventListener('loadedmetadata', fitStage);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('fsModal').hidden) $('fsModal').hidden = true;
+  else if (isFs() && !document.fullscreenElement) setFullscreen(false);
+});
+
+function renderFsList() {
+  const best = records.reduce((m, r) => Math.max(m, r.cm), 0);
+  const list = records.map((r, i) => ({ r, i })).filter(x => x.r.img).reverse();
+  $('fsList').innerHTML = list.length
+    ? list.map(({ r, i }) => `<div><img src="${r.img}" data-i="${i}" alt="">
+        <div class="cap"><span><b>${r.cm.toFixed(1)} cm</b>${r.cm === best ? ' 🏆' : ''}</span><span>${r.time.toLocaleTimeString()}</span></div></div>`).join('')
+    : '<div class="empty">ジャンプすると、ここに記録が並びます</div>';
+}
+$('fsList').onclick = e => {
+  const i = e.target.dataset?.i; if (i === undefined) return;
+  const r = records[i], m = $('fsModal');
+  m.querySelector('img').src = r.img;
+  m.querySelector('.cap').textContent = `${r.cm.toFixed(1)} cm · ${r.time.toLocaleTimeString()}（クリックで閉じる）`;
+  m.hidden = false;
+};
+$('fsModal').onclick = () => { $('fsModal').hidden = true; };
+renderFsList();
+
+// 全画面の操作ボタン: 通常画面のボタンと同じ動作・同じ表示（文字・色・無効状態）にする
+for (const el of document.querySelectorAll('#fsTools [data-mirror]')) {
+  const src = $(el.dataset.mirror);
+  const sync = () => { el.innerHTML = src.innerHTML; el.className = src.className; if ('disabled' in src) el.disabled = src.disabled; };
+  sync();
+  new MutationObserver(sync).observe(src, { attributes: true, childList: true, subtree: true, characterData: true });
+  if (el.tagName === 'BUTTON') el.onclick = () => src.click();
+}
+
+// 権限がすでにあればカメラ一覧を出しておく
+navigator.mediaDevices?.enumerateDevices && listCameras().catch(() => {});
+</script>
+</body>
+</html>

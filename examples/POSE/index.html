@@ -1,120 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 
 <head>
   <meta charset="utf-8">
-  <title>Pose + ORPHE CORE — MediaPipe Body Tracking</title>
+  <title>Pose + ORPHE CORE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="../../css/custom.css" rel="stylesheet">
-  <link href="../../css/orphe_custom.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link href="./style.css" rel="stylesheet">
-  <link rel="stylesheet" href="./bootstrap-icons.css">
-
-  <script src="./camera_utils.js" crossorigin="anonymous"></script>
-  <script src="./control_utils.js" crossorigin="anonymous"></script>
-  <script src="./control_utils_3d.js" crossorigin="anonymous"></script>
-  <script src="./drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="./pose.js" crossorigin="anonymous"></script>
-  <script src="./p5.js"></script>
-<script src="../../js/site-analytics.js"></script>
+  <script src="../../js/site-analytics.js"></script>
 </head>
 
-<body class="text-black">
-
-  <div class="container">
-    <nav class="navbar navbar-brand bg-light">
-      <div class="container-fluid">
-        <a class="navbar-brand text-black fw-normal" href="./">
-          <i class="bi bi-person-bounding-box"></i>
-          POSE
-        </a>
-        <div class="form-check form-switch">
-          <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble0" value=0
-            onchange="toggleCoreModule(this);">
-
-          <label class="form-check-label ms-0" for="switch_ble0">
-          </label>
-          <span class="text-muted" id="icon_bluetooth0"><i class="bi bi-bluetooth"></i></span>
-          <span class="text-muted" id="icon_reset0" value=0 title="Reset motion sensor and activity log"
-            onclick="resetCoreModule(this);"><i class=" bi bi-arrow-repeat"></i></span>
-          <span class="text-muted" id="icon_battery0">
-            <i class="bi bi-battery"></i>
-          </span>
-          <span class="text-muted" id="icon_brightness0" number=0 role="button" value=0
-            onclick="toggleBrightness(this);">
-            <i class="bi bi-brightness-alt-high position-relative">
-              <span class="position-absolute top-0 start-100 translate-middle badge text-muted bg-light"
-                style="font-size:0.2em;" id="led_number0">
-                1
-              </span>
-            </i>
-          </span>
-        </div>
-        <div class="form-check form-switch">
-          <input class="form-check-input position-relative" type="checkbox" role="switch" id="switch_ble1" value=1
-            onchange="toggleCoreModule(this);">
-
-          <label class="form-check-label ms-0" for="switch_ble">
-          </label>
-          <span class="text-muted" id="icon_bluetooth1"><i class="bi bi-bluetooth"></i></span>
-          <span class="text-muted" id="icon_reset1" value=1 title="Reset motion sensor and activity log"
-            onclick="resetCoreModule(this);"><i class="bi bi-arrow-repeat"></i></span>
-          <span class="text-muted" id="icon_battery1">
-            <i class="bi bi-battery"></i>
-          </span>
-          <span class="text-muted" id="icon_brightness1" number=0 value=1 role="button"
-            onclick="toggleBrightness(this);">
-            <i class="bi bi-brightness-alt-high position-relative">
-              <span class="position-absolute top-0 start-100 translate-middle badge text-muted bg-light"
-                style="font-size:0.2em;" id="led_number1">
-                1
-              </span>
-            </i>
-          </span>
-        </div>
-
-      </div>
-    </nav>
-
-
-    <div class="container mt-4" id="main_container">
-      <video class="input_video" hidden></video>
-
-      <div class="parent" id="canvas_placeholder" style="margin:0;padding:0">
-        <div class="landmark-grid-container child"></div>
-      </div>
-
-      <div class="row mt-4">
-        <div class="col-md-6">
-          <canvas id="chart_quat0"></canvas>
-        </div>
-        <div class="col-md-6">
-          <canvas id="chart_quat1"></canvas>
-        </div>
-        <div class="col-md-6">
-          <canvas id="chart_stride0"></canvas>
-        </div>
-        <div class="col-md-6">
-          <canvas id="chart_stride1"></canvas>
-        </div>
-      </div>
-
+<body class="op-body">
+  <header class="op-header">
+    <div class="container-fluid op-container d-flex flex-wrap align-items-center gap-3 py-2">
+      <a class="op-brand" href="./">
+        <img src="../../images/orphe_black.svg" alt="ORPHE" height="24">
+      </a>
+      <div id="toolkit_placeholder" class="d-flex flex-wrap gap-3 ms-auto align-items-center"></div>
     </div>
-  </div>
+  </header>
 
+  <main class="container-fluid op-container py-3">
+    <div id="ble-support-message" class="alert alert-warning" style="display:none;">
+      このブラウザでは Web Bluetooth が使えません。Chrome / Edge で開くと ORPHE CORE を接続できます。
+    </div>
 
+    <!-- 姿勢推定ステージ -->
+    <div class="op-layout">
+    <div class="op-card">
+      <div class="op-toolbar">
+        <button id="btn_camera" class="btn btn-sm btn-dark"><i class="bi bi-camera-video"></i> カメラ開始</button>
+        <select id="sel_camera" class="form-select form-select-sm op-select" title="カメラ"></select>
+        <div class="btn-group btn-group-sm" role="group" aria-label="背景">
+          <input type="radio" class="btn-check" name="bg" id="bg_white" value="white" checked>
+          <label class="btn btn-outline-dark" for="bg_white">白背景</label>
+          <input type="radio" class="btn-check" name="bg" id="bg_camera" value="camera">
+          <label class="btn btn-outline-dark" for="bg_camera">カメラ重ね</label>
+        </div>
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" id="chk_mirror" checked>
+          <label class="form-check-label small" for="chk_mirror">ミラー</label>
+        </div>
+        <button id="btn_rec" class="btn btn-sm op-rec ms-auto" title="記録（R キー）: 画面・カメラ映像・CORE 生データ・姿勢を zip で保存"><span class="op-rec-dot"></span><span data-rec-label>REC</span></button>
+        <button id="btn_snapshot" class="btn btn-sm btn-outline-dark" title="骨格画像をPNGで保存"><i class="bi bi-download"></i> PNG</button>
+        <button id="btn_fullscreen" class="btn btn-sm btn-outline-dark" title="全画面"><i class="bi bi-arrows-fullscreen"></i></button>
+      </div>
 
-  <script src="../../js/ORPHE-CORE.js" crossorigin="anonymous"></script>
-  <script src="../../js/float16.min.js" crossorigin="anonymous" type="text/javascript"></script>
-  <script src="../../js/quaternion.js" crossorigin="anonymous" type="text/javascript"></script>
+      <div id="stage" class="op-stage">
+        <canvas id="pose_canvas"></canvas>
+        <span id="rec_indicator" class="op-rec-indicator" title="記録中"></span>
+        <div id="stage_message" class="op-stage-message">
+          <i class="bi bi-camera-video"></i>
+          <p>「カメラ開始」を押すと姿勢推定を始めます</p>
+        </div>
+        <div class="op-stage-status">
+          <span id="status_model">model: -</span>
+          <span id="status_fps">0 fps</span>
+          <span id="status_people">0 人</span>
+        </div>
+      </div>
 
-  <script src="popper.min.js" integrity="sha384-Xe+8cL9oJa6tN/veChSP7q+mnSPaj5Bcu9mPX5F5xIGE0DVittaqT5lorf0EI7Vk"
-    crossorigin="anonymous"></script>
-  <script src="bootstrap.min.js" integrity="sha384-ODmDIVzN+pFdexxHEHFBQH3/9/vQ9uori45z4JjnFsRydbmQbmL5t1tQ0culUzyK"
-    crossorigin="anonymous"></script>
-  <script src="./chart.min.js"></script>
-  <script src="sketch.js"></script>
+      <div class="op-angles">
+        <div class="op-angle"><span>L Knee</span><b id="ang_lknee">-</b></div>
+        <div class="op-angle"><span>R Knee</span><b id="ang_rknee">-</b></div>
+        <div class="op-angle"><span>L Hip</span><b id="ang_lhip">-</b></div>
+        <div class="op-angle"><span>R Hip</span><b id="ang_rhip">-</b></div>
+        <div class="op-angle"><span>L Ankle</span><b id="ang_lankle">-</b></div>
+        <div class="op-angle"><span>R Ankle</span><b id="ang_rankle">-</b></div>
+        <div class="op-angle"><span>L Elbow</span><b id="ang_lelbow">-</b></div>
+        <div class="op-angle"><span>R Elbow</span><b id="ang_relbow">-</b></div>
+      </div>
+      <p class="op-note">CORE がステップを検出すると、その CORE を付けた足の足首がパルス表示されます。REC（R キー）で画面・カメラ映像・CORE 生データ・姿勢を記録し、zip で保存します。</p>
+    </div>
 
+      <!-- ORPHE CORE の値（右に縦 2 つ） -->
+      <aside id="core_panels" class="op-cores"></aside>
+    </div>
+  </main>
+
+  <template id="core_panel_template">
+    <div class="op-card op-core" data-core>
+      <div class="op-core-head">
+        <span class="op-core-dot" data-field="dot"></span>
+        <b data-field="title">CORE</b>
+        <span class="op-core-name" data-field="name">未接続</span>
+        <select class="form-select form-select-sm op-select ms-auto" data-field="side" title="この CORE を装着している足">
+          <option value="L">左足</option>
+          <option value="R">右足</option>
+        </select>
+      </div>
+      <canvas class="op-chart" data-field="chart" height="90"></canvas>
+      <div class="op-legend"><span class="lx">acc x</span><span class="ly">acc y</span><span class="lz">acc z</span><span class="ms-auto" data-field="hz">0 Hz</span></div>
+      <table class="op-table">
+        <thead><tr><th></th><th>X</th><th>Y</th><th>Z</th></tr></thead>
+        <tbody>
+          <tr><th>Acc [G]</th><td data-v="acc.x"></td><td data-v="acc.y"></td><td data-v="acc.z"></td></tr>
+          <tr><th>Gyro [°/s]</th><td data-v="gyro.x"></td><td data-v="gyro.y"></td><td data-v="gyro.z"></td></tr>
+          <tr><th>Euler [°]</th><td data-v="euler.pitch" title="pitch"></td><td data-v="euler.roll" title="roll"></td><td data-v="euler.yaw" title="yaw"></td></tr>
+          <tr><th>Quat</th><td colspan="3" data-v="quat" title="w / x / y / z"></td></tr>
+          <tr><th>Stride [m]</th><td data-v="stride.x"></td><td data-v="stride.y"></td><td data-v="stride.z"></td></tr>
+          <tr><th>Pronation</th><td data-v="pronation.x"></td><td data-v="pronation.y"></td><td data-v="pronation.z"></td></tr>
+        </tbody>
+      </table>
+      <div class="op-kv">
+        <div><span>Steps</span><b data-v="steps"></b></div>
+        <div><span>Gait</span><b data-v="gait.type"></b></div>
+        <div><span>Direction</span><b data-v="gait.direction"></b></div>
+        <div><span>Foot Angle</span><b data-v="footAngle"></b></div>
+        <div><span>Impact</span><b data-v="impact"></b></div>
+        <div><span>Distance</span><b data-v="gait.distance"></b></div>
+      </div>
+    </div>
+  </template>
+
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="../../js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="./core.js"></script>
+  <script type="module" src="./pose.js"></script>
 </body>
 
 </html>

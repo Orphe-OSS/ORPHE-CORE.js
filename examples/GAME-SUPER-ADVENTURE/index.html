@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUPER VIRTUAL ADVENTURE　DASH MEADOW</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20261119a">
+  <!--
+    Cache busting. The game is several ES modules; a browser that keeps an old copy of one of
+    them next to new copies of the others breaks in confusing ways. Every module and the
+    stylesheet carry the same ?v= build id: main.js and style.css in their tags, the modules
+    main.js imports through the import map below. When any of those files changes, change the
+    id everywhere on this page (tests/super-adventure-build-id.test.js checks they all match).
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "./rules.js": "./rules.js?v=20261119a",
+        "./level.js": "./level.js?v=20261119a",
+        "./world.js": "./world.js?v=20261119a",
+        "./body.js": "./body.js?v=20261119a",
+        "./audio.js": "./audio.js?v=20261119a",
+        "./sideview.js": "./sideview.js?v=20261119a",
+        "../GAME-SUPER-HURDLE/insole.js": "../GAME-SUPER-HURDLE/insole.js?v=20261119a",
+        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261119a"
+      }
+    }
+  </script>
+  <!-- ORPHE CORE SDK and its toolkit, from this repository (same as SUPER VIRTUAL HURDLE) -->
+  <script src="../../js/float16.min.js"></script>
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <!-- Game: main.js (flow, input, camera, HUD) + rules / level / world / audio / sideview -->
+  <script type="module" src="main.js?v=20261119a"></script>
+  <script src="../../js/site-analytics.js"></script>
+</head>
+<body>
+  <div id="stage" data-screen="loading">
+    <canvas id="game-canvas"></canvas>
+    <div id="speedlines"></div>
+    <div id="vignette"></div>
+
+    <!-- ===== HUD ===== -->
+    <div id="hud" aria-hidden="true">
+      <div class="hud-left">
+        <div class="hearts" id="hearts"><i class="bi bi-heart-fill"></i><i class="bi bi-heart-fill"></i><i class="bi bi-heart-fill"></i></div>
+        <div class="hud-notes"><i class="coin"></i><b id="hud-notes">0</b><span id="hud-notes-total">/ 0</span></div>
+        <div class="hud-score"><span>SCORE</span><b id="hud-score">0</b></div>
+        <span class="hud-mode" id="hud-mode">NORMAL</span>
+      </div>
+      <div class="hud-center">
+        <div class="sideview-frame">
+          <span class="sideview-label"><i class="bi bi-arrows-expand-vertical"></i> 横から見ると / SIDE VIEW</span>
+          <canvas id="sideview"></canvas>
+        </div>
+      </div>
+      <div class="hud-right">
+        <span class="hud-label">TIME</span>
+        <b class="digits" id="hud-time">0.0</b>
+        <span class="hud-zone-name" id="hud-zone-name">ZONE 1</span>
+      </div>
+      <div class="zone-banner" id="zone-banner"><span class="zone-no" id="zone-no">ZONE 1</span><b id="zone-en">FIRST STEPS</b><span id="zone-ja">はじまりの道</span></div>
+      <div class="cue" id="cue"><i class="bi bi-chevron-double-up"></i><b id="cue-text">JUMP</b><span id="cue-sub">つま先UP！</span></div>
+      <div class="popups" id="popups"></div>
+      <div class="fever" id="fever"><span>FEVER</span><div class="fever-track"><i id="fever-fill"></i></div></div>
+      <!-- speed: the third thing to play with. The green band is the speed the road ahead asks for. -->
+      <div class="pace" id="pace"><b id="pace-text">DASH!</b><span id="pace-sub">足ぶみを つづけろ！</span></div>
+      <div class="speed" id="speed">
+        <span class="speed-label">SPEED</span>
+        <div class="speed-track">
+          <i class="speed-danger" id="speed-danger"></i>
+          <i class="speed-band" id="speed-band"></i>
+          <i class="speed-fill" id="speed-fill"></i>
+          <em class="speed-tick" id="speed-tick-run"><span>JOG</span></em>
+          <em class="speed-tick" id="speed-tick-dash"><span>DASH</span></em>
+          <em class="speed-tick danger" id="speed-tick-max"><span>はやすぎ</span></em>
+        </div>
+        <span class="speed-value"><b id="speed-num">0.0</b><em>m/s</em></span>
+      </div>
+      <div class="hint" id="hint"></div>
+      <!-- the raw sensor signal, while playing (shown once a sensor is sending) -->
+      <div class="scope-box hud-scope" id="scope-hud-box">
+        <canvas class="scope" id="scope-hud"></canvas>
+        <span class="scope-cap">足の加速度（G）　線より上＝走る</span>
+      </div>
+      <div class="demo-tag" id="demo-tag">DEMO PLAY</div>
+    </div>
+
+    <!-- ===== Title ===== -->
+    <div class="screen" id="title-layer">
+      <div class="title-block">
+        <div class="eyebrow"><span>VIRTUAL SPORTS × ADVENTURE</span></div>
+        <h1 class="title">
+          <span class="title-en">SUPER VIRTUAL<br>ADVENTURE</span>
+          <span class="title-ja">スーパーバーチャルアドベンチャー</span>
+        </h1>
+        <p class="stage-name"><b>STAGE 01</b> DASH MEADOW <em>ダッシュ草原</em></p>
+        <p class="lead">横スクロールのアクションゲームを、<b>自分の目線</b>で走る。<br>足ぶみをつづけるほど速くなる。<b>ダッシュ</b>で広い穴をとびこえ、小さな足場の前では<b>スピードを落とせ</b>。</p>
+
+        <div class="howto" id="howto">
+          <div class="howto-card">
+            <svg viewBox="0 0 120 90" class="howto-anim stamp" aria-hidden="true">
+              <line x1="8" y1="78" x2="112" y2="78" class="floor"/>
+              <g class="shoe a"><path d="M30 60 q0 -18 16 -18 h10 l20 12 q10 4 10 10 v6 h-56 z"/><rect x="52" y="40" width="14" height="7" rx="2" class="core"/></g>
+              <g class="shoe b"><path d="M30 60 q0 -18 16 -18 h10 l20 12 q10 4 10 10 v6 h-56 z"/><rect x="52" y="40" width="14" height="7" rx="2" class="core"/></g>
+            </svg>
+            <div class="howto-text"><b>足ぶみ</b><span>前へ走る</span><small>STAMP → RUN　<kbd>←</kbd></small></div>
+          </div>
+          <div class="howto-card">
+            <svg viewBox="0 0 120 90" class="howto-anim toe" aria-hidden="true">
+              <line x1="8" y1="78" x2="112" y2="78" class="floor"/>
+              <g class="shoe c"><path d="M30 60 q0 -18 16 -18 h10 l20 12 q10 4 10 10 v6 h-56 z"/><rect x="52" y="40" width="14" height="7" rx="2" class="core"/></g>
+              <path d="M98 44 v-22 m-8 9 l8 -9 l8 9" class="arrow"/>
+            </svg>
+            <div class="howto-text"><b>つま先を上げる</b><span>ジャンプ</span><small>TOE UP → JUMP　<kbd>→</kbd></small></div>
+          </div>
+          <div class="howto-card rules">
+            <ul>
+              <li><i class="bi bi-chevron-double-up"></i> <b class="b-dash">青い矢印</b>の道はダッシュ</li>
+              <li><i class="bi bi-chevron-double-down"></i> <b class="b-slow">黄色い矢印</b>の道はゆっくり</li>
+              <li><i class="bi bi-arrow-down-circle-fill"></i> 敵は上からふむ（トゲはだめ）</li>
+              <li><i class="bi bi-hand-index-thumb-fill"></i> <b>STOP</b> が出たら足を止める</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <input type="text" id="player-name" maxlength="16" placeholder="名前（なくてもOK） / Name" autocomplete="off" aria-label="プレイヤーの名前">
+          <button type="button" class="ax-btn primary" id="start-btn"><span class="ax-main">START</span><span class="ax-sub">スタート（Enter）</span></button>
+        </div>
+        <div class="mode-row">
+          <span class="mode-label">むずかしさ</span>
+          <span class="mode-switch" id="mode-switch" role="radiogroup" aria-label="むずかしさ / Difficulty">
+            <button type="button" data-mode="normal" role="radio">ノーマル</button><button type="button" data-mode="easy" role="radio">やさしい</button>
+          </span>
+          <small class="mode-note" id="mode-note"></small>
+        </div>
+        <div class="records">
+          <span>ベストスコア BEST <b id="best-score">—</b></span>
+          <span>ベストタイム <b id="best-time">—</b></span>
+        </div>
+      </div>
+      <div class="rank-card" id="title-rank">
+        <h3><i class="bi bi-trophy-fill"></i> RANKING <small id="rank-mode">NORMAL</small></h3>
+        <ol id="rank-list"></ol>
+      </div>
+      <footer class="credit">© ORPHE Inc. ORPHE CORE is a registered trademark of ORPHE Inc. <a href="https://orphe.io/" target="_blank" rel="noopener">https://orphe.io/</a></footer>
+    </div>
+
+    <!-- ===== Countdown ===== -->
+    <div class="screen" id="countdown-layer">
+      <div class="count-caption" id="count-caption">足を止めて、まっすぐ立とう</div>
+      <div class="count-number" id="count-number">3</div>
+    </div>
+
+    <!-- ===== Result ===== -->
+    <div class="screen" id="result-layer">
+      <div class="result-card" id="result-card">
+        <div class="result-head"><span class="result-tag" id="result-tag">STAGE 01 · DASH MEADOW</span><span class="result-badge" id="result-badge">NEW BEST!</span></div>
+        <div class="result-main">
+          <div class="result-grade" id="result-grade">S</div>
+          <div class="result-score"><span id="result-score-label">SCORE</span><b id="result-score">0</b><em id="result-time">0.0 s</em></div>
+        </div>
+        <div class="result-stats">
+          <div><span><i class="bi bi-coin"></i> コイン / Coins</span><b id="rs-notes">0</b></div>
+          <div><span><i class="bi bi-box-fill"></i> ブロック / Blocks</span><b id="rs-bells">0</b></div>
+          <div><span><i class="bi bi-arrow-down-circle-fill"></i> ふんづけ / Stomps</span><b id="rs-stomps">0</b></div>
+          <div><span><i class="bi bi-lightning-charge-fill"></i> ダッシュした時間 / Dash</span><b id="rs-dash">0</b></div>
+          <div><span><i class="bi bi-speedometer2"></i> 最高速度 / Top speed</span><b id="rs-top">0</b></div>
+          <div><span><i class="bi bi-rulers"></i> 走り幅とび / Long jump</span><b id="rs-jump">—</b></div>
+          <div><span><i class="bi bi-heart-fill"></i> ミス / Hits・Falls</span><b id="rs-miss">0</b></div>
+          <div><span><i class="bi bi-stopwatch-fill"></i> ゴールボーナス <small id="rs-bonus-note"></small></span><b id="rs-bonus">0</b></div>
+        </div>
+        <p class="result-comment" id="result-comment"></p>
+        <form class="result-entry" id="name-form" autocomplete="off">
+          <input type="text" id="result-name" maxlength="16" placeholder="名前 / Name" aria-label="ランキングに登録する名前">
+          <button type="submit" class="ax-btn small" id="save-score">ランキング登録</button>
+          <span class="save-status" id="save-status"></span>
+        </form>
+        <ol class="result-rank" id="result-rank"></ol>
+        <div class="result-actions">
+          <button type="button" class="ax-btn primary" id="retry-btn"><span class="ax-main">RETRY</span><span class="ax-sub">もう一度（Enter）</span></button>
+          <button type="button" class="ax-btn ghost" id="title-btn"><i class="bi bi-house-fill"></i> タイトル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Top bar ===== -->
+    <div id="topbar">
+      <button type="button" class="icon-btn" id="btn-sound" title="サウンド / Sound"><i class="bi bi-volume-up-fill"></i></button>
+      <button type="button" class="icon-btn" id="btn-fullscreen" title="全画面 / Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button type="button" class="icon-btn" id="btn-settings" title="設定 / Settings"><i class="bi bi-sliders"></i></button>
+    </div>
+
+    <!-- ===== ORPHE CORE connection dock (CoreToolkit UI lives here) ===== -->
+    <aside id="core-dock" class="dock">
+      <div class="dock-head">
+        <span class="dock-title" id="dock-title">ORPHE CORE</span>
+        <span class="device-switch" id="device-switch" role="radiogroup" aria-label="センサーの種類 / Sensor type">
+          <button type="button" data-device="core" role="radio">CORE</button><button type="button" data-device="insole" role="radio">INSOLE</button>
+        </span>
+      </div>
+      <div class="dock-row" id="dock-row-0">
+        <span class="foot-chip"><b>L</b><span>左足</span></span>
+        <div id="toolkit_placeholder1" class="toolkit-slot"></div>
+        <span class="dock-state" id="dock-state-0">未接続</span>
+      </div>
+      <div class="dock-row" id="dock-row-1">
+        <span class="foot-chip"><b>R</b><span>右足</span></span>
+        <div id="toolkit_placeholder2" class="toolkit-slot"></div>
+        <span class="dock-state" id="dock-state-1">未接続</span>
+      </div>
+      <div id="ble-support-message" class="dock-note" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
+      <div class="dock-check">
+        <span class="check-item" id="check-accel"><i class="bi bi-lightning-charge-fill"></i> 足ぶみ 前進</span>
+        <span class="check-item" id="check-jump"><i class="bi bi-arrow-up-circle-fill"></i> つま先UP ジャンプ</span>
+      </div>
+      <!-- the raw sensor signal (shown once a sensor is sending) -->
+      <div class="scope-box" id="scope-dock-box">
+        <canvas class="scope" id="scope-dock"></canvas>
+        <span class="scope-cap">足の加速度の生データ（G）。白い線より上で「足ぶみ」＝走る。黄色はつま先の角度で、線より上でジャンプ</span>
+      </div>
+      <p class="dock-hint" id="dock-hint">スイッチをONにしてCOREを選ぶ（足の甲に装着・1個でも遊べます）。キーボードは <kbd>←</kbd> 長押しで走る、<kbd>→</kbd> でジャンプ。</p>
+    </aside>
+
+    <!-- ===== Settings drawer ===== -->
+    <aside id="drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-head"><h3><i class="bi bi-sliders"></i> 設定 / Settings</h3><button type="button" class="icon-btn" id="close-drawer"><i class="bi bi-x-lg"></i></button></div>
+      <div class="drawer-body">
+        <h4>センサー / Sensors</h4>
+        <div class="monitor">
+          <div class="monitor-row"><span>L pitch</span><div class="mbar"><i id="pitchBar0"></i><em id="pitchThreshold0"></em></div><b id="pitch0">0.000</b></div>
+          <div class="monitor-row"><span>L acc</span><div class="mbar fill"><i id="accBar0"></i><em id="accThreshold0"></em></div><b id="acc0">0.00</b></div>
+          <div class="monitor-row"><span>R pitch</span><div class="mbar"><i id="pitchBar1"></i><em id="pitchThreshold1"></em></div><b id="pitch1">0.000</b></div>
+          <div class="monitor-row"><span>R acc</span><div class="mbar fill"><i id="accBar1"></i><em id="accThreshold1"></em></div><b id="acc1">0.00</b></div>
+        </div>
+        <div class="config-item">
+          <label for="accelThreshold">足ぶみの強さ（加速度の閾値） / Stamp threshold</label>
+          <div class="config-control"><input type="range" id="accelThreshold" min="0.1" max="5.1" value="1.1" step="0.2"><span id="accelThresholdValue">1.1 G</span></div>
+        </div>
+        <div class="config-item">
+          <label for="jumpPitchThreshold">つま先上げの角度（PITCHの閾値） / Toe-up threshold</label>
+          <div class="config-control"><input type="range" id="jumpPitchThreshold" min="0.05" max="0.5" value="0.15" step="0.05"><span id="jumpPitchThresholdValue">0.15 rad</span></div>
+        </div>
+        <h4>あそびやすさ / Assist</h4>
+        <label class="switch-row"><input type="checkbox" id="opt-assist" checked><span class="sw"></span><span>ジャンプ補助（センサーのジャンプは、とぶ理由がある場所でだけ受けつける）</span></label>
+        <label class="switch-row"><input type="checkbox" id="opt-cues" checked><span class="sw"></span><span>JUMP / STOP / GO / DASH / SLOW の合図と着地マークを出す</span></label>
+        <p class="drawer-note">足ぶみの動きでつま先上げを誤検出しても、何もない場所ではジャンプしません。早すぎるつま先上げは、とべる位置に入るまで最大0.45秒待ってからジャンプします。キーボードのジャンプはいつでも有効です。</p>
+        <h4>サウンド / Sound</h4>
+        <div class="config-item">
+          <label for="volume-slider">音量 / Volume</label>
+          <div class="config-control"><input type="range" id="volume-slider" min="0" max="1" value="0.85" step="0.05"><span id="volume-value">85%</span></div>
+        </div>
+        <h4>グラフィック / Graphics</h4>
+        <div class="config-item">
+          <label for="quality-select">描画品質 / Quality</label>
+          <div class="config-control">
+            <select id="quality-select"><option value="auto" selected>自動 / Auto</option><option value="high">高 / High</option><option value="medium">中 / Medium</option><option value="low">低 / Low</option></select>
+            <span id="fps-value">-- fps</span>
+          </div>
+        </div>
+        <h4>キーボード / Keyboard</h4>
+        <p class="drawer-note"><kbd>←</kbd> または <kbd>↑</kbd> 長押し：走る　<kbd>→</kbd> または <kbd>Space</kbd>：ジャンプ　<kbd>Enter</kbd>：スタート　<kbd>Esc</kbd>：タイトルへ<br>タッチ：画面の左半分を押している間は走る、右半分をタップでジャンプ。</p>
+      </div>
+    </aside>
+
+    <div id="fade"></div>
+    <div id="loading"><div class="loading-inner"><span class="loading-title">SUPER VIRTUAL ADVENTURE</span><span class="loading-bar"><i></i></span><span class="loading-text">コースを準備中… / Building the course</span></div></div>
+  </div>
+
+  <script>
+    // ORPHE CORE: the same two inputs as SUPER VIRTUAL HURDLE.
+    //   stamping (acceleration above the threshold on either foot)  -> window.setAccelPressed(true / false)
+    //   toe up   (pitch below -threshold on either foot)            -> window.gameJump()
+    // Both are implemented by main.js. gameJump() returns false when the jump assist did not let
+    // the jump through; the cooldown below then does not start, so the real take-off that follows
+    // is not swallowed.
+    var bles = [new Orphe(0), new Orphe(1)];
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
+    bles[1].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true });
+    guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
+
+    window.devices = {
+      0: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 }, at: 0 },
+      1: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 }, at: 0 }
+    };
+    window.accThresholdAccel = 1.1;     // G
+    window.pitchThresholdJump = 0.15;   // rad
+    // Resting pitch of each sensor, measured by main.js while the player stands still during the
+    // countdown. "Toe up" is counted from it, so the angle the sensor is strapped at does not matter.
+    window.pitchZero = [0, 0];
+
+    let lastJumpTime = 0;
+    const jumpCooldownMs = 700;
+    let lastAccelTime = 0;
+    const accelCooldownMs = 100;
+
+    // CoreToolkit starts each connection from its own user gesture.
+    // Bind sensor handlers once; never call begin() again from onConnect.
+    for (const ble of bles) setupDataCallbacks(ble);
+
+    function setupDataCallbacks(ble_device) {
+      ble_device.gotConvertedAcc = function (_acc) {
+        const d = window.devices[this.id];
+        d.acc = _acc; d.at = performance.now();
+        if (window.sensorTap) window.sensorTap();      // the strip chart of the raw signal (main.js)
+        // either foot moving hard enough = run
+        let maxAccel = 0;
+        for (let i = 0; i < 2; i++) {
+          const acc = window.devices[i].acc;
+          maxAccel = Math.max(maxAccel, Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z));
+        }
+        if (window.setAccelPressed) {
+          const now = performance.now();
+          const shouldAccel = maxAccel > window.accThresholdAccel;
+          if (shouldAccel && (now - lastAccelTime) > accelCooldownMs) {
+            window.setAccelPressed(true);
+            lastAccelTime = now;
+          } else if (!shouldAccel) {
+            window.setAccelPressed(false);
+          }
+        }
+      };
+
+      ble_device.gotEuler = function (_euler) {
+        const d = window.devices[this.id];
+        d.raw = _euler;
+        const pitch = _euler.pitch - (window.pitchZero[this.id] || 0);
+        d.eulers = { pitch: pitch, roll: _euler.roll, yaw: _euler.yaw };
+        d.at = performance.now();
+        // toe up (negative pitch) = jump
+        const now = performance.now();
+        if (pitch < -window.pitchThresholdJump && (now - lastJumpTime) > jumpCooldownMs) {
+          if (window.gameJump && window.gameJump() !== false) lastJumpTime = now;
+        }
+      };
+    }
+
+    // ---- sensor monitor in the settings drawer
+    function updateSensorDisplay() {
+      if (!document.getElementById('drawer').classList.contains('open')) return;
+      for (let i = 0; i < 2; i++) {
+        const device = window.devices[i];
+        const pitch = device.eulers ? device.eulers.pitch : 0;
+        document.getElementById('pitch' + i).textContent = pitch.toFixed(3);
+        const pitchBar = document.getElementById('pitchBar' + i);
+        pitchBar.style.left = Math.max(0, Math.min(100, ((pitch + 2) / 4) * 100)) + '%';
+        pitchBar.style.background = pitch < -window.pitchThresholdJump ? '#ff9800' : '#4caf50';
+        const a = device.acc || { x: 0, y: 0, z: 0 };
+        const mag = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+        document.getElementById('acc' + i).textContent = mag.toFixed(2);
+        const accBar = document.getElementById('accBar' + i);
+        accBar.style.width = Math.min(100, (mag / 2) * 100) + '%';
+        accBar.style.background = mag > window.accThresholdAccel ? '#ff9800' : '#2196f3';
+      }
+    }
+    function updateThresholdVisuals() {
+      for (let i = 0; i < 2; i++) {
+        document.getElementById('pitchThreshold' + i).style.left = ((2 - window.pitchThresholdJump) / 4 * 100) + '%';
+        document.getElementById('accThreshold' + i).style.left = Math.min(100, window.accThresholdAccel / 2 * 100) + '%';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('accelThreshold').addEventListener('input', function (e) {
+        window.accThresholdAccel = parseFloat(e.target.value);
+        document.getElementById('accelThresholdValue').textContent = e.target.value + ' G';
+        updateThresholdVisuals();
+      });
+      document.getElementById('jumpPitchThreshold').addEventListener('input', function (e) {
+        window.pitchThresholdJump = parseFloat(e.target.value);
+        document.getElementById('jumpPitchThresholdValue').textContent = parseFloat(e.target.value).toFixed(2) + ' rad';
+        updateThresholdVisuals();
+      });
+      setInterval(updateSensorDisplay, 50);
+      updateThresholdVisuals();
+    });
+  </script>
+</body>
+</html>

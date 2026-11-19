@@ -122,6 +122,7 @@ These already have public value and should stay in the catalog:
 - `examples/GAME-SUPER-HURDLE/`
 - `examples/GAME-SUPER-START/`
 - `examples/GAME-SUPER-RELAY/`
+- `examples/GAME-SUPER-ADVENTURE/`
 - `examples/GAME-UDON/`
 - `examples/MOVEYOURFEET/`
 - `examples/GAME-PINGPONG/`

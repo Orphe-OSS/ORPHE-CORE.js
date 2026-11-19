@@ -485,6 +485,32 @@
       "public_navigation": "listed"
     },
     {
+      "id": "game-super-adventure",
+      "title": "SUPER VIRTUAL ADVENTURE",
+      "path": "examples/GAME-SUPER-ADVENTURE/",
+      "type": "web-app",
+      "status": "public",
+      "audience": ["game-player", "educator"],
+      "value": "A side-scrolling action game seen through the runner's own eyes: stamp to run, toe up to jump. Speed builds up as long as you keep stamping: dash over wide gaps, slow down for small footholds. One miss sends you back to the start (an easy mode is included). ORPHE INSOLE support and a live chart of the raw acceleration.",
+      "topics": ["game", "action", "platformer", "first person", "running", "speed control", "insole"],
+      "data": ["convertedAcc", "euler"],
+      "devices": 2,
+      "validation": ["static-page-check", "thumbnail-exists", "owner-real-device-check"],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/super-adventure.png",
+      "sort_order": 208,
+      "links": {
+        "demo": "examples/GAME-SUPER-ADVENTURE/index.html",
+        "source": "examples/GAME-SUPER-ADVENTURE/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "listed"
+    },
+    {
       "id": "game-sprint-100m-vs",
       "title": "100m Sprint VS",
       "path": "examples/GAME-SPRINT-100M-VS/",

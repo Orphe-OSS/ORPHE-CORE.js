@@ -159,6 +159,10 @@
       title: 'SUPER VIRTUAL RELAY',
       value: 'バーチャル 4×100m リレーです。ORPHE CORE 1個をバトンにして、走る区間は全力で振り、ゾーンでは止めて次の人へ渡します。1〜4人で遊べます。'
     },
+    'game-super-adventure': {
+      title: 'SUPER VIRTUAL ADVENTURE',
+      value: '横スクロールのアクションを自分の目線で走るゲームです。足ぶみで走り、つま先を上げてジャンプ。足ぶみを続けるほど速くなり、広い穴はダッシュで、小さな足場は減速して越えます。ミスするとスタートにもどります（やさしいモードあり）。ORPHE INSOLE対応。'
+    },
     'game-sprint-100m-vs': {
       title: '100m走 VS',
       value: '2台のORPHE COREで対戦するバーチャル短距離走です。'

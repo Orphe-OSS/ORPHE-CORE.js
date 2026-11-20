@@ -20,6 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - run: npm run test:examples
       - run: node scripts/check-cdn-pins.js
       - run: node scripts/check-examples-catalog.js
       - run: node scripts/check-examples-static-quality.js

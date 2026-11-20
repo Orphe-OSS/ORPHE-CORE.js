@@ -48,14 +48,20 @@ class BoxingGame {
             good: 200     // ±200ms
         };
         
-        // キャリブレーション
-        this.maxAcceleration = 10; // デフォルト値
+        // キャリブレーション（基準値）。単位は G（gotConvertedAcc の実Gスケール）。
+        // 測定前の既定値。スコアは「ピーク合成加速度 ÷ 基準値」の比で決まる。
+        this.maxAcceleration = 10; // デフォルト値 [G]
         this.calibrationData = [];
         this.calibrationDuration = 5; // 秒
         
-        // パンチ検出設定
+        // パンチ検出設定（単位: G。合成加速度 = sqrt(x²+y²+z²)、静止時は約 1 G）
+        // lowerThreshold は現在の判定（detectPunch）では使っていない（README 参照）。
         this.lowerThreshold = 2.0;
         this.upperThreshold = 15.0;
+
+        // 説明用モード（擬似データ）。実測ではないので基準の測定・スコアには使わない。
+        this.demoMode = false;
+        this.demoTimer = null;
         this.punchWindow = 500; // ms
         this.lastPunchTime = { left: 0, right: 0 };
         
@@ -420,7 +426,13 @@ class BoxingGame {
         document.getElementById('startBtn').addEventListener('click', () => this.startGame());
         document.getElementById('pauseBtn').addEventListener('click', () => this.pauseGame());
         document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
-        
+
+        // 説明用モード（擬似データ）は明示的に開始する（自動開始しない）
+        const demoBtn = document.getElementById('demoBtn');
+        if (demoBtn) {
+            demoBtn.addEventListener('click', () => this.toggleDemoMode());
+        }
+
         // 設定スライダー
         this.setupSliders();
     }
@@ -556,7 +568,10 @@ class BoxingGame {
             
             console.log(`${side} begin()実行 - Bluetoothダイアログが表示されるはず`);
             // 接続開始 - この時点でBluetoothダイアログが表示される
-            const result = await core.begin('SENSOR_VALUES');
+            // 加速度レンジを ±16 G に明示する。閾値（既定 15 G）と基準値は G 単位なので、
+            // デバイス側の既定レンジ（±8 G 等）のままだと 15 G に届かずパンチが検出されない。
+            // ※ レンジ指定の追加は感度に影響するため実機確認待ち（docs/device-validation-log.md）。
+            const result = await core.begin('SENSOR_VALUES', { range: { acc: 16, gyro: 2000 } });
             console.log(`${side} begin結果:`, result);
             
             if (side === 'left') {
@@ -564,7 +579,10 @@ class BoxingGame {
             } else {
                 this.rightCore = core;
             }
-            
+
+            // 実機が来たら説明用モードは終了する（擬似データと実測を混ぜない）
+            this.stopDemoMode();
+
             statusIndicator.textContent = '接続済み';
             statusIndicator.className = 'status-indicator connected';
             connectBtn.textContent = '切断';
@@ -1124,7 +1142,9 @@ class BoxingGame {
     // キャリブレーション開始
     startCalibration() {
         if (!this.leftCore && !this.rightCore) {
-            alert('少なくとも1つのORPHE COREを接続してください。');
+            alert(this.demoMode
+                ? '説明用モード（擬似データ）では基準の測定はできません。ORPHE COREを接続してください。'
+                : '少なくとも1つのORPHE COREを接続してください。');
             return;
         }
         
@@ -1164,7 +1184,9 @@ class BoxingGame {
     // ゲーム開始
     startGame() {
         if ((!this.leftCore && !this.rightCore) || this.maxAcceleration <= 0) {
-            alert('デバイスの接続とキャリブレーションを完了してください。');
+            alert(this.demoMode
+                ? '説明用モード（擬似データ）ではゲームを開始できません。ORPHE COREを接続し、基準を測ってください。'
+                : 'デバイスの接続とキャリブレーションを完了してください。');
             return;
         }
         
@@ -1269,7 +1291,8 @@ class BoxingGame {
               `Miss: ${this.punchStats.missHits}\n\n` +
               `パンチ回数: ${this.punchStats.totalPunches}\n` +
               `成功率: ${hitRate}%\n` +
-              `平均パンチ力: ${avgPower}`);
+              `平均ピーク加速度: ${avgPower} G\n\n` +
+              `※ 加速度はこのゲーム用の指標です。パンチの力・速度や体力の測定値ではありません。`);
         
         this.updateGameButtons();
     }
@@ -1317,6 +1340,78 @@ class BoxingGame {
         this.updateScore();
     }
     
+    // ---- 説明用モード（擬似データ）------------------------------------------
+    // ORPHE CORE が無くても画面の動きを確認するためのモード。
+    // - 自動では始めない（ボタンで明示的に開始）
+    // - バナーで「実測ではない」ことを表示する
+    // - 基準の測定・ゲーム開始はできない（startCalibration / startGame がガード）
+    // - 実機が接続されたら自動で終了する
+    toggleDemoMode() {
+        if (this.demoMode) {
+            this.stopDemoMode();
+        } else {
+            this.startDemoMode();
+        }
+    }
+
+    startDemoMode() {
+        if (this.demoMode) return;
+        if (this.leftCore || this.rightCore) {
+            alert('ORPHE CORE 接続中は説明用モードを使えません。');
+            return;
+        }
+        this.demoMode = true;
+        this.demoTimer = setInterval(() => this.generateDemoData(), 50); // 20Hz
+        this.updateDemoUI();
+        console.log('説明用モード開始: 擬似データを生成します（実測ではありません）');
+    }
+
+    stopDemoMode() {
+        if (this.demoTimer) {
+            clearInterval(this.demoTimer);
+            this.demoTimer = null;
+        }
+        if (!this.demoMode) return;
+        this.demoMode = false;
+        this.updateDemoUI();
+        console.log('説明用モード終了');
+    }
+
+    updateDemoUI() {
+        const btn = document.getElementById('demoBtn');
+        const banner = document.getElementById('demoBanner');
+        if (btn) {
+            btn.textContent = this.demoMode ? '説明用モードを終了' : '説明用モード（擬似データ）を開始';
+            btn.classList.toggle('active', this.demoMode);
+        }
+        if (banner) {
+            banner.hidden = !this.demoMode;
+        }
+    }
+
+    // 擬似センサーデータ（G 単位）。静止時 ≈ 1 G ＋ノイズ、5% の確率で小さなスパイク。
+    // 上限閾値（既定 15 G）には届かない大きさにしてあり、チャート表示の確認用。
+    generateDemoData() {
+        if (!this.demoMode) return;
+        if (this.leftCore || this.rightCore) {
+            this.stopDemoMode();
+            return;
+        }
+        const baseAccel = 1.0; // 重力 [G]
+        const noise = (Math.random() - 0.5) * 0.2;
+        const spike = Math.random() < 0.05 ? Math.random() * 2.0 : 0;
+        const dummyAccel = { x: baseAccel + noise + spike, y: noise, z: noise };
+        const dummyGyro = {
+            x: (Math.random() - 0.5) * 10,
+            y: (Math.random() - 0.5) * 10,
+            z: (Math.random() - 0.5) * 10
+        };
+        for (const side of ['left', 'right']) {
+            this.onAccelData(side, dummyAccel);
+            this.onGyroData(side, dummyGyro);
+        }
+    }
+
     // ボタン状態更新
     updateGameButtons() {
         const hasDevice = this.leftCore || this.rightCore;
@@ -1340,40 +1435,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.boxingGame = new BoxingGame();
 });
 
-// デバッグ用の擬似センサーデータ生成（ORPHE COREが接続されていない場合のテスト用）
-function generateDummyData() {
-    if (window.boxingGame && !window.boxingGame.leftCore && !window.boxingGame.rightCore) {
-        const now = Date.now();
-        
-        // 擬似加速度データ生成
-        const baseAccel = 1.0; // 重力を正規化した値
-        const noise = (Math.random() - 0.5) * 0.2;
-        const spike = Math.random() < 0.05 ? Math.random() * 2.0 : 0; // 5%の確率でパンチスパイク
-        
-        const dummyAccel = {
-            x: baseAccel + noise + spike,
-            y: noise,
-            z: noise
-        };
-        
-        const dummyGyro = {
-            x: (Math.random() - 0.5) * 10,
-            y: (Math.random() - 0.5) * 10,
-            z: (Math.random() - 0.5) * 10
-        };
-        
-        // 左手と右手の両方にダミーデータ送信
-        window.boxingGame.onAccelData('left', dummyAccel);
-        window.boxingGame.onGyroData('left', dummyGyro);
-        window.boxingGame.onAccelData('right', dummyAccel);
-        window.boxingGame.onGyroData('right', dummyGyro);
-    }
-}
-
-// デバッグモード（10秒後に開始）
-setTimeout(() => {
-    if (window.boxingGame && !window.boxingGame.leftCore && !window.boxingGame.rightCore) {
-        console.log('ORPHE COREが検出されません。デバッグモードでダミーデータを生成します。');
-        setInterval(generateDummyData, 50); // 20Hz
-    }
-}, 10000); 
+// 擬似データの自動開始（旧: 未接続のまま10秒で開始）は廃止。
+// 説明用モードは画面の「説明用モード（擬似データ）を開始」ボタンから明示的に始める
+// （BoxingGame#startDemoMode）。実測と混同しないよう、バナー表示と
+// 基準の測定・ゲーム開始のガードを伴う。

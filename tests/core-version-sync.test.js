@@ -5,6 +5,7 @@
 //   - js/ORPHE-CORE.js ヘッダの @version
 //   - CITATION.cff の version:
 //   - README.md の「* vX.Y.Z: Current version」行
+//   - CLAUDE.md の Project Overview ツリー「# Main SDK (vX.Y.Z, …)」
 //   - 公開ファイル内の全 jsDelivr 自己参照（@vX.Y.Z 固定。@latest / @main / ref 無しへの退行も検出）
 //
 // リリース手順は CLAUDE.md「リリース手順」を参照:
@@ -47,6 +48,15 @@ assert.match(version, /^\d+\.\d+\.\d+$/, `package.json version "${version}" must
   const match = readme.match(/^\* v(\d+\.\d+\.\d+): Current version/m);
   assert.ok(match, 'README.md: "* vX.Y.Z: Current version" line not found');
   assert.equal(match[1], version, `README.md: Current version v${match[1]} != package.json version ${version}`);
+}
+
+// CLAUDE.md Project Overview ツリー「# Main SDK (vX.Y.Z, …)」
+// （公開サイトレビュー 2026-10-09: 冒頭が v1.4.1 のまま履歴だけ v1.4.2 になっていた）
+{
+  const claude = read('CLAUDE.md');
+  const match = claude.match(/ORPHE-CORE\.js\s+# Main SDK \(v(\d+\.\d+\.\d+)/);
+  assert.ok(match, 'CLAUDE.md: "# Main SDK (vX.Y.Z" line not found in Project Overview');
+  assert.equal(match[1], version, `CLAUDE.md: Project Overview says v${match[1]} != package.json version ${version}`);
 }
 
 // 全 jsDelivr 自己参照

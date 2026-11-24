@@ -511,6 +511,32 @@
       "public_navigation": "listed"
     },
     {
+      "id": "game-super-jump",
+      "title": "SUPER VIRTUAL JUMP",
+      "path": "examples/GAME-SUPER-JUMP/",
+      "type": "web-app",
+      "status": "public",
+      "audience": ["game-player", "educator"],
+      "value": "Long jump and triple jump on one page: stamp for the run-up, then really jump on the spot at the board. The measured height of the real jump decides how far you fly; the triple jump takes three real jumps timed to each ground contact. Three rounds against seven rivals, ORPHE INSOLE support, a live chart and optional recording of the raw data.",
+      "topics": ["game", "virtual sports", "long jump", "triple jump", "jump height", "quaternion", "insole"],
+      "data": ["convertedAcc", "quat"],
+      "devices": 2,
+      "validation": ["static-page-check", "thumbnail-exists", "owner-real-device-check"],
+      "category": "virtual-sports",
+      "difficulty": "intermediate",
+      "featured": false,
+      "thumbnail": "examples/_thumbnails/super-jump.png",
+      "sort_order": 209,
+      "links": {
+        "demo": "examples/GAME-SUPER-JUMP/index.html",
+        "source": "examples/GAME-SUPER-JUMP/"
+      },
+      "requires_device": true,
+      "device_count": 2,
+      "needs_real_device_validation": true,
+      "public_navigation": "listed"
+    },
+    {
       "id": "game-sprint-100m-vs",
       "title": "100m Sprint VS",
       "path": "examples/GAME-SPRINT-100M-VS/",

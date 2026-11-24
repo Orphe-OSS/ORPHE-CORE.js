@@ -1,0 +1,287 @@
+/* SUPER VIRTUAL JUMP — on top of ../GAME-SUPER-HURDLE/style.css (stadium UI) and
+   ../GAME-SUPER-START/style.css (result card, HOW TO PLAY, scope). */
+
+.hot { color: var(--hot); }
+#stage:not([data-screen="start"]) #start-layer { display: none; }
+#stage:not([data-screen="finish"]) #finish-layer { display: none; }
+
+/* ------------------------------------------------------------------ title */
+.title .title-ja em { font-style: normal; color: var(--cyan); }
+.title .title-ja small { font-family: var(--display); font-weight: 400; letter-spacing: 0.2em; font-size: 0.7em; color: var(--mute); margin-left: 0.4em; }
+.event-switch { display: inline-flex; gap: 0.5em; margin: 0.9em 0 0.2em; padding: 0.3em; border-radius: 0.9em; background: rgba(7, 11, 26, 0.6); border: 1px solid var(--line); backdrop-filter: blur(8px); }
+.event-switch button { display: flex; flex-direction: column; align-items: center; min-width: 9.5em; padding: 0.5em 1.2em 0.35em; border: 0; border-radius: 0.65em; background: transparent; color: var(--mute); cursor: pointer; transition: background 0.2s, color 0.2s, transform 0.2s; }
+.event-switch button b { font-size: 1.15em; font-weight: 900; letter-spacing: 0.06em; }
+.event-switch button span { font-family: var(--display); letter-spacing: 0.2em; font-size: 0.85em; }
+.event-switch button:hover { color: #fff; }
+.event-switch button.on { color: #04121a; background: var(--grad); box-shadow: 0 0 1.6em rgba(34, 227, 255, 0.45); }
+.jp-howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7em; max-width: 46em; margin-top: 1em; }
+.jp-how { padding: 0.6em 0.8em 0.7em; border-radius: 0.8em; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(34, 227, 255, 0.1), rgba(7, 11, 26, 0.62) 75%); backdrop-filter: blur(6px); }
+#stage[data-event="long"] .jp-how[data-for="triple"], #stage[data-event="triple"] .jp-how[data-for="long"] { display: none; }
+.jp-how svg { display: block; width: auto; max-width: 100%; height: 4.6em; margin: 0 auto; }
+.jp-how h3 { white-space: nowrap; }
+.title-block .lead { margin-bottom: 0; }
+.jp-how h3 { display: flex; align-items: baseline; gap: 0.4em; margin: 0.2em 0 0; font-size: 1.05em; font-weight: 900; }
+.jp-how h3 i { font-style: normal; font-family: var(--display); font-size: 1.5em; line-height: 0.9; color: var(--cyan); }
+.jp-how h3 small { font-family: var(--display); font-weight: 400; letter-spacing: 0.16em; color: var(--mute); }
+.jp-how p { margin: 0.2em 0 0; font-size: 0.8em; line-height: 1.45; font-weight: 600; color: #d5def2; }
+.jp-how kbd { font-size: 0.85em; }
+.jp-how .floor { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.5; }
+.jp-how .shoe path { fill: #f4f7ff; }
+.jp-how .shoe.a { animation: jpStampA 0.5s ease-in-out infinite alternate; }
+.jp-how .shoe.b { opacity: 0.45; transform: translateX(22px); animation: jpStampA 0.5s ease-in-out infinite alternate-reverse; }
+@keyframes jpStampA { from { translate: 0 0; } to { translate: 0 -14px; } }
+.jp-how .track { fill: #8e3228; } .jp-how .board { fill: #f4f2ea; } .jp-how .clay { fill: #ff5a1f; } .jp-how .sand { fill: #c9ae7a; }
+.jp-how .line { stroke: #9fffe0; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.jp-how .t-foul { font-family: var(--display); font-size: 9px; fill: var(--hot); letter-spacing: 0.1em; }
+.jp-how .t-phase { font-family: var(--display); font-size: 9px; fill: var(--cyan); letter-spacing: 0.1em; }
+.jp-how .shoe.slide path { fill: var(--cyan); }
+.jp-how .shoe.slide { animation: jpSlide 2.6s cubic-bezier(0.3, 0, 0.6, 1) infinite; }
+@keyframes jpSlide { 0% { translate: 20px 0; opacity: 0; } 10% { opacity: 1; } 62% { translate: 78px 0; rotate: 0deg; } 80% { translate: 86px -22px; rotate: -24deg; opacity: 1; } 100% { translate: 96px -34px; rotate: -30deg; opacity: 0; } }
+.jp-how .arc { fill: none; stroke: rgba(34, 227, 255, 0.7); stroke-width: 1.6; stroke-dasharray: 3 3.5; stroke-linecap: round; }
+.jp-how .ring { fill: none; stroke: var(--gold); stroke-width: 1.6; transform-origin: 104px 52px; animation: jpRing 1.6s linear infinite; }
+@keyframes jpRing { from { scale: 2.4; opacity: 0; } 70% { opacity: 1; } to { scale: 0.5; opacity: 1; } }
+.jp-how .dot { fill: var(--gold); }
+.jp-how .dot.p1 { animation: jpBlink 2.4s linear infinite; } .jp-how .dot.p2 { animation: jpBlink 2.4s linear 0.5s infinite; } .jp-how .dot.p3 { animation: jpBlink 2.4s linear 1.1s infinite; }
+@keyframes jpBlink { 0%, 20%, 100% { opacity: 0.35; scale: 1; } 8% { opacity: 1; } }
+.jp-rules-note { max-width: 46em; margin: 0.8em 0 0; font-size: 0.8em; line-height: 1.6; color: rgba(197, 209, 234, 0.85); }
+.jp-rules-note b { color: var(--lime); }
+.team-names input { max-width: 16em; }
+
+/* ------------------------------------------------------------------ slow motion: the stadium behind glass */
+.jp-veil { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; background: radial-gradient(ellipse at 50% 60%, transparent 34%, rgba(10, 60, 130, 0.5) 100%); box-shadow: inset 0 0 0 0.4em rgba(34, 227, 255, 0.5); }
+#stage.slow .jp-veil { opacity: 1; }
+#stage.air .jp-veil { opacity: 0.55; box-shadow: inset 0 0 0 0.25em rgba(182, 255, 60, 0.45); }
+#stage.foul .jp-veil { opacity: 1; background: radial-gradient(ellipse at 50% 60%, transparent 34%, rgba(140, 10, 40, 0.5) 100%); box-shadow: inset 0 0 0 0.4em rgba(255, 61, 110, 0.8); }
+.warp-fx { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: repeating-conic-gradient(from 0deg at 50% 58%, rgba(255, 255, 255, 0.5) 0deg 0.6deg, transparent 0.6deg 7deg); mask-image: radial-gradient(circle at 50% 58%, transparent 18%, #000 75%); -webkit-mask-image: radial-gradient(circle at 50% 58%, transparent 18%, #000 75%); }
+.warp-fx.go { animation: jpWarp 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes jpWarp { 0% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.2); } }
+
+/* ------------------------------------------------------------------ HUD */
+.jp-hud { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; }
+#stage[data-screen="race"] .jp-hud { opacity: 1; }
+.jp-top-left { position: absolute; top: 1.3em; left: 1.5em; width: 17.5em; transition: opacity 0.4s; }
+.jp-event-tag { display: flex; align-items: baseline; justify-content: space-between; padding: 0.3em 0.8em 0.2em; border-radius: 0.6em 0.6em 0 0; background: var(--grad); color: #04121a; }
+.jp-event-tag b { font-family: var(--display); font-weight: 400; font-size: 1.5em; letter-spacing: 0.1em; }
+.jp-event-tag span { font-family: var(--display); letter-spacing: 0.12em; font-size: 0.95em; }
+.jp-event-tag em { font-style: normal; font-size: 1.2em; }
+.jp-board { padding: 0.35em 0.5em 0.45em; border-radius: 0 0 0.6em 0.6em; background: rgba(7, 11, 26, 0.72); border: 1px solid var(--line); border-top: 0; backdrop-filter: blur(8px); }
+.jp-row { display: grid; grid-template-columns: 1.4em 1fr auto; align-items: baseline; gap: 0.4em; padding: 0.12em 0.3em; border-radius: 0.3em; font-size: 0.86em; color: #c5d1ea; }
+.jp-row .pl { font-family: var(--display); font-size: 1.2em; color: var(--mute); text-align: center; }
+.jp-row .who { font-family: var(--display); letter-spacing: 0.08em; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jp-row .who small { margin-left: 0.5em; font-size: 0.75em; color: var(--mute); }
+.jp-row b { font-family: var(--display); font-weight: 400; font-size: 1.3em; color: #fff; font-variant-numeric: tabular-nums; }
+.jp-row .series { display: none; }
+.jp-row.me { background: rgba(34, 227, 255, 0.16); color: #fff; box-shadow: inset 0.2em 0 0 var(--cyan); }
+.jp-row.me b { color: var(--cyan); }
+.jp-row:nth-child(1) .pl { color: var(--gold); }
+.jp-row.flash { animation: jpRowFlash 1.4s ease-out; }
+@keyframes jpRowFlash { 0% { background: rgba(255, 255, 255, 0.85); } 100% { background: rgba(34, 227, 255, 0.16); } }
+#stage[data-mode="run"] .jp-top-left { opacity: 0.25; }
+
+.jp-top-right { position: absolute; top: 4.6em; right: 1.5em; display: flex; gap: 0.6em; align-items: stretch; transition: opacity 0.4s; }
+#stage:not([data-mode="ready"]):not([data-mode="run"]) .jp-top-right { opacity: 0; }
+.jp-wind, .jp-clock { padding: 0.5em 0.9em 0.45em; border-radius: 0.7em; background: rgba(7, 11, 26, 0.72); border: 1px solid var(--line); backdrop-filter: blur(8px); text-align: center; }
+.jp-wind { min-width: 10em; --c: #c5d1ea; }
+.jp-wind[data-kind="tail"] { --c: var(--lime); } .jp-wind[data-kind="head"] { --c: #ffb21e; } .jp-wind[data-kind="over"] { --c: var(--hot); }
+.jp-wind-main { display: flex; align-items: baseline; justify-content: center; gap: 0.2em; color: var(--c); }
+.jp-wind-main b { font-family: var(--display); font-weight: 400; font-size: 3em; line-height: 1; font-variant-numeric: tabular-nums; }
+.jp-wind-main i { font-style: normal; font-size: 0.8em; color: var(--mute); }
+.jp-wind-bar { position: relative; height: 0.35em; margin: 0.25em 0; border-radius: 1em; background: rgba(255, 255, 255, 0.12); }
+.jp-wind-bar::after { content: ""; position: absolute; left: 50%; top: -0.2em; bottom: -0.2em; width: 1px; background: rgba(255, 255, 255, 0.5); }
+.jp-wind-bar i { position: absolute; left: 50%; top: 0; bottom: 0; width: 50%; transform-origin: 0 50%; border-radius: 1em; background: var(--c); transition: transform 0.25s ease; }
+.jp-wind-note { font-size: 0.72em; font-weight: 800; letter-spacing: 0.08em; color: var(--c); }
+.jp-clock b { display: block; font-family: var(--display); font-weight: 400; font-size: 3em; line-height: 1; min-width: 1.4em; font-variant-numeric: tabular-nums; }
+.jp-clock.hurry b { color: var(--hot); animation: jpPulse 1s steps(2) infinite; }
+@keyframes jpPulse { 50% { opacity: 0.5; } }
+#stage[data-mode="run"] .jp-clock { display: none; }
+
+.jp-banner { position: absolute; left: 50%; top: 17%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; opacity: 0; white-space: nowrap; }
+.jp-banner b { font-family: var(--display); font-weight: 400; font-size: 4.6em; line-height: 1; letter-spacing: 0.1em; text-shadow: 0 0 0.4em rgba(34, 227, 255, 0.6), 0 0.06em 0.2em rgba(0, 0, 0, 0.6); }
+.jp-banner span { font-weight: 900; font-size: 1.25em; letter-spacing: 0.14em; text-shadow: 0 0.1em 0.4em rgba(0, 0, 0, 0.8); }
+.jp-banner.show { animation: jpBanner 2.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.jp-banner.zone.show { animation: jpBannerHold 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.jp-banner.zone b { color: var(--cyan); }
+.jp-banner.zone.go b { color: var(--lime); font-size: 6.4em; text-shadow: 0 0 0.5em rgba(182, 255, 60, 0.8), 0 0.06em 0.2em rgba(0, 0, 0, 0.6); animation: jpGo 0.5s ease-in-out infinite alternate; }
+@keyframes jpGo { from { transform: scale(1); } to { transform: scale(1.08); } }
+
+/* the height of the real jump */
+.jp-power { position: absolute; right: 21%; top: 50%; transform: translate(1.5em, -50%); display: flex; flex-direction: column; align-items: center; gap: 0.5em; opacity: 0; transition: opacity 0.18s, transform 0.18s; pointer-events: none; }
+.jp-power.show { opacity: 1; transform: translate(0, -50%); }
+.jp-power-cap { font-family: var(--display); font-size: 1.3em; letter-spacing: 0.14em; text-align: center; line-height: 1.1; text-shadow: 0 0.1em 0.4em rgba(0, 0, 0, 0.9); }
+.jp-power-cap small { display: block; font-family: inherit; font-size: 0.6em; font-weight: 900; letter-spacing: 0.1em; color: var(--mute); }
+.jp-power-track { position: relative; width: 3.4em; height: min(21em, 40vh); border-radius: 0.7em; background: rgba(4, 8, 20, 0.82); border: 1px solid rgba(34, 227, 255, 0.6); box-shadow: 0 0 2em rgba(34, 227, 255, 0.25); overflow: visible; }
+.jp-power-track .fill { position: absolute; left: 0.28em; right: 0.28em; bottom: 0.28em; height: 0; max-height: calc(100% - 0.56em); border-radius: 0.45em; background: linear-gradient(0deg, var(--cyan), var(--lime) 62%, var(--gold) 70%, #fff 100%); background-size: 100% min(21em, 40vh); background-position: bottom; box-shadow: 0 0 1.2em rgba(34, 227, 255, 0.7); }
+.jp-power-track .ref { position: absolute; left: -0.7em; right: -0.7em; bottom: 66.7%; height: 2px; background: #fff; }
+.jp-power-track .ref em { position: absolute; left: calc(100% + 0.4em); top: -0.75em; font-style: normal; font-weight: 900; font-size: 0.8em; white-space: nowrap; text-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.9); }
+.jp-power-num { display: flex; align-items: baseline; gap: 0.2em; }
+.jp-power-num b { font-family: var(--display); font-weight: 400; font-size: 5.2em; line-height: 0.85; font-variant-numeric: tabular-nums; text-shadow: 0 0 0.35em rgba(34, 227, 255, 0.6), 0 0.05em 0.2em rgba(0, 0, 0, 0.6); }
+.jp-power-num i { font-style: normal; font-family: var(--display); font-size: 1.6em; color: var(--mute); }
+.jp-power-note { font-weight: 900; letter-spacing: 0.1em; font-size: 1.05em; text-shadow: 0 0.1em 0.4em rgba(0, 0, 0, 0.9); }
+.jp-power.charging .jp-power-track { animation: jpCharge 0.16s linear infinite alternate; }
+@keyframes jpCharge { from { box-shadow: 0 0 1.5em rgba(34, 227, 255, 0.3); } to { box-shadow: 0 0 3.2em rgba(34, 227, 255, 0.85); } }
+.jp-power.over .jp-power-num b { color: var(--gold); text-shadow: 0 0 0.4em rgba(255, 211, 77, 0.9), 0 0.05em 0.2em rgba(0, 0, 0, 0.6); }
+.jp-power.locked .jp-power-num { animation: jpLock 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.jp-power.locked[data-kind="gold"] .jp-power-track { border-color: var(--gold); box-shadow: 0 0 3em rgba(255, 211, 77, 0.8); }
+.jp-power.locked[data-kind="gold"] .jp-power-note { color: var(--gold); }
+.jp-power.locked[data-kind="low"] .jp-power-note { color: var(--mute); }
+@keyframes jpLock { from { transform: scale(1.7); } to { transform: scale(1); } }
+/* the held breath while the player is really in the air */
+#stage.charge .jp-veil { background: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0) 30%, rgba(8, 20, 60, 0.55) 100%); opacity: 1; }
+#stage.charge .jp-speed, #stage.charge .jp-top-left { opacity: 0.25; }
+@keyframes jpBanner { 0% { opacity: 0; transform: translateX(-50%) scale(1.3); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes jpBannerHold { 0% { opacity: 0; transform: translateX(-50%) scale(1.5); } 100% { opacity: 1; transform: translateX(-50%) scale(1); } }
+
+.jp-go { position: absolute; left: 50%; bottom: 24%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; padding: 0.6em 1.8em 0.5em; border-radius: 0.9em; background: rgba(7, 11, 26, 0.7); border: 1px solid rgba(34, 227, 255, 0.6); opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
+.jp-go b { font-size: 1.7em; font-weight: 900; letter-spacing: 0.1em; }
+.jp-go span { font-size: 0.8em; color: var(--mute); letter-spacing: 0.08em; }
+.jp-go.show { opacity: 1; animation: jpGo 1.2s ease-in-out infinite; }
+@keyframes jpGo { 50% { box-shadow: 0 0 2em rgba(34, 227, 255, 0.55); } }
+
+.jp-phase { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); font-family: var(--display); font-size: 7em; letter-spacing: 0.12em; line-height: 1; opacity: 0; color: #fff; text-shadow: 0 0 0.3em rgba(182, 255, 60, 0.8); }
+.jp-phase.pop { animation: jpPhase 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes jpPhase { 0% { opacity: 0; transform: translateX(-50%) scale(2); } 14% { opacity: 1; transform: translateX(-50%) scale(1); } 75% { opacity: 0.9; } 100% { opacity: 0; transform: translateX(-50%) scale(0.9); } }
+
+.jp-popups { position: absolute; left: 50%; top: 31%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.3em; }
+.jp-popup { display: flex; flex-direction: column; align-items: center; animation: jpPop 1.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; white-space: nowrap; }
+.jp-popup b { font-family: var(--display); font-weight: 400; font-size: 4.4em; line-height: 1; letter-spacing: 0.06em; text-shadow: 0 0.06em 0.25em rgba(0, 0, 0, 0.7); }
+.jp-popup span { font-weight: 900; font-size: 1.05em; letter-spacing: 0.1em; text-shadow: 0 0.1em 0.4em rgba(0, 0, 0, 0.9); }
+.jp-popup.gold b { color: var(--gold); text-shadow: 0 0 0.4em rgba(255, 211, 77, 0.8); }
+.jp-popup.good b { color: var(--lime); }
+.jp-popup.bad b { color: var(--hot); }
+@keyframes jpPop { 0% { opacity: 0; transform: scale(1.8); } 10% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-1em); } }
+
+/* the take-off camera */
+.jp-boardcam { position: absolute; left: 50%; bottom: 2.2em; width: min(46em, 58vw); transform: translate(-50%, 1.5em); padding: 0.4em 0.5em 0.5em; border-radius: 0.8em; background: rgba(4, 8, 20, 0.82); border: 1px solid rgba(34, 227, 255, 0.6); box-shadow: 0 0 2.4em rgba(34, 227, 255, 0.25); opacity: 0; transition: opacity 0.25s, transform 0.25s; }
+.jp-boardcam.show { opacity: 1; transform: translate(-50%, 0); }
+.jp-boardcam canvas { display: block; width: 100%; height: 7.2em; border-radius: 0.4em; background: linear-gradient(180deg, #0b1630, #172a4d 70%); }
+.jp-cap { display: block; margin: 0 0 0.3em 0.2em; font-family: var(--display); letter-spacing: 0.16em; font-size: 0.85em; color: var(--cyan); }
+
+/* the contact meter */
+.jp-meter { position: absolute; left: 50%; bottom: 3em; width: min(40em, 52vw); transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; }
+.jp-meter.show { opacity: 1; }
+.jp-meter { transition: opacity 0.2s, bottom 0.25s; }
+.jp-meter.up { bottom: 13em; }
+.jp-meter-label { display: block; text-align: center; margin-bottom: 1.5em; font-weight: 900; font-size: 1.15em; letter-spacing: 0.08em; text-shadow: 0 0.1em 0.4em rgba(0, 0, 0, 0.9); }
+.jp-meter-track { position: relative; height: 1.5em; border-radius: 1em; background: rgba(4, 8, 20, 0.8); border: 1px solid var(--line); overflow: visible; }
+.jp-meter-track .band { position: absolute; top: 0; bottom: 0; }
+.jp-meter-track .band.good { background: rgba(34, 227, 255, 0.35); border-radius: 0.3em; }
+.jp-meter-track .band.great { background: rgba(182, 255, 60, 0.5); }
+.jp-meter-track .band.perfect { background: var(--gold); box-shadow: 0 0 1em rgba(255, 211, 77, 0.8); }
+.jp-meter-track .zero { position: absolute; top: -0.5em; bottom: -0.5em; width: 2px; margin-left: -1px; background: #fff; }
+.jp-meter-track .zero::after { content: "接地"; position: absolute; top: -1.5em; left: 50%; transform: translateX(-50%); font-size: 0.7em; font-weight: 900; white-space: nowrap; }
+.jp-meter-track .dot { position: absolute; top: 50%; width: 1.9em; height: 1.9em; margin: -0.95em 0 0 -0.95em; border-radius: 50%; background: #fff; box-shadow: 0 0 0 0.22em var(--cyan), 0 0 1.4em var(--cyan); }
+.jp-meter-track .tick { position: absolute; top: -0.35em; bottom: -0.35em; width: 0.3em; margin-left: -0.15em; border-radius: 0.2em; background: var(--hot); display: none; }
+.jp-meter-track .tick[data-grade="perfect"] { background: var(--gold); box-shadow: 0 0 1em var(--gold); }
+.jp-meter-track .tick[data-grade="great"] { background: var(--lime); } .jp-meter-track .tick[data-grade="good"] { background: var(--cyan); }
+
+.jp-speed { position: absolute; left: 1.6em; bottom: 1.6em; width: 13em; transition: opacity 0.4s; }
+#stage:not([data-mode="ready"]):not([data-mode="run"]) .jp-speed { opacity: 0; }
+.jp-speed-main { display: flex; align-items: baseline; gap: 0.3em; }
+.jp-speed-main b { font-family: var(--display); font-weight: 400; font-size: 4.6em; line-height: 0.9; font-variant-numeric: tabular-nums; text-shadow: 0 0 0.35em rgba(34, 227, 255, 0.5), 0 0.05em 0.2em rgba(0, 0, 0, 0.6); }
+.jp-speed-main i { font-style: normal; font-family: var(--display); font-size: 1.4em; color: var(--mute); }
+.jp-speed-track { height: 0.5em; margin-top: 0.3em; border-radius: 1em; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.jp-speed-track i { display: block; height: 100%; width: 0; border-radius: 1em; background: var(--grad); }
+.jp-scope { position: absolute; right: 1.5em; bottom: 1.4em; width: 17em; margin: 0; }
+.jp-scope .scope { height: 4.6em; }
+
+.jp-replay { position: absolute; left: 50%; top: 11.5vh; transform: translateX(-50%); padding: 0.15em 0.9em 0.05em; border-radius: 0.4em; font-family: var(--display); font-size: 1.6em; letter-spacing: 0.2em; background: var(--hot); color: #fff; opacity: 0; }
+.jp-replay.show { opacity: 1; animation: jpPulse 1.1s steps(2) infinite; }
+
+.jp-mark { position: absolute; left: 50%; bottom: 13vh; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; opacity: 0; transition: opacity 0.25s; white-space: nowrap; }
+.jp-mark.show { opacity: 1; }
+.jp-mark-main { display: flex; align-items: baseline; gap: 0.1em; }
+.jp-mark-main b { font-family: var(--display); font-weight: 400; font-size: 11em; line-height: 0.9; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #fff 35%, #9befff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0.04em 0.12em rgba(0, 0, 0, 0.7)); }
+.jp-mark-main i { font-style: normal; font-family: var(--display); font-size: 3.4em; color: var(--mute); }
+.jp-mark > span { margin-top: 0.2em; padding: 0.3em 1.2em; border-radius: 2em; background: rgba(4, 8, 20, 0.75); font-weight: 800; letter-spacing: 0.06em; }
+.jp-mark > span em { font-style: normal; color: var(--gold); }
+.jp-mark.foul .jp-mark-main b { background: none; color: var(--hot); }
+.jp-mark.slam .jp-mark-main { animation: jpSlam 0.5s cubic-bezier(0.2, 1.4, 0.3, 1) both; }
+@keyframes jpSlam { 0% { transform: scale(1.6); } 100% { transform: scale(1); } }
+
+/* the rivals of the round */
+.jp-intro { position: absolute; right: 2em; top: 50%; width: 21em; transform: translate(2em, -50%); padding: 0.9em 1.1em 1em; border-radius: 1em; background: rgba(7, 11, 26, 0.8); border: 1px solid var(--line); backdrop-filter: blur(10px); opacity: 0; pointer-events: none; transition: opacity 0.35s, transform 0.35s; }
+.jp-intro.show { opacity: 1; transform: translate(0, -50%); }
+.jp-intro-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5em; padding-bottom: 0.4em; border-bottom: 1px solid var(--line); }
+.jp-intro-head b { font-family: var(--display); font-weight: 400; font-size: 2em; letter-spacing: 0.1em; color: var(--cyan); white-space: nowrap; }
+.jp-intro-head span { font-size: 0.72em; font-weight: 800; color: var(--mute); white-space: nowrap; }
+.jp-intro-list { min-height: 13.6em; }
+.jp-intro-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.1em 0; animation: jpRowIn 0.3s ease-out both; }
+.jp-intro-row span { font-family: var(--display); letter-spacing: 0.08em; font-size: 1.15em; color: #c5d1ea; }
+.jp-intro-row small { color: var(--mute); font-size: 0.75em; margin-left: 0.4em; }
+.jp-intro-row b { font-family: var(--display); font-weight: 400; font-size: 1.6em; }
+.jp-intro-row.x b { color: var(--hot); font-size: 1.2em; }
+@keyframes jpRowIn { from { opacity: 0; transform: translateX(1em); } }
+.jp-intro-target { margin: 0.6em 0 0; min-height: 1.6em; font-weight: 800; text-align: center; }
+.jp-intro-target b { font-family: var(--display); font-weight: 400; font-size: 1.6em; color: var(--gold); }
+
+/* one attempt, taken apart */
+.jp-card { position: absolute; right: 2em; top: 50%; width: 25em; transform: translate(2em, -50%); padding: 1em 1.2em 1.1em; border-radius: 1em; background: rgba(7, 11, 26, 0.86); border: 1px solid var(--line); backdrop-filter: blur(10px); opacity: 0; pointer-events: none; transition: opacity 0.35s, transform 0.35s; }
+.jp-card.show { opacity: 1; transform: translate(0, -50%); pointer-events: auto; }
+.jp-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--grad); border-radius: 1em 1em 0 0; }
+.jp-card-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5em; }
+.jp-card-head > span { font-family: var(--display); letter-spacing: 0.2em; color: var(--mute); }
+.jp-card-mark { display: flex; align-items: baseline; gap: 0.15em; }
+.jp-card-mark b { font-family: var(--display); font-weight: 400; font-size: 3.6em; line-height: 0.9; }
+.jp-card-mark b.x { color: var(--hot); }
+.jp-card-mark i { font-style: normal; font-family: var(--display); font-size: 1.4em; color: var(--mute); }
+.jp-card-mark small { margin-left: 0.6em; font-size: 0.8em; color: var(--mute); font-weight: 700; }
+.jp-stat { display: grid; grid-template-columns: 9.5em 1fr 8.2em; align-items: center; gap: 0.6em; padding: 0.22em 0; font-size: 0.9em; font-weight: 700; }
+.jp-stat span small { display: block; font-family: var(--display); font-weight: 400; letter-spacing: 0.14em; font-size: 0.8em; color: var(--mute); line-height: 1; }
+.jp-stat b { font-family: var(--display); font-weight: 400; font-size: 1.25em; text-align: right; letter-spacing: 0.04em; white-space: nowrap; }
+.jp-bar { height: 0.5em; border-radius: 1em; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.jp-bar i { display: block; height: 100%; border-radius: 1em; background: var(--grad); transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.jp-stat.gold b { color: var(--gold); } .jp-stat.gold .jp-bar i { background: var(--gold); }
+.jp-stat.bad b { color: var(--hot); } .jp-stat.bad .jp-bar i { background: var(--hot); }
+.jp-phases { display: flex; gap: 0.2em; margin: 0.1em 0 0.5em; }
+.jp-phases span { display: flex; flex-direction: column; align-items: center; padding: 0.2em 0 0.1em; border-radius: 0.3em; background: rgba(34, 227, 255, 0.16); border: 1px solid rgba(34, 227, 255, 0.4); font-family: var(--display); font-size: 1.2em; min-width: 0; }
+.jp-phases span small { font-size: 0.6em; letter-spacing: 0.16em; color: var(--cyan); }
+.jp-card-tip { margin: 0.6em 0 0.7em; padding: 0.5em 0.7em; border-radius: 0.5em; background: rgba(182, 255, 60, 0.1); border-left: 0.2em solid var(--lime); font-size: 0.86em; line-height: 1.5; font-weight: 600; }
+.jp-card .hx-btn { width: 100%; justify-content: center; }
+.jp-card kbd { font-size: 0.8em; }
+
+/* ------------------------------------------------------------------ result */
+.jp-result { width: min(54em, 94vw); }
+.jp-result .result-actions { flex-wrap: wrap; gap: 0.5em; }
+.jp-result .result-actions .hx-btn.ghost { white-space: nowrap; padding-left: 0.9em; padding-right: 0.9em; font-size: 0.88em; flex: none; }
+.jp-result .rt-value { font-size: 7.6em; }
+.rc-sub { font-size: 0.85em; color: #c5d1ea; }
+.rc-sub b { color: var(--hot); }
+.jp-series { display: flex; gap: 0.4em; margin-top: 0.5em; }
+.jp-series span { display: flex; align-items: baseline; gap: 0.35em; padding: 0.15em 0.7em 0.05em; border-radius: 0.4em; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); font-family: var(--display); font-size: 1.35em; }
+.jp-series span small { font-size: 0.6em; color: var(--mute); }
+.jp-series span.best { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 1em rgba(255, 211, 77, 0.3); }
+.jp-series span.x { color: var(--hot); }
+.result-medal[data-place="1"] .medal-ring { background: radial-gradient(circle at 35% 30%, #fff3b8, #f0b21c 60%, #a66b00); border-color: #ffe27a; color: #2b1c00; }
+.result-medal[data-place="2"] .medal-ring { background: radial-gradient(circle at 35% 30%, #ffffff, #b9c4d6 60%, #66728a); border-color: #e6ecf6; color: #1a2233; }
+.result-medal[data-place="3"] .medal-ring { background: radial-gradient(circle at 35% 30%, #ffd9b0, #d9853c 60%, #7d4313); border-color: #f5b784; color: #2b1400; }
+.jp-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4em; margin-top: 0.9em; align-items: start; }
+.jp-tech .jp-stat { grid-template-columns: 7em 1fr 2.4em; }
+.jp-total { margin-top: 0.5em; font-family: var(--display); letter-spacing: 0.16em; color: var(--mute); }
+.jp-total b { font-weight: 400; font-size: 2.2em; color: var(--lime); margin: 0 0.15em 0 0.3em; letter-spacing: 0; }
+.jp-total small { font-family: var(--jp); letter-spacing: 0; font-size: 0.75em; }
+.jp-none { color: var(--mute); font-size: 0.9em; }
+.jp-board.final { border-radius: 0.6em; border-top: 1px solid var(--line); }
+.jp-board.final .jp-row { grid-template-columns: 1.4em 1fr auto auto; }
+.jp-board.final .jp-row .series { display: flex; gap: 0.5em; font-family: var(--display); font-size: 0.95em; color: var(--mute); }
+.jp-board.final .jp-row .series i { font-style: normal; min-width: 2.2em; text-align: right; }
+.jp-board.final .jp-row .series i.x { color: rgba(255, 61, 110, 0.8); }
+.ranking-item .rk-wind { width: 6em; text-align: right; font-size: 0.8em; color: var(--mute); }
+.ranking-item.current { box-shadow: inset 0.25em 0 0 var(--cyan); background: rgba(34, 227, 255, 0.12); }
+.ranking-empty { text-align: center; color: var(--mute); padding: 2em 0; }
+
+/* ------------------------------------------------------------------ settings: sensor monitor */
+.jp-monitor { margin: 0.4em 0 0.8em; }
+.jp-mon-row { display: grid; grid-template-columns: 5em 1fr 3.6em; align-items: center; gap: 0.6em; padding: 0.15em 0; font-size: 0.85em; }
+.jp-mon-row b { font-family: var(--display); font-weight: 400; text-align: right; }
+.jp-mbar { position: relative; height: 0.7em; border-radius: 0.3em; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.jp-mbar i { position: absolute; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: #4caf50; }
+.jp-mbar.fill i { left: 0; margin: 0; width: 0; }
+.jp-mbar em { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; opacity: 0.8; }
+.check-item.on { color: #04121a; background: var(--lime); border-color: transparent; }
+
+@media (max-width: 900px) {
+  .jp-howto { grid-template-columns: 1fr; }
+  .jp-result-grid { grid-template-columns: 1fr; }
+  .jp-top-left { width: 13em; font-size: 0.85em; }
+  .jp-mark-main b { font-size: 7em; }
+}

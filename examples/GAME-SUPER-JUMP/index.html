@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUPER VIRTUAL JUMP　走り幅跳び・三段跳び</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <!-- Stadium UI from the hurdle game, the result card and HOW TO PLAY from the start game, then this event's own parts. -->
+  <link rel="stylesheet" href="../GAME-SUPER-HURDLE/style.css?v=20261124b">
+  <link rel="stylesheet" href="../GAME-SUPER-START/style.css?v=20261124b">
+  <link rel="stylesheet" href="style.css?v=20261124b">
+  <!--
+    Cache busting, same scheme as GAME-SUPER-HURDLE: every module and stylesheet carries one
+    ?v= build id. When any file of this example, of ../GAME-SUPER-START/ or of
+    ../GAME-SUPER-HURDLE/ changes, change the id everywhere on this page.
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "./rules.js": "./rules.js?v=20261124b",
+        "./field.js": "./field.js?v=20261124b",
+        "./poses.js": "./poses.js?v=20261124b",
+        "./audio.js": "./audio.js?v=20261124b",
+        "./jumpdetect.js": "./jumpdetect.js?v=20261124b",
+        "../GAME-SUPER-START/stage.js": "../GAME-SUPER-START/stage.js?v=20261124b",
+        "../GAME-SUPER-START/scope.js": "../GAME-SUPER-START/scope.js?v=20261124b",
+        "../GAME-SUPER-START/recorder.js": "../GAME-SUPER-START/recorder.js?v=20261124b",
+        "../GAME-SUPER-HURDLE/world.js": "../GAME-SUPER-HURDLE/world.js?v=20261124b",
+        "../GAME-SUPER-HURDLE/runner.js": "../GAME-SUPER-HURDLE/runner.js?v=20261124b",
+        "../GAME-SUPER-HURDLE/fx.js": "../GAME-SUPER-HURDLE/fx.js?v=20261124b",
+        "../GAME-SUPER-HURDLE/audio.js": "../GAME-SUPER-HURDLE/audio.js?v=20261124b",
+        "../GAME-SUPER-HURDLE/insole.js": "../GAME-SUPER-HURDLE/insole.js?v=20261124b"
+      }
+    }
+  </script>
+  <!-- ORPHE CORE SDK and its toolkit, from this repository (same as SUPER VIRTUAL HURDLE) -->
+  <script src="../../js/float16.min.js"></script>
+  <script src="../../js/quaternion.js"></script>
+  <script src="../../js/ORPHE-CORE.js"></script>
+  <script src="../../js/BleSharedBridge.js"></script>
+  <script src="../../js/CoreToolkit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="main.js?v=20261124b"></script>
+  <script src="../../js/site-analytics.js"></script>
+</head>
+<body>
+  <div id="stage" data-screen="start" data-mode="title" data-event="long">
+    <canvas id="game-canvas"></canvas>
+    <div class="jp-veil"></div>
+    <div class="warp-fx" id="warp-fx"></div>
+    <div class="letterbox top"></div>
+    <div class="letterbox bottom"></div>
+
+    <!-- ===== Title ===== -->
+    <div class="screen" id="start-layer">
+      <div class="title-block">
+        <div class="eyebrow"><span>VIRTUAL SPORTS</span></div>
+        <h1 class="title">
+          <span class="title-en">SUPER VIRTUAL JUMP</span>
+          <span class="title-ja">バーチャル <em id="title-event-ja">走り幅跳び</em> <small id="title-event-en">LONG JUMP</small></span>
+        </h1>
+        <div class="event-switch" id="event-switch" role="radiogroup" aria-label="種目 / Event">
+          <button type="button" data-event="long" role="radio"><b>走り幅跳び</b><span>LONG JUMP</span></button>
+          <button type="button" data-event="triple" role="radio"><b>三段跳び</b><span>TRIPLE JUMP</span></button>
+        </div>
+        <p class="lead">足ぶみで助走。<b>踏み切り板ぎりぎり</b>で、その場で<b>本当に高くジャンプ</b>！<br>高く跳ぶほど遠くへ飛ぶ。板の線を越えて踏み切ったら<b class="hot">ファウル</b>。</p>
+
+        <div class="howto jp-howto">
+          <div class="jp-how" data-for="both">
+            <svg viewBox="0 0 120 70" aria-hidden="true">
+              <line x1="6" y1="60" x2="114" y2="60" class="floor"/>
+              <g class="shoe a"><path d="M30 46 q0 -16 14 -16 h9 l18 11 q9 3 9 9 v6 h-50 z"/></g>
+              <g class="shoe b"><path d="M30 46 q0 -16 14 -16 h9 l18 11 q9 3 9 9 v6 h-50 z"/></g>
+            </svg>
+            <h3><i>1</i>足ぶみ <small>RUN-UP</small></h3>
+            <p>止めずに走るほど速い。スピードが飛距離のほとんど。<kbd>←</kbd> 長押し</p>
+          </div>
+          <div class="jp-how" data-for="both">
+            <svg viewBox="0 0 120 70" aria-hidden="true">
+              <rect x="6" y="52" width="108" height="12" class="track"/>
+              <rect x="66" y="52" width="14" height="12" class="board"/>
+              <rect x="80" y="52" width="7" height="12" class="clay"/>
+              <line x1="80" y1="8" x2="80" y2="64" class="line"/>
+              <g class="shoe slide"><path d="M0 52 h-34 v-12 q10 -4 16 2 q10 2 18 6 z"/></g>
+              <text x="84" y="16" class="t-foul">FOUL</text>
+            </svg>
+            <h3><i>2</i>板で 高くジャンプ！</h3>
+            <p>ゾーンに入ると時間がゆっくりに。足ぶみを止めて、線の直前で真上に跳ぶ。<kbd>→</kbd> 長押し</p>
+          </div>
+          <div class="jp-how" data-for="long">
+            <svg viewBox="0 0 120 70" aria-hidden="true">
+              <rect x="6" y="52" width="108" height="12" class="sand"/>
+              <path d="M10 44 Q 60 -12 104 50" class="arc"/>
+              <circle cx="104" cy="52" r="9" class="ring"/>
+              <circle cx="104" cy="52" r="4" class="dot"/>
+            </svg>
+            <h3><i>3</i>高いほど 遠くへ</h3>
+            <p>跳んでいる間は時間が止まる。<b>ジャンプの高さ</b>がそのまま飛距離になる。</p>
+          </div>
+          <div class="jp-how" data-for="triple">
+            <svg viewBox="0 0 120 70" aria-hidden="true">
+              <rect x="6" y="52" width="66" height="12" class="track"/>
+              <rect x="72" y="52" width="42" height="12" class="sand"/>
+              <path d="M8 52 Q 24 22 40 52" class="arc"/><path d="M40 52 Q 54 30 66 52" class="arc"/><path d="M66 52 Q 88 14 108 52" class="arc"/>
+              <circle cx="40" cy="52" r="5" class="dot p1"/><circle cx="66" cy="52" r="5" class="dot p2"/><circle cx="108" cy="52" r="5" class="dot p3"/>
+              <text x="14" y="16" class="t-phase">HOP</text><text x="46" y="24" class="t-phase">STEP</text><text x="80" y="12" class="t-phase">JUMP</text>
+            </svg>
+            <h3><i>3</i>接地ごとに もう一度ジャンプ</h3>
+            <p>ホップ・ステップ・ジャンプで<b>3 回</b>跳ぶ。足が地面に着く<b>瞬間</b>に次のジャンプ。高さとリズムの両方で伸びる。</p>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <button type="button" class="hx-btn primary" id="start-btn" data-quiet="1"><span class="hx-main">START</span><span class="hx-sub">試合開始（Enter）</span></button>
+          <button type="button" class="hx-btn ghost" id="btn-ranking"><i class="bi bi-trophy-fill"></i> ランキング / RANKING</button>
+          <div class="records records-side">
+            <span>自己ベスト BEST <b id="best-mark">—</b></span>
+            <span>世界記録 WR <b id="wr-mark">8.95 m</b></span>
+          </div>
+        </div>
+        <label class="team-names">
+          <span>名前（任意。入れるとランキングに自動で登録）</span>
+          <input type="text" id="player-name" maxlength="16" placeholder="例: KIKU" autocomplete="off" spellcheck="false">
+        </label>
+        <p class="jp-rules-note">3 回跳んで、いちばん良い記録で 7 人のライバルと順位を争います。助走路に立ったら 40 秒以内にスタート。<b>追い風</b>を待つのも作戦（+2.0 m/s を超えると参考記録）。</p>
+      </div>
+      <footer class="credit">© ORPHE Inc. ORPHE CORE is a registered trademark of ORPHE Inc. <a href="https://orphe.io/" target="_blank" rel="noopener">https://orphe.io/</a></footer>
+    </div>
+
+    <!-- ===== HUD ===== -->
+    <div class="jp-hud" id="jp-hud" aria-hidden="true">
+      <div class="jp-top-left">
+        <div class="jp-event-tag"><b id="jp-event">LONG JUMP</b><span>ATTEMPT <em id="jp-attempt">1 / 3</em></span></div>
+        <div class="jp-board" id="jp-board"></div>
+      </div>
+      <div class="jp-top-right">
+        <div class="jp-wind" id="jp-wind" data-kind="calm">
+          <span class="hud-label">WIND 風</span>
+          <div class="jp-wind-main"><b id="jp-wind-value">0.0</b><i>m/s</i></div>
+          <div class="jp-wind-bar"><i id="jp-wind-arrow"></i></div>
+          <span class="jp-wind-note" id="jp-wind-note">無風 CALM</span>
+        </div>
+        <div class="jp-clock" id="jp-clock-box"><span class="hud-label">CLOCK</span><b id="jp-clock">40</b></div>
+      </div>
+      <div class="jp-banner" id="jp-banner"><b id="jp-banner-en"></b><span id="jp-banner-ja"></span></div>
+      <div class="jp-go" id="jp-go"><b>足ぶみでスタート</b><span>STAMP TO START　風を見て、好きなタイミングで</span></div>
+      <div class="jp-phase" id="jp-phase"></div>
+      <div class="popup-layer jp-popups" id="popup-layer"></div>
+
+      <!-- the take-off, seen from the side -->
+      <div class="jp-boardcam" id="jp-boardcam">
+        <span class="jp-cap"><i class="bi bi-camera-video-fill"></i> 踏み切りカメラ / TAKE-OFF CAM</span>
+        <canvas id="boardcam-canvas"></canvas>
+      </div>
+      <!-- the contact meter: the dot reaches the line when the foot reaches the ground -->
+      <div class="jp-meter" id="jp-meter">
+        <span class="jp-meter-label" id="jp-meter-label">足が地面に着く瞬間に もう一度ジャンプ</span>
+        <div class="jp-meter-track">
+          <i class="band good" id="jp-meter-good"></i><i class="band great" id="jp-meter-great"></i><i class="band perfect" id="jp-meter-perfect"></i>
+          <i class="zero" id="jp-meter-zero"></i>
+          <i class="tick" id="jp-meter-tick"></i>
+          <i class="dot" id="jp-meter-dot"></i>
+        </div>
+      </div>
+
+      <!-- the height of the real jump: climbs while the player is in the air, then the measured value -->
+      <div class="jp-power" id="jp-power" data-kind="low">
+        <span class="jp-power-cap">JUMP HEIGHT<small>ジャンプの高さ</small></span>
+        <div class="jp-power-track"><i class="fill" id="jp-power-fill"></i><i class="ref"><em>100%</em></i></div>
+        <div class="jp-power-num"><b id="jp-power-cm">0</b><i>cm</i></div>
+        <span class="jp-power-note" id="jp-power-note">高く！ / HIGHER</span>
+      </div>
+
+      <div class="jp-speed">
+        <span class="hud-label">SPEED</span>
+        <div class="jp-speed-main"><b id="jp-speed">0.0</b><i>m/s</i></div>
+        <div class="jp-speed-track"><i id="jp-speed-fill"></i></div>
+      </div>
+      <!-- the raw sensor signal, while playing (shown once a sensor is sending) -->
+      <div class="scope-box jp-scope" id="scope-hud-box">
+        <canvas class="scope" id="scope-hud"></canvas>
+        <span class="scope-cap">足の加速度（G）　白＝足ぶみ　緑＝踏み切り　黄＝着地</span>
+      </div>
+
+      <div class="jp-replay" id="jp-replay"><i class="bi bi-play-circle-fill"></i> REPLAY</div>
+      <div class="jp-mark" id="jp-mark">
+        <div class="jp-mark-main"><b id="jp-mark-value">0.00</b><i id="jp-mark-unit">m</i></div>
+        <span id="jp-mark-sub"></span>
+      </div>
+    </div>
+
+    <!-- the rivals of this round -->
+    <div class="jp-intro" id="jp-intro">
+      <div class="jp-intro-head"><b id="jp-intro-round">ROUND 1 / 3</b><span>ライバルの試技 / RIVALS</span></div>
+      <div class="jp-intro-list" id="jp-intro-list"></div>
+      <p class="jp-intro-target" id="jp-intro-target"></p>
+    </div>
+
+    <!-- one attempt, taken apart -->
+    <div class="jp-card" id="jp-card">
+      <div class="jp-card-head"><span id="jp-card-title">ATTEMPT 1 / 3</span><div class="jp-card-mark" id="jp-card-mark"></div></div>
+      <div class="jp-card-phases" id="jp-card-phases"></div>
+      <div id="jp-card-stats"></div>
+      <p class="jp-card-tip" id="jp-card-tip"></p>
+      <button type="button" class="hx-btn small" id="jp-card-next">次へ</button>
+    </div>
+
+    <!-- ===== Result ===== -->
+    <div class="screen" id="finish-layer">
+      <div class="rt-card jp-result" id="result-card">
+        <div class="rt-head">
+          <span class="rt-tag" id="rt-tag">LONG JUMP · FINAL</span>
+          <span class="rt-badge" id="rt-badge">NEW PERSONAL BEST</span>
+        </div>
+        <div class="rt-main">
+          <div class="rt-time">
+            <span class="rt-label">記録 / Best mark</span>
+            <div class="rt-value"><b id="rc-mark">0.00</b><i id="rc-unit">m</i></div>
+            <div class="rc-sub" id="rc-sub"></div>
+            <div class="jp-series" id="rc-series"></div>
+          </div>
+          <div class="result-medal" id="rc-medal">
+            <div class="medal-ring"><span id="rc-place">1</span><sup id="rc-place-suffix">st</sup></div>
+            <div class="medal-label" id="rc-medal-label">GOLD</div>
+          </div>
+        </div>
+        <div class="jp-result-grid">
+          <div class="jp-tech" id="rc-tech"></div>
+          <div class="jp-board final" id="rc-board"></div>
+        </div>
+        <form class="result-entry" id="name-form" autocomplete="off">
+          <input type="text" id="result-name" maxlength="16" placeholder="名前 / Name" aria-label="ランキングに登録する名前" spellcheck="false">
+          <button type="submit" class="hx-btn small" id="save-score">この記録を登録</button>
+          <span class="save-status" id="save-status"></span>
+        </form>
+        <div class="result-actions">
+          <button type="button" class="hx-btn primary" id="retry" data-quiet="1"><span class="hx-main">RETRY</span><span class="hx-sub">もう一度 <kbd>Enter</kbd></span></button>
+          <button type="button" class="hx-btn ghost" id="btn-other"><i class="bi bi-arrow-left-right"></i> もう一つの種目</button>
+          <button type="button" class="hx-btn ghost" id="btn-ranking-finish"><i class="bi bi-trophy-fill"></i> ランキング</button>
+          <button type="button" class="hx-btn ghost" id="btn-title"><i class="bi bi-house-fill"></i> タイトル</button>
+          <button type="button" class="hx-btn ghost" id="btn-raw" title="この試合の生データ（加速度・角速度・姿勢（クォータニオン）・ゲームの状態）を JSON で保存。保存しなくても、このブラウザには自動で残ります" hidden><i class="bi bi-download"></i> 生データ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Ranking ===== -->
+    <div class="screen" id="ranking-layer" style="display:none;">
+      <div class="ranking-container">
+        <button type="button" class="back-button" id="back-btn" title="戻る / Back"><i class="bi bi-arrow-left"></i></button>
+        <h2 class="ranking-title">ランキング / RANKING</h2>
+        <p class="ranking-board" id="ranking-board">走り幅跳び · このブラウザの記録</p>
+        <div class="ranking-list" id="ranking-list"></div>
+        <div class="ranking-foot"><button type="button" class="hx-btn small danger" id="ranking-clear">記録を消す / Clear</button></div>
+      </div>
+    </div>
+
+    <!-- ===== Top bar ===== -->
+    <div id="topbar">
+      <button type="button" class="icon-btn" id="btn-sound" title="サウンド / Sound"><i class="bi bi-volume-up-fill"></i></button>
+      <button type="button" class="icon-btn" id="btn-fullscreen" title="全画面 / Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+      <button type="button" class="icon-btn" id="btn-settings" title="設定 / Settings"><i class="bi bi-sliders"></i></button>
+    </div>
+
+    <!-- ===== ORPHE CORE connection dock (CoreToolkit UI lives here) ===== -->
+    <aside id="core-dock" class="dock">
+      <div class="dock-head">
+        <span class="dock-title" id="dock-title">ORPHE CORE</span>
+        <span class="device-switch" id="device-switch" role="radiogroup" aria-label="センサーの種類 / Sensor type">
+          <button type="button" data-device="core" role="radio">CORE</button><button type="button" data-device="insole" role="radio">INSOLE</button>
+        </span>
+      </div>
+      <div class="dock-row" id="dock-row-0">
+        <span class="foot-chip"><b>L</b><span>左足</span></span>
+        <div id="toolkit_placeholder1" class="toolkit-slot"></div>
+        <span class="dock-state" id="dock-state-0">未接続</span>
+      </div>
+      <div class="dock-row" id="dock-row-1">
+        <span class="foot-chip"><b>R</b><span>右足</span></span>
+        <div id="toolkit_placeholder2" class="toolkit-slot"></div>
+        <span class="dock-state" id="dock-state-1">未接続</span>
+      </div>
+      <div id="ble-support-message" class="dock-note" style="display:none;">
+        Web Bluetooth is disabled in this browser. Open this page in Chrome to connect ORPHE CORE.
+      </div>
+      <label class="rec-toggle" title="試合ごとに、足の加速度・角速度・姿勢の生データとゲームの状態をこのブラウザに保存します">
+        <input type="checkbox" id="rec-toggle" checked><span class="rec-switch"></span>
+        <span class="rec-label">生データを記録 / REC</span><span class="rec-count" id="rec-count-dock"></span>
+      </label>
+      <div class="dock-check">
+        <span class="check-item" id="check-accel"><i class="bi bi-lightning-charge-fill"></i> 足ぶみ 助走</span>
+        <span class="check-item" id="check-jump"><i class="bi bi-arrow-up-circle-fill"></i> 垂直ジャンプ</span>
+      </div>
+      <!-- the raw sensor signal (shown once a sensor is sending) -->
+      <div class="scope-box" id="scope-dock-box">
+        <canvas class="scope" id="scope-dock"></canvas>
+        <span class="scope-cap">足の加速度の生データ（G）。白い線より上で「足ぶみ」＝走る。緑の線（6 G）を超えると踏み切り、黄色の線（10 G）を超えると着地</span>
+      </div>
+      <button type="button" class="dock-link" id="open-settings"><i class="bi bi-sliders"></i> センサー値・感度の調整 / Sensor settings</button>
+      <p class="dock-hint" id="dock-hint">スイッチをONにしてCOREを選ぶ（足の甲に装着・1個でも遊べます）。まわりを片づけて、その場で本当にジャンプします。キーボードは <kbd>←</kbd> 長押しで走る、<kbd>→</kbd> を跳んでいる間だけ押す（長いほど高い）。</p>
+    </aside>
+
+    <!-- ===== Settings drawer ===== -->
+    <aside id="settings-drawer" class="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <h3>設定 / Settings</h3>
+        <button type="button" class="icon-btn" id="close-settings" title="閉じる / Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="config-panel">
+        <h4>📊 センサー値モニター / Sensor Monitor</h4>
+        <div class="jp-monitor">
+          <div class="jp-mon-row"><span>L 傾き</span><div class="jp-mbar"><i id="pitchBar0"></i><em id="pitchThreshold0"></em></div><b id="pitch0">0.000</b></div>
+          <div class="jp-mon-row"><span>L 加速度</span><div class="jp-mbar fill"><i id="accBar0"></i><em id="accThreshold0"></em></div><b id="acc0">0.00</b></div>
+          <div class="jp-mon-row"><span>R 傾き</span><div class="jp-mbar"><i id="pitchBar1"></i><em id="pitchThreshold1"></em></div><b id="pitch1">0.000</b></div>
+          <div class="jp-mon-row"><span>R 加速度</span><div class="jp-mbar fill"><i id="accBar1"></i><em id="accThreshold1"></em></div><b id="acc1">0.00</b></div>
+        </div>
+        <div class="config-item">
+          <label for="accelThreshold">足ぶみの強さ（加速度の閾値） / Stamp threshold</label>
+          <div class="config-control"><input type="range" id="accelThreshold" min="0.1" max="5.1" value="1.1" step="0.2"><span id="accelThresholdValue">1.1 G</span></div>
+        </div>
+        <div class="config-item">
+          <label for="jumpRef">ジャンプの基準の高さ（この高さで 100%） / Reference jump height</label>
+          <div class="config-control"><input type="range" id="jumpRef" min="20" max="60" value="40" step="5"><span id="jumpRefValue">40 cm</span></div>
+        </div>
+        <p class="drawer-note">ジャンプの高さは、足のセンサーの加速度と姿勢から計算します（踏み切り 6 G・着地 10 G の衝撃のあいだを積分。ORPHE JUMP OVER の方法）。基準の高さで飛距離が 100% になり、その 1.5 倍まではさらに伸びます。子どもは基準を下げてください。ゾーンでは<b>足ぶみを止めて</b>から跳びます（足ぶみの衝撃をジャンプと間違えないため、止まるまで踏み切りは受けつけません）。</p>
+        <h4>📼 生データの記録 / Recording</h4>
+        <label class="rec-toggle in-drawer">
+          <input type="checkbox" id="rec-toggle-2" checked><span class="rec-switch"></span>
+          <span class="rec-label">生データを記録する</span>
+        </label>
+        <p class="drawer-note">ON のあいだ、試合ごとに、両足の加速度・角速度・姿勢（クォータニオン）の生データ、ゲームの状態（位置・速度・局面）、できごと（踏み切り・ジャンプの高さ・接地・着地・記録）を、このブラウザに保存します。リロードしても残ります。</p>
+        <div class="rec-actions">
+          <span class="rec-count" id="rec-count">保存済み 0 件</span>
+          <button type="button" class="hx-btn small" id="rec-all">すべて JSON で保存</button>
+          <button type="button" class="hx-btn small danger" id="rec-clear">消去</button>
+        </div>
+        <h4>🔊 サウンド / Sound</h4>
+        <div class="config-item">
+          <label for="volume-slider">音量 / Volume</label>
+          <div class="config-control">
+            <input type="range" id="volume-slider" min="0" max="1" value="0.85" step="0.05">
+            <span id="volume-value">85%</span>
+          </div>
+        </div>
+        <h4>🖥 グラフィック / Graphics</h4>
+        <div class="config-item">
+          <label for="quality-select">描画品質 / Quality</label>
+          <div class="config-control">
+            <select id="quality-select">
+              <option value="auto" selected>自動 / Auto</option>
+              <option value="high">高 / High</option>
+              <option value="medium">中 / Medium</option>
+              <option value="low">低 / Low</option>
+            </select>
+            <span id="fps-value">-- fps</span>
+          </div>
+        </div>
+        <h4>⌨ キーボード / Keyboard</h4>
+        <p class="drawer-note"><kbd>←</kbd> または <kbd>↑</kbd> 長押し：走る　<kbd>→</kbd> または <kbd>Space</kbd>：ジャンプ（押した瞬間が踏み切り、離した瞬間が着地。約 0.6 秒で基準の高さ）　<kbd>Enter</kbd>：スタート／次へ　<kbd>Esc</kbd>：タイトルへ<br>タッチ：画面の左半分を押している間は走る、右半分を押している間がジャンプ。</p>
+      </div>
+    </aside>
+
+    <div id="loading"><div class="loading-inner"><span class="loading-title">SUPER VIRTUAL JUMP</span><span class="loading-bar"><i></i></span><span class="loading-text">スタジアムを準備中… / Preparing the stadium</span></div></div>
+  </div>
+
+  <script>
+    // ORPHE CORE: two inputs.
+    //   stamping (acceleration above the threshold on either foot)  -> window.setAccelPressed(true / false)
+    //   a real vertical jump                                        -> window.jumpSample(id, acc [G], quaternion)
+    // Both are implemented by main.js; jumpdetect.js finds the take-off, the landing and the
+    // height of the jump in the samples. The landing is a 10 G impact, so the accelerometer is
+    // set to its ±16 G range when the sensor connects.
+    var bles = [new Orphe(0), new Orphe(1)];
+    bles[0].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder1'), '01', 0, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true, range: { acc: 16, gyro: 2000 } });
+    bles[1].setup();
+    buildCoreToolkit(document.querySelector('#toolkit_placeholder2'), '02', 1, 'STEP_ANALYSIS_AND_SENSOR_VALUES', { forceDeviceSelection: true, range: { acc: 16, gyro: 2000 } });
+    guardCoreToolkitBluetooth({ coreIds: [0, 1], messageElement: '#ble-support-message' });
+
+    window.devices = {
+      0: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 }, at: 0 },
+      1: { acc: { x: 0, y: 0, z: 0 }, eulers: { pitch: 0, roll: 0, yaw: 0 }, at: 0 }
+    };
+    window.accThresholdAccel = 1.1;     // G
+    let lastAccelTime = 0;
+    const accelCooldownMs = 100;
+
+    // CoreToolkit starts each connection from its own user gesture.
+    // Bind sensor handlers once; never call begin() again from onConnect.
+    for (const ble of bles) setupDataCallbacks(ble);
+
+    function setupDataCallbacks(ble_device) {
+      ble_device.gotConvertedGyro = function (_gyro) {
+        window.devices[this.id].gyro = _gyro;      // recorded with the raw data; not used by the game
+      };
+      ble_device.gotConvertedAcc = function (_acc) {
+        const d = window.devices[this.id];
+        d.acc = _acc; d.at = performance.now();
+        // (the SDK calls gotQuat before gotConvertedAcc: this.quat belongs to the same sample)
+        if (window.jumpSample) window.jumpSample(this.id, _acc, this.quat);
+        if (window.sensorTap) window.sensorTap(this.id);   // strip chart + raw data recording (main.js)
+        // either foot moving hard enough = run
+        let maxAccel = 0;
+        for (let i = 0; i < 2; i++) {
+          const acc = window.devices[i].acc;
+          maxAccel = Math.max(maxAccel, Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z));
+        }
+        if (window.setAccelPressed) {
+          const now = performance.now();
+          const shouldAccel = maxAccel > window.accThresholdAccel;
+          if (shouldAccel && (now - lastAccelTime) > accelCooldownMs) {
+            window.setAccelPressed(true);
+            lastAccelTime = now;
+          } else if (!shouldAccel) {
+            window.setAccelPressed(false);
+          }
+        }
+      };
+
+      ble_device.gotEuler = function (_euler) {
+        const d = window.devices[this.id];
+        d.eulers = _euler;                         // shown in the sensor monitor; not used by the game
+        d.at = performance.now();
+      };
+    }
+
+    // ---- sensor monitor in the settings drawer
+    function updateSensorDisplay() {
+      if (!document.getElementById('settings-drawer').classList.contains('open')) return;
+      for (let i = 0; i < 2; i++) {
+        const device = window.devices[i];
+        const pitch = device.eulers ? device.eulers.pitch : 0;
+        document.getElementById('pitch' + i).textContent = pitch.toFixed(3);
+        const pitchBar = document.getElementById('pitchBar' + i);
+        pitchBar.style.left = Math.max(0, Math.min(100, ((pitch + 2) / 4) * 100)) + '%';
+        pitchBar.style.background = '#4caf50';
+        const a = device.acc || { x: 0, y: 0, z: 0 };
+        const mag = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+        document.getElementById('acc' + i).textContent = mag.toFixed(2);
+        const accBar = document.getElementById('accBar' + i);
+        accBar.style.width = Math.min(100, (mag / 2) * 100) + '%';
+        accBar.style.background = mag > window.accThresholdAccel ? '#ff9800' : '#2196f3';
+      }
+    }
+    function updateThresholdVisuals() {
+      for (let i = 0; i < 2; i++) {
+        document.getElementById('pitchThreshold' + i).style.display = 'none';
+        document.getElementById('accThreshold' + i).style.left = Math.min(100, window.accThresholdAccel / 2 * 100) + '%';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('accelThreshold').addEventListener('input', function (e) {
+        window.accThresholdAccel = parseFloat(e.target.value);
+        document.getElementById('accelThresholdValue').textContent = e.target.value + ' G';
+        updateThresholdVisuals();
+      });
+      setInterval(updateSensorDisplay, 50);
+      updateThresholdVisuals();
+    });
+  </script>
+</body>
+</html>

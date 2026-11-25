@@ -10,7 +10,7 @@ validation" as a public badge in the examples gallery.
 ## Current Status
 
 - `public`: 42 entries
-- `public-candidate`: 1 entry
+- `public-candidate`: 2 entries
 
 `GAME-MARIO`, `GAME-SHOOTING2`, `GAME-PK`, `GAME-SHOOTING`, and
 `CORE_TIME_SYNC` were promoted to `public` after owner real-device checks.
@@ -27,6 +27,7 @@ Open these URLs from a local server and use Chrome for BLE tests.
 | 1 | `game-sprint-100m-vs` | `http://localhost:8767/examples/GAME-SPRINT-100M-VS/` | 2 | Two-player sprint, independent sensor input, finish/retry | Owner verified |
 | 2 | `game-hurdle-400m-vs` | `http://localhost:8767/examples/GAME-HURDLE-400M-VS/` | 2 | Two-player 400m hurdles, running/jump input, finish/retry | Owner verified |
 | 3 | `orphe-piano` | `http://localhost:8767/examples/ORPHE-PIANO/` | 2 | Sample loading, walking progress meter, Scene 1-10 changes, motion/step/kick piano input, LED patterns, reconnect | Needs owner Chrome + real-device tuning |
+| 4 | `game-kick-challenge` | `http://localhost:8767/examples/GAME-KICK-CHALLENGE/` | 1-2 | Webcam pose, right-foot-lift start, kick detection, weak/strong judgment, circle position check, 10-ball result / restart | Author checked with webcam + real device; awaiting maintainer review |
 
 ## Promotion Rules
 
@@ -43,6 +44,25 @@ Do not promote workshop galleries or developer tools just because they open.
 They need a navigation decision first.
 
 ## Candidate Details
+
+### `examples/GAME-KICK-CHALLENGE/`
+
+Purpose: Virtual Sports kick game that combines webcam pose estimation with ORPHE CORE acceleration.
+
+Current state:
+
+- `status`: `public-candidate`
+- `public_navigation`: `listed`
+- README and a provisional thumbnail (rendered from a test image) are prepared.
+- The author checked it in Chrome with a webcam and real ORPHE CORE modules.
+
+Promotion checks:
+
+- Camera starts and the right-foot lift starts the game.
+- Kick detection and weak / strong judgment work with the default gauge (6.0 G) or an adjusted value.
+- The circle position check (foot inside the circle during the high-acceleration window) feels fair.
+- Result after 10 balls and restart work without breaking the BLE connection.
+- Replace the provisional thumbnail with a real capture.
 
 ### `examples/GAME-SPRINT-100M-VS/`
 

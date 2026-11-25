@@ -64,6 +64,77 @@ mark {
     font-weight: 400;
 }
 
+.dx-deprecation-banner {
+    background: linear-gradient(90deg, #2d1611 0%, #3a1a12 50%, #2d1611 100%);
+    border-bottom: 2px solid #ff6040;
+    color: #ffffff;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.dx-deprecation-banner-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem 0.9rem;
+    padding: 0.7rem 0.75rem;
+}
+
+.dx-deprecation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    background: #ff6040;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.dx-deprecation-text {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.94);
+    text-align: center;
+}
+
+.dx-deprecation-text strong {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.dx-deprecation-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.8rem;
+    border: 1px solid rgba(255, 96, 64, 0.85);
+    border-radius: 999px;
+    background: rgba(255, 96, 64, 0.18);
+    color: #ffffff;
+    font-size: 0.84rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.dx-deprecation-link:hover,
+.dx-deprecation-link:focus-visible {
+    background: #ff6040;
+    border-color: #ff6040;
+    color: #ffffff;
+}
+
+html[data-lang="en"] .dx-deprecation-banner .lang.en,
+html[data-lang="ja"] .dx-deprecation-banner .lang.ja {
+    display: inline !important;
+}
+
 .dx-hero {
     position: relative;
     min-height: 520px;
@@ -713,6 +784,19 @@ mark {
 }
 
 @media (max-width: 575.98px) {
+    .dx-deprecation-banner {
+        font-size: 0.84rem;
+    }
+
+    .dx-deprecation-banner-inner {
+        justify-content: flex-start;
+        padding: 0.65rem 0.5rem;
+    }
+
+    .dx-deprecation-text {
+        text-align: left;
+    }
+
     .dx-hero {
         min-height: 560px;
         padding: 1.25rem;
